@@ -42,7 +42,7 @@ Branch scope must match exactly one issue unless the issue register explicitly g
 
 ## M0: Runtime Planning And Documentation Foundation
 
-**Status:** In Progress
+**Status:** Done
 
 **Objective:** Establish local implementation planning discipline before runtime code begins.
 
@@ -67,6 +67,7 @@ Branch scope must match exactly one issue unless the issue register explicitly g
 - ADR 0008: Replay System Design
 - ADR 0009: Persona Interpretation Model
 - ADR 0010: Market Intelligence Interpretation Layer
+- ADR 0011: Runtime Development Environment
 
 **Issues:**
 
@@ -81,7 +82,48 @@ Branch scope must match exactly one issue unless the issue register explicitly g
 
 ---
 
-## M1: Event Ledger And Canonical Event Model
+## M1: Runtime Scaffold And Developer Environment
+
+**Status:** Planned
+
+**Objective:** Create a reproducible Python runtime foundation before domain implementation.
+
+**Implementation Focus:**
+
+- `pyproject.toml`
+- `uv` project workflow
+- Dockerfile using `ghcr.io/astral-sh/uv:python3.12-bookworm-slim`
+- `docker-compose.yml`
+- pytest baseline
+- lint, type, and dev command conventions
+- README developer setup
+
+**Affected Layers:** infrastructure, app, docs
+
+**Linked ADRs:**
+
+- ADR 0011: Runtime Development Environment
+
+**Issues:**
+
+- TF-0002: Create Python project scaffold with pyproject.toml and uv
+- TF-0003: Add Dockerfile using uv Python 3.12 slim base image
+- TF-0004: Add docker-compose.yml for local development
+- TF-0005: Add pytest baseline and test command
+- TF-0006: Add lint, type, and dev command conventions
+- TF-0007: Add README developer setup section
+
+**Acceptance Criteria:**
+
+- Runtime has a repeatable Python project scaffold.
+- Local tests can run through `uv`.
+- Docker image uses the accepted uv Python 3.12 slim base image.
+- Docker Compose provides a local development entrypoint.
+- Developer commands are documented and do not define domain semantics.
+
+---
+
+## M2: Event Ledger And Canonical Event Model
 
 **Status:** Planned
 
@@ -105,9 +147,9 @@ Branch scope must match exactly one issue unless the issue register explicitly g
 
 **Issues:**
 
-- TF-0002: Define event envelope and canonical event domains
-- TF-0003: Define append-only event store interface
-- TF-0004: Implement in-memory event store adapter
+- TF-0008: Define event envelope and canonical event domains
+- TF-0009: Define append-only event store interface
+- TF-0010: Implement in-memory event store adapter
 
 **Acceptance Criteria:**
 
@@ -119,7 +161,7 @@ Branch scope must match exactly one issue unless the issue register explicitly g
 
 ---
 
-## M2: Decision Lifecycle Engine
+## M3: Decision Lifecycle Engine
 
 **Status:** Planned
 
@@ -143,9 +185,9 @@ Branch scope must match exactly one issue unless the issue register explicitly g
 
 **Issues:**
 
-- TF-0005: Define lifecycle state model
-- TF-0006: Implement lifecycle transition validator
-- TF-0007: Implement lifecycle orchestration service
+- TF-0011: Define lifecycle state model
+- TF-0012: Implement lifecycle transition validator
+- TF-0013: Implement lifecycle orchestration service
 
 **Acceptance Criteria:**
 
@@ -157,7 +199,7 @@ Branch scope must match exactly one issue unless the issue register explicitly g
 
 ---
 
-## M3: Replay And Projection Foundation
+## M4: Replay And Projection Foundation
 
 **Status:** Planned
 
@@ -180,8 +222,8 @@ Branch scope must match exactly one issue unless the issue register explicitly g
 
 **Issues:**
 
-- TF-0008: Implement replay projector foundation
-- TF-0009: Implement workspace projection read model
+- TF-0014: Implement replay projector foundation
+- TF-0015: Implement workspace projection read model
 
 **Acceptance Criteria:**
 
@@ -192,7 +234,7 @@ Branch scope must match exactly one issue unless the issue register explicitly g
 
 ---
 
-## M4: Persona Workspace Projection Model
+## M5: Persona Workspace Projection Model
 
 **Status:** Planned
 
@@ -214,8 +256,8 @@ Branch scope must match exactly one issue unless the issue register explicitly g
 
 **Issues:**
 
-- TF-0009: Implement workspace projection read model
-- TF-0010: Define persona context model
+- TF-0015: Implement workspace projection read model
+- TF-0016: Define persona context model
 
 **Acceptance Criteria:**
 
@@ -226,7 +268,7 @@ Branch scope must match exactly one issue unless the issue register explicitly g
 
 ---
 
-## M5: Market Intelligence And Scenario Discovery
+## M6: Market Intelligence And Scenario Discovery
 
 **Status:** Planned
 
@@ -249,8 +291,8 @@ Branch scope must match exactly one issue unless the issue register explicitly g
 
 **Issues:**
 
-- TF-0011: Define market intelligence interpretation model
-- TF-0012: Define scenario discovery advisory model
+- TF-0017: Define market intelligence interpretation model
+- TF-0018: Define scenario discovery advisory model
 
 **Acceptance Criteria:**
 
@@ -261,7 +303,7 @@ Branch scope must match exactly one issue unless the issue register explicitly g
 
 ---
 
-## M6: AI Advisory Boundary Integration
+## M7: AI Advisory Boundary Integration
 
 **Status:** Planned
 
@@ -284,7 +326,7 @@ Branch scope must match exactly one issue unless the issue register explicitly g
 
 **Issues:**
 
-- TF-0013: Define AI advisory boundary interfaces
+- TF-0019: Define AI advisory boundary interfaces
 
 **Acceptance Criteria:**
 
@@ -295,7 +337,7 @@ Branch scope must match exactly one issue unless the issue register explicitly g
 
 ---
 
-## M7: First Vertical Slice
+## M8: First Vertical Slice
 
 **Status:** Planned
 
@@ -320,7 +362,7 @@ Branch scope must match exactly one issue unless the issue register explicitly g
 
 **Issues:**
 
-- TF-0014: Implement first vertical slice from Idea through Review replay
+- TF-0020: Implement first vertical slice from Idea through Review replay
 
 **Acceptance Criteria:**
 
