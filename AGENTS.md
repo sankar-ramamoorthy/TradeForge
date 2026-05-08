@@ -116,30 +116,69 @@ AI may NOT:
 - override deterministic rules
 
 ---
+# Issue Discipline Rule
+
+Every code change must be tied to a tracked issue.
+
+Before writing or modifying code, Codex MUST identify:
+
+1. issue ID
+2. milestone
+3. issue title
+4. affected domain layer
+5. impacted ADRs
+6. impacted invariants
+7. acceptance criteria
+
+If no issue exists, Codex MUST stop and propose a new issue before implementation.
+
+Codex MUST NOT:
+- write untracked code
+- implement exploratory changes without an issue
+- combine unrelated issues in one change
+- expand issue scope without explicit approval
+
+Issue records are maintained in:
+
+TradeForge/DOCS/ISSUE_REGISTER.md
+
+Milestone planning is maintained in:
+TradeForge/DOCS/MILESTONE_ROADMAP.md
+
+
+GitHub issues may mirror these records, but the repository issue register remains the local planning source of truth.
+
+---
 
 # Coding Discipline Rules
 
 ## Before writing any code Codex MUST:
 
-1. Identify affected domain layer:
+1. Confirm issue discipline:
+   - issue ID exists
+   - milestone is known
+   - acceptance criteria are clear
+   - change is within issue scope
+
+2. Identify affected domain layer:
    - domain
    - services
    - infrastructure
    - app
 
-2. Check knowledge-base alignment:
+3. Check knowledge-base alignment:
    - event model consistency
    - lifecycle constraints
    - workspace semantics
    - persona influence rules
 
-3. Verify against runtime DOCS:
+4. Verify against runtime DOCS:
    - architecture consistency
    - ADR compliance
 
-4. Produce explicit design plan (mandatory step)
+5. Produce explicit design plan (mandatory step)
 
-5. Only then implement code
+6. Only then implement code
 
 ---
 
