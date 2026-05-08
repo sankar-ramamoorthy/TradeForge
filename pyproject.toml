@@ -1,0 +1,11 @@
+[project]
+name = "tradeforge"
+version = "0.1.0"
+description = "Event-sourced, persona-driven decision lifecycle runtime for trading workflows."
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+license = { file = "LICENSE" }
+dependencies = []
+
+[tool.uv]
+package = false
