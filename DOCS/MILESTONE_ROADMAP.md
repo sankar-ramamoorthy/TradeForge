@@ -84,7 +84,7 @@ Branch scope must match exactly one issue unless the issue register explicitly g
 
 ## M1: Runtime Scaffold And Developer Environment
 
-**Status:** Planned
+**Status:** Done
 
 **Objective:** Create a reproducible Python runtime foundation before domain implementation.
 
@@ -106,12 +106,12 @@ Branch scope must match exactly one issue unless the issue register explicitly g
 
 **Issues:**
 
-- TF-0002: Create Python project scaffold with pyproject.toml and uv
-- TF-0003: Add Dockerfile using uv Python 3.12 slim base image
-- TF-0004: Add docker-compose.yml for local development
-- TF-0005: Add pytest baseline and test command
-- TF-0006: Add lint, type, and dev command conventions
-- TF-0007: Add README developer setup section
+- TF-0002: Create Python project scaffold with pyproject.toml and uv (**Done**)
+- TF-0003: Add Dockerfile using uv Python 3.12 slim base image (**Done**)
+- TF-0004: Add docker-compose.yml for local development (**Done**)
+- TF-0005: Add pytest baseline and test command (**Done**)
+- TF-0006: Add lint, type, and dev command conventions (**Done**)
+- TF-0007: Add README developer setup section (**Done**)
 
 **Acceptance Criteria:**
 
@@ -125,7 +125,7 @@ Branch scope must match exactly one issue unless the issue register explicitly g
 
 ## M2: Event Ledger And Canonical Event Model
 
-**Status:** Planned
+**Status:** In Progress
 
 **Objective:** Build the event-sourced foundation that all durable runtime state derives from.
 
@@ -147,9 +147,9 @@ Branch scope must match exactly one issue unless the issue register explicitly g
 
 **Issues:**
 
-- TF-0008: Define event envelope and canonical event domains
-- TF-0009: Define append-only event store interface
-- TF-0010: Implement in-memory event store adapter
+- TF-0008: Define event envelope and canonical event domains (**Done**)
+- TF-0009: Define append-only event store interface (**Planned**)
+- TF-0010: Implement in-memory event store adapter (**Planned**)
 
 **Acceptance Criteria:**
 
