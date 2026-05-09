@@ -38,7 +38,7 @@ GitHub issues may mirror these records, but this file remains the local planning
 | --- | --- | --- | --- | --- |
 | TF-0001 | Done | M0 | Establish milestone roadmap and issue register | `docs/tf-0001-roadmap-issue-register` |
 | TF-0002 | Done | M1 | Create Python project scaffold with pyproject.toml and uv | `feature/tf-0002-python-project-scaffold` |
-| TF-0003 | Planned | M1 | Add Dockerfile using uv Python 3.12 slim base image | `feature/tf-0003-dockerfile-uv-python312` |
+| TF-0003 | Done | M1 | Add Dockerfile using uv Python 3.12 slim base image | `feature/tf-0003-dockerfile-uv-python312` |
 | TF-0004 | Planned | M1 | Add docker-compose.yml for local development | `feature/tf-0004-docker-compose-local-dev` |
 | TF-0005 | Planned | M1 | Add pytest baseline and test command | `feature/tf-0005-pytest-baseline` |
 | TF-0006 | Planned | M1 | Add lint, type, and dev command conventions | `feature/tf-0006-dev-command-conventions` |
@@ -117,7 +117,7 @@ GitHub issues may mirror these records, but this file remains the local planning
 
 ## TF-0003: Add Dockerfile Using uv Python 3.12 Slim Base Image
 
-**Status:** Planned
+**Status:** Done
 
 **Milestone:** M1
 
