@@ -24,8 +24,12 @@ It does NOT define:
 Those are defined in:
 
 ```
-knowledge-base/TradeForge/
+C:\Users\bosto\dockerstuff\knowledge-base\TradeForge
 ```
+
+The knowledge base is a sibling repository to this runtime checkout, not a
+directory under `TradeForge/`. Codex MUST use the absolute path above when
+checking semantic authority.
 
 ---
 
@@ -33,9 +37,9 @@ knowledge-base/TradeForge/
 
 When in doubt, resolve authority in this order:
 
-1. knowledge-base/TradeForge (semantic truth)
-2. TradeForge/DOCS (implementation truth)
-3. code in src/ (execution truth)
+1. C:\Users\bosto\dockerstuff\knowledge-base\TradeForge (semantic truth)
+2. C:\Users\bosto\dockerstuff\TradeForge\DOCS (implementation truth)
+3. C:\Users\bosto\dockerstuff\TradeForge\src (execution truth)
 
 Code must NEVER override knowledge-base semantics.
 
@@ -140,10 +144,10 @@ Codex MUST NOT:
 
 Issue records are maintained in:
 
-TradeForge/DOCS/ISSUE_REGISTER.md
+C:\Users\bosto\dockerstuff\TradeForge\DOCS\ISSUE_REGISTER.md
 
 Milestone planning is maintained in:
-TradeForge/DOCS/MILESTONE_ROADMAP.md
+C:\Users\bosto\dockerstuff\TradeForge\DOCS\MILESTONE_ROADMAP.md
 
 
 GitHub issues may mirror these records, but the repository issue register remains the local planning source of truth.
