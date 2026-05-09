@@ -9,7 +9,9 @@ dependencies = []
 
 [dependency-groups]
 dev = [
+    "mypy>=1.18",
     "pytest>=8.0",
+    "ruff>=0.14",
 ]
 
 [tool.uv]
@@ -18,3 +20,16 @@ package = false
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["."]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 88
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.mypy]
+python_version = "3.12"
+files = ["src", "tests"]
+strict = true

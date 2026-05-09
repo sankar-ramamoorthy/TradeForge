@@ -41,9 +41,9 @@ GitHub issues may mirror these records, but this file remains the local planning
 | TF-0003 | Done | M1 | Add Dockerfile using uv Python 3.12 slim base image | `feature/tf-0003-dockerfile-uv-python312` |
 | TF-0004 | Done | M1 | Add docker-compose.yml for local development | `feature/tf-0004-docker-compose-local-dev` |
 | TF-0005 | Done | M1 | Add pytest baseline and test command | `feature/tf-0005-pytest-baseline` |
-| TF-0006 | Planned | M1 | Add lint, type, and dev command conventions | `feature/tf-0006-dev-command-conventions` |
-| TF-0007 | Planned | M1 | Add README developer setup section | `docs/tf-0007-readme-developer-setup` |
-| TF-0008 | Planned | M2 | Define event envelope and canonical event domains | `feature/tf-0008-event-envelope-domains` |
+| TF-0006 | Done | M1 | Add lint, type, and dev command conventions | `feature/tf-0006-dev-command-conventions` |
+| TF-0007 | Done | M1 | Add README developer setup section | `docs/tf-0007-readme-developer-setup` |
+| TF-0008 | Done | M2 | Define event envelope and canonical event domains | `feature/tf-0008-event-envelope-domains` |
 | TF-0009 | Planned | M2 | Define append-only event store interface | `feature/tf-0009-event-store-interface` |
 | TF-0010 | Planned | M2 | Implement in-memory event store adapter | `feature/tf-0010-in-memory-event-store` |
 | TF-0011 | Planned | M3 | Define lifecycle state model | `feature/tf-0011-lifecycle-state-model` |
@@ -207,7 +207,7 @@ GitHub issues may mirror these records, but this file remains the local planning
 
 ## TF-0006: Add Lint, Type, And Dev Command Conventions
 
-**Status:** Planned
+**Status:** Done
 
 **Milestone:** M1
 
@@ -219,7 +219,7 @@ GitHub issues may mirror these records, but this file remains the local planning
 
 **Impacted Invariants:** Layer Separation
 
-**Implementation Summary:** Define command conventions for linting, type checking, testing, and local development.
+**Implementation Summary:** Add `ruff` and `mypy` development dependencies, minimal project configuration, and documented `uv` command conventions for testing, linting, and type checking.
 
 **Acceptance Criteria:**
 
@@ -234,11 +234,17 @@ GitHub issues may mirror these records, but this file remains the local planning
 - Strict lint cleanup for future domain code.
 - CI pipeline configuration.
 
+**Completed Verification:**
+
+- `uv run pytest`
+- `uv run ruff check .`
+- `uv run mypy src tests`
+
 ---
 
 ## TF-0007: Add README Developer Setup Section
 
-**Status:** Planned
+**Status:** Done
 
 **Milestone:** M1
 
@@ -250,7 +256,7 @@ GitHub issues may mirror these records, but this file remains the local planning
 
 **Impacted Invariants:** Layer Separation
 
-**Implementation Summary:** Document developer setup for `uv`, Docker, Docker Compose, tests, and local commands.
+**Implementation Summary:** Document developer setup for `uv`, Docker, Docker Compose, tests, linting, type checking, and local command conventions in `README.md`.
 
 **Acceptance Criteria:**
 
@@ -263,11 +269,17 @@ GitHub issues may mirror these records, but this file remains the local planning
 
 - User-facing product documentation.
 
+**Completed Verification:**
+
+- `docker compose config`
+- `docker compose build tradeforge`
+- `docker compose run --rm tradeforge`
+
 ---
 
 ## TF-0008: Define Event Envelope And Canonical Event Domains
 
-**Status:** Planned
+**Status:** Done
 
 **Milestone:** M2
 
@@ -279,7 +291,7 @@ GitHub issues may mirror these records, but this file remains the local planning
 
 **Impacted Invariants:** Event Sourcing, Event Integrity, Replay, Layer Separation
 
-**Implementation Summary:** Define the domain-level event envelope and canonical event domain identifiers for persona, workspace, market, scenario, decision, execution, review, and system events.
+**Implementation Summary:** Define the framework-free domain event envelope and canonical event domain identifiers for persona, workspace, market, scenario, decision, execution, review, and system events.
 
 **Acceptance Criteria:**
 
@@ -292,6 +304,12 @@ GitHub issues may mirror these records, but this file remains the local planning
 
 - Event store persistence implementation.
 - Runtime API entrypoints.
+
+**Completed Verification:**
+
+- `uv run pytest`
+- `uv run ruff check .`
+- `uv run mypy src tests`
 
 ---
 

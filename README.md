@@ -197,6 +197,64 @@ Contains:
 
 ---
 
+# Developer Setup
+
+The local runtime environment uses `uv`, Docker, Docker Compose, linting, type
+checking, and tests as execution-environment concerns. These tools support
+repeatable implementation work; they do not define domain architecture, event
+semantics, lifecycle authority, persona meaning, workspace behavior, replay
+rules, or AI governance.
+
+Install dependencies:
+
+```powershell
+uv sync
+```
+
+Run tests:
+
+```powershell
+uv run pytest
+```
+
+Run lint checks:
+
+```powershell
+uv run ruff check .
+```
+
+Run type checks:
+
+```powershell
+uv run mypy src tests
+```
+
+Validate Docker Compose configuration:
+
+```powershell
+docker compose config
+```
+
+Build the local runtime image:
+
+```powershell
+docker compose build tradeforge
+```
+
+Run the local runtime container:
+
+```powershell
+docker compose run --rm tradeforge
+```
+
+Before making code changes, read:
+
+* `AGENTS.md`
+* `DOCS/ISSUE_REGISTER.md`
+* `DOCS/adr/0011-runtime-development-environment.md`
+
+---
+
 # Development Workflow
 
 Before implementation work:
