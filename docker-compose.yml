@@ -1,0 +1,14 @@
+services:
+  tradeforge:
+    image: tradeforge-runtime:local
+    build:
+      context: .
+      dockerfile: Dockerfile
+    working_dir: /app
+    volumes:
+      - .:/app
+      - tradeforge-venv:/app/.venv
+    command: ["uv", "run", "python", "--version"]
+
+volumes:
+  tradeforge-venv:

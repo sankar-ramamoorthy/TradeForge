@@ -39,8 +39,8 @@ GitHub issues may mirror these records, but this file remains the local planning
 | TF-0001 | Done | M0 | Establish milestone roadmap and issue register | `docs/tf-0001-roadmap-issue-register` |
 | TF-0002 | Done | M1 | Create Python project scaffold with pyproject.toml and uv | `feature/tf-0002-python-project-scaffold` |
 | TF-0003 | Done | M1 | Add Dockerfile using uv Python 3.12 slim base image | `feature/tf-0003-dockerfile-uv-python312` |
-| TF-0004 | Planned | M1 | Add docker-compose.yml for local development | `feature/tf-0004-docker-compose-local-dev` |
-| TF-0005 | Planned | M1 | Add pytest baseline and test command | `feature/tf-0005-pytest-baseline` |
+| TF-0004 | Done | M1 | Add docker-compose.yml for local development | `feature/tf-0004-docker-compose-local-dev` |
+| TF-0005 | Done | M1 | Add pytest baseline and test command | `feature/tf-0005-pytest-baseline` |
 | TF-0006 | Planned | M1 | Add lint, type, and dev command conventions | `feature/tf-0006-dev-command-conventions` |
 | TF-0007 | Planned | M1 | Add README developer setup section | `docs/tf-0007-readme-developer-setup` |
 | TF-0008 | Planned | M2 | Define event envelope and canonical event domains | `feature/tf-0008-event-envelope-domains` |
@@ -147,7 +147,7 @@ GitHub issues may mirror these records, but this file remains the local planning
 
 ## TF-0004: Add docker-compose.yml For Local Development
 
-**Status:** Planned
+**Status:** Done
 
 **Milestone:** M1
 
@@ -177,7 +177,7 @@ GitHub issues may mirror these records, but this file remains the local planning
 
 ## TF-0005: Add pytest Baseline And Test Command
 
-**Status:** Planned
+**Status:** Done
 
 **Milestone:** M1
 
