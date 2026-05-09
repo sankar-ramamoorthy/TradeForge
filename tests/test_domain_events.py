@@ -9,6 +9,7 @@ from src.domain.events import (
     EntityReference,
     EventDomain,
     EventEnvelope,
+    EventStore,
 )
 
 
@@ -69,6 +70,42 @@ def test_event_type_requires_canonical_domain_prefix() -> None:
             timestamp=datetime(2026, 5, 9, 14, 30, tzinfo=UTC),
             persona_id="persona.swing",
         )
+
+
+def test_event_store_port_supports_append_and_deterministic_replay_read() -> None:
+    class RecordingEventStore:
+        def __init__(self) -> None:
+            self._events: list[EventEnvelope] = []
+
+        def append(self, event: EventEnvelope) -> None:
+            self._events.append(event)
+
+        def read_events(self) -> tuple[EventEnvelope, ...]:
+            return tuple(self._events)
+
+    first_event = EventEnvelope(
+        event_type="decision.trade_idea_created",
+        timestamp=datetime(2026, 5, 9, 14, 30, tzinfo=UTC),
+        persona_id="persona.swing",
+    )
+    second_event = EventEnvelope(
+        event_type="decision.thesis_created",
+        timestamp=datetime(2026, 5, 9, 14, 45, tzinfo=UTC),
+        persona_id="persona.swing",
+    )
+    event_store: EventStore = RecordingEventStore()
+
+    event_store.append(first_event)
+    event_store.append(second_event)
+
+    assert event_store.read_events() == (first_event, second_event)
+
+
+def test_event_store_port_does_not_expose_history_mutation_operations() -> None:
+    assert not hasattr(EventStore, "delete")
+    assert not hasattr(EventStore, "update")
+    assert not hasattr(EventStore, "overwrite")
+    assert not hasattr(EventStore, "truncate")
 
 
 def test_event_module_has_no_infrastructure_dependency() -> None:

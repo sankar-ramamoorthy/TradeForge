@@ -148,7 +148,7 @@ Branch scope must match exactly one issue unless the issue register explicitly g
 **Issues:**
 
 - TF-0008: Define event envelope and canonical event domains (**Done**)
-- TF-0009: Define append-only event store interface (**Planned**)
+- TF-0009: Define append-only event store interface (**Done**)
 - TF-0010: Implement in-memory event store adapter (**Planned**)
 
 **Acceptance Criteria:**
