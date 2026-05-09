@@ -44,7 +44,7 @@ GitHub issues may mirror these records, but this file remains the local planning
 | TF-0006 | Done | M1 | Add lint, type, and dev command conventions | `feature/tf-0006-dev-command-conventions` |
 | TF-0007 | Done | M1 | Add README developer setup section | `docs/tf-0007-readme-developer-setup` |
 | TF-0008 | Done | M2 | Define event envelope and canonical event domains | `feature/tf-0008-event-envelope-domains` |
-| TF-0009 | Planned | M2 | Define append-only event store interface | `feature/tf-0009-event-store-interface` |
+| TF-0009 | Done | M2 | Define append-only event store interface | `feature/tf-0009-event-store-interface` |
 | TF-0010 | Planned | M2 | Implement in-memory event store adapter | `feature/tf-0010-in-memory-event-store` |
 | TF-0011 | Planned | M3 | Define lifecycle state model | `feature/tf-0011-lifecycle-state-model` |
 | TF-0012 | Planned | M3 | Implement lifecycle transition validator | `feature/tf-0012-lifecycle-transition-validator` |
@@ -315,13 +315,13 @@ GitHub issues may mirror these records, but this file remains the local planning
 
 ## TF-0009: Define Append-Only Event Store Interface
 
-**Status:** Planned
+**Status:** Done
 
 **Milestone:** M2
 
 **Branch:** `feature/tf-0009-event-store-interface`
 
-**Affected Layer:** domain, infrastructure
+**Affected Layer:** domain
 
 **Linked ADRs:** ADR 0001, ADR 0003, ADR 0008
 
@@ -340,6 +340,12 @@ GitHub issues may mirror these records, but this file remains the local planning
 
 - Database-backed event store.
 - Broker integration.
+
+**Completed Verification:**
+
+- `uv run pytest`
+- `uv run ruff check .`
+- `uv run mypy src tests`
 
 ---
 
