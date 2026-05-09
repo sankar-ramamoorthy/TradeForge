@@ -125,7 +125,7 @@ Branch scope must match exactly one issue unless the issue register explicitly g
 
 ## M2: Event Ledger And Canonical Event Model
 
-**Status:** In Progress
+**Status:** Done
 
 **Objective:** Build the event-sourced foundation that all durable runtime state derives from.
 
@@ -149,7 +149,7 @@ Branch scope must match exactly one issue unless the issue register explicitly g
 
 - TF-0008: Define event envelope and canonical event domains (**Done**)
 - TF-0009: Define append-only event store interface (**Done**)
-- TF-0010: Implement in-memory event store adapter (**Planned**)
+- TF-0010: Implement in-memory event store adapter (**Done**)
 
 **Acceptance Criteria:**
 

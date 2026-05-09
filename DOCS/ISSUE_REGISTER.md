@@ -45,7 +45,7 @@ GitHub issues may mirror these records, but this file remains the local planning
 | TF-0007 | Done | M1 | Add README developer setup section | `docs/tf-0007-readme-developer-setup` |
 | TF-0008 | Done | M2 | Define event envelope and canonical event domains | `feature/tf-0008-event-envelope-domains` |
 | TF-0009 | Done | M2 | Define append-only event store interface | `feature/tf-0009-event-store-interface` |
-| TF-0010 | Planned | M2 | Implement in-memory event store adapter | `feature/tf-0010-in-memory-event-store` |
+| TF-0010 | Done | M2 | Implement in-memory event store adapter | `feature/tf-0010-in-memory-event-store` |
 | TF-0011 | Planned | M3 | Define lifecycle state model | `feature/tf-0011-lifecycle-state-model` |
 | TF-0012 | Planned | M3 | Implement lifecycle transition validator | `feature/tf-0012-lifecycle-transition-validator` |
 | TF-0013 | Planned | M3 | Implement lifecycle orchestration service | `feature/tf-0013-lifecycle-orchestration-service` |
@@ -351,7 +351,7 @@ GitHub issues may mirror these records, but this file remains the local planning
 
 ## TF-0010: Implement In-Memory Event Store Adapter
 
-**Status:** Planned
+**Status:** Done
 
 **Milestone:** M2
 
@@ -376,6 +376,12 @@ GitHub issues may mirror these records, but this file remains the local planning
 
 - Durable database persistence.
 - Distributed event streaming.
+
+**Completed Verification:**
+
+- `uv run pytest`
+- `uv run ruff check .`
+- `uv run mypy src tests`
 
 ---
 
