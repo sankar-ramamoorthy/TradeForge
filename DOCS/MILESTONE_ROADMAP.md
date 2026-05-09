@@ -163,7 +163,7 @@ Branch scope must match exactly one issue unless the issue register explicitly g
 
 ## M3: Decision Lifecycle Engine
 
-**Status:** Planned
+**Status:** In Progress
 
 **Objective:** Implement deterministic lifecycle authority for decision progression.
 
@@ -185,8 +185,8 @@ Branch scope must match exactly one issue unless the issue register explicitly g
 
 **Issues:**
 
-- TF-0011: Define lifecycle state model
-- TF-0012: Implement lifecycle transition validator
+- TF-0011: Define lifecycle state model (**Done**)
+- TF-0012: Implement lifecycle transition validator (**Done**)
 - TF-0013: Implement lifecycle orchestration service
 
 **Acceptance Criteria:**
