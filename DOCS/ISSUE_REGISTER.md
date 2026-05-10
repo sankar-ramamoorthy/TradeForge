@@ -48,7 +48,7 @@ GitHub issues may mirror these records, but this file remains the local planning
 | TF-0010 | Done | M2 | Implement in-memory event store adapter | `feature/tf-0010-in-memory-event-store` |
 | TF-0011 | Done | M3 | Define lifecycle state model | `feature/tf-0011-lifecycle-state-model` |
 | TF-0012 | Done | M3 | Implement lifecycle transition validator | `feature/tf-0012-lifecycle-transition-validator` |
-| TF-0013 | Planned | M3 | Implement lifecycle orchestration service | `feature/tf-0013-lifecycle-orchestration-service` |
+| TF-0013 | Done | M3 | Implement lifecycle orchestration service | `feature/tf-0013-lifecycle-orchestration-service` |
 | TF-0014 | Planned | M4 | Implement replay projector foundation | `feature/tf-0014-replay-projector-foundation` |
 | TF-0015 | Planned | M4/M5 | Implement workspace projection read model | `feature/tf-0015-workspace-projection-read-model` |
 | TF-0016 | Planned | M5 | Define persona context model | `feature/tf-0016-persona-context-model` |
@@ -459,7 +459,7 @@ GitHub issues may mirror these records, but this file remains the local planning
 
 ## TF-0013: Implement Lifecycle Orchestration Service
 
-**Status:** Planned
+**Status:** Done
 
 **Milestone:** M3
 
@@ -484,6 +484,12 @@ GitHub issues may mirror these records, but this file remains the local planning
 
 - UI workflows.
 - Live trading execution.
+
+**Completed Verification:**
+
+- `uv run pytest`
+- `uv run ruff check .`
+- `uv run mypy src tests`
 
 ---
 
