@@ -1,5 +1,7 @@
 # TradeForge Milestone Roadmap
 
+> Deprecated: this roadmap was superseded by `DOCS/Milestone_Roadmap_v2.md` on 2026-05-10. It is preserved only as historical planning context.
+
 ## Purpose
 
 This document is the runtime implementation milestone plan for TradeForge.
@@ -75,7 +77,7 @@ Branch scope must match exactly one issue unless the issue register explicitly g
 
 **Acceptance Criteria:**
 
-- `DOCS/MILESTONE_ROADMAP.md` exists and defines implementation milestones.
+- `DOCS/MILESTONE_ROADMAP_DEPRECATED.md` preserves the original implementation milestone plan.
 - `DOCS/ISSUE_REGISTER.md` exists and defines concrete coding issues.
 - Every issue has status, branch name, linked ADRs, affected layer, impacted invariants, and acceptance criteria.
 - Future code changes can be tied to a local issue before implementation.

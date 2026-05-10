@@ -97,7 +97,7 @@ Post-MVP Roadmap v2 candidates TF-0042 through TF-0062 remain deferred until the
 
 **Impacted Invariants:** Event Sourcing, Decision Lifecycle, Workspace, Persona, AI Authority, Scenario, Event Integrity, Replay, Layer Separation, Architectural Drift
 
-**Implementation Summary:** Create `DOCS/MILESTONE_ROADMAP.md` and `DOCS/ISSUE_REGISTER.md` so future implementation work has a local planning source of truth.
+**Implementation Summary:** Create the initial milestone roadmap and `DOCS/ISSUE_REGISTER.md` so future implementation work has a local planning source of truth. The initial roadmap was later superseded by `DOCS/Milestone_Roadmap_v2.md` and preserved as `DOCS/MILESTONE_ROADMAP_DEPRECATED.md`.
 
 **Acceptance Criteria:**
 

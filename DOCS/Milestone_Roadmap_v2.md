@@ -6,7 +6,7 @@ status: canonical
 tags: [TradeForge, roadmap, milestones, architecture, cognition, workspaces]
 created: 2026-05-09
 updated: 2026-05-10
-supersedes: MILESTONE_ROADMAP.md
+supersedes: MILESTONE_ROADMAP_DEPRECATED.md
 ---
 
 # Milestone Roadmap v2

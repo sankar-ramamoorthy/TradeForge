@@ -147,7 +147,7 @@ Issue records are maintained in:
 C:\Users\bosto\dockerstuff\TradeForge\DOCS\ISSUE_REGISTER.md
 
 Milestone planning is maintained in:
-C:\Users\bosto\dockerstuff\TradeForge\DOCS\MILESTONE_ROADMAP.md
+C:\Users\bosto\dockerstuff\TradeForge\DOCS\Milestone_Roadmap_v2.md
 
 
 GitHub issues may mirror these records, but the repository issue register remains the local planning source of truth.
