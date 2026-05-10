@@ -52,7 +52,7 @@ Roadmap v2 is the active milestone direction. This register is intentionally sco
 | TF-0012 | Done | M3 | Implement lifecycle transition validator | `feature/tf-0012-lifecycle-transition-validator` |
 | TF-0013 | Done | M3 | Implement lifecycle orchestration service | `feature/tf-0013-lifecycle-orchestration-service` |
 | TF-0014 | Done | M4 | Create workspace routing model | `M4/tf-0014-workspace-routing-model` |
-| TF-0015 | Planned | M4 | Define workspace state contracts | `feature/tf-0015-workspace-state-contracts` |
+| TF-0015 | Done | M4 | Define workspace state contracts | `M4/tf-0015-workspace-state-contracts` |
 | TF-0016 | Planned | M5 | Implement replay projector foundation | `feature/tf-0016-replay-projector-foundation` |
 | TF-0017 | Planned | M5 | Implement projection rebuild pipeline | `feature/tf-0017-projection-rebuild-pipeline` |
 | TF-0018 | Planned | M5 | Implement replay timeline engine | `feature/tf-0018-replay-timeline-engine` |
@@ -555,11 +555,11 @@ Post-MVP Roadmap v2 candidates TF-0042 through TF-0062 remain deferred until the
 
 ## TF-0015: Define Workspace State Contracts
 
-**Status:** Planned
+**Status:** Done
 
 **Milestone:** M4
 
-**Branch:** `feature/tf-0015-workspace-state-contracts`
+**Branch:** `M4/tf-0015-workspace-state-contracts`
 
 **Affected Layer:** domain, services, docs
 
@@ -567,11 +567,11 @@ Post-MVP Roadmap v2 candidates TF-0042 through TF-0062 remain deferred until the
 
 **Impacted Invariants:** Event Sourcing, Workspace, Persona, Replay, Layer Separation
 
-**Implementation Summary:** Define the read-model contracts needed by Operating, Opportunity, Plan Review, Active Position, Replay, and Review workspaces.
+**Implementation Summary:** Defined immutable read-model contracts for the ADR 0012 workspace set: Operating, Opportunity, Plan Review, Active Position, Replay, Review, Market Context, and Playbooks / Doctrine.
 
 **Acceptance Criteria:**
 
-- Each MVP workspace has an explicit derived-state contract.
+- Each ADR 0012 workspace has an explicit derived-state contract.
 - Contracts distinguish canonical, derived, inferred, and advisory fields.
 - Contracts identify required event inputs and replay needs.
 - No workspace contract owns canonical lifecycle state.
@@ -580,6 +580,12 @@ Post-MVP Roadmap v2 candidates TF-0042 through TF-0062 remain deferred until the
 
 - Persistent projection storage.
 - Full UI implementation.
+
+**Completed Verification:**
+
+- `uv run pytest`
+- `uv run ruff check .`
+- `uv run mypy src tests`
 
 ---
 
