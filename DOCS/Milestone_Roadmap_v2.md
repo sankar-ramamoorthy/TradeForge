@@ -262,7 +262,7 @@ Idea
 
 # M4 â€” Workspace And Cognitive Architecture
 
-**Status:** Planned
+**Status:** Done
 
 ## Semantic Intent
 
