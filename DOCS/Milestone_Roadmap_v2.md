@@ -292,7 +292,7 @@ TradeForge workspaces are operational cognitive environments rather than dashboa
 
 ## Linked Runtime Issues
 
-* TF-0014: Create workspace routing model
+* TF-0014: Create workspace routing model (**Done**)
 * TF-0015: Define workspace state contracts
 
 ## Acceptance Meaning

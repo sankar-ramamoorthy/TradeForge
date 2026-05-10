@@ -51,7 +51,7 @@ Roadmap v2 is the active milestone direction. This register is intentionally sco
 | TF-0011 | Done | M3 | Define lifecycle state model | `feature/tf-0011-lifecycle-state-model` |
 | TF-0012 | Done | M3 | Implement lifecycle transition validator | `feature/tf-0012-lifecycle-transition-validator` |
 | TF-0013 | Done | M3 | Implement lifecycle orchestration service | `feature/tf-0013-lifecycle-orchestration-service` |
-| TF-0014 | Planned | M4 | Create workspace routing model | `feature/tf-0014-workspace-routing-model` |
+| TF-0014 | Done | M4 | Create workspace routing model | `M4/tf-0014-workspace-routing-model` |
 | TF-0015 | Planned | M4 | Define workspace state contracts | `feature/tf-0015-workspace-state-contracts` |
 | TF-0016 | Planned | M5 | Implement replay projector foundation | `feature/tf-0016-replay-projector-foundation` |
 | TF-0017 | Planned | M5 | Implement projection rebuild pipeline | `feature/tf-0017-projection-rebuild-pipeline` |
@@ -519,11 +519,11 @@ Post-MVP Roadmap v2 candidates TF-0042 through TF-0062 remain deferred until the
 
 ## TF-0014: Create Workspace Routing Model
 
-**Status:** Planned
+**Status:** Done
 
 **Milestone:** M4
 
-**Branch:** `feature/tf-0014-workspace-routing-model`
+**Branch:** `M4/tf-0014-workspace-routing-model`
 
 **Affected Layer:** app, services
 
@@ -531,7 +531,7 @@ Post-MVP Roadmap v2 candidates TF-0042 through TF-0062 remain deferred until the
 
 **Impacted Invariants:** Workspace, Persona, Replay, Layer Separation
 
-**Implementation Summary:** Define the runtime route/entrypoint model for MVP workspaces without treating routes as workspace truth.
+**Implementation Summary:** Defined immutable workspace routing contracts and an app entrypoint helper for the ADR 0012 workspace set without treating routes as workspace truth.
 
 **Acceptance Criteria:**
 
@@ -544,6 +544,12 @@ Post-MVP Roadmap v2 candidates TF-0042 through TF-0062 remain deferred until the
 
 - Full React implementation.
 - Dashboard-style generic routing.
+
+**Completed Verification:**
+
+- `uv run pytest`
+- `uv run ruff check .`
+- `uv run mypy src tests`
 
 ---
 
