@@ -53,7 +53,7 @@ Roadmap v2 is the active milestone direction. This register is intentionally sco
 | TF-0013 | Done | M3 | Implement lifecycle orchestration service | `feature/tf-0013-lifecycle-orchestration-service` |
 | TF-0014 | Done | M4 | Create workspace routing model | `M4/tf-0014-workspace-routing-model` |
 | TF-0015 | Done | M4 | Define workspace state contracts | `M4/tf-0015-workspace-state-contracts` |
-| TF-0016 | Planned | M5 | Implement replay projector foundation | `feature/tf-0016-replay-projector-foundation` |
+| TF-0016 | Done | M5 | Implement replay projector foundation | `M5/tf-0016-replay-projector-foundation` |
 | TF-0017 | Planned | M5 | Implement projection rebuild pipeline | `feature/tf-0017-projection-rebuild-pipeline` |
 | TF-0018 | Planned | M5 | Implement replay timeline engine | `feature/tf-0018-replay-timeline-engine` |
 | TF-0019 | Planned | M5 | Implement historical reconstruction pipeline | `feature/tf-0019-historical-reconstruction-pipeline` |
@@ -591,11 +591,11 @@ Post-MVP Roadmap v2 candidates TF-0042 through TF-0062 remain deferred until the
 
 ## TF-0016: Implement Replay Projector Foundation
 
-**Status:** Planned
+**Status:** Done
 
 **Milestone:** M5
 
-**Branch:** `feature/tf-0016-replay-projector-foundation`
+**Branch:** `M5/tf-0016-replay-projector-foundation`
 
 **Affected Layer:** domain, services
 
@@ -603,7 +603,7 @@ Post-MVP Roadmap v2 candidates TF-0042 through TF-0062 remain deferred until the
 
 **Impacted Invariants:** Event Sourcing, Replay, Event Integrity, Layer Separation
 
-**Implementation Summary:** Implement deterministic replay projection from ordered event history.
+**Implementation Summary:** Implemented a pure domain replay projector and services-layer projection wrapper that derive discardable replay projection state from ordered event history through the event store port.
 
 **Acceptance Criteria:**
 
@@ -616,6 +616,12 @@ Post-MVP Roadmap v2 candidates TF-0042 through TF-0062 remain deferred until the
 
 - AI-generated replay summaries.
 - Historical market-data integrations.
+
+**Completed Verification:**
+
+- `uv run pytest`
+- `uv run ruff check .`
+- `uv run mypy src tests`
 
 ---
 
