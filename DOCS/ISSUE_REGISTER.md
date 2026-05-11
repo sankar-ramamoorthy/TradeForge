@@ -62,7 +62,7 @@ Roadmap v2 is the active milestone direction. This register is intentionally sco
 | TF-0022 | Done | M6 | Implement operational attention queues | `feature/tf-0022-operational-attention-queues` |
 | TF-0023 | Done | M6 | Implement context-aware workspace summaries | `feature/tf-0023-context-aware-workspace-summaries` |
 | TF-0024 | Done | M7 | Add Postgres persistence layer | `feature/tf-0024-postgres-persistence` |
-| TF-0025 | Planned | M7 | Add Alembic migration infrastructure | `feature/tf-0025-alembic-migrations` |
+| TF-0025 | Done | M7 | Add Alembic migration infrastructure | `feature/tf-0025-alembic-migrations` |
 | TF-0026 | Planned | M7 | Persist canonical event ledger | `feature/tf-0026-postgres-event-ledger` |
 | TF-0027 | Planned | M7 | Add FastAPI application runtime | `feature/tf-0027-fastapi-runtime` |
 | TF-0028 | Planned | M7 | Add lifecycle API endpoints | `feature/tf-0028-lifecycle-api-endpoints` |
@@ -912,7 +912,7 @@ Post-MVP Roadmap v2 candidates TF-0042 through TF-0062 remain deferred until the
 
 ## TF-0025: Add Alembic Migration Infrastructure
 
-**Status:** Planned
+**Status:** Done
 
 **Milestone:** M7
 
@@ -935,6 +935,16 @@ Post-MVP Roadmap v2 candidates TF-0042 through TF-0062 remain deferred until the
 **Out Of Scope:**
 
 - Production deployment.
+
+**Completed Verification:**
+
+- `uv lock`
+- `uv run pytest`
+- `uv run ruff check .`
+- `uv run mypy src tests`
+- `docker compose config`
+- `uv run alembic upgrade head`
+- `uv run alembic current`
 
 ---
 
