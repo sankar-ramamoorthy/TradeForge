@@ -327,7 +327,7 @@ Replay reconstructs cognition while projections provide discardable operational 
 
 * TF-0016: Implement replay projector foundation (**Done**)
 * TF-0017: Implement projection rebuild pipeline (**Done**)
-* TF-0018: Implement replay timeline engine
+* TF-0018: Implement replay timeline engine (**Done**)
 * TF-0019: Implement historical reconstruction pipeline
 
 ## Acceptance Meaning
