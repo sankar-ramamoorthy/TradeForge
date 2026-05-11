@@ -39,6 +39,14 @@ from src.services.workspace_engine.routing import (
     WorkspaceRouteId,
     WorkspaceRouter,
 )
+from src.services.workspace_engine.summaries import (
+    WorkspaceSummary,
+    WorkspaceSummaryAuthority,
+    WorkspaceSummaryEmphasis,
+    WorkspaceSummaryProjector,
+    WorkspaceSummaryReadService,
+    WorkspaceSummarySet,
+)
 
 __all__ = [
     "DEFAULT_WORKSPACE_ROUTE_DEFINITIONS",
@@ -69,6 +77,12 @@ __all__ = [
     "WorkspaceRouteDefinition",
     "WorkspaceRouteId",
     "WorkspaceRouter",
+    "WorkspaceSummary",
+    "WorkspaceSummaryAuthority",
+    "WorkspaceSummaryEmphasis",
+    "WorkspaceSummaryProjector",
+    "WorkspaceSummaryReadService",
+    "WorkspaceSummarySet",
     "WorkspaceStateAuthority",
     "WorkspaceStateContract",
     "WorkspaceStateContractCatalog",
