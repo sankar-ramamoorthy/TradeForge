@@ -5,7 +5,10 @@ description = "Event-sourced, persona-driven decision lifecycle runtime for trad
 readme = "README.md"
 requires-python = ">=3.12,<3.13"
 license = { file = "LICENSE" }
-dependencies = []
+dependencies = [
+    "alembic>=1.17",
+    "psycopg[binary]>=3.2",
+]
 
 [dependency-groups]
 dev = [

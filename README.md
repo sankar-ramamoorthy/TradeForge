@@ -241,6 +241,12 @@ Start local Postgres for runtime infrastructure work:
 docker compose up -d postgres
 ```
 
+Run database migrations:
+
+```powershell
+uv run alembic upgrade head
+```
+
 Build the local runtime image:
 
 ```powershell
@@ -259,6 +265,7 @@ Before making code changes, read:
 * `DOCS/ISSUE_REGISTER.md`
 * `DOCS/adr/0011-runtime-development-environment.md`
 * `DOCS/adr/0018-postgres-event-store-persistence.md`
+* `DOCS/adr/0019-projection-persistence-architecture.md`
 
 ---
 
