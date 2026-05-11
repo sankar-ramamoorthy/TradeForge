@@ -339,7 +339,7 @@ Replay reconstructs cognition while projections provide discardable operational 
 
 # M6 â€” Persona Workspace Projection Layer
 
-**Status:** Planned
+**Status:** Done
 
 ## Semantic Intent
 
@@ -362,7 +362,7 @@ Operational interpretation becomes persona-aware without mutating canonical trut
 * TF-0020: Define persona context model (**Done**)
 * TF-0021: Implement workspace projection read models (**Done**)
 * TF-0022: Implement operational attention queues (**Done**)
-* TF-0023: Implement context-aware workspace summaries
+* TF-0023: Implement context-aware workspace summaries (**Done**)
 
 ## Acceptance Meaning
 

@@ -60,7 +60,7 @@ Roadmap v2 is the active milestone direction. This register is intentionally sco
 | TF-0020 | Done | M6 | Define persona context model | `feature/tf-0020-persona-context-model` |
 | TF-0021 | Done | M6 | Implement workspace projection read models | `feature/tf-0021-workspace-projection-read-models` |
 | TF-0022 | Done | M6 | Implement operational attention queues | `feature/tf-0022-operational-attention-queues` |
-| TF-0023 | Planned | M6 | Implement context-aware workspace summaries | `feature/tf-0023-context-aware-workspace-summaries` |
+| TF-0023 | Done | M6 | Implement context-aware workspace summaries | `feature/tf-0023-context-aware-workspace-summaries` |
 | TF-0024 | Planned | M7 | Add Postgres persistence layer | `feature/tf-0024-postgres-persistence` |
 | TF-0025 | Planned | M7 | Add Alembic migration infrastructure | `feature/tf-0025-alembic-migrations` |
 | TF-0026 | Planned | M7 | Persist canonical event ledger | `feature/tf-0026-postgres-event-ledger` |
@@ -838,7 +838,7 @@ Post-MVP Roadmap v2 candidates TF-0042 through TF-0062 remain deferred until the
 
 ## TF-0023: Implement Context-Aware Workspace Summaries
 
-**Status:** Planned
+**Status:** Done
 
 **Milestone:** M6
 
@@ -850,7 +850,7 @@ Post-MVP Roadmap v2 candidates TF-0042 through TF-0062 remain deferred until the
 
 **Impacted Invariants:** Workspace, Persona, Derived State Distinction
 
-**Implementation Summary:** Generate concise derived summaries for workspace surfaces while preserving source/provenance references.
+**Implementation Summary:** Implemented deterministic, non-AI workspace summaries derived from workspace projections and operational attention queues. Summaries preserve explicit source inputs, source event references, attention references, persona-shaped emphasis, and non-authoritative boundaries.
 
 **Acceptance Criteria:**
 
@@ -862,6 +862,13 @@ Post-MVP Roadmap v2 candidates TF-0042 through TF-0062 remain deferred until the
 **Out Of Scope:**
 
 - AI-generated summaries.
+
+**Completed Verification:**
+
+- `uv run pytest tests\test_workspace_summaries.py`
+- `uv run pytest`
+- `uv run ruff check .`
+- `uv run mypy src tests`
 
 ---
 
