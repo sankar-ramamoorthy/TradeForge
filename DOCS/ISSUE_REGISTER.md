@@ -56,7 +56,7 @@ Roadmap v2 is the active milestone direction. This register is intentionally sco
 | TF-0016 | Done | M5 | Implement replay projector foundation | `M5/tf-0016-replay-projector-foundation` |
 | TF-0017 | Done | M5 | Implement projection rebuild pipeline | `M5/tf-0017-projection-rebuild-pipeline` |
 | TF-0018 | Done | M5 | Implement replay timeline engine | `M5/tf-0018-replay-timeline-engine` |
-| TF-0019 | Planned | M5 | Implement historical reconstruction pipeline | `feature/tf-0019-historical-reconstruction-pipeline` |
+| TF-0019 | Done | M5 | Implement historical reconstruction pipeline | `M5/tf-0019-historical-reconstruction-pipeline` |
 | TF-0020 | Planned | M6 | Define persona context model | `feature/tf-0020-persona-context-model` |
 | TF-0021 | Planned | M6 | Implement workspace projection read models | `feature/tf-0021-workspace-projection-read-models` |
 | TF-0022 | Planned | M6 | Implement operational attention queues | `feature/tf-0022-operational-attention-queues` |
@@ -696,11 +696,11 @@ Post-MVP Roadmap v2 candidates TF-0042 through TF-0062 remain deferred until the
 
 ## TF-0019: Implement Historical Reconstruction Pipeline
 
-**Status:** Planned
+**Status:** Done
 
 **Milestone:** M5
 
-**Branch:** `feature/tf-0019-historical-reconstruction-pipeline`
+**Branch:** `M5/tf-0019-historical-reconstruction-pipeline`
 
 **Affected Layer:** services
 
@@ -708,7 +708,7 @@ Post-MVP Roadmap v2 candidates TF-0042 through TF-0062 remain deferred until the
 
 **Impacted Invariants:** Replay, Historical Integrity, Layer Separation
 
-**Implementation Summary:** Compose lifecycle state, timeline, notes, rule evaluations, and review artifacts into a replayable historical reconstruction.
+**Implementation Summary:** Implemented a services-layer historical reconstruction pipeline that composes event facts, replay projection, replay timeline, source-linked notes, review artifacts, and explicit inferred-state boundaries from event history.
 
 **Acceptance Criteria:**
 
@@ -719,6 +719,12 @@ Post-MVP Roadmap v2 candidates TF-0042 through TF-0062 remain deferred until the
 **Out Of Scope:**
 
 - AI replay narration.
+
+**Completed Verification:**
+
+- `uv run pytest`
+- `uv run ruff check .`
+- `uv run mypy src tests`
 
 ---
 
