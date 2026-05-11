@@ -5,10 +5,32 @@ services:
       context: .
       dockerfile: Dockerfile
     working_dir: /app
+    environment:
+      TRADEFORGE_DATABASE_URL: postgresql://tradeforge:tradeforge@postgres:5432/tradeforge
     volumes:
       - .:/app
       - tradeforge-venv:/app/.venv
+    depends_on:
+      postgres:
+        condition: service_healthy
     command: ["uv", "run", "python", "--version"]
+
+  postgres:
+    image: postgres:16-bookworm
+    environment:
+      POSTGRES_DB: tradeforge
+      POSTGRES_USER: tradeforge
+      POSTGRES_PASSWORD: tradeforge
+    ports:
+      - "5432:5432"
+    volumes:
+      - tradeforge-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tradeforge -d tradeforge"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
 volumes:
   tradeforge-venv:
+  tradeforge-postgres-data:

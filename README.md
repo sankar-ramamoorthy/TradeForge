@@ -235,6 +235,12 @@ Validate Docker Compose configuration:
 docker compose config
 ```
 
+Start local Postgres for runtime infrastructure work:
+
+```powershell
+docker compose up -d postgres
+```
+
 Build the local runtime image:
 
 ```powershell
@@ -252,6 +258,7 @@ Before making code changes, read:
 * `AGENTS.md`
 * `DOCS/ISSUE_REGISTER.md`
 * `DOCS/adr/0011-runtime-development-environment.md`
+* `DOCS/adr/0018-postgres-event-store-persistence.md`
 
 ---
 
