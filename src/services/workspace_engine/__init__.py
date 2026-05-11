@@ -8,6 +8,18 @@ from src.services.workspace_engine.contracts import (
     WorkspaceStateContractCatalog,
     WorkspaceStateField,
 )
+from src.services.workspace_engine.projections import (
+    DEFAULT_WORKSPACE_PROJECTION_CONTRACTS,
+    WorkspaceProjection,
+    WorkspaceProjectionAuthority,
+    WorkspaceProjectionContext,
+    WorkspaceProjectionField,
+    WorkspaceProjectionProjector,
+    WorkspaceProjectionReadService,
+    WorkspaceProjectionSet,
+    WorkspaceProjectionSetProjector,
+    WorkspaceSourceEventReference,
+)
 from src.services.workspace_engine.routing import (
     DEFAULT_WORKSPACE_ROUTE_DEFINITIONS,
     UnknownWorkspaceRouteError,
@@ -20,10 +32,19 @@ from src.services.workspace_engine.routing import (
 
 __all__ = [
     "DEFAULT_WORKSPACE_ROUTE_DEFINITIONS",
+    "DEFAULT_WORKSPACE_PROJECTION_CONTRACTS",
     "DEFAULT_WORKSPACE_STATE_CONTRACTS",
     "UnknownWorkspaceStateContractError",
     "UnknownWorkspaceRouteError",
     "WorkspaceLifecycleAction",
+    "WorkspaceProjection",
+    "WorkspaceProjectionAuthority",
+    "WorkspaceProjectionContext",
+    "WorkspaceProjectionField",
+    "WorkspaceProjectionProjector",
+    "WorkspaceProjectionReadService",
+    "WorkspaceProjectionSet",
+    "WorkspaceProjectionSetProjector",
     "WorkspaceReplayRequirement",
     "WorkspaceRoute",
     "WorkspaceRouteContext",
@@ -34,4 +55,5 @@ __all__ = [
     "WorkspaceStateContract",
     "WorkspaceStateContractCatalog",
     "WorkspaceStateField",
+    "WorkspaceSourceEventReference",
 ]
