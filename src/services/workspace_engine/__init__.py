@@ -1,3 +1,13 @@
+from src.services.workspace_engine.attention import (
+    AttentionCategory,
+    AttentionPriority,
+    AttentionReason,
+    OperationalAttentionAuthority,
+    OperationalAttentionItem,
+    OperationalAttentionProjector,
+    OperationalAttentionQueue,
+    OperationalAttentionQueueReadService,
+)
 from src.services.workspace_engine.contracts import (
     DEFAULT_WORKSPACE_STATE_CONTRACTS,
     UnknownWorkspaceStateContractError,
@@ -34,6 +44,14 @@ __all__ = [
     "DEFAULT_WORKSPACE_ROUTE_DEFINITIONS",
     "DEFAULT_WORKSPACE_PROJECTION_CONTRACTS",
     "DEFAULT_WORKSPACE_STATE_CONTRACTS",
+    "AttentionCategory",
+    "AttentionPriority",
+    "AttentionReason",
+    "OperationalAttentionAuthority",
+    "OperationalAttentionItem",
+    "OperationalAttentionProjector",
+    "OperationalAttentionQueue",
+    "OperationalAttentionQueueReadService",
     "UnknownWorkspaceStateContractError",
     "UnknownWorkspaceRouteError",
     "WorkspaceLifecycleAction",
