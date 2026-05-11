@@ -57,7 +57,7 @@ Roadmap v2 is the active milestone direction. This register is intentionally sco
 | TF-0017 | Done | M5 | Implement projection rebuild pipeline | `M5/tf-0017-projection-rebuild-pipeline` |
 | TF-0018 | Done | M5 | Implement replay timeline engine | `M5/tf-0018-replay-timeline-engine` |
 | TF-0019 | Done | M5 | Implement historical reconstruction pipeline | `M5/tf-0019-historical-reconstruction-pipeline` |
-| TF-0020 | Planned | M6 | Define persona context model | `feature/tf-0020-persona-context-model` |
+| TF-0020 | Done | M6 | Define persona context model | `feature/tf-0020-persona-context-model` |
 | TF-0021 | Planned | M6 | Implement workspace projection read models | `feature/tf-0021-workspace-projection-read-models` |
 | TF-0022 | Planned | M6 | Implement operational attention queues | `feature/tf-0022-operational-attention-queues` |
 | TF-0023 | Planned | M6 | Implement context-aware workspace summaries | `feature/tf-0023-context-aware-workspace-summaries` |
@@ -730,7 +730,7 @@ Post-MVP Roadmap v2 candidates TF-0042 through TF-0062 remain deferred until the
 
 ## TF-0020: Define Persona Context Model
 
-**Status:** Planned
+**Status:** Done
 
 **Milestone:** M6
 
@@ -742,7 +742,7 @@ Post-MVP Roadmap v2 candidates TF-0042 through TF-0062 remain deferred until the
 
 **Impacted Invariants:** Persona, Workspace, Replay, Layer Separation
 
-**Implementation Summary:** Define persona context as an interpretation model for workspace projection and prioritization.
+**Implementation Summary:** Defined immutable domain persona context contracts for versioned interpretation profiles, workspace/workflow association, and bounded interpretive influence without modeling personas as users, UI preferences, lifecycle authorities, event writers, or execution authorities.
 
 **Acceptance Criteria:**
 
@@ -754,6 +754,12 @@ Post-MVP Roadmap v2 candidates TF-0042 through TF-0062 remain deferred until the
 **Out Of Scope:**
 
 - Authentication.
+
+**Completed Verification:**
+
+- `uv run pytest`
+- `uv run ruff check .`
+- `uv run mypy src tests`
 
 ---
 
