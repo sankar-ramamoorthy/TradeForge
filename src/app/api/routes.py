@@ -1,11 +1,26 @@
 from __future__ import annotations
 
-from typing import Literal
+from datetime import datetime
+from typing import Any, Literal
 
-from fastapi import APIRouter
-from pydantic import BaseModel
+from fastapi import APIRouter, HTTPException, Request, status
+from pydantic import BaseModel, Field
+from src.domain.events import EntityReference
+from src.domain.lifecycle import LifecycleStage
+from src.domain.replay import ProjectionAuthority, ReplayTimelineEntryKind
+from src.services.lifecycle import (
+    LifecycleOrchestrationService,
+    LifecycleTransitionRequest,
+)
+from src.services.replay import (
+    HistoricalReconstructionPipeline,
+    ReconstructionStateAuthority,
+    ReplayTimelineService,
+)
 
 runtime_router = APIRouter(tags=["runtime"])
+lifecycle_router = APIRouter(prefix="/lifecycle", tags=["lifecycle"])
+replay_router = APIRouter(prefix="/replay", tags=["replay"])
 
 
 class RuntimeStatusResponse(BaseModel):
@@ -13,6 +28,198 @@ class RuntimeStatusResponse(BaseModel):
     runtime: Literal["tradeforge"]
     boundary: Literal["http"]
     owns_domain_rules: Literal[False]
+
+
+class EntityReferencePayload(BaseModel):
+    entity_type: str
+    entity_id: str
+
+
+class LifecycleTransitionPayload(BaseModel):
+    requested_stage: LifecycleStage
+    timestamp: datetime
+    persona_id: str
+    workspace_id: str | None = None
+    entity_references: list[EntityReferencePayload] = Field(default_factory=list)
+    payload: dict[str, Any] = Field(default_factory=dict)
+    provenance: dict[str, Any] = Field(default_factory=dict)
+
+
+class LifecycleValidationResponse(BaseModel):
+    current_stage: LifecycleStage | None
+    requested_stage: LifecycleStage
+    is_valid: bool
+    expected_stage: LifecycleStage | None
+    reason: str | None = None
+
+
+class LifecycleTransitionResponse(BaseModel):
+    appended: bool
+    event_type: str
+    timestamp: datetime
+    persona_id: str
+    workspace_id: str | None
+    validation: LifecycleValidationResponse
+
+
+class ReplayProjectionLifecycleStateResponse(BaseModel):
+    current_stage: LifecycleStage
+
+
+class ReplayProjectionResponse(BaseModel):
+    authority: ProjectionAuthority
+    source_event_count: int
+    source_event_types: list[str]
+    last_event_timestamp: datetime | None
+    lifecycle_state: ReplayProjectionLifecycleStateResponse | None
+
+
+class ReplayTimelineEntryResponse(BaseModel):
+    source_sequence: int
+    kind: ReplayTimelineEntryKind
+    event_type: str
+    event_domain: str
+    timestamp: datetime
+    persona_id: str
+    workspace_id: str | None
+    entity_references: list[EntityReferencePayload]
+    payload: dict[str, Any]
+    provenance: dict[str, Any]
+    lifecycle_stage: LifecycleStage | None
+
+
+class ReplayTimelineResponse(BaseModel):
+    authority: ProjectionAuthority
+    source_event_count: int
+    entries: list[ReplayTimelineEntryResponse]
+
+
+class HistoricalFactResponse(BaseModel):
+    source_sequence: int
+    event_type: str
+    event_domain: str
+    timestamp: datetime
+    persona_id: str
+    workspace_id: str | None
+    entity_references: list[EntityReferencePayload]
+    provenance: dict[str, Any]
+
+
+class SourceLinkedArtifactResponse(BaseModel):
+    source_sequence: int
+    event_type: str
+    timestamp: datetime
+    payload: dict[str, Any]
+    provenance: dict[str, Any]
+
+
+class HistoricalDerivedStateResponse(BaseModel):
+    authority: ReconstructionStateAuthority
+    replay_projection: ReplayProjectionResponse
+    replay_timeline: ReplayTimelineResponse
+
+
+class HistoricalInferredStateResponse(BaseModel):
+    authority: ReconstructionStateAuthority
+    entries: list[Any]
+
+
+class HistoricalReconstructionResponse(BaseModel):
+    authority: ProjectionAuthority
+    source_event_count: int
+    source_event_types: list[str]
+    facts: list[HistoricalFactResponse]
+    derived_state: HistoricalDerivedStateResponse
+    inferred_state: HistoricalInferredStateResponse
+    notes: list[SourceLinkedArtifactResponse]
+    review_artifacts: list[SourceLinkedArtifactResponse]
+
+
+def _lifecycle_service_from(request: Request) -> LifecycleOrchestrationService:
+    service = getattr(request.app.state, "lifecycle_service", None)
+    if not isinstance(service, LifecycleOrchestrationService):
+        raise RuntimeError("lifecycle service is not configured")
+    return service
+
+
+def _replay_timeline_service_from(request: Request) -> ReplayTimelineService:
+    service = getattr(request.app.state, "replay_timeline_service", None)
+    if not isinstance(service, ReplayTimelineService):
+        raise RuntimeError("replay timeline service is not configured")
+    return service
+
+
+def _historical_reconstruction_pipeline_from(
+    request: Request,
+) -> HistoricalReconstructionPipeline:
+    pipeline = getattr(request.app.state, "historical_reconstruction_pipeline", None)
+    if not isinstance(pipeline, HistoricalReconstructionPipeline):
+        raise RuntimeError("historical reconstruction pipeline is not configured")
+    return pipeline
+
+
+def _entity_reference_payloads(
+    entity_references: tuple[EntityReference, ...],
+) -> list[EntityReferencePayload]:
+    return [
+        EntityReferencePayload(
+            entity_type=reference.entity_type,
+            entity_id=reference.entity_id,
+        )
+        for reference in entity_references
+    ]
+
+
+def _replay_projection_response(projection: Any) -> ReplayProjectionResponse:
+    lifecycle_state = (
+        ReplayProjectionLifecycleStateResponse(
+            current_stage=projection.lifecycle_state.current_stage
+        )
+        if projection.lifecycle_state is not None
+        else None
+    )
+    return ReplayProjectionResponse(
+        authority=projection.authority,
+        source_event_count=projection.source_event_count,
+        source_event_types=list(projection.source_event_types),
+        last_event_timestamp=projection.last_event_timestamp,
+        lifecycle_state=lifecycle_state,
+    )
+
+
+def _replay_timeline_response(timeline: Any) -> ReplayTimelineResponse:
+    return ReplayTimelineResponse(
+        authority=timeline.authority,
+        source_event_count=timeline.source_event_count,
+        entries=[
+            ReplayTimelineEntryResponse(
+                source_sequence=entry.source_sequence,
+                kind=entry.kind,
+                event_type=entry.event_type,
+                event_domain=entry.event_domain.value,
+                timestamp=entry.timestamp,
+                persona_id=entry.persona_id,
+                workspace_id=entry.workspace_id,
+                entity_references=_entity_reference_payloads(
+                    entry.entity_references
+                ),
+                payload=dict(entry.payload),
+                provenance=dict(entry.provenance),
+                lifecycle_stage=entry.lifecycle_stage,
+            )
+            for entry in timeline.entries
+        ],
+    )
+
+
+def _source_linked_artifact_response(artifact: Any) -> SourceLinkedArtifactResponse:
+    return SourceLinkedArtifactResponse(
+        source_sequence=artifact.source_sequence,
+        event_type=artifact.event_type,
+        timestamp=artifact.timestamp,
+        payload=dict(artifact.payload),
+        provenance=dict(artifact.provenance),
+    )
 
 
 @runtime_router.get("/health", response_model=RuntimeStatusResponse)
@@ -23,3 +230,120 @@ def health() -> RuntimeStatusResponse:
         boundary="http",
         owns_domain_rules=False,
     )
+
+
+@lifecycle_router.post(
+    "/transitions",
+    response_model=LifecycleTransitionResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+def create_lifecycle_transition(
+    request: Request,
+    payload: LifecycleTransitionPayload,
+) -> LifecycleTransitionResponse:
+    service = _lifecycle_service_from(request)
+    result = service.transition(
+        LifecycleTransitionRequest(
+            requested_stage=payload.requested_stage,
+            timestamp=payload.timestamp,
+            persona_id=payload.persona_id,
+            workspace_id=payload.workspace_id,
+            entity_references=tuple(
+                EntityReference(
+                    entity_type=reference.entity_type,
+                    entity_id=reference.entity_id,
+                )
+                for reference in payload.entity_references
+            ),
+            payload=payload.payload,
+            provenance=payload.provenance,
+        )
+    )
+
+    validation = LifecycleValidationResponse(
+        current_stage=result.validation.current_stage,
+        requested_stage=result.validation.requested_stage,
+        is_valid=result.validation.is_valid,
+        expected_stage=result.validation.expected_stage,
+        reason=result.validation.reason,
+    )
+
+    if not result.appended or result.appended_event is None:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail={
+                "message": "lifecycle transition rejected",
+                "validation": validation.model_dump(mode="json"),
+            },
+        )
+
+    return LifecycleTransitionResponse(
+        appended=True,
+        event_type=result.appended_event.event_type,
+        timestamp=result.appended_event.timestamp,
+        persona_id=result.appended_event.persona_id,
+        workspace_id=result.appended_event.workspace_id,
+        validation=validation,
+    )
+
+
+@replay_router.get("", response_model=HistoricalReconstructionResponse)
+def get_replay_reconstruction(
+    request: Request,
+) -> HistoricalReconstructionResponse:
+    reconstruction = _historical_reconstruction_pipeline_from(
+        request
+    ).reconstruct()
+
+    return HistoricalReconstructionResponse(
+        authority=reconstruction.authority,
+        source_event_count=reconstruction.source_event_count,
+        source_event_types=list(reconstruction.source_event_types),
+        facts=[
+            HistoricalFactResponse(
+                source_sequence=fact.source_sequence,
+                event_type=fact.event_type,
+                event_domain=fact.event_domain.value,
+                timestamp=fact.timestamp,
+                persona_id=fact.persona_id,
+                workspace_id=fact.workspace_id,
+                entity_references=_entity_reference_payloads(
+                    fact.entity_references
+                ),
+                provenance=dict(fact.provenance),
+            )
+            for fact in reconstruction.facts
+        ],
+        derived_state=HistoricalDerivedStateResponse(
+            authority=reconstruction.derived_state.authority,
+            replay_projection=_replay_projection_response(
+                reconstruction.derived_state.replay_projection
+            ),
+            replay_timeline=_replay_timeline_response(
+                reconstruction.derived_state.replay_timeline
+            ),
+        ),
+        inferred_state=HistoricalInferredStateResponse(
+            authority=reconstruction.inferred_state.authority,
+            entries=list(reconstruction.inferred_state.entries),
+        ),
+        notes=[
+            _source_linked_artifact_response(note)
+            for note in reconstruction.notes
+        ],
+        review_artifacts=[
+            _source_linked_artifact_response(artifact)
+            for artifact in reconstruction.review_artifacts
+        ],
+    )
+
+
+@replay_router.get("/timeline", response_model=ReplayTimelineResponse)
+def get_replay_timeline(request: Request) -> ReplayTimelineResponse:
+    return _replay_timeline_response(
+        _replay_timeline_service_from(request).build()
+    )
+
+
+runtime_router.include_router(lifecycle_router)
+runtime_router.include_router(replay_router)

@@ -65,8 +65,8 @@ Roadmap v2 is the active milestone direction. This register is intentionally sco
 | TF-0025 | Done | M7 | Add Alembic migration infrastructure | `feature/tf-0025-alembic-migrations` |
 | TF-0026 | Done | M7 | Persist canonical event ledger | `feature/tf-0026-postgres-event-ledger` |
 | TF-0027 | Done | M7 | Add FastAPI application runtime | `feature/tf-0027-fastapi-runtime` |
-| TF-0028 | Planned | M7 | Add lifecycle API endpoints | `feature/tf-0028-lifecycle-api-endpoints` |
-| TF-0029 | Planned | M7 | Add replay API endpoints | `feature/tf-0029-replay-api-endpoints` |
+| TF-0028 | Done | M7 | Add lifecycle API endpoints | `feature/tf-0028-lifecycle-api-endpoints` |
+| TF-0029 | Done | M7 | Add replay API endpoints | `feature/tf-0029-replay-api-endpoints` |
 | TF-0030 | Planned | M7 | Add workspace projection APIs | `feature/tf-0030-workspace-projection-apis` |
 | TF-0031 | Planned | M7 | Create React frontend scaffold | `feature/tf-0031-react-frontend-scaffold` |
 | TF-0032 | Planned | M7 | Add workspace routing system | `feature/tf-0032-workspace-routing-system` |
@@ -1026,7 +1026,7 @@ Post-MVP Roadmap v2 candidates TF-0042 through TF-0062 remain deferred until the
 
 ## TF-0028: Add Lifecycle API Endpoints
 
-**Status:** Planned
+**Status:** Done
 
 **Milestone:** M7
 
@@ -1050,11 +1050,16 @@ Post-MVP Roadmap v2 candidates TF-0042 through TF-0062 remain deferred until the
 
 - Broker execution.
 
+**Completed Verification:**
+
+- `uv run pytest tests\test_fastapi_runtime.py tests\test_lifecycle_orchestration_service.py`
+- `uv run pytest`
+
 ---
 
 ## TF-0029: Add Replay API Endpoints
 
-**Status:** Planned
+**Status:** Done
 
 **Milestone:** M7
 
@@ -1077,6 +1082,13 @@ Post-MVP Roadmap v2 candidates TF-0042 through TF-0062 remain deferred until the
 **Out Of Scope:**
 
 - AI replay narration.
+
+**Completed Verification:**
+
+- `uv run pytest tests\test_fastapi_runtime.py tests\test_replay_projection_service.py tests\test_replay_timeline_service.py tests\test_historical_reconstruction_pipeline.py`
+- `uv run pytest`
+- `uv run ruff check .`
+- `uv run mypy src tests`
 
 ---
 

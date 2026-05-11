@@ -5,7 +5,7 @@ type: index
 status: canonical
 tags: [TradeForge, roadmap, milestones, architecture, cognition, workspaces]
 created: 2026-05-09
-updated: 2026-05-10
+updated: 2026-05-11
 supersedes: MILESTONE_ROADMAP_DEPRECATED.md
 ---
 
@@ -400,8 +400,8 @@ TradeForge transitions from conceptual architecture into usable operational soft
 ### API Layer
 
 * TF-0027: Add FastAPI application runtime (**Done**)
-* TF-0028: Add lifecycle API endpoints
-* TF-0029: Add replay API endpoints
+* TF-0028: Add lifecycle API endpoints (**Done**)
+* TF-0029: Add replay API endpoints (**Done**)
 * TF-0030: Add workspace projection APIs
 
 ### Frontend Runtime
