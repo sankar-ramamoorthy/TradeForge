@@ -359,7 +359,7 @@ Operational interpretation becomes persona-aware without mutating canonical trut
 
 ## Linked Runtime Issues
 
-* TF-0020: Define persona context model
+* TF-0020: Define persona context model (**Done**)
 * TF-0021: Implement workspace projection read models
 * TF-0022: Implement operational attention queues
 * TF-0023: Implement context-aware workspace summaries
