@@ -59,7 +59,7 @@ Roadmap v2 is the active milestone direction. This register is intentionally sco
 | TF-0019 | Done | M5 | Implement historical reconstruction pipeline | `M5/tf-0019-historical-reconstruction-pipeline` |
 | TF-0020 | Done | M6 | Define persona context model | `feature/tf-0020-persona-context-model` |
 | TF-0021 | Done | M6 | Implement workspace projection read models | `feature/tf-0021-workspace-projection-read-models` |
-| TF-0022 | Planned | M6 | Implement operational attention queues | `feature/tf-0022-operational-attention-queues` |
+| TF-0022 | Done | M6 | Implement operational attention queues | `feature/tf-0022-operational-attention-queues` |
 | TF-0023 | Planned | M6 | Implement context-aware workspace summaries | `feature/tf-0023-context-aware-workspace-summaries` |
 | TF-0024 | Planned | M7 | Add Postgres persistence layer | `feature/tf-0024-postgres-persistence` |
 | TF-0025 | Planned | M7 | Add Alembic migration infrastructure | `feature/tf-0025-alembic-migrations` |
@@ -802,7 +802,7 @@ Post-MVP Roadmap v2 candidates TF-0042 through TF-0062 remain deferred until the
 
 ## TF-0022: Implement Operational Attention Queues
 
-**Status:** Planned
+**Status:** Done
 
 **Milestone:** M6
 
@@ -814,7 +814,7 @@ Post-MVP Roadmap v2 candidates TF-0042 through TF-0062 remain deferred until the
 
 **Impacted Invariants:** Workflow-Centric Architecture, Workspace, Human Decision Sovereignty
 
-**Implementation Summary:** Implement derived queues for decisions, alerts, review obligations, and operational attention.
+**Implementation Summary:** Implemented immutable derived operational attention queues that explain required human attention from lifecycle, review, risk, opportunity, market context, and workspace projection inputs. Queue ordering is deterministic and persona-aware through existing risk framing and decision velocity context without authorizing execution or lifecycle transitions.
 
 **Acceptance Criteria:**
 
@@ -826,6 +826,13 @@ Post-MVP Roadmap v2 candidates TF-0042 through TF-0062 remain deferred until the
 **Out Of Scope:**
 
 - AI prioritization.
+
+**Completed Verification:**
+
+- `uv run pytest tests\test_operational_attention_queues.py`
+- `uv run pytest`
+- `uv run ruff check .`
+- `uv run mypy src tests`
 
 ---
 
