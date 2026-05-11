@@ -306,7 +306,7 @@ TradeForge workspaces are operational cognitive environments rather than dashboa
 
 # M5 â€” Replay And Projection Foundation
 
-**Status:** In Progress
+**Status:** Done
 
 ## Semantic Intent
 
@@ -327,8 +327,8 @@ Replay reconstructs cognition while projections provide discardable operational 
 
 * TF-0016: Implement replay projector foundation (**Done**)
 * TF-0017: Implement projection rebuild pipeline (**Done**)
-* TF-0018: Implement replay timeline engine
-* TF-0019: Implement historical reconstruction pipeline
+* TF-0018: Implement replay timeline engine (**Done**)
+* TF-0019: Implement historical reconstruction pipeline (**Done**)
 
 ## Acceptance Meaning
 
