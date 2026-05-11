@@ -395,7 +395,7 @@ TradeForge transitions from conceptual architecture into usable operational soft
 
 * TF-0024: Add Postgres persistence layer (**Done**)
 * TF-0025: Add Alembic migration infrastructure (**Done**)
-* TF-0026: Persist canonical event ledger
+* TF-0026: Persist canonical event ledger (**Done**)
 
 ### API Layer
 

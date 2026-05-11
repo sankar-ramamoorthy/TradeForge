@@ -247,6 +247,10 @@ Run database migrations:
 uv run alembic upgrade head
 ```
 
+The Postgres event ledger adapter lives behind the existing `EventStore` port.
+Runtime services should continue to depend on the port rather than importing
+Postgres or SQLAlchemy directly.
+
 Build the local runtime image:
 
 ```powershell
