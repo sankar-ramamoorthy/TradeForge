@@ -58,7 +58,7 @@ Roadmap v2 is the active milestone direction. This register is intentionally sco
 | TF-0018 | Done | M5 | Implement replay timeline engine | `M5/tf-0018-replay-timeline-engine` |
 | TF-0019 | Done | M5 | Implement historical reconstruction pipeline | `M5/tf-0019-historical-reconstruction-pipeline` |
 | TF-0020 | Done | M6 | Define persona context model | `feature/tf-0020-persona-context-model` |
-| TF-0021 | Planned | M6 | Implement workspace projection read models | `feature/tf-0021-workspace-projection-read-models` |
+| TF-0021 | Done | M6 | Implement workspace projection read models | `feature/tf-0021-workspace-projection-read-models` |
 | TF-0022 | Planned | M6 | Implement operational attention queues | `feature/tf-0022-operational-attention-queues` |
 | TF-0023 | Planned | M6 | Implement context-aware workspace summaries | `feature/tf-0023-context-aware-workspace-summaries` |
 | TF-0024 | Planned | M7 | Add Postgres persistence layer | `feature/tf-0024-postgres-persistence` |
@@ -765,7 +765,7 @@ Post-MVP Roadmap v2 candidates TF-0042 through TF-0062 remain deferred until the
 
 ## TF-0021: Implement Workspace Projection Read Models
 
-**Status:** Planned
+**Status:** Done
 
 **Milestone:** M6
 
@@ -777,7 +777,7 @@ Post-MVP Roadmap v2 candidates TF-0042 through TF-0062 remain deferred until the
 
 **Impacted Invariants:** Event Sourcing, Workspace, Persona, Replay, Layer Separation
 
-**Implementation Summary:** Implement derived read models for MVP workspaces using event history and deterministic rules.
+**Implementation Summary:** Implemented immutable, persona/workspace-scoped workspace projection read models that derive ADR 0012 workspace state from ordered event history and deterministic rules. Added a projection read service and rebuild-pipeline-compatible projectors without adding canonical state, persistence, API endpoints, UI, or lifecycle authority.
 
 **Acceptance Criteria:**
 
@@ -790,6 +790,13 @@ Post-MVP Roadmap v2 candidates TF-0042 through TF-0062 remain deferred until the
 
 - React UI.
 - Stored workspace state as canonical truth.
+
+**Completed Verification:**
+
+- `uv run pytest tests\test_workspace_projection_read_models.py`
+- `uv run pytest`
+- `uv run ruff check .`
+- `uv run mypy src tests`
 
 ---
 

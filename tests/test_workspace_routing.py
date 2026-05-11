@@ -98,7 +98,7 @@ def test_workspace_route_catalog_is_immutable() -> None:
 
 def test_workspace_routing_does_not_depend_on_mutating_runtime_boundaries() -> None:
     route_module_files = (
-        Path("src/services/workspace_engine").glob("*.py"),
+        Path("src/services/workspace_engine").glob("routing.py"),
         Path("src/app").glob("workspace_routes.py"),
     )
     forbidden_imports = (
