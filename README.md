@@ -251,6 +251,12 @@ The Postgres event ledger adapter lives behind the existing `EventStore` port.
 Runtime services should continue to depend on the port rather than importing
 Postgres or SQLAlchemy directly.
 
+Run the local FastAPI runtime:
+
+```powershell
+uv run uvicorn src.app.api.application:app --host 127.0.0.1 --port 8000
+```
+
 Build the local runtime image:
 
 ```powershell
@@ -270,6 +276,7 @@ Before making code changes, read:
 * `DOCS/adr/0011-runtime-development-environment.md`
 * `DOCS/adr/0018-postgres-event-store-persistence.md`
 * `DOCS/adr/0019-projection-persistence-architecture.md`
+* `DOCS/adr/0020-fastapi-runtime-boundary.md`
 
 ---
 

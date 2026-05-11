@@ -64,7 +64,7 @@ Roadmap v2 is the active milestone direction. This register is intentionally sco
 | TF-0024 | Done | M7 | Add Postgres persistence layer | `feature/tf-0024-postgres-persistence` |
 | TF-0025 | Done | M7 | Add Alembic migration infrastructure | `feature/tf-0025-alembic-migrations` |
 | TF-0026 | Done | M7 | Persist canonical event ledger | `feature/tf-0026-postgres-event-ledger` |
-| TF-0027 | Planned | M7 | Add FastAPI application runtime | `feature/tf-0027-fastapi-runtime` |
+| TF-0027 | Done | M7 | Add FastAPI application runtime | `feature/tf-0027-fastapi-runtime` |
 | TF-0028 | Planned | M7 | Add lifecycle API endpoints | `feature/tf-0028-lifecycle-api-endpoints` |
 | TF-0029 | Planned | M7 | Add replay API endpoints | `feature/tf-0029-replay-api-endpoints` |
 | TF-0030 | Planned | M7 | Add workspace projection APIs | `feature/tf-0030-workspace-projection-apis` |
@@ -989,7 +989,7 @@ Post-MVP Roadmap v2 candidates TF-0042 through TF-0062 remain deferred until the
 
 ## TF-0027: Add FastAPI Application Runtime
 
-**Status:** Planned
+**Status:** Done
 
 **Milestone:** M7
 
@@ -1012,6 +1012,15 @@ Post-MVP Roadmap v2 candidates TF-0042 through TF-0062 remain deferred until the
 **Out Of Scope:**
 
 - Frontend implementation.
+
+**Completed Verification:**
+
+- `uv lock`
+- `uv run pytest`
+- `uv run ruff check .`
+- `uv run mypy src tests`
+- `docker compose config`
+- `uv run uvicorn src.app.api.application:app --host 127.0.0.1 --port 8000`
 
 ---
 
