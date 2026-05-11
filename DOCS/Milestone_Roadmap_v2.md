@@ -399,7 +399,7 @@ TradeForge transitions from conceptual architecture into usable operational soft
 
 ### API Layer
 
-* TF-0027: Add FastAPI application runtime
+* TF-0027: Add FastAPI application runtime (**Done**)
 * TF-0028: Add lifecycle API endpoints
 * TF-0029: Add replay API endpoints
 * TF-0030: Add workspace projection APIs
