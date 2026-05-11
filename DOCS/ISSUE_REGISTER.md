@@ -54,7 +54,7 @@ Roadmap v2 is the active milestone direction. This register is intentionally sco
 | TF-0014 | Done | M4 | Create workspace routing model | `M4/tf-0014-workspace-routing-model` |
 | TF-0015 | Done | M4 | Define workspace state contracts | `M4/tf-0015-workspace-state-contracts` |
 | TF-0016 | Done | M5 | Implement replay projector foundation | `M5/tf-0016-replay-projector-foundation` |
-| TF-0017 | Planned | M5 | Implement projection rebuild pipeline | `feature/tf-0017-projection-rebuild-pipeline` |
+| TF-0017 | Done | M5 | Implement projection rebuild pipeline | `M5/tf-0017-projection-rebuild-pipeline` |
 | TF-0018 | Planned | M5 | Implement replay timeline engine | `feature/tf-0018-replay-timeline-engine` |
 | TF-0019 | Planned | M5 | Implement historical reconstruction pipeline | `feature/tf-0019-historical-reconstruction-pipeline` |
 | TF-0020 | Planned | M6 | Define persona context model | `feature/tf-0020-persona-context-model` |
@@ -627,11 +627,11 @@ Post-MVP Roadmap v2 candidates TF-0042 through TF-0062 remain deferred until the
 
 ## TF-0017: Implement Projection Rebuild Pipeline
 
-**Status:** Planned
+**Status:** Done
 
 **Milestone:** M5
 
-**Branch:** `feature/tf-0017-projection-rebuild-pipeline`
+**Branch:** `M5/tf-0017-projection-rebuild-pipeline`
 
 **Affected Layer:** services
 
@@ -639,7 +639,7 @@ Post-MVP Roadmap v2 candidates TF-0042 through TF-0062 remain deferred until the
 
 **Impacted Invariants:** Event Sourcing, Replay, Layer Separation
 
-**Implementation Summary:** Provide a service flow for rebuilding derived projections from event history.
+**Implementation Summary:** Implemented a services-layer projection rebuild pipeline that reads event history through the event store port, rebuilds configured projection targets in deterministic order, and returns an immutable derived rebuild report.
 
 **Acceptance Criteria:**
 
@@ -651,6 +651,12 @@ Post-MVP Roadmap v2 candidates TF-0042 through TF-0062 remain deferred until the
 **Out Of Scope:**
 
 - Durable projection persistence.
+
+**Completed Verification:**
+
+- `uv run pytest`
+- `uv run ruff check .`
+- `uv run mypy src tests`
 
 ---
 
