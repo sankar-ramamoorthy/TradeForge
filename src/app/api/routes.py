@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any, Literal
 
-from fastapi import APIRouter, HTTPException, Request, status
+from fastapi import APIRouter, HTTPException, Query, Request, status
 from pydantic import BaseModel, Field
 from src.domain.events import EntityReference
 from src.domain.lifecycle import LifecycleStage
@@ -17,10 +17,20 @@ from src.services.replay import (
     ReconstructionStateAuthority,
     ReplayTimelineService,
 )
+from src.services.workspace_engine import (
+    UnknownWorkspaceStateContractError,
+    WorkspaceProjection,
+    WorkspaceProjectionContext,
+    WorkspaceProjectionReadService,
+    WorkspaceProjectionSet,
+    WorkspaceRouteId,
+    WorkspaceStateAuthority,
+)
 
 runtime_router = APIRouter(tags=["runtime"])
 lifecycle_router = APIRouter(prefix="/lifecycle", tags=["lifecycle"])
 replay_router = APIRouter(prefix="/replay", tags=["replay"])
+workspace_router = APIRouter(prefix="/workspaces", tags=["workspaces"])
 
 
 class RuntimeStatusResponse(BaseModel):
@@ -135,6 +145,52 @@ class HistoricalReconstructionResponse(BaseModel):
     review_artifacts: list[SourceLinkedArtifactResponse]
 
 
+class WorkspaceProjectionContextResponse(BaseModel):
+    persona_id: str
+    persona_version: str
+    workspace_id: str
+    workflow_id: str | None
+    decision_id: str | None
+
+
+class WorkspaceProjectionLifecycleStateResponse(BaseModel):
+    current_stage: LifecycleStage
+
+
+class WorkspaceSourceEventReferenceResponse(BaseModel):
+    event_type: str
+    timestamp_iso: str
+    entity_references: list[EntityReferencePayload]
+
+
+class WorkspaceProjectionFieldResponse(BaseModel):
+    name: str
+    authority: WorkspaceStateAuthority
+    source_inputs: list[str]
+    source_event_count: int
+    source_event_types: list[str]
+    source_events: list[WorkspaceSourceEventReferenceResponse]
+
+
+class WorkspaceProjectionResponse(BaseModel):
+    route_id: WorkspaceRouteId
+    authority: str
+    context: WorkspaceProjectionContextResponse
+    operational_question: str
+    lifecycle_state: WorkspaceProjectionLifecycleStateResponse | None
+    source_event_count: int
+    source_event_types: list[str]
+    source_events: list[WorkspaceSourceEventReferenceResponse]
+    fields: dict[str, WorkspaceProjectionFieldResponse]
+    authority_boundaries: list[str]
+
+
+class WorkspaceProjectionSetResponse(BaseModel):
+    authority: str
+    context: WorkspaceProjectionContextResponse
+    projections: dict[WorkspaceRouteId, WorkspaceProjectionResponse]
+
+
 def _lifecycle_service_from(request: Request) -> LifecycleOrchestrationService:
     service = getattr(request.app.state, "lifecycle_service", None)
     if not isinstance(service, LifecycleOrchestrationService):
@@ -158,6 +214,31 @@ def _historical_reconstruction_pipeline_from(
     return pipeline
 
 
+def _workspace_projection_read_service_from(
+    request: Request,
+) -> WorkspaceProjectionReadService:
+    service = getattr(request.app.state, "workspace_projection_read_service", None)
+    if not isinstance(service, WorkspaceProjectionReadService):
+        raise RuntimeError("workspace projection read service is not configured")
+    return service
+
+
+def _workspace_projection_context_from_query(
+    persona_id: str,
+    persona_version: str,
+    workspace_id: str,
+    workflow_id: str | None,
+    decision_id: str | None,
+) -> WorkspaceProjectionContext:
+    return WorkspaceProjectionContext(
+        persona_id=persona_id,
+        persona_version=persona_version,
+        workspace_id=workspace_id,
+        workflow_id=workflow_id,
+        decision_id=decision_id,
+    )
+
+
 def _entity_reference_payloads(
     entity_references: tuple[EntityReference, ...],
 ) -> list[EntityReferencePayload]:
@@ -168,6 +249,85 @@ def _entity_reference_payloads(
         )
         for reference in entity_references
     ]
+
+
+def _workspace_context_response(
+    context: WorkspaceProjectionContext,
+) -> WorkspaceProjectionContextResponse:
+    return WorkspaceProjectionContextResponse(
+        persona_id=context.persona_id,
+        persona_version=context.persona_version,
+        workspace_id=context.workspace_id,
+        workflow_id=context.workflow_id,
+        decision_id=context.decision_id,
+    )
+
+
+def _workspace_source_event_reference_response(
+    source_event: Any,
+) -> WorkspaceSourceEventReferenceResponse:
+    return WorkspaceSourceEventReferenceResponse(
+        event_type=source_event.event_type,
+        timestamp_iso=source_event.timestamp_iso,
+        entity_references=_entity_reference_payloads(
+            source_event.entity_references
+        ),
+    )
+
+
+def _workspace_projection_response(
+    projection: WorkspaceProjection,
+) -> WorkspaceProjectionResponse:
+    lifecycle_state = (
+        WorkspaceProjectionLifecycleStateResponse(
+            current_stage=projection.lifecycle_state.current_stage
+        )
+        if projection.lifecycle_state is not None
+        else None
+    )
+    fields = {
+        name: WorkspaceProjectionFieldResponse(
+            name=field.name,
+            authority=field.authority,
+            source_inputs=list(field.source_inputs),
+            source_event_count=field.source_event_count,
+            source_event_types=list(field.source_event_types),
+            source_events=[
+                _workspace_source_event_reference_response(source_event)
+                for source_event in field.source_events
+            ],
+        )
+        for name, field in projection.fields.items()
+    }
+
+    return WorkspaceProjectionResponse(
+        route_id=projection.route_id,
+        authority=projection.authority.value,
+        context=_workspace_context_response(projection.context),
+        operational_question=projection.operational_question,
+        lifecycle_state=lifecycle_state,
+        source_event_count=projection.source_event_count,
+        source_event_types=list(projection.source_event_types),
+        source_events=[
+            _workspace_source_event_reference_response(source_event)
+            for source_event in projection.source_events
+        ],
+        fields=fields,
+        authority_boundaries=list(projection.authority_boundaries),
+    )
+
+
+def _workspace_projection_set_response(
+    projection_set: WorkspaceProjectionSet,
+) -> WorkspaceProjectionSetResponse:
+    return WorkspaceProjectionSetResponse(
+        authority=projection_set.authority.value,
+        context=_workspace_context_response(projection_set.context),
+        projections={
+            route_id: _workspace_projection_response(projection)
+            for route_id, projection in projection_set.projections.items()
+        },
+    )
 
 
 def _replay_projection_response(projection: Any) -> ReplayProjectionResponse:
@@ -345,5 +505,58 @@ def get_replay_timeline(request: Request) -> ReplayTimelineResponse:
     )
 
 
+@workspace_router.get("", response_model=WorkspaceProjectionSetResponse)
+def get_workspace_projections(
+    request: Request,
+    persona_id: str = Query(min_length=1),
+    persona_version: str = Query(min_length=1),
+    workspace_id: str = Query(min_length=1),
+    workflow_id: str | None = Query(default=None, min_length=1),
+    decision_id: str | None = Query(default=None, min_length=1),
+) -> WorkspaceProjectionSetResponse:
+    context = _workspace_projection_context_from_query(
+        persona_id=persona_id,
+        persona_version=persona_version,
+        workspace_id=workspace_id,
+        workflow_id=workflow_id,
+        decision_id=decision_id,
+    )
+    projection_set = _workspace_projection_read_service_from(
+        request
+    ).all_projections(context)
+    return _workspace_projection_set_response(projection_set)
+
+
+@workspace_router.get("/{route_id}", response_model=WorkspaceProjectionResponse)
+def get_workspace_projection(
+    request: Request,
+    route_id: str,
+    persona_id: str = Query(min_length=1),
+    persona_version: str = Query(min_length=1),
+    workspace_id: str = Query(min_length=1),
+    workflow_id: str | None = Query(default=None, min_length=1),
+    decision_id: str | None = Query(default=None, min_length=1),
+) -> WorkspaceProjectionResponse:
+    context = _workspace_projection_context_from_query(
+        persona_id=persona_id,
+        persona_version=persona_version,
+        workspace_id=workspace_id,
+        workflow_id=workflow_id,
+        decision_id=decision_id,
+    )
+    try:
+        projection = _workspace_projection_read_service_from(
+            request
+        ).projection_for(route_id, context)
+    except UnknownWorkspaceStateContractError as error:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"message": str(error)},
+        ) from error
+
+    return _workspace_projection_response(projection)
+
+
 runtime_router.include_router(lifecycle_router)
 runtime_router.include_router(replay_router)
+runtime_router.include_router(workspace_router)

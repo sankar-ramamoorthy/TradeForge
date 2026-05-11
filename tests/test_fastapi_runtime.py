@@ -287,7 +287,177 @@ def test_replay_endpoints_share_event_history_with_lifecycle_api() -> None:
     )
 
 
-def test_fastapi_runtime_does_not_expose_future_workspace_endpoints() -> None:
+def test_workspace_projection_set_endpoint_returns_derived_read_models() -> None:
+    client = TestClient(create_app())
+    client.post(
+        "/lifecycle/transitions",
+        json={
+            "requested_stage": "Idea",
+            "timestamp": "2026-05-11T14:30:00Z",
+            "persona_id": "persona.swing",
+            "workspace_id": "workspace.operating",
+            "entity_references": [
+                {"entity_type": "decision", "entity_id": "decision-123"},
+                {"entity_type": "workflow", "entity_id": "workflow-123"},
+            ],
+            "payload": {"workflow_id": "workflow-123"},
+            "provenance": {"actor": "human", "source": "api-test"},
+        },
+    )
+
+    response = client.get(
+        "/workspaces",
+        params={
+            "persona_id": "persona.swing",
+            "persona_version": "2026-05-11",
+            "workspace_id": "workspace.operating",
+            "workflow_id": "workflow-123",
+            "decision_id": "decision-123",
+        },
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["authority"] == "derived"
+    assert body["context"] == {
+        "persona_id": "persona.swing",
+        "persona_version": "2026-05-11",
+        "workspace_id": "workspace.operating",
+        "workflow_id": "workflow-123",
+        "decision_id": "decision-123",
+    }
+    assert body["projections"]["operating"]["authority"] == "derived"
+    assert body["projections"]["operating"]["source_event_types"] == [
+        "decision.trade_idea_created"
+    ]
+    assert body["projections"]["operating"]["lifecycle_state"] == {
+        "current_stage": "Idea"
+    }
+    assert body["projections"]["operating"]["fields"]["attention_queue"][
+        "authority"
+    ] == "derived"
+    assert body["projections"]["operating"]["authority_boundaries"] == [
+        "Attention queues are derived and do not authorize execution.",
+        "Lifecycle transitions must route through lifecycle services.",
+    ]
+
+
+def test_workspace_projection_endpoint_returns_single_context_scoped_projection() -> (
+    None
+):
+    client = TestClient(create_app())
+    client.post(
+        "/lifecycle/transitions",
+        json={
+            "requested_stage": "Idea",
+            "timestamp": "2026-05-11T14:30:00Z",
+            "persona_id": "persona.swing",
+            "workspace_id": "workspace.operating",
+            "entity_references": [
+                {"entity_type": "decision", "entity_id": "decision-123"}
+            ],
+            "payload": {},
+            "provenance": {"actor": "human", "source": "api-test"},
+        },
+    )
+    client.post(
+        "/lifecycle/transitions",
+        json={
+            "requested_stage": "Idea",
+            "timestamp": "2026-05-11T14:31:00Z",
+            "persona_id": "persona.other",
+            "workspace_id": "workspace.operating",
+            "entity_references": [
+                {"entity_type": "decision", "entity_id": "decision-other"}
+            ],
+            "payload": {},
+            "provenance": {"actor": "human", "source": "api-test"},
+        },
+    )
+
+    response = client.get(
+        "/workspaces/operating",
+        params={
+            "persona_id": "persona.swing",
+            "persona_version": "2026-05-11",
+            "workspace_id": "workspace.operating",
+            "decision_id": "decision-123",
+        },
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["route_id"] == "operating"
+    assert body["source_event_count"] == 1
+    assert body["source_events"] == [
+        {
+            "event_type": "decision.trade_idea_created",
+            "timestamp_iso": "2026-05-11T14:30:00+00:00",
+            "entity_references": [
+                {"entity_type": "decision", "entity_id": "decision-123"}
+            ],
+        }
+    ]
+
+
+def test_workspace_projection_endpoint_rejects_unknown_workspace_route() -> None:
     client = TestClient(create_app())
 
-    assert client.get("/workspaces").status_code == 404
+    response = client.get(
+        "/workspaces/not-a-workspace",
+        params={
+            "persona_id": "persona.swing",
+            "persona_version": "2026-05-11",
+            "workspace_id": "workspace.operating",
+        },
+    )
+
+    assert response.status_code == 404
+    assert response.json() == {
+        "detail": {
+            "message": "unknown workspace state contract: not-a-workspace"
+        }
+    }
+
+
+def test_workspace_projection_endpoint_requires_explicit_persona_context() -> None:
+    client = TestClient(create_app())
+
+    response = client.get(
+        "/workspaces/operating",
+        params={
+            "workspace_id": "workspace.operating",
+            "persona_version": "2026-05-11",
+        },
+    )
+
+    assert response.status_code == 422
+
+
+def test_workspace_projection_reads_do_not_append_events() -> None:
+    client = TestClient(create_app())
+    client.post(
+        "/lifecycle/transitions",
+        json={
+            "requested_stage": "Idea",
+            "timestamp": "2026-05-11T14:30:00Z",
+            "persona_id": "persona.swing",
+            "workspace_id": "workspace.operating",
+            "entity_references": [],
+            "payload": {},
+            "provenance": {"actor": "human", "source": "api-test"},
+        },
+    )
+
+    params = {
+        "persona_id": "persona.swing",
+        "persona_version": "2026-05-11",
+        "workspace_id": "workspace.operating",
+    }
+    first_response = client.get("/workspaces/operating", params=params)
+    second_response = client.get("/workspaces/operating", params=params)
+    replay_response = client.get("/replay")
+
+    assert first_response.status_code == 200
+    assert first_response.json() == second_response.json()
+    assert replay_response.json()["source_event_count"] == 1

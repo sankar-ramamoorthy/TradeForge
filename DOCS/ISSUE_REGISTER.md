@@ -67,7 +67,7 @@ Roadmap v2 is the active milestone direction. This register is intentionally sco
 | TF-0027 | Done | M7 | Add FastAPI application runtime | `feature/tf-0027-fastapi-runtime` |
 | TF-0028 | Done | M7 | Add lifecycle API endpoints | `feature/tf-0028-lifecycle-api-endpoints` |
 | TF-0029 | Done | M7 | Add replay API endpoints | `feature/tf-0029-replay-api-endpoints` |
-| TF-0030 | Planned | M7 | Add workspace projection APIs | `feature/tf-0030-workspace-projection-apis` |
+| TF-0030 | Done | M7 | Add workspace projection APIs | `feature/tf-0030-workspace-projection-apis` |
 | TF-0031 | Planned | M7 | Create React frontend scaffold | `feature/tf-0031-react-frontend-scaffold` |
 | TF-0032 | Planned | M7 | Add workspace routing system | `feature/tf-0032-workspace-routing-system` |
 | TF-0033 | Planned | M7 | Add shared operational layout system | `feature/tf-0033-operational-layout-system` |
@@ -1094,7 +1094,7 @@ Post-MVP Roadmap v2 candidates TF-0042 through TF-0062 remain deferred until the
 
 ## TF-0030: Add Workspace Projection APIs
 
-**Status:** Planned
+**Status:** Done
 
 **Milestone:** M7
 
@@ -1106,7 +1106,7 @@ Post-MVP Roadmap v2 candidates TF-0042 through TF-0062 remain deferred until the
 
 **Impacted Invariants:** Workspace, Derived State Distinction
 
-**Implementation Summary:** Expose workspace projection read models through API endpoints.
+**Implementation Summary:** Expose workspace projection read models through read-only FastAPI endpoints backed by `WorkspaceProjectionReadService`. The APIs require explicit persona/workspace context, return derived projection state with source event references and authority boundaries, and do not mutate lifecycle or event ledger state.
 
 **Acceptance Criteria:**
 
@@ -1117,6 +1117,13 @@ Post-MVP Roadmap v2 candidates TF-0042 through TF-0062 remain deferred until the
 **Out Of Scope:**
 
 - Frontend rendering.
+
+**Completed Verification:**
+
+- `uv run pytest tests\test_fastapi_runtime.py tests\test_workspace_projection_read_models.py`
+- `uv run pytest`
+- `uv run ruff check .`
+- `uv run mypy src tests`
 
 ---
 

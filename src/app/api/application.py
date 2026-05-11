@@ -9,6 +9,7 @@ from src.services.replay import (
     HistoricalReconstructionPipeline,
     ReplayTimelineService,
 )
+from src.services.workspace_engine import WorkspaceProjectionReadService
 
 APP_TITLE = "TradeForge Runtime"
 APP_VERSION = "0.1.0"
@@ -21,6 +22,7 @@ def create_app(
     historical_reconstruction_pipeline: (
         HistoricalReconstructionPipeline | None
     ) = None,
+    workspace_projection_read_service: WorkspaceProjectionReadService | None = None,
 ) -> FastAPI:
     shared_event_store = event_store or InMemoryEventStore()
     app = FastAPI(
@@ -42,6 +44,11 @@ def create_app(
         historical_reconstruction_pipeline
         if historical_reconstruction_pipeline is not None
         else HistoricalReconstructionPipeline(shared_event_store)
+    )
+    app.state.workspace_projection_read_service = (
+        workspace_projection_read_service
+        if workspace_projection_read_service is not None
+        else WorkspaceProjectionReadService(shared_event_store)
     )
     app.include_router(runtime_router)
     return app
