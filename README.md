@@ -257,6 +257,25 @@ Run the local FastAPI runtime:
 uv run uvicorn src.app.api.application:app --host 127.0.0.1 --port 8000
 ```
 
+Run the React workspace runtime scaffold:
+
+```powershell
+cd frontend
+npm install
+npm run dev
+```
+
+Build or type-check the frontend:
+
+```powershell
+cd frontend
+npm run build
+npm run typecheck
+```
+
+The frontend is an HTTP API consumer. It must not import runtime internals or
+treat browser state as canonical workspace, lifecycle, replay, or event truth.
+
 Build the local runtime image:
 
 ```powershell

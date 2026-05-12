@@ -68,7 +68,7 @@ Roadmap v2 is the active milestone direction. This register is intentionally sco
 | TF-0028 | Done | M7 | Add lifecycle API endpoints | `feature/tf-0028-lifecycle-api-endpoints` |
 | TF-0029 | Done | M7 | Add replay API endpoints | `feature/tf-0029-replay-api-endpoints` |
 | TF-0030 | Done | M7 | Add workspace projection APIs | `feature/tf-0030-workspace-projection-apis` |
-| TF-0031 | Planned | M7 | Create React frontend scaffold | `feature/tf-0031-react-frontend-scaffold` |
+| TF-0031 | Done | M7 | Create React frontend scaffold | `feature/tf-0031-react-frontend-scaffold` |
 | TF-0032 | Planned | M7 | Add workspace routing system | `feature/tf-0032-workspace-routing-system` |
 | TF-0033 | Planned | M7 | Add shared operational layout system | `feature/tf-0033-operational-layout-system` |
 | TF-0034 | Planned | M7 | Add authentication/session model | `feature/tf-0034-auth-session-model` |
@@ -1129,7 +1129,7 @@ Post-MVP Roadmap v2 candidates TF-0042 through TF-0062 remain deferred until the
 
 ## TF-0031: Create React Frontend Scaffold
 
-**Status:** Planned
+**Status:** Done
 
 **Milestone:** M7
 
@@ -1141,7 +1141,7 @@ Post-MVP Roadmap v2 candidates TF-0042 through TF-0062 remain deferred until the
 
 **Impacted Invariants:** Workspace, UX Is Architectural
 
-**Implementation Summary:** Create the React/TypeScript frontend foundation for MVP workspaces.
+**Implementation Summary:** Created the React/TypeScript frontend foundation for MVP workspaces under `frontend/`, including Vite configuration, typed runtime API boundary access, a minimal workspace runtime shell, frontend command documentation, and ADR 0021 for the React workspace runtime boundary.
 
 **Acceptance Criteria:**
 
@@ -1152,6 +1152,16 @@ Post-MVP Roadmap v2 candidates TF-0042 through TF-0062 remain deferred until the
 **Out Of Scope:**
 
 - Full workspace implementation.
+
+**Completed Verification:**
+
+- `npm.cmd install`
+- `npm.cmd run lint`
+- `npm.cmd run typecheck`
+- `npm.cmd run build`
+- `uv run pytest`
+- `uv run ruff check .`
+- `uv run mypy src tests`
 
 ---
 

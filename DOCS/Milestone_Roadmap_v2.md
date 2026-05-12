@@ -406,7 +406,7 @@ TradeForge transitions from conceptual architecture into usable operational soft
 
 ### Frontend Runtime
 
-* TF-0031: Create React frontend scaffold
+* TF-0031: Create React frontend scaffold (**Done**)
 * TF-0032: Add workspace routing system
 * TF-0033: Add shared operational layout system
 * TF-0034: Add authentication/session model
