@@ -1,32 +1,43 @@
 import {
-  Activity,
+  ArrowRight,
   GitBranch,
   History,
   ListChecks,
   ShieldCheck,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { MouseEvent, useEffect, useMemo, useState } from "react";
 
 import { fetchRuntimeStatus, type RuntimeStatus } from "./api/runtime";
+import {
+  AppShell,
+  AuthorityCue,
+  ContextLink,
+  ContextPanel,
+  RuntimeBoundaryPanel,
+  WorkspaceBriefing,
+  WorkspaceLayout,
+  WorkspaceNavigation,
+  WorkspaceSurface,
+} from "./operationalLayout";
 import "./styles.css";
+import {
+  buildWorkspaceHref,
+  findWorkspaceRoute,
+  mergeWorkspaceContext,
+  readWorkspaceContext,
+} from "./workspaceRouting";
 
-const workspaceReadiness = [
-  {
-    label: "Operating",
-    status: "projection-ready",
-    detail: "Decision queues and active exposure will consume workspace APIs.",
-  },
-  {
-    label: "Opportunity",
-    status: "next routing",
-    detail: "Scenario development remains separate from signal generation.",
-  },
-  {
-    label: "Replay",
-    status: "API-backed",
-    detail: "Historical reconstruction stays event-derived and deterministic.",
-  },
-];
+type WorkspaceLocation = {
+  pathname: string;
+  search: string;
+};
+
+function readCurrentLocation(): WorkspaceLocation {
+  return {
+    pathname: window.location.pathname,
+    search: window.location.search,
+  };
+}
 
 function RuntimeBoundaryStatus() {
   const [status, setStatus] = useState<RuntimeStatus | null>(null);
@@ -41,14 +52,17 @@ function RuntimeBoundaryStatus() {
         setError(null);
       })
       .catch((requestError: unknown) => {
-        if (requestError instanceof DOMException && requestError.name === "AbortError") {
+        if (
+          requestError instanceof DOMException &&
+          requestError.name === "AbortError"
+        ) {
           return;
         }
 
         setError(
           requestError instanceof Error
             ? requestError.message
-            : "Runtime status request failed"
+            : "Runtime status request failed",
         );
       });
 
@@ -56,71 +70,85 @@ function RuntimeBoundaryStatus() {
   }, []);
 
   return (
-    <section className="runtime-panel" aria-labelledby="runtime-boundary-title">
-      <div>
-        <p className="eyebrow">Runtime Boundary</p>
-        <h2 id="runtime-boundary-title">HTTP API consumer</h2>
-      </div>
-      <div className="runtime-status">
-        <ShieldCheck aria-hidden="true" />
-        <span>{status ? `${status.runtime} ${status.status}` : "checking runtime"}</span>
-      </div>
-      {error ? <p className="runtime-error">{error}</p> : null}
-      <p>
-        React reads through FastAPI contracts. Canonical state remains in the
-        event ledger and lifecycle services, not browser state.
-      </p>
-    </section>
+    <RuntimeBoundaryPanel
+      Icon={ShieldCheck}
+      error={error}
+      statusLabel={
+        status ? `${status.runtime} ${status.status}` : "checking runtime"
+      }
+      title="HTTP API consumer"
+    >
+      React reads through FastAPI contracts. Canonical state remains in the
+      event ledger and lifecycle services, not browser state.
+    </RuntimeBoundaryPanel>
   );
 }
 
 export default function App() {
+  const [location, setLocation] = useState<WorkspaceLocation>(() =>
+    readCurrentLocation(),
+  );
+
+  useEffect(() => {
+    const handlePopState = () => setLocation(readCurrentLocation());
+
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
+
+  const activeRoute = useMemo(
+    () => findWorkspaceRoute(location.pathname),
+    [location.pathname],
+  );
+  const context = useMemo(
+    () => mergeWorkspaceContext(readWorkspaceContext(location.search)),
+    [location.search],
+  );
+  const activeHref = buildWorkspaceHref(activeRoute, context);
+
+  function handleNavigate(
+    event: MouseEvent<HTMLAnchorElement>,
+    href: string,
+  ) {
+    event.preventDefault();
+    window.history.pushState(null, "", href);
+    setLocation(readCurrentLocation());
+  }
+
   return (
-    <main className="app-shell">
-      <section className="workspace-briefing" aria-labelledby="workspace-title">
-        <div className="title-block">
-          <p className="eyebrow">TradeForge</p>
-          <h1 id="workspace-title">Workspace runtime foundation</h1>
-          <p>
-            A React and TypeScript boundary for persona-scoped operational
-            workspaces. This scaffold is prepared for derived API read models,
-            not direct event-ledger ownership.
-          </p>
-        </div>
+    <AppShell>
+      <WorkspaceBriefing
+        eyebrow="TradeForge"
+        summary="Route selection preserves persona, workflow, and decision context while remaining a derived presentation layer over runtime APIs."
+        title="Workspace routing system"
+      >
+        <AuthorityCue Icon={ListChecks} label="Six MVP routes" />
+        <AuthorityCue Icon={GitBranch} label="Context preserved" />
+        <AuthorityCue Icon={History} label="Replay-aware URLs" />
+      </WorkspaceBriefing>
 
-        <div className="authority-strip" aria-label="Runtime authority boundaries">
-          <div>
-            <Activity aria-hidden="true" />
-            <span>Derived surfaces</span>
-          </div>
-          <div>
-            <ListChecks aria-hidden="true" />
-            <span>Lifecycle APIs</span>
-          </div>
-          <div>
-            <History aria-hidden="true" />
-            <span>Replay-ready</span>
-          </div>
-          <div>
-            <GitBranch aria-hidden="true" />
-            <span>Typed frontend</span>
-          </div>
-        </div>
-      </section>
-
-      <section className="workspace-grid" aria-label="Workspace readiness">
-        {workspaceReadiness.map((workspace) => (
-          <article className="workspace-card" key={workspace.label}>
-            <div>
-              <h2>{workspace.label}</h2>
-              <span>{workspace.status}</span>
-            </div>
-            <p>{workspace.detail}</p>
-          </article>
-        ))}
-      </section>
+      <WorkspaceLayout
+        sidebar={
+          <>
+            <WorkspaceNavigation
+              activeRoute={activeRoute}
+              context={context}
+              onNavigate={handleNavigate}
+            />
+            <ContextPanel context={context} />
+          </>
+        }
+      >
+        <WorkspaceSurface route={activeRoute} />
+        <ContextLink
+          Icon={ArrowRight}
+          href={activeHref}
+          label="Current routed context"
+          onNavigate={handleNavigate}
+        />
+      </WorkspaceLayout>
 
       <RuntimeBoundaryStatus />
-    </main>
+    </AppShell>
   );
 }
