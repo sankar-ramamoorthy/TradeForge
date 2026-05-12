@@ -5,6 +5,7 @@ from typing import Any, Literal
 
 from fastapi import APIRouter, HTTPException, Query, Request, status
 from pydantic import BaseModel, Field
+from src.app.session import SessionProvider
 from src.domain.events import EntityReference
 from src.domain.lifecycle import LifecycleStage
 from src.domain.replay import ProjectionAuthority, ReplayTimelineEntryKind
@@ -38,6 +39,29 @@ class RuntimeStatusResponse(BaseModel):
     runtime: Literal["tradeforge"]
     boundary: Literal["http"]
     owns_domain_rules: Literal[False]
+
+
+class UserIdentityResponse(BaseModel):
+    user_id: str
+    display_name: str
+
+
+class SessionWorkspaceContextResponse(BaseModel):
+    persona_id: str
+    persona_version: str
+    workspace_id: str
+    selected_workflow_id: str | None
+    decision_id: str | None
+
+
+class RuntimeSessionResponse(BaseModel):
+    session_id: str
+    authority: Literal["session"]
+    user: UserIdentityResponse
+    active_context: SessionWorkspaceContextResponse
+    owns_persona_semantics: Literal[False]
+    owns_lifecycle_authority: Literal[False]
+    owns_event_truth: Literal[False]
 
 
 class EntityReferencePayload(BaseModel):
@@ -223,6 +247,13 @@ def _workspace_projection_read_service_from(
     return service
 
 
+def _session_provider_from(request: Request) -> SessionProvider:
+    provider = getattr(request.app.state, "session_provider", None)
+    if not isinstance(provider, SessionProvider):
+        raise RuntimeError("session provider is not configured")
+    return provider
+
+
 def _workspace_projection_context_from_query(
     persona_id: str,
     persona_version: str,
@@ -389,6 +420,30 @@ def health() -> RuntimeStatusResponse:
         runtime="tradeforge",
         boundary="http",
         owns_domain_rules=False,
+    )
+
+
+@runtime_router.get("/session", response_model=RuntimeSessionResponse)
+def get_current_session(request: Request) -> RuntimeSessionResponse:
+    session = _session_provider_from(request).current_session()
+
+    return RuntimeSessionResponse(
+        session_id=session.session_id,
+        authority="session",
+        user=UserIdentityResponse(
+            user_id=session.user.user_id,
+            display_name=session.user.display_name,
+        ),
+        active_context=SessionWorkspaceContextResponse(
+            persona_id=session.active_context.persona_id,
+            persona_version=session.active_context.persona_version,
+            workspace_id=session.active_context.workspace_id,
+            selected_workflow_id=session.active_context.selected_workflow_id,
+            decision_id=session.active_context.decision_id,
+        ),
+        owns_persona_semantics=False,
+        owns_lifecycle_authority=False,
+        owns_event_truth=False,
     )
 
 

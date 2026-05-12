@@ -7,13 +7,19 @@ import {
 } from "lucide-react";
 import { MouseEvent, useEffect, useMemo, useState } from "react";
 
-import { fetchRuntimeStatus, type RuntimeStatus } from "./api/runtime";
+import {
+  fetchRuntimeSession,
+  fetchRuntimeStatus,
+  type RuntimeSession,
+  type RuntimeStatus,
+} from "./api/runtime";
 import {
   AppShell,
   AuthorityCue,
   ContextLink,
   ContextPanel,
   RuntimeBoundaryPanel,
+  SessionPanel,
   WorkspaceBriefing,
   WorkspaceLayout,
   WorkspaceNavigation,
@@ -25,6 +31,7 @@ import {
   findWorkspaceRoute,
   mergeWorkspaceContext,
   readWorkspaceContext,
+  type WorkspaceContext,
 } from "./workspaceRouting";
 
 type WorkspaceLocation = {
@@ -84,10 +91,29 @@ function RuntimeBoundaryStatus() {
   );
 }
 
+function sessionContextDefaults(
+  session: RuntimeSession | null,
+): WorkspaceContext {
+  if (session === null) {
+    return {};
+  }
+
+  return {
+    persona_id: session.active_context.persona_id,
+    persona_version: session.active_context.persona_version,
+    workspace_id: session.active_context.workspace_id,
+    selected_workflow_id:
+      session.active_context.selected_workflow_id ?? undefined,
+    decision_id: session.active_context.decision_id ?? undefined,
+  };
+}
+
 export default function App() {
   const [location, setLocation] = useState<WorkspaceLocation>(() =>
     readCurrentLocation(),
   );
+  const [session, setSession] = useState<RuntimeSession | null>(null);
+  const [sessionError, setSessionError] = useState<string | null>(null);
 
   useEffect(() => {
     const handlePopState = () => setLocation(readCurrentLocation());
@@ -95,14 +121,43 @@ export default function App() {
     window.addEventListener("popstate", handlePopState);
     return () => window.removeEventListener("popstate", handlePopState);
   }, []);
+  useEffect(() => {
+    const controller = new AbortController();
+
+    fetchRuntimeSession(controller.signal)
+      .then((runtimeSession) => {
+        setSession(runtimeSession);
+        setSessionError(null);
+      })
+      .catch((requestError: unknown) => {
+        if (
+          requestError instanceof DOMException &&
+          requestError.name === "AbortError"
+        ) {
+          return;
+        }
+
+        setSessionError(
+          requestError instanceof Error
+            ? requestError.message
+            : "Runtime session request failed",
+        );
+      });
+
+    return () => controller.abort();
+  }, []);
 
   const activeRoute = useMemo(
     () => findWorkspaceRoute(location.pathname),
     [location.pathname],
   );
   const context = useMemo(
-    () => mergeWorkspaceContext(readWorkspaceContext(location.search)),
-    [location.search],
+    () =>
+      mergeWorkspaceContext(
+        readWorkspaceContext(location.search),
+        sessionContextDefaults(session),
+      ),
+    [location.search, session],
   );
   const activeHref = buildWorkspaceHref(activeRoute, context);
 
@@ -119,8 +174,8 @@ export default function App() {
     <AppShell>
       <WorkspaceBriefing
         eyebrow="TradeForge"
-        summary="Route selection preserves persona, workflow, and decision context while remaining a derived presentation layer over runtime APIs."
-        title="Workspace routing system"
+        summary="Session identity, persona activation, and workspace focus stay separate while the frontend consumes runtime API context."
+        title="Operational session context"
       >
         <AuthorityCue Icon={ListChecks} label="Six MVP routes" />
         <AuthorityCue Icon={GitBranch} label="Context preserved" />
@@ -135,6 +190,16 @@ export default function App() {
               context={context}
               onNavigate={handleNavigate}
             />
+            {session ? (
+              <SessionPanel
+                displayName={session.user.display_name}
+                sessionId={session.session_id}
+                userId={session.user.user_id}
+              />
+            ) : null}
+            {sessionError ? (
+              <div className="runtime-error">{sessionError}</div>
+            ) : null}
             <ContextPanel context={context} />
           </>
         }

@@ -373,7 +373,7 @@ Operational interpretation becomes persona-aware without mutating canonical trut
 
 # M7 â€” MVP Runtime Infrastructure
 
-**Status:** Planned
+**Status:** Done
 
 ## Semantic Intent
 
@@ -409,7 +409,7 @@ TradeForge transitions from conceptual architecture into usable operational soft
 * TF-0031: Create React frontend scaffold (**Done**)
 * TF-0032: Add workspace routing system (**Done**)
 * TF-0033: Add shared operational layout system (**Done**)
-* TF-0034: Add authentication/session model
+* TF-0034: Add authentication/session model (**Done**)
 
 ## Acceptance Meaning
 

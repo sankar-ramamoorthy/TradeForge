@@ -109,6 +109,8 @@ export function ContextPanel({
   return (
     <aside className="context-panel" aria-label="Selected workspace context">
       <ContextPanelItem label="Persona" value={context.persona_id} />
+      <ContextPanelItem label="Persona Version" value={context.persona_version} />
+      <ContextPanelItem label="Workspace" value={context.workspace_id} />
       <ContextPanelItem label="Workflow" value={context.selected_workflow_id} />
       <ContextPanelItem label="Decision" value={context.decision_id} />
     </aside>
@@ -127,6 +129,24 @@ function ContextPanelItem({
       <span>{label}</span>
       <strong>{value}</strong>
     </div>
+  );
+}
+
+export function SessionPanel({
+  sessionId,
+  userId,
+  displayName,
+}: {
+  sessionId: string;
+  userId: string;
+  displayName: string;
+}) {
+  return (
+    <aside className="context-panel session-panel" aria-label="Runtime session">
+      <ContextPanelItem label="User" value={displayName} />
+      <ContextPanelItem label="User ID" value={userId} />
+      <ContextPanelItem label="Session" value={sessionId} />
+    </aside>
   );
 }
 

@@ -458,6 +458,10 @@ Define workspace runtime architecture.
 
 # ADR-0022 â€” Authentication And Operational Identity
 
+## Status
+
+Accepted - created 2026-05-12
+
 ## Purpose
 
 Define identity, sessions, and operational isolation.

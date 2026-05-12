@@ -8,6 +8,7 @@ export default defineConfig({
     strictPort: false,
     proxy: {
       "/health": "http://127.0.0.1:8000",
+      "/session": "http://127.0.0.1:8000",
       "/workspaces": {
         target: "http://127.0.0.1:8000",
         bypass: (request) => {
