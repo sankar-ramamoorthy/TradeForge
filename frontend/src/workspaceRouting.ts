@@ -10,6 +10,8 @@ import {
 
 export const WORKSPACE_CONTEXT_KEYS = [
   "persona_id",
+  "persona_version",
+  "workspace_id",
   "selected_workflow_id",
   "decision_id",
 ] as const;
@@ -38,6 +40,8 @@ export type WorkspaceRouteDefinition = {
 
 export const DEFAULT_WORKSPACE_CONTEXT: Required<WorkspaceContext> = {
   persona_id: "persona.swing",
+  persona_version: "2026-05-11",
+  workspace_id: "workspace.operating",
   selected_workflow_id: "workflow.current",
   decision_id: "decision.focus",
 };
@@ -125,9 +129,11 @@ export function readWorkspaceContext(search: string): WorkspaceContext {
 
 export function mergeWorkspaceContext(
   context: WorkspaceContext,
+  defaults: WorkspaceContext = DEFAULT_WORKSPACE_CONTEXT,
 ): Required<WorkspaceContext> {
   return {
     ...DEFAULT_WORKSPACE_CONTEXT,
+    ...defaults,
     ...context,
   };
 }

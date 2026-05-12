@@ -71,7 +71,7 @@ Roadmap v2 is the active milestone direction. This register is intentionally sco
 | TF-0031 | Done | M7 | Create React frontend scaffold | `feature/tf-0031-react-frontend-scaffold` |
 | TF-0032 | Done | M7 | Add workspace routing system | `feature/tf-0032-workspace-routing-system` |
 | TF-0033 | Done | M7 | Add shared operational layout system | `feature/tf-0033-operational-layout-system` |
-| TF-0034 | Planned | M7 | Add authentication/session model | `feature/tf-0034-auth-session-model` |
+| TF-0034 | Done | M7 | Add authentication/session model | `feature/tf-0034-auth-session-model` |
 | TF-0035 | Planned | M8 | Implement Operating Workspace | `feature/tf-0035-operating-workspace` |
 | TF-0036 | Planned | M8 | Implement Opportunity Workspace | `feature/tf-0036-opportunity-workspace` |
 | TF-0037 | Planned | M8 | Implement Plan Review Workspace | `feature/tf-0037-plan-review-workspace` |
@@ -1240,7 +1240,7 @@ Post-MVP Roadmap v2 candidates TF-0042 through TF-0062 remain deferred until the
 
 ## TF-0034: Add Authentication/Session Model
 
-**Status:** Planned
+**Status:** Done
 
 **Milestone:** M7
 
@@ -1252,7 +1252,7 @@ Post-MVP Roadmap v2 candidates TF-0042 through TF-0062 remain deferred until the
 
 **Impacted Invariants:** Persona, Workspace, Replay
 
-**Implementation Summary:** Add a minimal session model that separates user identity from persona context.
+**Implementation Summary:** Added ADR 0022, immutable app-layer runtime session contracts, a local session provider, a read-only `GET /session` API endpoint, and frontend session consumption that keeps user/session identity separate from active persona and workspace context.
 
 **Acceptance Criteria:**
 
@@ -1263,6 +1263,16 @@ Post-MVP Roadmap v2 candidates TF-0042 through TF-0062 remain deferred until the
 **Out Of Scope:**
 
 - Full multi-user authorization model.
+
+**Completed Verification:**
+
+- `uv run pytest tests\test_session_model.py tests\test_fastapi_runtime.py tests\test_workspace_routing.py`
+- `uv run pytest`
+- `uv run ruff check .`
+- `uv run mypy src tests`
+- `npm.cmd run typecheck`
+- `npm.cmd run lint`
+- `npm.cmd run build`
 
 ---
 

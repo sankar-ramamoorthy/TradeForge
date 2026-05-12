@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from fastapi import FastAPI
 from src.app.api.routes import runtime_router
+from src.app.session import LocalSessionProvider, SessionProvider
 from src.domain.events import EventStore
 from src.infrastructure.event_store.in_memory import InMemoryEventStore
 from src.services.lifecycle import LifecycleOrchestrationService
@@ -23,6 +24,7 @@ def create_app(
         HistoricalReconstructionPipeline | None
     ) = None,
     workspace_projection_read_service: WorkspaceProjectionReadService | None = None,
+    session_provider: SessionProvider | None = None,
 ) -> FastAPI:
     shared_event_store = event_store or InMemoryEventStore()
     app = FastAPI(
@@ -49,6 +51,11 @@ def create_app(
         workspace_projection_read_service
         if workspace_projection_read_service is not None
         else WorkspaceProjectionReadService(shared_event_store)
+    )
+    app.state.session_provider = (
+        session_provider
+        if session_provider is not None
+        else LocalSessionProvider()
     )
     app.include_router(runtime_router)
     return app
