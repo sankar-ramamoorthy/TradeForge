@@ -439,6 +439,10 @@ Define application orchestration boundary.
 
 # ADR-0021 â€” React Workspace Runtime
 
+## Status
+
+Accepted - created 2026-05-12
+
 ## Purpose
 
 Define workspace runtime architecture.
