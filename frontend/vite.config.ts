@@ -8,7 +8,14 @@ export default defineConfig({
     strictPort: false,
     proxy: {
       "/health": "http://127.0.0.1:8000",
-      "/workspaces": "http://127.0.0.1:8000",
+      "/workspaces": {
+        target: "http://127.0.0.1:8000",
+        bypass: (request) => {
+          return request.headers.accept?.includes("text/html")
+            ? "/index.html"
+            : undefined;
+        }
+      },
       "/lifecycle": "http://127.0.0.1:8000",
       "/replay": "http://127.0.0.1:8000"
     }

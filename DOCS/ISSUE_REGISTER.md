@@ -69,7 +69,7 @@ Roadmap v2 is the active milestone direction. This register is intentionally sco
 | TF-0029 | Done | M7 | Add replay API endpoints | `feature/tf-0029-replay-api-endpoints` |
 | TF-0030 | Done | M7 | Add workspace projection APIs | `feature/tf-0030-workspace-projection-apis` |
 | TF-0031 | Done | M7 | Create React frontend scaffold | `feature/tf-0031-react-frontend-scaffold` |
-| TF-0032 | Planned | M7 | Add workspace routing system | `feature/tf-0032-workspace-routing-system` |
+| TF-0032 | Done | M7 | Add workspace routing system | `feature/tf-0032-workspace-routing-system` |
 | TF-0033 | Planned | M7 | Add shared operational layout system | `feature/tf-0033-operational-layout-system` |
 | TF-0034 | Planned | M7 | Add authentication/session model | `feature/tf-0034-auth-session-model` |
 | TF-0035 | Planned | M8 | Implement Operating Workspace | `feature/tf-0035-operating-workspace` |
@@ -1167,7 +1167,7 @@ Post-MVP Roadmap v2 candidates TF-0042 through TF-0062 remain deferred until the
 
 ## TF-0032: Add Workspace Routing System
 
-**Status:** Planned
+**Status:** Done
 
 **Milestone:** M7
 
@@ -1179,7 +1179,7 @@ Post-MVP Roadmap v2 candidates TF-0042 through TF-0062 remain deferred until the
 
 **Impacted Invariants:** Workspace, Workflow Continuity
 
-**Implementation Summary:** Implement frontend routing for the MVP workspace set.
+**Implementation Summary:** Implemented typed React workspace routing for the six core MVP workspaces with browser-history navigation, context-preserving route URLs, and derived route entry surfaces that remain inside the frontend/API presentation boundary.
 
 **Acceptance Criteria:**
 
@@ -1190,6 +1190,14 @@ Post-MVP Roadmap v2 candidates TF-0042 through TF-0062 remain deferred until the
 **Out Of Scope:**
 
 - Final visual design polish.
+
+**Completed Verification:**
+
+- `npm.cmd run typecheck`
+- `npm.cmd run lint`
+- `npm.cmd run build`
+- `uv run pytest tests\test_workspace_routing.py`
+- `uv run pytest`
 
 ---
 
