@@ -10,6 +10,7 @@ from src.domain.lifecycle import DecisionLifecycleState, derive_lifecycle_state
 from src.domain.personas import PersonaContext
 from src.services.workspace_engine.contracts import (
     DEFAULT_WORKSPACE_STATE_CONTRACTS,
+    UnknownWorkspaceStateContractError,
     WorkspaceStateAuthority,
     WorkspaceStateContract,
     WorkspaceStateContractCatalog,
@@ -135,13 +136,16 @@ class WorkspaceProjectionProjector:
     def __init__(
         self,
         route_id: WorkspaceRouteId | str,
-        persona_context: PersonaContext,
+        persona_context: PersonaContext | WorkspaceProjectionContext,
         contract_catalog: WorkspaceStateContractCatalog | None = None,
     ) -> None:
-        self._route_id = WorkspaceRouteId(route_id)
-        self._projection_context = WorkspaceProjectionContext.from_persona_context(
-            persona_context,
-        )
+        try:
+            self._route_id = WorkspaceRouteId(route_id)
+        except ValueError as error:
+            raise UnknownWorkspaceStateContractError(
+                f"unknown workspace state contract: {route_id}"
+            ) from error
+        self._projection_context = _projection_context_from(persona_context)
         self._contract_catalog = contract_catalog or WorkspaceStateContractCatalog()
 
     def project(self, events: tuple[EventEnvelope, ...]) -> WorkspaceProjection:
@@ -164,12 +168,10 @@ class WorkspaceProjectionProjector:
 class WorkspaceProjectionSetProjector:
     def __init__(
         self,
-        persona_context: PersonaContext,
+        persona_context: PersonaContext | WorkspaceProjectionContext,
         contract_catalog: WorkspaceStateContractCatalog | None = None,
     ) -> None:
-        self._projection_context = WorkspaceProjectionContext.from_persona_context(
-            persona_context,
-        )
+        self._projection_context = _projection_context_from(persona_context)
         self._contract_catalog = contract_catalog or WorkspaceStateContractCatalog()
 
     def project(self, events: tuple[EventEnvelope, ...]) -> WorkspaceProjectionSet:
@@ -210,7 +212,7 @@ class WorkspaceProjectionReadService:
     def projection_for(
         self,
         route_id: WorkspaceRouteId | str,
-        persona_context: PersonaContext,
+        persona_context: PersonaContext | WorkspaceProjectionContext,
     ) -> WorkspaceProjection:
         projector = WorkspaceProjectionProjector(
             route_id=route_id,
@@ -221,13 +223,22 @@ class WorkspaceProjectionReadService:
 
     def all_projections(
         self,
-        persona_context: PersonaContext,
+        persona_context: PersonaContext | WorkspaceProjectionContext,
     ) -> WorkspaceProjectionSet:
         projector = WorkspaceProjectionSetProjector(
             persona_context=persona_context,
             contract_catalog=self._contract_catalog,
         )
         return projector.project(self._event_store.read_events())
+
+
+def _projection_context_from(
+    persona_context: PersonaContext | WorkspaceProjectionContext,
+) -> WorkspaceProjectionContext:
+    if isinstance(persona_context, WorkspaceProjectionContext):
+        return persona_context
+
+    return WorkspaceProjectionContext.from_persona_context(persona_context)
 
 
 def _build_projection(

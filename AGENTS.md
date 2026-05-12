@@ -32,6 +32,34 @@ directory under `TradeForge/`. Codex MUST use the absolute path above when
 checking semantic authority.
 
 ---
+# Runtime Semantic Activation Rule
+
+Codex MUST use bounded semantic activation.
+
+Do NOT load the entire knowledge base by default.
+
+Before semantic loading:
+
+1. Read:
+   - C:\Users\bosto\dockerstuff\knowledge-base\TradeForge\SEMANTIC_BOOTSTRAP.md
+   - C:\Users\bosto\dockerstuff\knowledge-base\TradeForge\INVARIANTS.md
+   - C:\Users\bosto\dockerstuff\knowledge-base\TradeForge\knowledge\index\runtime-context-map.md
+
+2. Determine the dominant task category.
+
+3. Load only the semantic domains relevant to the task.
+
+Examples:
+
+- persistence work should NOT load workspace doctrine
+- replay work should NOT load UI doctrine
+- API work should NOT load AI advisory doctrine
+
+Canonical knowledge is authoritative when relevant.
+
+Canonical knowledge is NOT globally active.
+
+---
 
 # Truth Hierarchy (Mandatory)
 
@@ -42,19 +70,6 @@ When in doubt, resolve authority in this order:
 3. C:\Users\bosto\dockerstuff\TradeForge\src (execution truth)
 
 Code must NEVER override knowledge-base semantics.
-
----
-
-# Architectural Model
-
-TradeForge is built on:
-
-- event sourcing (immutable ledger)
-- decision lifecycle engine
-- persona-driven interpretation
-- workspace-based cognition
-- scenario-based intelligence layer
-- AI as advisory only
 
 ---
 
@@ -170,13 +185,9 @@ GitHub issues may mirror these records, but the repository issue register remain
    - infrastructure
    - app
 
-3. Check knowledge-base alignment:
-   - event model consistency
-   - lifecycle constraints
-   - workspace semantics
-   - persona influence rules
+3. Load only the semantic context required by the task category.
 
-4. Verify against runtime DOCS:
+4. Verify against only the relevant runtime DOCS:
    - architecture consistency
    - ADR compliance
 
@@ -252,21 +263,6 @@ No code without:
 
 ---
 
-# System Intent Reminder
-
-TradeForge exists to enforce:
-
-- disciplined decision-making
-- structured cognition
-- replayable trading behavior
-- reduced emotional execution noise
-
-NOT:
-- rapid prototyping
-- ad-hoc trading logic
-- indicator experimentation
-
----
 
 # Final Principle
 
