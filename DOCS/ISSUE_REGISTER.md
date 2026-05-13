@@ -87,6 +87,7 @@ Explicit roadmap checkpoint completed M9 Updated*Done*.
 | TF-0045 | Done | M9 | Add Massive.com market data adapter | `feature/tf-0045-massive-com-provider-adapter` |
 | TF-0046 | Done | M9 | Add Alpaca market data adapter | `feature/tf-0046-alpaca-provider-adapter` |
 | TF-0047 | Done | M9 | Implement market context workspace overlays | `feature/tf-0047-market-context-overlay` |
+| TF-0048 | Done | M9 | Implement market regime interpretation model | `feature/tf-0048-market-regime-interpreter` |
 
 Explicit roadmap checkpoint completed M9 Updated*Done*.
 Post-MVP Roadmap v2 implementation begins with M9 market-context infrastructure and provider-boundary work. 
@@ -1790,6 +1791,48 @@ M9 remains constrained to read-only advisory context and must not introduce brok
 - `uv run mypy src tests` — clean (81 files)
 - `npm.cmd run typecheck` — clean
 - `npm.cmd run lint` — clean
+- `npm.cmd run build` — clean
+
+---
+
+## TF-0048: Implement Market Regime Interpretation Model
+
+**Status:** Done
+
+**Milestone:** M9
+
+**Branch:** `feature/tf-0048-market-regime-interpreter`
+
+**Affected Layer:** domain, services, app, frontend
+
+**Linked ADRs:** ADR-0010, ADR-0032
+
+**Impacted Invariants:** Deterministic Rule Evaluation, Market Intelligence Is Interpreted Context, Derived State Must Remain Distinguishable
+
+**Implementation Summary:** Added `MarketRegimeInterpreter` Protocol to `src/domain/market/regime.py` following the `MarketDataProvider` port pattern. Implemented `SingleBarRegimeInterpreter` in `src/services/market/regime_interpreter.py` with deterministic OHLCV-based rules (priority order: HIGH_VOLATILITY → LOW_VOLATILITY → BULL → BEAR → RANGING → UNKNOWN). `MarketSnapshotService` gained an optional `regime_interpreter` parameter; when set, both `fetch_context` and `fetch_snapshot` annotate snapshots via `dataclasses.replace(snapshot, regime=...)`. Interpreter failures are caught by `_annotate()` — snapshot is returned unchanged rather than raised. `create_app()` now defaults to `MarketSnapshotService(YFinanceProvider(), SingleBarRegimeInterpreter())`. Frontend `MarketContextPanel.SnapshotRow` displays a color-coded regime badge when regime is not UNKNOWN. Existing tests are unaffected (interpreter defaults to None → UNKNOWN regime as before).
+
+**Acceptance Criteria:**
+
+- Regime classifications are deterministic and auditable.
+- Single-bar rules classify OHLCV into one of five regimes or UNKNOWN.
+- MarketSnapshotService annotates snapshots when an interpreter is provided.
+- Existing tests unaffected when no interpreter provided.
+- Regime visible in workspace overlay UI.
+- Regime always labeled INFERRED/Advisory.
+
+**Out Of Scope:**
+
+- Multi-bar historical regime (requires historical data fetching).
+- AI-based regime interpretation (M10).
+- Regime persistence or storage.
+
+**Completed Verification:**
+
+- `uv run pytest tests/test_market_regime_interpreter.py` — 19 passed
+- `uv run pytest` — 359 passed
+- `uv run ruff check .` — clean
+- `uv run mypy src tests` — clean (84 files)
+- `npm.cmd run typecheck` — clean
 - `npm.cmd run build` — clean
 
 ---

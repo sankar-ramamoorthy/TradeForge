@@ -7,6 +7,7 @@ from src.domain.events import EventStore
 from src.infrastructure.event_store.in_memory import InMemoryEventStore
 from src.infrastructure.market.yfinance_adapter import YFinanceProvider
 from src.services.lifecycle import LifecycleOrchestrationService
+from src.services.market.regime_interpreter import SingleBarRegimeInterpreter
 from src.services.market.snapshot_service import MarketSnapshotService
 from src.services.replay import (
     HistoricalReconstructionPipeline,
@@ -74,7 +75,7 @@ def create_app(
     app.state.market_snapshot_service = (
         market_snapshot_service
         if market_snapshot_service is not None
-        else MarketSnapshotService(YFinanceProvider())
+        else MarketSnapshotService(YFinanceProvider(), SingleBarRegimeInterpreter())
     )
     app.include_router(runtime_router)
     return app

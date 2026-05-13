@@ -7,17 +7,33 @@ import {
   type MarketSnapshotOverlay,
 } from "../api/runtime";
 
+const REGIME_LABELS: Record<string, string> = {
+  bull: "Bull",
+  bear: "Bear",
+  ranging: "Ranging",
+  "high-volatility": "High Vol",
+  "low-volatility": "Low Vol",
+  unknown: "—",
+};
+
 function SnapshotRow({ snap }: { snap: MarketSnapshotOverlay }) {
   const dataAsOf = new Date(snap.data_as_of).toLocaleDateString(undefined, {
     month: "short",
     day: "numeric",
     year: "numeric",
   });
+  const regimeLabel = REGIME_LABELS[snap.regime] ?? snap.regime;
+  const showRegime = snap.regime !== "unknown";
 
   return (
     <div className="market-snapshot" aria-label={`Market snapshot for ${snap.symbol}`}>
       <div className="snapshot-symbol-row">
         <span className="snapshot-symbol">{snap.symbol}</span>
+        {showRegime ? (
+          <span className={`regime-badge regime-${snap.regime}`} aria-label={`Regime: ${regimeLabel}`}>
+            {regimeLabel}
+          </span>
+        ) : null}
         <span className="field-authority-badge authority-advisory">Advisory</span>
       </div>
       <div className="snapshot-ohlcv">

@@ -583,6 +583,45 @@ p {
   font-size: 0.875rem;
 }
 
+/* ── Regime Badge ─────────────────────────────────────────────── */
+
+.regime-badge {
+  display: inline-block;
+  padding: 1px 7px;
+  border-radius: 4px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  background: var(--color-surface-muted);
+  color: var(--color-text-muted);
+}
+
+.regime-badge.regime-bull {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.regime-badge.regime-bear {
+  background: var(--color-danger-surface);
+  color: var(--color-danger);
+}
+
+.regime-badge.regime-ranging {
+  background: var(--color-surface-warm);
+  color: var(--color-attention);
+}
+
+.regime-badge.regime-high-volatility {
+  background: #fff3e0;
+  color: #e65100;
+}
+
+.regime-badge.regime-low-volatility {
+  background: var(--color-accent-surface);
+  color: #1c4f3e;
+}
+
 .market-no-data {
   color: var(--color-text-muted);
   font-size: 0.875rem;
