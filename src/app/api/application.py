@@ -7,6 +7,7 @@ from src.domain.events import EventStore
 from src.infrastructure.event_store.in_memory import InMemoryEventStore
 from src.infrastructure.market.yfinance_adapter import YFinanceProvider
 from src.services.lifecycle import LifecycleOrchestrationService
+from src.services.market.contextual_summary import ContextualSummaryService
 from src.services.market.regime_interpreter import SingleBarRegimeInterpreter
 from src.services.market.snapshot_service import MarketSnapshotService
 from src.services.replay import (
@@ -35,6 +36,7 @@ def create_app(
     ) = None,
     session_provider: SessionProvider | None = None,
     market_snapshot_service: MarketSnapshotService | None = None,
+    contextual_summary_service: ContextualSummaryService | None = None,
 ) -> FastAPI:
     shared_event_store = event_store or InMemoryEventStore()
     app = FastAPI(
@@ -72,10 +74,19 @@ def create_app(
         if session_provider is not None
         else LocalSessionProvider()
     )
-    app.state.market_snapshot_service = (
+    _market_svc = (
         market_snapshot_service
         if market_snapshot_service is not None
         else MarketSnapshotService(YFinanceProvider(), SingleBarRegimeInterpreter())
+    )
+    app.state.market_snapshot_service = _market_svc
+    app.state.contextual_summary_service = (
+        contextual_summary_service
+        if contextual_summary_service is not None
+        else ContextualSummaryService(
+            event_store=shared_event_store,
+            market_snapshot_service=_market_svc,
+        )
     )
     app.include_router(runtime_router)
     return app

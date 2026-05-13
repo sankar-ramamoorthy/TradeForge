@@ -88,6 +88,7 @@ Explicit roadmap checkpoint completed M9 Updated*Done*.
 | TF-0046 | Done | M9 | Add Alpaca market data adapter | `feature/tf-0046-alpaca-provider-adapter` |
 | TF-0047 | Done | M9 | Implement market context workspace overlays | `feature/tf-0047-market-context-overlay` |
 | TF-0048 | Done | M9 | Implement market regime interpretation model | `feature/tf-0048-market-regime-interpreter` |
+| TF-0049 | Done | M9 | Implement contextual operational summaries | `feature/tf-0049-contextual-operational-summaries` |
 
 Explicit roadmap checkpoint completed M9 Updated*Done*.
 Post-MVP Roadmap v2 implementation begins with M9 market-context infrastructure and provider-boundary work. 
@@ -1832,6 +1833,47 @@ M9 remains constrained to read-only advisory context and must not introduce brok
 - `uv run pytest` — 359 passed
 - `uv run ruff check .` — clean
 - `uv run mypy src tests` — clean (84 files)
+- `npm.cmd run typecheck` — clean
+- `npm.cmd run build` — clean
+
+---
+
+## TF-0049: Implement Contextual Operational Summaries
+
+**Status:** Done
+
+**Milestone:** M9
+
+**Branch:** `feature/tf-0049-contextual-operational-summaries`
+
+**Affected Layer:** services, app, frontend
+
+**Linked ADRs:** ADR-0010, ADR-0013, ADR-0032
+
+**Impacted Invariants:** Market Intelligence Is Interpreted Context, Derived State Must Remain Distinguishable, Workflow-Centric Architecture
+
+**Implementation Summary:** Created `ContextualSummaryService` in `src/services/market/contextual_summary.py` composing `WorkspaceSummaryReadService` (TF-0023) with optional `MarketSnapshotService` (TF-0047/0048). Service produces `ContextualOperationalSummary` with an operational headline from event history and advisory market context notes with regime classification. Market fetch failures are caught silently in `_fetch_market_notes()` — market unavailability never loses the workspace summary. Added `GET /workspaces/contextual-summary` endpoint (registered before `/{route_id}` to prevent dynamic capture). Endpoint accepts workspace context params + optional comma-separated `symbols`. `create_app()` extracts `_market_svc` local variable for reuse across both `market_snapshot_service` and `ContextualSummaryService` — no double instantiation. Created `ContextualBriefingPanel` React component with symbol input, operational headline, per-symbol market notes with regime badges, and authority boundaries. Panel integrated into `OperatingWorkspace`. All market context labeled advisory; workspace summary labeled derived.
+
+**Acceptance Criteria:**
+
+- Workspace operational state and market context are combined in one summary.
+- Market failures do not prevent workspace-only summary from rendering.
+- All market context is explicitly advisory.
+- Summary does not authorize lifecycle transitions.
+- `GET /workspaces/contextual-summary` returns structured combined response.
+
+**Out Of Scope:**
+
+- Provider provenance tracking registry (TF-0050).
+- Contextual summaries in all workspaces (only operating workspace for now).
+- Symbol auto-extraction from lifecycle event payloads.
+
+**Completed Verification:**
+
+- `uv run pytest tests/test_contextual_summary.py` — 17 passed
+- `uv run pytest` — 376 passed
+- `uv run ruff check .` — clean
+- `uv run mypy src tests` — clean (86 files)
 - `npm.cmd run typecheck` — clean
 - `npm.cmd run build` — clean
 

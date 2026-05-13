@@ -882,6 +882,105 @@ p {
   font-size: 0.84rem;
 }
 
+/* ── Contextual Briefing Panel ───────────────────────────────── */
+
+.contextual-briefing-panel {
+  margin-top: var(--space-stack);
+  padding: var(--space-compact) var(--space-panel);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-surface);
+  background: var(--color-surface-muted);
+}
+
+.contextual-briefing-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.briefing-icon {
+  width: 16px;
+  height: 16px;
+  color: var(--color-text-muted);
+  flex-shrink: 0;
+}
+
+.contextual-briefing-note {
+  margin: 0 0 12px;
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+}
+
+.contextual-briefing-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.briefing-headline {
+  display: grid;
+  gap: 4px;
+}
+
+.briefing-headline-text {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.briefing-details {
+  margin: 0;
+  padding-left: 1.2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.briefing-detail-item {
+  font-size: 0.875rem;
+  color: var(--color-text-muted);
+}
+
+.briefing-market-notes {
+  display: grid;
+  gap: 8px;
+}
+
+.briefing-notes-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.briefing-note-card {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+  background: var(--color-surface);
+}
+
+.briefing-note-symbol {
+  font-size: 0.9rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+}
+
+.briefing-note-close {
+  font-size: 0.875rem;
+  color: var(--color-text);
+  font-variant-numeric: tabular-nums;
+}
+
+.briefing-authority-note {
+  padding-top: 8px;
+  border-top: 1px solid var(--color-border);
+}
+
 @media (max-width: 860px) {
   .workspace-briefing,
   .runtime-panel,
