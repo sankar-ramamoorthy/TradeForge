@@ -82,6 +82,7 @@ Explicit roadmap checkpoint completed M9 Updated*Done*.
 | TF-0040 | Done | M8 | Implement Review Workspace | `feature/tf-0040-review-workspace` |
 | TF-0041 | Done | M8 | Implement first replayable lifecycle flow | `feature/tf-0041-first-operational-mvp-flow` |
 | TF-0042 | Done | M9 | Define provider boundary interfaces | `feature/tf-0042-provider-boundary-interfaces` |
+| TF-0043 | Done | M9 | Implement normalized market snapshot model | `feature/tf-0043-normalized-market-snapshot-model` |
 
 Explicit roadmap checkpoint completed M9 Updated*Done*.
 Post-MVP Roadmap v2 implementation begins with M9 market-context infrastructure and provider-boundary work. 
@@ -1583,6 +1584,45 @@ M9 remains constrained to read-only advisory context and must not introduce brok
 - `uv run pytest` — 218 passed
 - `uv run ruff check .` — clean
 - `uv run mypy src tests` — clean (69 files)
+
+---
+
+## TF-0043: Implement Normalized Market Snapshot Model
+
+**Status:** Done
+
+**Milestone:** M9
+
+**Branch:** `feature/tf-0043-normalized-market-snapshot-model`
+
+**Affected Layer:** services
+
+**Linked ADRs:** ADR-0010, ADR-0032
+
+**Impacted Invariants:** Layer Separation, Market Intelligence Is Interpreted Context, Derived State Must Remain Distinguishable
+
+**Implementation Summary:** Created `src/services/market/` with `MarketContextRequest` (symbols + optional persona_id), `SymbolFetchResult` (discriminated union: success with snapshot OR failure with error_reason), `MarketContextResult` (available snapshots, unavailable symbols, per-symbol record, is_complete/is_partial/is_empty properties, snapshot_for lookup, always ADVISORY authority), and `MarketSnapshotService` (stateless orchestrator: fetch_context captures partial failures gracefully, fetch_snapshot propagates ProviderUnavailableError explicitly). persona_id on MarketContextRequest is an optional placeholder for future persona-shaped context weighting in M10. No infrastructure coupling. No event ledger writes.
+
+**Acceptance Criteria:**
+
+- Normalized result model exists independent of any provider SDK.
+- Partial provider failures are captured without raising — workspace overlays can render partial context.
+- Authority is always ADVISORY on all result objects.
+- fetch_snapshot propagates ProviderUnavailableError explicitly.
+- Service is stateless — no caching, no hidden mutable state.
+
+**Out Of Scope:**
+
+- Provider adapters (TF-0044 to TF-0046).
+- Workspace overlays (TF-0047).
+- Snapshot persistence (TF-0052).
+
+**Completed Verification:**
+
+- `uv run pytest tests/test_market_snapshot_service.py` — 36 passed
+- `uv run pytest` — 254 passed
+- `uv run ruff check .` — clean
+- `uv run mypy src tests` — clean (73 files)
 
 ---
 
