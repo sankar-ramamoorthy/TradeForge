@@ -222,7 +222,7 @@ Interpretation must not mutate truth.
 
 ---
 
-# ADR-0010 â€” Market Intelligence Interpretation Layer
+# ADR-0010 â€” Market Context And Intelligence Interpretation Layer
 
 ## Purpose
 
@@ -230,7 +230,7 @@ Separate context interpretation from authority.
 
 ## Why It Matters
 
-Market intelligence remains advisory.
+Market context — including provider normalization, market snapshots, replay-aware overlays, and provider provenance — remains advisory and non-canonical.
 
 ---
 
@@ -570,7 +570,33 @@ This sequencing matters enormously.
 
 ---
 
-# ADR-0032 â€” Market Regime Interpretation Model
+# ADR-0032 â€” External Provider Boundary Model
+
+## Status
+
+Planned — required before M9 provider adapter work begins.
+
+## Purpose
+
+Define how external market data providers connect to TradeForge.
+
+## Must Define
+
+* normalized provider interface boundary
+* read-only, non-authoritative provider contract
+* provider provenance tracking requirements
+* replay-awareness boundary for external data
+* adapter replaceability constraints
+
+## Why It Matters
+
+M9 introduces yfinance, Polygon/Massive.com, and Alpaca adapters.
+
+Without an explicit boundary model, provider data risks leaking into canonical state or becoming implicit execution authority.
+
+---
+
+# ADR-0033 â€” Market Regime Interpretation Model
 
 ## Purpose
 
@@ -578,7 +604,7 @@ Define contextual market interpretation semantics.
 
 ---
 
-# ADR-0033 â€” Scenario Discovery Model
+# ADR-0034 â€” Scenario Discovery Model
 
 ## Purpose
 
@@ -586,7 +612,7 @@ Define scenario generation boundaries.
 
 ---
 
-# ADR-0034 â€” AI Replay Assistance
+# ADR-0035 â€” AI Replay Assistance
 
 ## Purpose
 
@@ -594,7 +620,7 @@ Define AI replay summarization and reconstruction assistance.
 
 ---
 
-# ADR-0035 â€” AI Review Assistance
+# ADR-0036 â€” AI Review Assistance
 
 ## Purpose
 
@@ -602,7 +628,7 @@ Define AI-assisted reflective review.
 
 ---
 
-# ADR-0036 â€” Advisory Provenance Model
+# ADR-0037 â€” Advisory Provenance Model
 
 ## Purpose
 
@@ -618,7 +644,7 @@ Do NOT introduce these too early.
 
 ---
 
-# ADR-0037 â€” Behavioral Pattern Detection Architecture
+# ADR-0038 â€” Behavioral Pattern Detection Architecture
 
 ## Purpose
 
@@ -626,7 +652,7 @@ Define adaptive behavioral analysis.
 
 ---
 
-# ADR-0038 â€” Simulation Engine Architecture
+# ADR-0039 â€” Simulation Engine Architecture
 
 ## Purpose
 
@@ -634,7 +660,7 @@ Define hypothetical replay and simulation.
 
 ---
 
-# ADR-0039 â€” Scenario Branching Replay Model
+# ADR-0040 â€” Scenario Branching Replay Model
 
 ## Purpose
 
@@ -642,7 +668,7 @@ Define alternate replay path semantics.
 
 ---
 
-# ADR-0040 â€” RL Experimentation Boundary
+# ADR-0041 â€” RL Experimentation Boundary
 
 ## Purpose
 
