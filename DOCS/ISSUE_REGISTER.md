@@ -81,6 +81,7 @@ Explicit roadmap checkpoint completed M9 Updated*Done*.
 | TF-0039 | Done | M8 | Implement Replay Workspace | `feature/tf-0039-replay-workspace` |
 | TF-0040 | Done | M8 | Implement Review Workspace | `feature/tf-0040-review-workspace` |
 | TF-0041 | Done | M8 | Implement first replayable lifecycle flow | `feature/tf-0041-first-operational-mvp-flow` |
+| TF-0042 | Done | M9 | Define provider boundary interfaces | `feature/tf-0042-provider-boundary-interfaces` |
 
 Explicit roadmap checkpoint completed M9 Updated*Done*.
 Post-MVP Roadmap v2 implementation begins with M9 market-context infrastructure and provider-boundary work. 
@@ -1542,6 +1543,46 @@ M9 remains constrained to read-only advisory context and must not introduce brok
 - `npm.cmd run typecheck` — clean
 - `npm.cmd run lint` — clean
 - `npm.cmd run build` — clean
+
+---
+
+## TF-0042: Define Provider Boundary Interfaces
+
+**Status:** Done
+
+**Milestone:** M9
+
+**Branch:** `feature/tf-0042-provider-boundary-interfaces`
+
+**Affected Layer:** domain
+
+**Linked ADRs:** ADR-0010, ADR-0032
+
+**Impacted Invariants:** Event Sourcing, Event Integrity, Replay, Historical Integrity, Layer Separation, Market Intelligence Is Interpreted Context
+
+**Implementation Summary:** Created `src/domain/market/` as the new domain market module with three files. `snapshot.py` defines immutable advisory value objects: `MarketRegime` (StrEnum), `ProviderProvenance` (fetched_at + data_as_of for replay integrity), `PriceOHLCV` (Decimal OHLCV with OHLCV invariant validation), and `MarketSnapshot` (advisory = always True). `provider.py` defines the `MarketDataProvider` Protocol port (structural subtyping, consistent with EventStore pattern) and `ProviderUnavailableError` for explicit failure handling. All provider adapters (TF-0044 to TF-0046) must implement this Protocol. Market snapshots are non-canonical advisory context and must never enter the event ledger.
+
+**Acceptance Criteria:**
+
+- Normalized market snapshot contract exists independent of any provider SDK.
+- Provider port interface (Protocol) defined and structurally verifiable.
+- Provider provenance records fetched_at and data_as_of for replay integrity.
+- Market snapshots carry is_advisory=True as explicit machine-readable contract.
+- All domain models are immutable frozen dataclasses.
+- No coupling to any external provider library.
+
+**Out Of Scope:**
+
+- Actual yfinance, Polygon, or Alpaca adapters (TF-0044 to TF-0046).
+- Workspace context overlays (TF-0047).
+- Snapshot persistence (TF-0052).
+
+**Completed Verification:**
+
+- `uv run pytest tests/test_provider_boundary.py` — 28 passed
+- `uv run pytest` — 218 passed
+- `uv run ruff check .` — clean
+- `uv run mypy src tests` — clean (69 files)
 
 ---
 
