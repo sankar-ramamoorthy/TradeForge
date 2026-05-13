@@ -570,7 +570,7 @@ non-authoritative
 
 * TF-0042: Define provider boundary interfaces (**Done**)
 * TF-0043: Implement normalized market snapshot model (**Done**)
-* TF-0044: Add read-only yfinance provider adapter
+* TF-0044: Add read-only yfinance provider adapter (**Done**)
 * TF-0045: Add Massive.com market data adapter
 * TF-0046: Add Alpaca market data adapter
 

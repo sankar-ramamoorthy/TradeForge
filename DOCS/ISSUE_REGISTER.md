@@ -83,6 +83,7 @@ Explicit roadmap checkpoint completed M9 Updated*Done*.
 | TF-0041 | Done | M8 | Implement first replayable lifecycle flow | `feature/tf-0041-first-operational-mvp-flow` |
 | TF-0042 | Done | M9 | Define provider boundary interfaces | `feature/tf-0042-provider-boundary-interfaces` |
 | TF-0043 | Done | M9 | Implement normalized market snapshot model | `feature/tf-0043-normalized-market-snapshot-model` |
+| TF-0044 | Done | M9 | Add read-only yfinance provider adapter | `feature/tf-0044-yfinance-provider-adapter` |
 
 Explicit roadmap checkpoint completed M9 Updated*Done*.
 Post-MVP Roadmap v2 implementation begins with M9 market-context infrastructure and provider-boundary work. 
@@ -1623,6 +1624,46 @@ M9 remains constrained to read-only advisory context and must not introduce brok
 - `uv run pytest` — 254 passed
 - `uv run ruff check .` — clean
 - `uv run mypy src tests` — clean (73 files)
+
+---
+
+## TF-0044: Add Read-Only yfinance Provider Adapter
+
+**Status:** Done
+
+**Milestone:** M9
+
+**Branch:** `feature/tf-0044-yfinance-provider-adapter`
+
+**Affected Layer:** infrastructure
+
+**Linked ADRs:** ADR-0032
+
+**Impacted Invariants:** Layer Separation, Market Intelligence Is Interpreted Context, Event Integrity (no ledger writes)
+
+**Implementation Summary:** Created `src/infrastructure/market/YFinanceProvider` satisfying the `MarketDataProvider` Protocol structurally. Added yfinance>=1.3.0 as a runtime dependency. Added `[[tool.mypy.overrides]]` for yfinance and pandas (ignore_missing_imports=true). Adapter uses `ticker.history(period="1d")`, takes the latest row, converts numpy float64 prices via `str(float())` to `Decimal`, normalizes timestamps to UTC. All SDK errors and empty-DataFrame responses are wrapped in `ProviderUnavailableError`. yfinance coupling is fully contained in this file — domain and services layers have no yfinance imports. Tests use `unittest.mock.patch` — no real network calls.
+
+**Acceptance Criteria:**
+
+- Adapter satisfies `MarketDataProvider` Protocol (structural, no inheritance).
+- Returns `MarketSnapshot` with full `ProviderProvenance` (fetched_at + data_as_of).
+- All SDK errors map to `ProviderUnavailableError`.
+- No event ledger writes anywhere in the adapter.
+- Tests do not make real network calls.
+
+**Out Of Scope:**
+
+- Polygon/Massive.com adapter (TF-0045).
+- Alpaca adapter (TF-0046).
+- Caching or rate-limit handling.
+- Intraday or multi-day history ranges.
+
+**Completed Verification:**
+
+- `uv run pytest tests/test_yfinance_adapter.py` — 20 passed (all mocked)
+- `uv run pytest` — 274 passed
+- `uv run ruff check .` — clean
+- `uv run mypy src tests` — clean (76 files)
 
 ---
 
