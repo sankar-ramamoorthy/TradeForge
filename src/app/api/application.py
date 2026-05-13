@@ -6,11 +6,15 @@ from src.app.session import LocalSessionProvider, SessionProvider
 from src.domain.events import EventStore
 from src.infrastructure.event_store.in_memory import InMemoryEventStore
 from src.infrastructure.market.in_memory_provenance_store import InMemoryProvenanceStore
+from src.infrastructure.market.in_memory_snapshot_store import (
+    InMemoryMarketSnapshotStore,
+)
 from src.infrastructure.market.yfinance_adapter import YFinanceProvider
 from src.services.lifecycle import LifecycleOrchestrationService
 from src.services.market.contextual_summary import ContextualSummaryService
 from src.services.market.provenance_query import ProvenanceQueryService
 from src.services.market.regime_interpreter import SingleBarRegimeInterpreter
+from src.services.market.snapshot_query import MarketSnapshotQueryService
 from src.services.market.snapshot_service import MarketSnapshotService
 from src.services.replay import (
     HistoricalReconstructionPipeline,
@@ -40,6 +44,7 @@ def create_app(
     market_snapshot_service: MarketSnapshotService | None = None,
     contextual_summary_service: ContextualSummaryService | None = None,
     provenance_query_service: ProvenanceQueryService | None = None,
+    market_snapshot_query_service: MarketSnapshotQueryService | None = None,
 ) -> FastAPI:
     shared_event_store = event_store or InMemoryEventStore()
     app = FastAPI(
@@ -78,6 +83,7 @@ def create_app(
         else LocalSessionProvider()
     )
     _provenance_store = InMemoryProvenanceStore()
+    _snapshot_store = InMemoryMarketSnapshotStore()
     _market_svc = (
         market_snapshot_service
         if market_snapshot_service is not None
@@ -85,6 +91,7 @@ def create_app(
             YFinanceProvider(),
             SingleBarRegimeInterpreter(),
             provenance_store=_provenance_store,
+            snapshot_persistence_store=_snapshot_store,
         )
     )
     app.state.market_snapshot_service = _market_svc
@@ -100,6 +107,11 @@ def create_app(
         provenance_query_service
         if provenance_query_service is not None
         else ProvenanceQueryService(_provenance_store)
+    )
+    app.state.market_snapshot_query_service = (
+        market_snapshot_query_service
+        if market_snapshot_query_service is not None
+        else MarketSnapshotQueryService(_snapshot_store)
     )
     app.include_router(runtime_router)
     return app

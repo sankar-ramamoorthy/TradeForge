@@ -6,12 +6,18 @@ from src.domain.market.snapshot import (
     PriceOHLCV,
     ProviderProvenance,
 )
+from src.domain.market.snapshot_persistence import (
+    MarketSnapshotPersistenceStore,
+    PersistedMarketSnapshot,
+)
 
 __all__ = [
     "MarketDataProvider",
     "MarketRegime",
     "MarketSnapshot",
+    "MarketSnapshotPersistenceStore",
     "PriceOHLCV",
+    "PersistedMarketSnapshot",
     "ProviderFetchRecord",
     "ProvenanceStore",
     "ProviderProvenance",

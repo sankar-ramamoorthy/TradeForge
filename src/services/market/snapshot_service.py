@@ -7,6 +7,7 @@ from src.domain.market.provenance import ProvenanceStore, ProviderFetchRecord
 from src.domain.market.provider import MarketDataProvider, ProviderUnavailableError
 from src.domain.market.regime import MarketRegimeInterpreter
 from src.domain.market.snapshot import MarketSnapshot
+from src.domain.market.snapshot_persistence import MarketSnapshotPersistenceStore
 from src.services.market.context import (
     MarketContextAuthority,
     MarketContextRequest,
@@ -38,10 +39,12 @@ class MarketSnapshotService:
         provider: MarketDataProvider,
         regime_interpreter: MarketRegimeInterpreter | None = None,
         provenance_store: ProvenanceStore | None = None,
+        snapshot_persistence_store: MarketSnapshotPersistenceStore | None = None,
     ) -> None:
         self._provider = provider
         self._regime_interpreter = regime_interpreter
         self._provenance_store = provenance_store
+        self._snapshot_persistence_store = snapshot_persistence_store
 
     def _annotate(self, snapshot: MarketSnapshot) -> MarketSnapshot:
         """Apply regime interpretation if an interpreter is configured."""
@@ -52,6 +55,14 @@ class MarketSnapshotService:
             return replace(snapshot, regime=regime)
         except Exception:
             return snapshot
+
+    def _persist_snapshot(self, snapshot: MarketSnapshot) -> None:
+        if self._snapshot_persistence_store is None:
+            return
+        try:
+            self._snapshot_persistence_store.persist(snapshot)
+        except Exception:
+            pass
 
     def _record_success(self, snapshot: MarketSnapshot) -> None:
         if self._provenance_store is None:
@@ -91,6 +102,7 @@ class MarketSnapshotService:
             try:
                 snapshot = self._annotate(self._provider.fetch_snapshot(symbol))
                 self._record_success(snapshot)
+                self._persist_snapshot(snapshot)
                 symbol_results.append(SymbolFetchResult.success(snapshot))
             except ProviderUnavailableError as exc:
                 self._record_failure(symbol, attempt_at, exc.reason)
@@ -120,6 +132,7 @@ class MarketSnapshotService:
         try:
             snapshot = self._annotate(self._provider.fetch_snapshot(symbol))
             self._record_success(snapshot)
+            self._persist_snapshot(snapshot)
             return snapshot
         except ProviderUnavailableError as exc:
             self._record_failure(symbol, attempt_at, exc.reason)
