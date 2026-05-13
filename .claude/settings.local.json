@@ -5,7 +5,13 @@
       "Bash(npm.cmd run *)",
       "Bash(cp \"C:/Users/bosto/dockerstuff/knowledge-base/TradeForge/knowledge/raw/20260512-tf-0035-operating-workspace-planning.md\" \"C:/Users/bosto/dockerstuff/knowledge-base/TradeForge/knowledge/processed/plan-20260512-tf-0035-operating-workspace.md\")",
       "Bash(cp \"C:/Users/bosto/dockerstuff/knowledge-base/TradeForge/knowledge/raw/20260512-tf-0035-operating-workspace-implementation.md\" \"C:/Users/bosto/dockerstuff/knowledge-base/TradeForge/knowledge/processed/implemented-20260512-tf-0035-operating-workspace.md\")",
-      "Bash(git checkout *)"
+      "Bash(git checkout *)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git commit -m 'Implement TF-0043: normalized market snapshot model *)",
+      "Bash(uv add *)",
+      "Bash(git commit -m 'Implement TF-0044: read-only yfinance provider adapter *)",
+      "Bash(uv sync *)"
     ]
   }
 }
