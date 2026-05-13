@@ -1,10 +1,12 @@
-# ADR 0010: Market Intelligence Interpretation Layer
+# ADR 0010: Market Context And Intelligence Interpretation Layer
 
 ## Status
 Accepted
 
 ## Context
 TradeForge needs market context to support situational awareness, scenario discovery, decision formation, exposure review, and reflection. Raw market data alone is not sufficient; operators need interpreted context such as regimes, macro conditions, volatility conditions, breadth conditions, thematic narratives, and playbook activation conditions.
+
+The system now also introduces provider normalization, market snapshots, replay-aware contextual overlays, and provider provenance — requiring a broader context model than pure "market intelligence."
 
 At the same time, market interpretation is not canonical truth and does not produce decisions. If Market Intelligence directly generated trades, mutated workflows, or became authoritative state, it would violate event sourcing and lifecycle boundaries.
 

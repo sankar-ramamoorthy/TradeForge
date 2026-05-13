@@ -20,7 +20,9 @@ Each issue records:
 
 GitHub issues may mirror these records, but this file remains the local planning source of truth.
 
-Roadmap v2 is the active milestone direction. This register is intentionally scoped through M8 for the fast MVP v1 path. Post-MVP Roadmap v2 candidates remain deferred until an explicit checkpoint.
+Roadmap v2 is the active milestone direction. This register is intentionally scoped through M8 for the fast MVP v1 path. 
+Explicit roadmap checkpoint completed M9 Updated*Done*.
+
 
 ---
 
@@ -80,7 +82,10 @@ Roadmap v2 is the active milestone direction. This register is intentionally sco
 | TF-0040 | Done | M8 | Implement Review Workspace | `feature/tf-0040-review-workspace` |
 | TF-0041 | Done | M8 | Implement first replayable lifecycle flow | `feature/tf-0041-first-operational-mvp-flow` |
 
-Post-MVP Roadmap v2 candidates TF-0042 through TF-0062 remain deferred until the MVP v1 path is underway. Do not pull M9-M13 work into the fast MVP path without an explicit roadmap checkpoint.
+Explicit roadmap checkpoint completed M9 Updated*Done*.
+Post-MVP Roadmap v2 implementation begins with M9 market-context infrastructure and provider-boundary work. 
+M9 remains constrained to read-only advisory context and must not introduce broker execution authority, autonomous AI decision systems, or non-replayable runtime behavior.
+
 
 ---
 ## TF-0001: Establish Milestone Roadmap And Issue Register

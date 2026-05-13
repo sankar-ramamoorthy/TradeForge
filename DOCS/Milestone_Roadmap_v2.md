@@ -473,51 +473,137 @@ Idea
 
 ---
 
-# M9 â€” Market Context And Scenario Layer
+
+# M9 — Market Context and Provider Layer
 
 **Status:** Planned
 
 ## Semantic Intent
 
-Introduce contextual market interpretation without surrendering decision authority.
+Introduce real-world market context through read-only provider boundaries without compromising replayability or human decision sovereignty.
 
 ## Architectural Significance
 
-Market context augments cognition rather than automating decisions.
+Market data augments operational cognition rather than becoming execution authority.
+
+TradeForge remains:
+
+```text
+a replayable discretionary cognition system
+```
+
+rather than:
+
+* a brokerage platform
+* a charting terminal
+* an automated trading engine
+* a market-scanning dashboard
+
+## Core Principle
+
+External market context is:
+
+```text
+read-only
+advisory
+replay-aware where possible
+non-canonical
+```
+
+Canonical truth continues to derive only from:
+
+* lifecycle events
+* review artifacts
+* workflow decisions
+* replayable event history
 
 ## Canonical Concepts
 
-* [[Market Intelligence]]
+* [[Market Context]]
+* [[Market Snapshot]]
+* [[Provider Boundary]]
 * [[Scenario]]
+* [[Market Regime]]
 * [[Contextual Interpretation]]
+* [[Advisory Overlay]]
+
+## MVP M9 Scope
+
+M9 introduces:
+
+* read-only market data
+* provider normalization
+* contextual workspace overlays
+* market snapshots
+* regime interpretation
+* advisory operational context
+
+M9 explicitly excludes:
+
+* live broker execution
+* autonomous AI decisions
+* automated trade placement
+* websocket infrastructure
+* high-frequency streaming
+* RL systems
+* autonomous scanning agents
+
+## Recommended Initial Providers
+
+Initial provider integrations may include:
+
+* yfinance
+* Massive.com / Polygon
+* Alpaca market data
+
+Provider selection must remain:
+
+```text
+replaceable
+normalized
+non-authoritative
+```
 
 ## Linked Runtime Issues
 
-* TF-0042: Implement market regime model
-* TF-0043: Implement sector leadership analysis
-* TF-0044: Implement market breadth interpretation
-* TF-0045: Implement scenario discovery engine
-* TF-0046: Implement context-aware workspace overlays
+### Provider Infrastructure
+
+* TF-0042: Define provider boundary interfaces
+* TF-0043: Implement normalized market snapshot model
+* TF-0044: Add read-only yfinance provider adapter
+* TF-0045: Add Massive.com market data adapter
+* TF-0046: Add Alpaca market data adapter
+
+### Workspace Context
+
+* TF-0047: Implement market context workspace overlays
+* TF-0048: Implement market regime interpretation model
+* TF-0049: Implement contextual operational summaries
+* TF-0050: Implement provider provenance tracking
+
+### Demo Enablement
+
+* TF-0051: Add seeded demo market context flow
+* TF-0052: Add replay-compatible market snapshot persistence strategy
 
 ## Acceptance Meaning
 
-* Context becomes operationally visible.
-* Scenario generation remains advisory.
+* Real-world market context becomes visible.
+* Workspace cognition becomes operationally believable.
+* Provider data remains advisory.
+* Replay boundaries remain explicit.
+* External APIs do not become canonical truth.
+* Human lifecycle authority remains preserved.
 
 ---
 
-# M10 â€” AI Advisory Boundary
 
-**Status:** Planned
-
+## M10 — AI Advisory Boundary
+Status: Planned
 ## Semantic Intent
-
 Introduce AI assistance without compromising human sovereignty.
-
 ## Architectural Significance
-
 AI remains advisory rather than authoritative.
-
 ## Canonical Concepts
 
 * [[AI Advisory Boundary]]
@@ -525,10 +611,10 @@ AI remains advisory rather than authoritative.
 
 ## Linked Runtime Issues
 
-* TF-0047: Define AI advisory interfaces
-* TF-0048: Implement replay summarization assistance
-* TF-0049: Implement review assistance
-* TF-0050: Implement advisory provenance tracking
+* TF-0053: Define AI advisory interfaces
+* TF-0054: Implement replay summarization assistance
+* TF-0055: Implement review assistance
+* TF-0056: Implement advisory provenance tracking
 
 ## Acceptance Meaning
 
@@ -538,18 +624,12 @@ AI remains advisory rather than authoritative.
 
 ---
 
-# M11 â€” Behavioral Intelligence And Adaptive Review
-
-**Status:** Planned
-
+## M11 — Behavioral Intelligence And Adaptive Review
+Status: Planned
 ## Semantic Intent
-
 Detect recurring behavioral and discipline patterns.
-
 ## Architectural Significance
-
 TradeForge evolves from replay infrastructure into adaptive operational cognition.
-
 ## Canonical Concepts
 
 * [[Behavioral Signal]]
@@ -558,30 +638,25 @@ TradeForge evolves from replay infrastructure into adaptive operational cognitio
 
 ## Linked Runtime Issues
 
-* TF-0051: Detect recurring behavioral patterns
-* TF-0052: Implement discipline signal engine
-* TF-0053: Implement review clustering
-* TF-0054: Implement historical behavior overlays
+* TF-0057: Detect recurring behavioral patterns
+* TF-0058: Implement discipline signal engine
+* TF-0059: Implement review clustering
+* TF-0060: Implement historical behavior overlays
 
 ## Acceptance Meaning
 
 * Behavioral learning becomes operational.
 * Pattern recognition augments review quality.
 
+
 ---
 
-# M12 â€” Simulation And Scenario Engine
-
-**Status:** Planned
-
+## M12 — Simulation And Scenario Engine
+Status: Planned
 ## Semantic Intent
-
 Enable simulated operational cognition environments.
-
 ## Architectural Significance
-
 Simulation supports hypothetical replay, regime experimentation, and strategy stress testing.
-
 ## Canonical Concepts
 
 * [[Simulation]]
@@ -590,30 +665,25 @@ Simulation supports hypothetical replay, regime experimentation, and strategy st
 
 ## Linked Runtime Issues
 
-* TF-0055: Implement simulation event environment
-* TF-0056: Implement hypothetical replay branching
-* TF-0057: Implement regime simulation engine
-* TF-0058: Implement simulated workspace playback
+* TF-0061: Implement simulation event environment
+* TF-0062: Implement hypothetical replay branching
+* TF-0063: Implement regime simulation engine
+* TF-0064: Implement simulated workspace playback
 
 ## Acceptance Meaning
 
 * Historical and hypothetical replay become composable.
 * Cognitive experimentation becomes possible.
 
+
 ---
 
-# M13 â€” Adaptive AI And RL Infrastructure
-
-**Status:** Planned
-
+## M13 — Adaptive AI And RL Infrastructure
+Status: Planned
 ## Semantic Intent
-
 Introduce adaptive behavioral and reinforcement-learning infrastructure.
-
 ## Architectural Significance
-
 Adaptive systems remain subordinate to replayable human cognition.
-
 ## Canonical Concepts
 
 * [[Adaptive Cognition]]
@@ -622,10 +692,10 @@ Adaptive systems remain subordinate to replayable human cognition.
 
 ## Linked Runtime Issues
 
-* TF-0059: Define RL experimentation boundaries
-* TF-0060: Implement adaptive scenario evaluation
-* TF-0061: Implement reinforcement-learning research environment
-* TF-0062: Implement adaptive playbook experimentation
+* TF-0065: Define RL experimentation boundaries
+* TF-0066: Implement adaptive scenario evaluation
+* TF-0067: Implement reinforcement-learning research environment
+* TF-0068: Implement adaptive playbook experimentation
 
 ## Acceptance Meaning
 
@@ -634,5 +704,6 @@ Adaptive systems remain subordinate to replayable human cognition.
 * Adaptive infrastructure depends on replayable historical truth.
 
 
+---
 
 
