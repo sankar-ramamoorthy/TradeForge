@@ -447,6 +447,149 @@ p {
   font-size: 0.95rem;
 }
 
+/* ── Market Context Panel ─────────────────────────────────────── */
+
+.market-context-panel {
+  margin-top: var(--space-stack);
+  padding: var(--space-compact) var(--space-panel);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-surface);
+  background: var(--color-surface-muted);
+}
+
+.market-context-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.market-context-icon {
+  width: 16px;
+  height: 16px;
+  color: var(--color-text-muted);
+  flex-shrink: 0;
+}
+
+.market-context-note {
+  margin: 0 0 12px;
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+}
+
+.market-context-input-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.symbol-input {
+  flex: 1;
+  padding: 6px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: 0.9rem;
+}
+
+.symbol-input:focus {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 1px;
+}
+
+.market-load-btn {
+  padding: 6px 16px;
+  border: 1px solid var(--color-accent);
+  border-radius: var(--radius-control);
+  background: var(--color-accent);
+  color: #fff;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.market-load-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.market-context-results {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.market-snapshot {
+  padding: 10px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+  background: var(--color-surface);
+}
+
+.snapshot-symbol-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.snapshot-symbol {
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+}
+
+.snapshot-ohlcv {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.ohlcv-item {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  font-size: 0.875rem;
+}
+
+.ohlcv-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  letter-spacing: 0.04em;
+}
+
+.snapshot-provenance {
+  border-top: 1px solid var(--color-border);
+  padding-top: 6px;
+}
+
+.provenance-detail {
+  font-size: 0.78rem;
+  color: var(--color-text-subtle);
+}
+
+.market-unavailable {
+  padding: 6px 0;
+}
+
+.market-unavailable-list {
+  margin: 2px 0 0;
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+}
+
+.market-no-data {
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+  font-style: italic;
+  margin: 0;
+}
+
 .attention-stage {
   margin-bottom: 0;
   color: var(--color-text-muted);

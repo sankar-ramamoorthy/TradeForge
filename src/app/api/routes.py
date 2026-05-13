@@ -22,6 +22,8 @@ from src.services.lifecycle import (
     LifecycleOrchestrationService,
     LifecycleTransitionRequest,
 )
+from src.services.market.context import MarketContextRequest
+from src.services.market.snapshot_service import MarketSnapshotService
 from src.services.replay import (
     HistoricalReconstructionPipeline,
     ReconstructionStateAuthority,
@@ -250,6 +252,30 @@ class OperationalAttentionQueueResponse(BaseModel):
     authority_boundaries: list[str]
 
 
+class MarketSnapshotOverlayResponse(BaseModel):
+    symbol: str
+    provider_id: str
+    fetched_at: datetime
+    data_as_of: datetime
+    open: str
+    high: str
+    low: str
+    close: str
+    volume: int
+    regime: str
+
+
+class MarketContextOverlayResponse(BaseModel):
+    authority: Literal["advisory"]
+    provider_id: str
+    fetched_at: datetime
+    available: list[MarketSnapshotOverlayResponse]
+    unavailable_symbols: list[str]
+    is_complete: bool
+    is_partial: bool
+    is_empty: bool
+
+
 def _lifecycle_service_from(request: Request) -> LifecycleOrchestrationService:
     service = getattr(request.app.state, "lifecycle_service", None)
     if not isinstance(service, LifecycleOrchestrationService):
@@ -302,6 +328,13 @@ def _session_provider_from(request: Request) -> SessionProvider:
     if not isinstance(provider, SessionProvider):
         raise RuntimeError("session provider is not configured")
     return provider
+
+
+def _market_snapshot_service_from(request: Request) -> MarketSnapshotService:
+    service = getattr(request.app.state, "market_snapshot_service", None)
+    if not isinstance(service, MarketSnapshotService):
+        raise RuntimeError("market snapshot service is not configured")
+    return service
 
 
 def _workspace_projection_context_from_query(
@@ -717,6 +750,55 @@ def get_operating_attention_queue(
     )
     queue = _attention_queue_read_service_from(request).queue_for(persona_context)
     return _operational_attention_queue_response(queue)
+
+
+@workspace_router.get(
+    "/market-context",
+    response_model=MarketContextOverlayResponse,
+)
+def get_market_context_overlay(
+    request: Request,
+    symbols: str = Query(min_length=1),
+) -> MarketContextOverlayResponse:
+    """Return advisory market context for one or more comma-separated symbols.
+
+    Authority is always ADVISORY. Snapshots are non-canonical derived context
+    and must not be written to the event ledger.
+    """
+    symbol_list = tuple(
+        s.strip().upper() for s in symbols.split(",") if s.strip()
+    )
+    if not symbol_list:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={"message": "symbols must contain at least one valid ticker"},
+        )
+    mkt_request = MarketContextRequest(symbols=symbol_list)
+    result = _market_snapshot_service_from(request).fetch_context(mkt_request)
+    return MarketContextOverlayResponse(
+        authority="advisory",
+        provider_id=result.provider_id,
+        fetched_at=result.fetched_at,
+        available=[
+            MarketSnapshotOverlayResponse(
+                symbol=snap.symbol,
+                provider_id=snap.provider_id,
+                fetched_at=snap.provenance.fetched_at,
+                data_as_of=snap.provenance.data_as_of,
+                open=str(snap.price.open),
+                high=str(snap.price.high),
+                low=str(snap.price.low),
+                close=str(snap.price.close),
+                volume=snap.price.volume,
+                regime=snap.regime.value,
+            )
+            for snap in result.available
+        ],
+        unavailable_symbols=list(result.unavailable_symbols),
+        is_complete=result.is_complete,
+        is_partial=result.is_partial,
+        is_empty=result.is_empty,
+    )
 
 
 @workspace_router.get("/{route_id}", response_model=WorkspaceProjectionResponse)

@@ -86,6 +86,7 @@ Explicit roadmap checkpoint completed M9 Updated*Done*.
 | TF-0044 | Done | M9 | Add read-only yfinance provider adapter | `feature/tf-0044-yfinance-provider-adapter` |
 | TF-0045 | Done | M9 | Add Massive.com market data adapter | `feature/tf-0045-massive-com-provider-adapter` |
 | TF-0046 | Done | M9 | Add Alpaca market data adapter | `feature/tf-0046-alpaca-provider-adapter` |
+| TF-0047 | Done | M9 | Implement market context workspace overlays | `feature/tf-0047-market-context-overlay` |
 
 Explicit roadmap checkpoint completed M9 Updated*Done*.
 Post-MVP Roadmap v2 implementation begins with M9 market-context infrastructure and provider-boundary work. 
@@ -1746,6 +1747,50 @@ M9 remains constrained to read-only advisory context and must not introduce brok
 - `uv run pytest` — 322 passed
 - `uv run ruff check .` — clean
 - `uv run mypy src tests` — clean (80 files)
+
+---
+
+## TF-0047: Implement Market Context Workspace Overlays
+
+**Status:** Done
+
+**Milestone:** M9
+
+**Branch:** `feature/tf-0047-market-context-overlay`
+
+**Affected Layer:** app, services (wiring), frontend
+
+**Linked ADRs:** ADR-0032, ADR-0020, ADR-0021
+
+**Impacted Invariants:** Layer Separation, Market Intelligence Is Interpreted Context, Derived State Must Remain Distinguishable, AI Advisory Boundary
+
+**Implementation Summary:** Implemented `GET /workspaces/market-context` endpoint in the workspace router (registered before `/{route_id}` to prevent dynamic-segment capture). Endpoint accepts comma-separated `symbols` query param, delegates to `MarketSnapshotService.fetch_context()`, returns `MarketContextOverlayResponse` with OHLCV data, provider provenance, and completeness flags. `create_app()` now wires `MarketSnapshotService(YFinanceProvider())` as the default `market_snapshot_service`; other providers can be injected for production. Added `MarketSnapshotOverlay` + `MarketContextOverlay` TypeScript types and `fetchMarketContext` function to `frontend/src/api/runtime.ts`. Created `MarketContextPanel` React component with symbol text input, OHLCV display, and explicit ADVISORY boundary labels. Integrated panel into `OpportunityWorkspace` and `ActivePositionWorkspace`. Partial provider failures return 200 with `is_partial=True` — workspace overlay degrades gracefully. All market snapshots carry `ProviderProvenance` (fetched_at + data_as_of) for future replay-compatible persistence (TF-0052). Decimal prices serialized as strings for precision preservation through JSON.
+
+**Acceptance Criteria:**
+
+- Market context is surfaced in at least two workspaces.
+- All market data is explicitly labeled as ADVISORY.
+- Provider provenance (provider identity, data timestamp) is visible.
+- Partial provider failures do not crash the overlay.
+- Market context does not mutate lifecycle state.
+
+**Out Of Scope:**
+
+- Market regime interpretation (TF-0048).
+- Contextual operational summaries (TF-0049).
+- Provider provenance tracking registry (TF-0050).
+- Symbol auto-extraction from lifecycle event payloads.
+- Live chart rendering.
+
+**Completed Verification:**
+
+- `uv run pytest tests/test_market_context_overlay.py` — 18 passed
+- `uv run pytest` — 340 passed
+- `uv run ruff check .` — clean
+- `uv run mypy src tests` — clean (81 files)
+- `npm.cmd run typecheck` — clean
+- `npm.cmd run lint` — clean
+- `npm.cmd run build` — clean
 
 ---
 

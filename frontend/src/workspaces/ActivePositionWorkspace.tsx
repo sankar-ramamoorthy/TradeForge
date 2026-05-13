@@ -8,6 +8,7 @@ import {
   type WorkspaceProjection,
 } from "../api/runtime";
 import { type WorkspaceContext } from "../workspaceRouting";
+import { MarketContextPanel } from "./MarketContextPanel";
 
 type TransitionState = "idle" | "transitioning" | "error";
 
@@ -210,6 +211,8 @@ export function ActivePositionWorkspace({ context }: ActivePositionWorkspaceProp
               );
             })}
           </div>
+
+          <MarketContextPanel />
 
           <div className="attention-authority-note" aria-label="Authority boundaries">
             {projection.authority_boundaries.map((boundary) => (
