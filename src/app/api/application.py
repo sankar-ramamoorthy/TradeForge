@@ -10,7 +10,10 @@ from src.services.replay import (
     HistoricalReconstructionPipeline,
     ReplayTimelineService,
 )
-from src.services.workspace_engine import WorkspaceProjectionReadService
+from src.services.workspace_engine import (
+    OperationalAttentionQueueReadService,
+    WorkspaceProjectionReadService,
+)
 
 APP_TITLE = "TradeForge Runtime"
 APP_VERSION = "0.1.0"
@@ -24,6 +27,9 @@ def create_app(
         HistoricalReconstructionPipeline | None
     ) = None,
     workspace_projection_read_service: WorkspaceProjectionReadService | None = None,
+    operational_attention_queue_read_service: (
+        OperationalAttentionQueueReadService | None
+    ) = None,
     session_provider: SessionProvider | None = None,
 ) -> FastAPI:
     shared_event_store = event_store or InMemoryEventStore()
@@ -51,6 +57,11 @@ def create_app(
         workspace_projection_read_service
         if workspace_projection_read_service is not None
         else WorkspaceProjectionReadService(shared_event_store)
+    )
+    app.state.operational_attention_queue_read_service = (
+        operational_attention_queue_read_service
+        if operational_attention_queue_read_service is not None
+        else OperationalAttentionQueueReadService(shared_event_store)
     )
     app.state.session_provider = (
         session_provider

@@ -25,6 +25,12 @@ import {
   WorkspaceNavigation,
   WorkspaceSurface,
 } from "./operationalLayout";
+import { ActivePositionWorkspace } from "./workspaces/ActivePositionWorkspace";
+import { OperatingWorkspace } from "./workspaces/OperatingWorkspace";
+import { OpportunityWorkspace } from "./workspaces/OpportunityWorkspace";
+import { PlanReviewWorkspace } from "./workspaces/PlanReviewWorkspace";
+import { ReplayWorkspace } from "./workspaces/ReplayWorkspace";
+import { ReviewWorkspace } from "./workspaces/ReviewWorkspace";
 import "./styles.css";
 import {
   buildWorkspaceHref,
@@ -204,7 +210,39 @@ export default function App() {
           </>
         }
       >
-        <WorkspaceSurface route={activeRoute} />
+        {activeRoute.id === "operating" ? (
+          <OperatingWorkspace
+            context={context}
+            onNavigate={handleNavigate}
+          />
+        ) : activeRoute.id === "opportunity" ? (
+          <OpportunityWorkspace
+            context={context}
+            onNavigate={handleNavigate}
+          />
+        ) : activeRoute.id === "plan-review" ? (
+          <PlanReviewWorkspace
+            context={context}
+            onNavigate={handleNavigate}
+          />
+        ) : activeRoute.id === "active-position" ? (
+          <ActivePositionWorkspace
+            context={context}
+            onNavigate={handleNavigate}
+          />
+        ) : activeRoute.id === "replay" ? (
+          <ReplayWorkspace
+            context={context}
+            onNavigate={handleNavigate}
+          />
+        ) : activeRoute.id === "review" ? (
+          <ReviewWorkspace
+            context={context}
+            onNavigate={handleNavigate}
+          />
+        ) : (
+          <WorkspaceSurface route={activeRoute} />
+        )}
         <ContextLink
           Icon={ArrowRight}
           href={activeHref}

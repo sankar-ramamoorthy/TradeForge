@@ -8,6 +8,15 @@ from pydantic import BaseModel, Field
 from src.app.session import SessionProvider
 from src.domain.events import EntityReference
 from src.domain.lifecycle import LifecycleStage
+from src.domain.personas import (
+    PersonaContext,
+    PersonaDecisionVelocity,
+    PersonaInterpretationProfile,
+    PersonaRiskFraming,
+    PersonaSignalPreference,
+    PersonaTimeHorizon,
+    PersonaVersion,
+)
 from src.domain.replay import ProjectionAuthority, ReplayTimelineEntryKind
 from src.services.lifecycle import (
     LifecycleOrchestrationService,
@@ -19,6 +28,8 @@ from src.services.replay import (
     ReplayTimelineService,
 )
 from src.services.workspace_engine import (
+    OperationalAttentionQueue,
+    OperationalAttentionQueueReadService,
     UnknownWorkspaceStateContractError,
     WorkspaceProjection,
     WorkspaceProjectionContext,
@@ -215,6 +226,30 @@ class WorkspaceProjectionSetResponse(BaseModel):
     projections: dict[WorkspaceRouteId, WorkspaceProjectionResponse]
 
 
+class AttentionItemResponse(BaseModel):
+    item_id: str
+    category: str
+    reason: str
+    priority: int
+    priority_label: str
+    route_id: str
+    explanation: str
+    lifecycle_stage: LifecycleStage | None
+    source_event_count: int
+    source_event_types: list[str]
+
+
+class OperationalAttentionQueueResponse(BaseModel):
+    authority: str
+    persona_id: str
+    persona_version: str
+    workspace_id: str
+    workflow_id: str | None
+    decision_id: str | None
+    items: list[AttentionItemResponse]
+    authority_boundaries: list[str]
+
+
 def _lifecycle_service_from(request: Request) -> LifecycleOrchestrationService:
     service = getattr(request.app.state, "lifecycle_service", None)
     if not isinstance(service, LifecycleOrchestrationService):
@@ -247,6 +282,21 @@ def _workspace_projection_read_service_from(
     return service
 
 
+def _attention_queue_read_service_from(
+    request: Request,
+) -> OperationalAttentionQueueReadService:
+    service = getattr(
+        request.app.state,
+        "operational_attention_queue_read_service",
+        None,
+    )
+    if not isinstance(service, OperationalAttentionQueueReadService):
+        raise RuntimeError(
+            "operational attention queue read service is not configured"
+        )
+    return service
+
+
 def _session_provider_from(request: Request) -> SessionProvider:
     provider = getattr(request.app.state, "session_provider", None)
     if not isinstance(provider, SessionProvider):
@@ -267,6 +317,70 @@ def _workspace_projection_context_from_query(
         workspace_id=workspace_id,
         workflow_id=workflow_id,
         decision_id=decision_id,
+    )
+
+
+_ATTENTION_PRIORITY_LABELS: dict[int, str] = {
+    10: "low",
+    20: "medium",
+    30: "high",
+    40: "critical",
+}
+
+
+def _default_persona_context(
+    persona_id: str,
+    persona_version: str,
+    workspace_id: str,
+    workflow_id: str | None,
+    decision_id: str | None,
+) -> PersonaContext:
+    return PersonaContext(
+        profile=PersonaInterpretationProfile(
+            persona_version=PersonaVersion(
+                persona_id=persona_id,
+                version=persona_version,
+            ),
+            name=persona_id,
+            time_horizon=PersonaTimeHorizon.SWING,
+            risk_framing=PersonaRiskFraming.BALANCED,
+            decision_velocity=PersonaDecisionVelocity.BALANCED,
+            signal_preferences=(PersonaSignalPreference.MULTI_FACTOR,),
+        ),
+        workspace_id=workspace_id,
+        workflow_id=workflow_id,
+        decision_id=decision_id,
+    )
+
+
+def _operational_attention_queue_response(
+    queue: OperationalAttentionQueue,
+) -> OperationalAttentionQueueResponse:
+    return OperationalAttentionQueueResponse(
+        authority=queue.authority.value,
+        persona_id=queue.persona_id,
+        persona_version=queue.persona_version,
+        workspace_id=queue.workspace_id,
+        workflow_id=queue.workflow_id,
+        decision_id=queue.decision_id,
+        items=[
+            AttentionItemResponse(
+                item_id=item.item_id,
+                category=item.category.value,
+                reason=item.reason.value,
+                priority=int(item.priority),
+                priority_label=_ATTENTION_PRIORITY_LABELS.get(
+                    int(item.priority), "medium"
+                ),
+                route_id=item.route_id.value,
+                explanation=item.explanation,
+                lifecycle_stage=item.lifecycle_stage,
+                source_event_count=len(item.source_events),
+                source_event_types=list(item.source_event_types),
+            )
+            for item in queue.items
+        ],
+        authority_boundaries=list(queue.authority_boundaries),
     )
 
 
@@ -580,6 +694,29 @@ def get_workspace_projections(
         request
     ).all_projections(context)
     return _workspace_projection_set_response(projection_set)
+
+
+@workspace_router.get(
+    "/operating/attention",
+    response_model=OperationalAttentionQueueResponse,
+)
+def get_operating_attention_queue(
+    request: Request,
+    persona_id: str = Query(min_length=1),
+    persona_version: str = Query(min_length=1),
+    workspace_id: str = Query(min_length=1),
+    workflow_id: str | None = Query(default=None, min_length=1),
+    decision_id: str | None = Query(default=None, min_length=1),
+) -> OperationalAttentionQueueResponse:
+    persona_context = _default_persona_context(
+        persona_id=persona_id,
+        persona_version=persona_version,
+        workspace_id=workspace_id,
+        workflow_id=workflow_id,
+        decision_id=decision_id,
+    )
+    queue = _attention_queue_read_service_from(request).queue_for(persona_context)
+    return _operational_attention_queue_response(queue)
 
 
 @workspace_router.get("/{route_id}", response_model=WorkspaceProjectionResponse)
