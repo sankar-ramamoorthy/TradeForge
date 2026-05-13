@@ -583,7 +583,7 @@ non-authoritative
 
 ### Demo Enablement
 
-* TF-0051: Add seeded demo market context flow
+* TF-0051: Add seeded demo market context flow (**Done**)
 * TF-0052: Add replay-compatible market snapshot persistence strategy
 
 ## Acceptance Meaning

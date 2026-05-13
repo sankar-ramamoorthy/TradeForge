@@ -90,6 +90,7 @@ Explicit roadmap checkpoint completed M9 Updated*Done*.
 | TF-0048 | Done | M9 | Implement market regime interpretation model | `feature/tf-0048-market-regime-interpreter` |
 | TF-0049 | Done | M9 | Implement contextual operational summaries | `feature/tf-0049-contextual-operational-summaries` |
 | TF-0050 | Done | M9 | Implement provider provenance tracking | `feature/tf-0050-provider-provenance-tracking` |
+| TF-0051 | Done | M9 | Add seeded demo market context flow | `feature/tf-0051-seeded-demo-flow` |
 
 Explicit roadmap checkpoint completed M9 Updated*Done*.
 Post-MVP Roadmap v2 implementation begins with M9 market-context infrastructure and provider-boundary work. 
@@ -1920,6 +1921,46 @@ M9 remains constrained to read-only advisory context and must not introduce brok
 - `uv run pytest` — 415 passed
 - `uv run ruff check .` — clean
 - `uv run mypy src tests` — clean (90 files)
+
+---
+
+## TF-0051: Add Seeded Demo Market Context Flow
+
+**Status:** Done
+
+**Milestone:** M9
+
+**Branch:** `feature/tf-0051-seeded-demo-flow`
+
+**Affected Layer:** infrastructure, tests
+
+**Linked ADRs:** ADR-0032
+
+**Impacted Invariants:** Layer Separation, Market Intelligence Is Interpreted Context, Event Integrity (no ledger writes)
+
+**Implementation Summary:** Implemented `SeededMarketDataProvider` satisfying the `MarketDataProvider` Protocol structurally — same normalized boundary as live providers per ADR-0032. The provider holds a static `_DEMO_SEED` dataset of 7 symbols (AAPL, TSLA, NVDA, SPY, QQQ, GLD, TLT) that together cover all five interpretable regime outcomes (BULL, HIGH_VOLATILITY, RANGING, BEAR, LOW_VOLATILITY). Raises `ProviderUnavailableError` for unknown symbols consistent with live adapters. Optional `fetched_at` injection supports deterministic test timestamps. `available_symbols` property exposes the seeded symbol set. The demo flow is enabled by injecting `SeededMarketDataProvider` into `MarketSnapshotService` via the existing `create_app(market_snapshot_service=...)` parameter — no application-layer or domain-layer changes required. The test suite exercises the complete M9 stack end-to-end: provider → regime interpreter → provenance tracking → workspace overlays → contextual summary → API endpoints.
+
+**Acceptance Criteria:**
+
+- SeededMarketDataProvider satisfies MarketDataProvider Protocol structurally.
+- Seed data produces deterministic snapshots with full ProviderProvenance.
+- All five interpretable regimes are covered by the seed dataset.
+- Unknown symbols raise ProviderUnavailableError consistent with live providers.
+- Complete M9 API demo flow passes with seeded data and no live API calls.
+- Demo flow uses same normalized boundary as production providers (ADR-0032).
+
+**Out Of Scope:**
+
+- Replay-compatible market snapshot persistence (TF-0052).
+- Frontend demo mode toggle.
+- Seeding historical multi-day data.
+
+**Completed Verification:**
+
+- `uv run pytest tests/test_seeded_demo_flow.py` — 33 passed
+- `uv run pytest` — 448 passed
+- `uv run ruff check .` — clean
+- `uv run mypy src tests` — clean (92 files)
 
 ---
 
