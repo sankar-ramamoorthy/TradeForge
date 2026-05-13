@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import replace
 from datetime import UTC, datetime
 
+from src.domain.market.provenance import ProvenanceStore, ProviderFetchRecord
 from src.domain.market.provider import MarketDataProvider, ProviderUnavailableError
 from src.domain.market.regime import MarketRegimeInterpreter
 from src.domain.market.snapshot import MarketSnapshot
@@ -21,6 +22,9 @@ class MarketSnapshotService:
     When an interpreter is provided, fetched snapshots are annotated with an
     inferred regime classification before being returned.
 
+    When a provenance_store is provided, each fetch outcome (success or failure)
+    is automatically recorded as an advisory ProviderFetchRecord.
+
     fetch_context handles partial provider failures gracefully — unavailable
     symbols are recorded rather than raising, so workspace overlays can render
     partial context without crashing.
@@ -33,9 +37,11 @@ class MarketSnapshotService:
         self,
         provider: MarketDataProvider,
         regime_interpreter: MarketRegimeInterpreter | None = None,
+        provenance_store: ProvenanceStore | None = None,
     ) -> None:
         self._provider = provider
         self._regime_interpreter = regime_interpreter
+        self._provenance_store = provenance_store
 
     def _annotate(self, snapshot: MarketSnapshot) -> MarketSnapshot:
         """Apply regime interpretation if an interpreter is configured."""
@@ -47,6 +53,30 @@ class MarketSnapshotService:
         except Exception:
             return snapshot
 
+    def _record_success(self, snapshot: MarketSnapshot) -> None:
+        if self._provenance_store is None:
+            return
+        record = ProviderFetchRecord.for_success(
+            provider_id=snapshot.provenance.provider_id,
+            provider_version=snapshot.provenance.provider_version,
+            symbol=snapshot.symbol,
+            fetched_at=snapshot.provenance.fetched_at,
+            data_as_of=snapshot.provenance.data_as_of,
+        )
+        self._provenance_store.record_fetch(record)
+
+    def _record_failure(self, symbol: str, fetched_at: datetime, reason: str) -> None:
+        if self._provenance_store is None:
+            return
+        record = ProviderFetchRecord.for_failure(
+            provider_id=self._provider.provider_id,
+            provider_version=self._provider.provider_version,
+            symbol=symbol,
+            fetched_at=fetched_at,
+            error_reason=reason,
+        )
+        self._provenance_store.record_fetch(record)
+
     def fetch_context(self, request: MarketContextRequest) -> MarketContextResult:
         """Fetch normalized advisory context for all requested symbols.
 
@@ -57,10 +87,13 @@ class MarketSnapshotService:
         symbol_results: list[SymbolFetchResult] = []
 
         for symbol in request.symbols:
+            attempt_at = datetime.now(UTC)
             try:
                 snapshot = self._annotate(self._provider.fetch_snapshot(symbol))
+                self._record_success(snapshot)
                 symbol_results.append(SymbolFetchResult.success(snapshot))
             except ProviderUnavailableError as exc:
+                self._record_failure(symbol, attempt_at, exc.reason)
                 symbol_results.append(SymbolFetchResult.failure(symbol, exc.reason))
 
         available = tuple(
@@ -83,4 +116,11 @@ class MarketSnapshotService:
         Propagates ProviderUnavailableError if the provider cannot fulfil
         the request — callers that need the data must handle the failure.
         """
-        return self._annotate(self._provider.fetch_snapshot(symbol))
+        attempt_at = datetime.now(UTC)
+        try:
+            snapshot = self._annotate(self._provider.fetch_snapshot(symbol))
+            self._record_success(snapshot)
+            return snapshot
+        except ProviderUnavailableError as exc:
+            self._record_failure(symbol, attempt_at, exc.reason)
+            raise

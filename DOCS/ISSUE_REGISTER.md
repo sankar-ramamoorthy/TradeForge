@@ -89,6 +89,7 @@ Explicit roadmap checkpoint completed M9 Updated*Done*.
 | TF-0047 | Done | M9 | Implement market context workspace overlays | `feature/tf-0047-market-context-overlay` |
 | TF-0048 | Done | M9 | Implement market regime interpretation model | `feature/tf-0048-market-regime-interpreter` |
 | TF-0049 | Done | M9 | Implement contextual operational summaries | `feature/tf-0049-contextual-operational-summaries` |
+| TF-0050 | Done | M9 | Implement provider provenance tracking | `feature/tf-0050-provider-provenance-tracking` |
 
 Explicit roadmap checkpoint completed M9 Updated*Done*.
 Post-MVP Roadmap v2 implementation begins with M9 market-context infrastructure and provider-boundary work. 
@@ -1876,6 +1877,49 @@ M9 remains constrained to read-only advisory context and must not introduce brok
 - `uv run mypy src tests` — clean (86 files)
 - `npm.cmd run typecheck` — clean
 - `npm.cmd run build` — clean
+
+---
+
+## TF-0050: Implement Provider Provenance Tracking
+
+**Status:** Done
+
+**Milestone:** M9
+
+**Branch:** `feature/tf-0050-provider-provenance-tracking`
+
+**Affected Layer:** domain, infrastructure, services, app
+
+**Linked ADRs:** ADR-0032
+
+**Impacted Invariants:** Layer Separation, Market Intelligence Is Interpreted Context, Derived State Must Remain Distinguishable, Event Integrity (no ledger writes), Replay
+
+**Implementation Summary:** Implemented an advisory provider provenance registry as a separate port/store distinct from the event ledger. Added `ProviderFetchRecord` (immutable domain value object with `for_success`/`for_failure` factories), `ProvenanceStore` Protocol port, and `InMemoryProvenanceStore` infrastructure adapter (session-scoped; persistent storage is TF-0052). `MarketSnapshotService` gained an optional `provenance_store` parameter that auto-records each fetch outcome (success or failure) without changing existing behavior when unset. Added `ProvenanceQueryService` for read-only advisory queries with success/failure counts and provider/symbol summary. Added `GET /provenance/market-data` endpoint with optional since/until/provider_id/symbol filters. In `create_app()`, a single `InMemoryProvenanceStore` instance is shared between `MarketSnapshotService` (writes) and `ProvenanceQueryService` (reads). All provenance records carry `is_advisory=True` and must never be written to the event ledger.
+
+**Acceptance Criteria:**
+
+- `ProviderFetchRecord` captures both successful and failed fetch interactions.
+- `InMemoryProvenanceStore` satisfies `ProvenanceStore` Protocol structurally.
+- `MarketSnapshotService` records fetch outcomes when a provenance_store is injected.
+- Failure records are first-class — capturing what was attempted but unavailable.
+- `ProvenanceQueryService` returns advisory query results with summary statistics.
+- `GET /provenance/market-data` returns provenance records with optional filters.
+- All provenance artifacts are explicitly advisory and non-canonical.
+- No provenance write to the event ledger.
+
+**Out Of Scope:**
+
+- Persistent provenance storage (TF-0052).
+- Replay Workspace UI integration for provenance (TF-0052 territory).
+- Symbol auto-extraction from lifecycle events.
+- Pagination for large provenance logs.
+
+**Completed Verification:**
+
+- `uv run pytest tests/test_provider_provenance.py` — 39 passed
+- `uv run pytest` — 415 passed
+- `uv run ruff check .` — clean
+- `uv run mypy src tests` — clean (90 files)
 
 ---
 

@@ -24,6 +24,7 @@ from src.services.lifecycle import (
 )
 from src.services.market.context import MarketContextRequest
 from src.services.market.contextual_summary import ContextualSummaryService
+from src.services.market.provenance_query import ProvenanceQueryService
 from src.services.market.snapshot_service import MarketSnapshotService
 from src.services.replay import (
     HistoricalReconstructionPipeline,
@@ -46,6 +47,7 @@ runtime_router = APIRouter(tags=["runtime"])
 lifecycle_router = APIRouter(prefix="/lifecycle", tags=["lifecycle"])
 replay_router = APIRouter(prefix="/replay", tags=["replay"])
 workspace_router = APIRouter(prefix="/workspaces", tags=["workspaces"])
+provenance_router = APIRouter(prefix="/provenance", tags=["provenance"])
 
 
 class RuntimeStatusResponse(BaseModel):
@@ -298,6 +300,27 @@ class ContextualSummaryResponse(BaseModel):
     authority_boundaries: list[str]
 
 
+class ProviderFetchRecordResponse(BaseModel):
+    provider_id: str
+    provider_version: str
+    symbol: str
+    fetched_at: datetime
+    outcome: str
+    data_as_of: datetime | None
+    error_reason: str | None
+    is_advisory: bool
+
+
+class ProvenanceQueryResponse(BaseModel):
+    authority: Literal["advisory"]
+    total_count: int
+    success_count: int
+    failure_count: int
+    providers_seen: list[str]
+    symbols_seen: list[str]
+    records: list[ProviderFetchRecordResponse]
+
+
 def _lifecycle_service_from(request: Request) -> LifecycleOrchestrationService:
     service = getattr(request.app.state, "lifecycle_service", None)
     if not isinstance(service, LifecycleOrchestrationService):
@@ -363,6 +386,13 @@ def _contextual_summary_service_from(request: Request) -> ContextualSummaryServi
     service = getattr(request.app.state, "contextual_summary_service", None)
     if not isinstance(service, ContextualSummaryService):
         raise RuntimeError("contextual summary service is not configured")
+    return service
+
+
+def _provenance_query_service_from(request: Request) -> ProvenanceQueryService:
+    service = getattr(request.app.state, "provenance_query_service", None)
+    if not isinstance(service, ProvenanceQueryService):
+        raise RuntimeError("provenance query service is not configured")
     return service
 
 
@@ -918,6 +948,50 @@ def get_workspace_projection(
     return _workspace_projection_response(projection)
 
 
+@provenance_router.get("/market-data", response_model=ProvenanceQueryResponse)
+def get_market_data_provenance(
+    request: Request,
+    since: datetime | None = None,
+    until: datetime | None = None,
+    provider_id: str | None = Query(default=None, min_length=1),
+    symbol: str | None = Query(default=None, min_length=1),
+) -> ProvenanceQueryResponse:
+    """Return the advisory provider provenance registry for market data fetches.
+
+    Records all fetch interactions (successes and failures) for auditing and
+    replay integrity purposes. All records are advisory — not canonical truth.
+    Supports optional filtering by time range, provider, and symbol.
+    """
+    result = _provenance_query_service_from(request).query(
+        since=since,
+        until=until,
+        provider_id=provider_id,
+        symbol=symbol,
+    )
+    return ProvenanceQueryResponse(
+        authority="advisory",
+        total_count=result.total_count,
+        success_count=result.success_count,
+        failure_count=result.failure_count,
+        providers_seen=list(result.providers_seen),
+        symbols_seen=list(result.symbols_seen),
+        records=[
+            ProviderFetchRecordResponse(
+                provider_id=record.provider_id,
+                provider_version=record.provider_version,
+                symbol=record.symbol,
+                fetched_at=record.fetched_at,
+                outcome=record.outcome,
+                data_as_of=record.data_as_of,
+                error_reason=record.error_reason,
+                is_advisory=record.is_advisory,
+            )
+            for record in result.records
+        ],
+    )
+
+
 runtime_router.include_router(lifecycle_router)
 runtime_router.include_router(replay_router)
 runtime_router.include_router(workspace_router)
+runtime_router.include_router(provenance_router)
