@@ -576,8 +576,8 @@ non-authoritative
 
 ### Workspace Context
 
-* TF-0047: Implement market context workspace overlays
-* TF-0048: Implement market regime interpretation model
+* TF-0047: Implement market context workspace overlays (**Done**)
+* TF-0048: Implement market regime interpretation model (**Done**)
 * TF-0049: Implement contextual operational summaries
 * TF-0050: Implement provider provenance tracking
 

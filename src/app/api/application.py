@@ -5,7 +5,10 @@ from src.app.api.routes import runtime_router
 from src.app.session import LocalSessionProvider, SessionProvider
 from src.domain.events import EventStore
 from src.infrastructure.event_store.in_memory import InMemoryEventStore
+from src.infrastructure.market.yfinance_adapter import YFinanceProvider
 from src.services.lifecycle import LifecycleOrchestrationService
+from src.services.market.regime_interpreter import SingleBarRegimeInterpreter
+from src.services.market.snapshot_service import MarketSnapshotService
 from src.services.replay import (
     HistoricalReconstructionPipeline,
     ReplayTimelineService,
@@ -31,6 +34,7 @@ def create_app(
         OperationalAttentionQueueReadService | None
     ) = None,
     session_provider: SessionProvider | None = None,
+    market_snapshot_service: MarketSnapshotService | None = None,
 ) -> FastAPI:
     shared_event_store = event_store or InMemoryEventStore()
     app = FastAPI(
@@ -67,6 +71,11 @@ def create_app(
         session_provider
         if session_provider is not None
         else LocalSessionProvider()
+    )
+    app.state.market_snapshot_service = (
+        market_snapshot_service
+        if market_snapshot_service is not None
+        else MarketSnapshotService(YFinanceProvider(), SingleBarRegimeInterpreter())
     )
     app.include_router(runtime_router)
     return app

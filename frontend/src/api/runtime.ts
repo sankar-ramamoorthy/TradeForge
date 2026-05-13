@@ -205,6 +205,48 @@ export type ReplayTimeline = {
   entries: ReplayTimelineEntry[];
 };
 
+export type MarketSnapshotOverlay = {
+  symbol: string;
+  provider_id: string;
+  fetched_at: string;
+  data_as_of: string;
+  open: string;
+  high: string;
+  low: string;
+  close: string;
+  volume: number;
+  regime: string;
+};
+
+export type MarketContextOverlay = {
+  authority: "advisory";
+  provider_id: string;
+  fetched_at: string;
+  available: MarketSnapshotOverlay[];
+  unavailable_symbols: string[];
+  is_complete: boolean;
+  is_partial: boolean;
+  is_empty: boolean;
+};
+
+export async function fetchMarketContext(
+  symbols: string[],
+  signal?: AbortSignal,
+): Promise<MarketContextOverlay> {
+  const urlParams = new URLSearchParams();
+  urlParams.set("symbols", symbols.join(","));
+  const response = await fetch(
+    `/workspaces/market-context?${urlParams.toString()}`,
+    { signal },
+  );
+
+  if (!response.ok) {
+    throw new Error(`Market context request failed: ${response.status}`);
+  }
+
+  return response.json() as Promise<MarketContextOverlay>;
+}
+
 export async function fetchReplayTimeline(
   signal?: AbortSignal,
 ): Promise<ReplayTimeline> {

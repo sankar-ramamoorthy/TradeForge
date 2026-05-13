@@ -8,6 +8,7 @@ import {
   type WorkspaceProjection,
 } from "../api/runtime";
 import { type WorkspaceContext } from "../workspaceRouting";
+import { MarketContextPanel } from "./MarketContextPanel";
 
 type TransitionState = "idle" | "transitioning" | "error";
 
@@ -231,6 +232,8 @@ export function OpportunityWorkspace({ context }: OpportunityWorkspaceProps) {
               </button>
             </div>
           ) : null}
+
+          <MarketContextPanel />
 
           <div className="chart-deferred-note" aria-label="Chart context">
             <span className="eyebrow">Chart Context</span>
