@@ -23,6 +23,7 @@ from src.services.lifecycle import (
     LifecycleTransitionRequest,
 )
 from src.services.market.context import MarketContextRequest
+from src.services.market.contextual_summary import ContextualSummaryService
 from src.services.market.snapshot_service import MarketSnapshotService
 from src.services.replay import (
     HistoricalReconstructionPipeline,
@@ -276,6 +277,27 @@ class MarketContextOverlayResponse(BaseModel):
     is_empty: bool
 
 
+class ContextualMarketNoteResponse(BaseModel):
+    symbol: str
+    close: str
+    regime: str
+    provider_id: str
+    data_as_of: str
+    is_advisory: bool
+
+
+class ContextualSummaryResponse(BaseModel):
+    authority: Literal["derived"]
+    persona_id: str
+    workspace_id: str
+    operational_headline: str
+    operational_details: list[str]
+    market_context_notes: list[ContextualMarketNoteResponse]
+    market_context_available: bool
+    source_inputs: list[str]
+    authority_boundaries: list[str]
+
+
 def _lifecycle_service_from(request: Request) -> LifecycleOrchestrationService:
     service = getattr(request.app.state, "lifecycle_service", None)
     if not isinstance(service, LifecycleOrchestrationService):
@@ -334,6 +356,13 @@ def _market_snapshot_service_from(request: Request) -> MarketSnapshotService:
     service = getattr(request.app.state, "market_snapshot_service", None)
     if not isinstance(service, MarketSnapshotService):
         raise RuntimeError("market snapshot service is not configured")
+    return service
+
+
+def _contextual_summary_service_from(request: Request) -> ContextualSummaryService:
+    service = getattr(request.app.state, "contextual_summary_service", None)
+    if not isinstance(service, ContextualSummaryService):
+        raise RuntimeError("contextual summary service is not configured")
     return service
 
 
@@ -750,6 +779,64 @@ def get_operating_attention_queue(
     )
     queue = _attention_queue_read_service_from(request).queue_for(persona_context)
     return _operational_attention_queue_response(queue)
+
+
+@workspace_router.get(
+    "/contextual-summary",
+    response_model=ContextualSummaryResponse,
+)
+def get_contextual_summary(
+    request: Request,
+    persona_id: str = Query(min_length=1),
+    persona_version: str = Query(min_length=1),
+    workspace_id: str = Query(min_length=1),
+    workflow_id: str | None = Query(default=None, min_length=1),
+    decision_id: str | None = Query(default=None, min_length=1),
+    symbols: str | None = Query(default=None),
+) -> ContextualSummaryResponse:
+    """Return a contextual operational summary combining workspace state and
+    advisory market context.
+
+    Workspace summary is always derived from event history. Market context
+    notes are added when the symbols param is provided. All market context
+    is advisory and non-canonical.
+    """
+    persona_context = _default_persona_context(
+        persona_id=persona_id,
+        persona_version=persona_version,
+        workspace_id=workspace_id,
+        workflow_id=workflow_id,
+        decision_id=decision_id,
+    )
+    symbol_list: tuple[str, ...] = ()
+    if symbols:
+        symbol_list = tuple(
+            s.strip().upper() for s in symbols.split(",") if s.strip()
+        )
+    summary = _contextual_summary_service_from(request).summarize_for(
+        persona_context, symbol_list
+    )
+    return ContextualSummaryResponse(
+        authority="derived",
+        persona_id=summary.persona_id,
+        workspace_id=summary.workspace_id,
+        operational_headline=summary.operational_headline,
+        operational_details=list(summary.operational_details),
+        market_context_notes=[
+            ContextualMarketNoteResponse(
+                symbol=note.symbol,
+                close=note.close,
+                regime=note.regime,
+                provider_id=note.provider_id,
+                data_as_of=note.data_as_of_iso,
+                is_advisory=note.is_advisory,
+            )
+            for note in summary.market_context_notes
+        ],
+        market_context_available=summary.market_context_available,
+        source_inputs=list(summary.source_inputs),
+        authority_boundaries=list(summary.authority_boundaries),
+    )
 
 
 @workspace_router.get(

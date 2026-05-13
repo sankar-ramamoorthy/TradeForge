@@ -247,6 +247,53 @@ export async function fetchMarketContext(
   return response.json() as Promise<MarketContextOverlay>;
 }
 
+export type ContextualMarketNote = {
+  symbol: string;
+  close: string;
+  regime: string;
+  provider_id: string;
+  data_as_of: string;
+  is_advisory: boolean;
+};
+
+export type ContextualSummary = {
+  authority: "derived";
+  persona_id: string;
+  workspace_id: string;
+  operational_headline: string;
+  operational_details: string[];
+  market_context_notes: ContextualMarketNote[];
+  market_context_available: boolean;
+  source_inputs: string[];
+  authority_boundaries: string[];
+};
+
+export async function fetchContextualSummary(
+  params: WorkspaceApiParams,
+  symbols?: string[],
+  signal?: AbortSignal,
+): Promise<ContextualSummary> {
+  const urlParams = new URLSearchParams();
+  urlParams.set("persona_id", params.persona_id);
+  urlParams.set("persona_version", params.persona_version);
+  urlParams.set("workspace_id", params.workspace_id);
+  if (params.workflow_id) urlParams.set("workflow_id", params.workflow_id);
+  if (params.decision_id) urlParams.set("decision_id", params.decision_id);
+  if (symbols && symbols.length > 0) {
+    urlParams.set("symbols", symbols.join(","));
+  }
+  const response = await fetch(
+    `/workspaces/contextual-summary?${urlParams.toString()}`,
+    { signal },
+  );
+
+  if (!response.ok) {
+    throw new Error(`Contextual summary request failed: ${response.status}`);
+  }
+
+  return response.json() as Promise<ContextualSummary>;
+}
+
 export async function fetchReplayTimeline(
   signal?: AbortSignal,
 ): Promise<ReplayTimeline> {

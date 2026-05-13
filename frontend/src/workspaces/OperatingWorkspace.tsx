@@ -14,6 +14,7 @@ import {
   findWorkspaceRoute,
   type WorkspaceContext,
 } from "../workspaceRouting";
+import { ContextualBriefingPanel } from "./ContextualBriefingPanel";
 
 const CATEGORY_LABELS: Record<string, string> = {
   decision: "Decision",
@@ -197,6 +198,8 @@ export function OperatingWorkspace({
           </div>
         ) : null}
       </div>
+
+      <ContextualBriefingPanel params={params} />
 
       {projection !== null ? (
         <div className="projection-metadata">
