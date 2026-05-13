@@ -72,13 +72,13 @@ Roadmap v2 is the active milestone direction. This register is intentionally sco
 | TF-0032 | Done | M7 | Add workspace routing system | `feature/tf-0032-workspace-routing-system` |
 | TF-0033 | Done | M7 | Add shared operational layout system | `feature/tf-0033-operational-layout-system` |
 | TF-0034 | Done | M7 | Add authentication/session model | `feature/tf-0034-auth-session-model` |
-| TF-0035 | Planned | M8 | Implement Operating Workspace | `feature/tf-0035-operating-workspace` |
-| TF-0036 | Planned | M8 | Implement Opportunity Workspace | `feature/tf-0036-opportunity-workspace` |
-| TF-0037 | Planned | M8 | Implement Plan Review Workspace | `feature/tf-0037-plan-review-workspace` |
-| TF-0038 | Planned | M8 | Implement Active Position Workspace | `feature/tf-0038-active-position-workspace` |
-| TF-0039 | Planned | M8 | Implement Replay Workspace | `feature/tf-0039-replay-workspace` |
-| TF-0040 | Planned | M8 | Implement Review Workspace | `feature/tf-0040-review-workspace` |
-| TF-0041 | Planned | M8 | Implement first replayable lifecycle flow | `feature/tf-0041-first-operational-mvp-flow` |
+| TF-0035 | Done | M8 | Implement Operating Workspace | `feature/tf-0035-operating-workspace` |
+| TF-0036 | Done | M8 | Implement Opportunity Workspace | `feature/tf-0036-opportunity-workspace` |
+| TF-0037 | Done | M8 | Implement Plan Review Workspace | `feature/tf-0037-plan-review-workspace` |
+| TF-0038 | Done | M8 | Implement Active Position Workspace | `feature/tf-0038-active-position-workspace` |
+| TF-0039 | Done | M8 | Implement Replay Workspace | `feature/tf-0039-replay-workspace` |
+| TF-0040 | Done | M8 | Implement Review Workspace | `feature/tf-0040-review-workspace` |
+| TF-0041 | Done | M8 | Implement first replayable lifecycle flow | `feature/tf-0041-first-operational-mvp-flow` |
 
 Post-MVP Roadmap v2 candidates TF-0042 through TF-0062 remain deferred until the MVP v1 path is underway. Do not pull M9-M13 work into the fast MVP path without an explicit roadmap checkpoint.
 
@@ -1278,7 +1278,7 @@ Post-MVP Roadmap v2 candidates TF-0042 through TF-0062 remain deferred until the
 
 ## TF-0035: Implement Operating Workspace
 
-**Status:** Planned
+**Status:** Done
 
 **Milestone:** M8
 
@@ -1290,7 +1290,7 @@ Post-MVP Roadmap v2 candidates TF-0042 through TF-0062 remain deferred until the
 
 **Impacted Invariants:** Workspace, Workflow-Centric Architecture, UX Is Architectural
 
-**Implementation Summary:** Implement the MVP Operating Workspace as the daily operational attention surface.
+**Implementation Summary:** Implemented the MVP Operating Workspace as the daily operational attention surface. Added `GET /workspaces/operating/attention` backend endpoint backed by `OperationalAttentionQueueReadService` with a default MVP persona profile. Created `OperatingWorkspace` React component that fetches and renders the ordered attention queue with lifecycle stage context, priority-coded item cards, and authority boundaries. The `App.tsx` now renders `OperatingWorkspace` for the operating route; all other workspace routes retain the existing placeholder surface.
 
 **Acceptance Criteria:**
 
@@ -1302,23 +1302,33 @@ Post-MVP Roadmap v2 candidates TF-0042 through TF-0062 remain deferred until the
 
 - Market dashboard features.
 
+**Completed Verification:**
+
+- `uv run pytest tests/test_operating_workspace.py`
+- `uv run pytest`
+- `uv run ruff check .`
+- `uv run mypy src tests`
+- `npm.cmd run typecheck`
+- `npm.cmd run lint`
+- `npm.cmd run build`
+
 ---
 
 ## TF-0036: Implement Opportunity Workspace
 
-**Status:** Planned
+**Status:** Done
 
 **Milestone:** M8
 
 **Branch:** `feature/tf-0036-opportunity-workspace`
 
-**Affected Layer:** frontend, app, services
+**Affected Layer:** frontend
 
-**Linked ADRs:** ADR 0012, ADR 0021, ADR 0023
+**Linked ADRs:** ADR 0002, ADR 0007, ADR 0012, ADR 0021, ADR 0023
 
-**Impacted Invariants:** Scenario, Decision Lifecycle, Workspace
+**Impacted Invariants:** Scenario, Decision Lifecycle, Workspace, UX Is Architectural
 
-**Implementation Summary:** Implement structured opportunity development without signal-generation semantics.
+**Implementation Summary:** Implemented the Opportunity Workspace as the structured pre-decision cognition surface. Added `LifecycleTransitionRequest`/`Response` types and `postLifecycleTransition` fetch function to `api/runtime.ts`. Created `OpportunityWorkspace.tsx` displaying the projection's four field surfaces labeled by authority (canonical/derived/inferred/advisory), a "Develop Thesis" lifecycle action (Idea-stage only, routing through `POST /lifecycle/transitions`), a chart deferred placeholder, and authority boundaries. Introduced the `FieldSurface` component pattern (reusable for subsequent M8 workspaces). Added field authority surface CSS. Updated `App.tsx` to render `OpportunityWorkspace` for the opportunity route. No new backend endpoints — existing projection and lifecycle transition APIs are sufficient.
 
 **Acceptance Criteria:**
 
@@ -1330,23 +1340,32 @@ Post-MVP Roadmap v2 candidates TF-0042 through TF-0062 remain deferred until the
 
 - Scenario engine automation.
 
+**Completed Verification:**
+
+- `uv run pytest` — 183 passed
+- `uv run ruff check .` — clean
+- `uv run mypy src tests` — clean
+- `npm.cmd run typecheck` — clean
+- `npm.cmd run lint` — clean
+- `npm.cmd run build` — clean
+
 ---
 
 ## TF-0037: Implement Plan Review Workspace
 
-**Status:** Planned
+**Status:** Done
 
 **Milestone:** M8
 
 **Branch:** `feature/tf-0037-plan-review-workspace`
 
-**Affected Layer:** frontend, app, services
+**Affected Layer:** frontend
 
 **Linked ADRs:** ADR 0002, ADR 0012, ADR 0021, ADR 0023
 
 **Impacted Invariants:** Decision Lifecycle, Human Decision Sovereignty, UX Is Architectural
 
-**Implementation Summary:** Implement intentional risk authorization workflow for trade plans.
+**Implementation Summary:** Implemented the Plan Review Workspace as the deliberate risk authorization surface. Created `PlanReviewWorkspace.tsx` following the `FieldSurface` component pattern (OpportunityWorkspace). Workspace fetches the `plan-review` projection via the existing `GET /workspaces/{route_id}` endpoint and displays three field surfaces: `plan_references` (canonical — event-backed thesis/plan facts), `risk_review` (derived — plan payload review), and `rule_evaluation` (inferred — plan readiness interpretation). When lifecycle stage is `Plan`, an "Authorize Plan" action is available that routes through `POST /lifecycle/transitions` to the `Approval` stage. UI framing avoids BUY/SELL brokerage-ticket language — the action label and explanatory note frame authorization as deliberate risk acceptance. Updated `App.tsx` to render `PlanReviewWorkspace` for the `plan-review` route. No new backend endpoints required.
 
 **Acceptance Criteria:**
 
@@ -1358,23 +1377,32 @@ Post-MVP Roadmap v2 candidates TF-0042 through TF-0062 remain deferred until the
 
 - Broker execution.
 
+**Completed Verification:**
+
+- `uv run pytest` — 183 passed
+- `uv run ruff check .` — clean
+- `uv run mypy src tests` — clean
+- `npm.cmd run typecheck` — clean
+- `npm.cmd run lint` — clean
+- `npm.cmd run build` — clean
+
 ---
 
 ## TF-0038: Implement Active Position Workspace
 
-**Status:** Planned
+**Status:** Done
 
 **Milestone:** M8
 
 **Branch:** `feature/tf-0038-active-position-workspace`
 
-**Affected Layer:** frontend, app, services
+**Affected Layer:** frontend
 
 **Linked ADRs:** ADR 0012, ADR 0021, ADR 0023
 
 **Impacted Invariants:** Workspace, Replay, Historical Integrity
 
-**Implementation Summary:** Implement live decision-state supervision for active positions.
+**Implementation Summary:** Implemented the Active Position Workspace as the decision-state supervision surface. Created `ActivePositionWorkspace.tsx` following the `FieldSurface` component pattern. Workspace fetches the `active-position` projection via the existing `GET /workspaces/{route_id}` endpoint and displays three field surfaces: `position_references` (canonical — execution and decision facts), `exposure_summary` (derived — exposure from execution history), and `thesis_drift` (inferred — position state interpreted against thesis context). Authority boundaries are displayed prominently to prevent treating exposure summaries as canonical truth. When lifecycle stage is `Position`, a "Begin Position Review" lifecycle action routes through `POST /lifecycle/transitions` to the `Review` stage — framed as opening the review workflow, not closing the position. Updated `App.tsx` to render `ActivePositionWorkspace` for the `active-position` route. No new backend endpoints required.
 
 **Acceptance Criteria:**
 
@@ -1386,23 +1414,32 @@ Post-MVP Roadmap v2 candidates TF-0042 through TF-0062 remain deferred until the
 
 - Live broker sync.
 
+**Completed Verification:**
+
+- `uv run pytest` — 183 passed
+- `uv run ruff check .` — clean
+- `uv run mypy src tests` — clean
+- `npm.cmd run typecheck` — clean
+- `npm.cmd run lint` — clean
+- `npm.cmd run build` — clean
+
 ---
 
 ## TF-0039: Implement Replay Workspace
 
-**Status:** Planned
+**Status:** Done
 
 **Milestone:** M8
 
 **Branch:** `feature/tf-0039-replay-workspace`
 
-**Affected Layer:** frontend, app, services
+**Affected Layer:** frontend
 
 **Linked ADRs:** ADR 0008, ADR 0014, ADR 0021, ADR 0023
 
 **Impacted Invariants:** Replay, Historical Integrity, AI Advisory Boundary
 
-**Implementation Summary:** Implement replay workspace for cognitive reconstruction from event-backed projections.
+**Implementation Summary:** Implemented the Replay Workspace as the cognitive reconstruction surface. Added `ReplayTimelineEntry` and `ReplayTimeline` TypeScript types plus `fetchReplayTimeline` function (`GET /replay/timeline`) to `api/runtime.ts`. Created `ReplayWorkspace.tsx` that fetches the `replay` workspace projection and the replay timeline in parallel. Displays four field surfaces: `event_timeline_references` (canonical — ordered source event references), `reconstructed_workspace_state` (derived — reconstruction from historical inputs), `historical_interpretation` (inferred — what was visible then), and `advisory_replay_summary` (advisory — optional non-authoritative context). The timeline section renders each entry with a kind badge (Lifecycle / Execution / Review / System), event type, lifecycle stage where present, sequence number, and timestamp. Authority boundaries are displayed explicitly: reconstruction is derived and discardable; replay does not mutate event history. No lifecycle action — the Replay Workspace is read-only per contract. Updated `App.tsx` to render `ReplayWorkspace` for the `replay` route. No new backend endpoints required.
 
 **Acceptance Criteria:**
 
@@ -1414,23 +1451,32 @@ Post-MVP Roadmap v2 candidates TF-0042 through TF-0062 remain deferred until the
 
 - AI replay assistance.
 
+**Completed Verification:**
+
+- `uv run pytest` — 183 passed
+- `uv run ruff check .` — clean
+- `uv run mypy src tests` — clean
+- `npm.cmd run typecheck` — clean
+- `npm.cmd run lint` — clean
+- `npm.cmd run build` — clean
+
 ---
 
 ## TF-0040: Implement Review Workspace
 
-**Status:** Planned
+**Status:** Done
 
 **Milestone:** M8
 
 **Branch:** `feature/tf-0040-review-workspace`
 
-**Affected Layer:** frontend, app, services
+**Affected Layer:** frontend
 
 **Linked ADRs:** ADR 0017, ADR 0021, ADR 0023
 
 **Impacted Invariants:** Review, Replay, Human Decision Sovereignty
 
-**Implementation Summary:** Implement reflective review workspace that separates decision quality from outcome.
+**Implementation Summary:** Implemented the Review Workspace as the reflective learning surface that separates decision quality from outcome. Created `ReviewWorkspace.tsx` following the `FieldSurface` component pattern. Fetches the `review` workspace projection via `GET /workspaces/{route_id}` and displays three field surfaces: `review_references` (canonical — review and lifecycle event references), `decision_quality_context` (derived — review context from lifecycle and outcome history), and `behavioral_signal` (inferred — interpretive discipline or behavior pattern signal). Two lifecycle-aware states are handled: when at `Position` stage, a "Complete Review" action routes through `POST /lifecycle/transitions` to `Review` stage with provenance `{ actor: "human", source: "review-workspace" }`; when already at `Review` stage, a completion note is shown with a `CheckCircle` indicator confirming the review is durable in the event ledger. The action note explicitly frames review as separating process quality from PnL outcome. Authority boundaries are displayed. Updated `App.tsx` to render `ReviewWorkspace` for the `review` route. No new backend endpoints required.
 
 **Acceptance Criteria:**
 
@@ -1442,23 +1488,32 @@ Post-MVP Roadmap v2 candidates TF-0042 through TF-0062 remain deferred until the
 
 - Behavioral intelligence engine.
 
+**Completed Verification:**
+
+- `uv run pytest` — 183 passed
+- `uv run ruff check .` — clean
+- `uv run mypy src tests` — clean
+- `npm.cmd run typecheck` — clean
+- `npm.cmd run lint` — clean
+- `npm.cmd run build` — clean
+
 ---
 
 ## TF-0041: Implement First Replayable Lifecycle Flow
 
-**Status:** Planned
+**Status:** Done
 
 **Milestone:** M8
 
 **Branch:** `feature/tf-0041-first-operational-mvp-flow`
 
-**Affected Layer:** frontend, app, services, infrastructure
+**Affected Layer:** frontend, services, tests
 
 **Linked ADRs:** ADR 0001, ADR 0002, ADR 0004, ADR 0008, ADR 0023
 
 **Impacted Invariants:** Event Sourcing, Decision Lifecycle, Workspace, Replay, Review
 
-**Implementation Summary:** Implement the first usable end-to-end MVP workflow across lifecycle, API, projections, workspaces, replay, and review.
+**Implementation Summary:** Closed the three UI lifecycle gaps that prevented end-to-end traversal, and proved the full chain with an integration test suite. Gap analysis: the attention queue routes `Thesis` and `Approval` stages to the Plan Review workspace and `Execution` to Active Position, but those workspaces only acted on a subset of stages. Fixed by: (1) adding `Create Plan` (Thesis→Plan) and `Record Execution` (Approval→Execution) action gates to `PlanReviewWorkspace.tsx` via a shared `makeTransitionHandler` factory; (2) adding `Record Position Opened` (Execution→Position) gate to `ActivePositionWorkspace.tsx` using the same pattern. All six action gates are now mutually exclusive per lifecycle stage and route through `POST /lifecycle/transitions`. Created `tests/test_mvp_lifecycle_flow.py` with 7 integration tests proving: full chain acceptance, event immutability and ordering, replay timeline reconstruction of all stages, workspace projections tracking each stage, skip-stage rejection, replay read-only invariant, and empty attention queue after `Review`. No new backend endpoints or infrastructure required.
 
 **Acceptance Criteria:**
 
@@ -1472,6 +1527,16 @@ Post-MVP Roadmap v2 candidates TF-0042 through TF-0062 remain deferred until the
 
 - M9 market/scenario intelligence.
 - M10 AI advisory integration.
+
+**Completed Verification:**
+
+- `uv run pytest` — 190 passed
+- `uv run pytest tests/test_mvp_lifecycle_flow.py -v` — 7/7 passed
+- `uv run ruff check .` — clean
+- `uv run mypy src tests` — clean (65 files)
+- `npm.cmd run typecheck` — clean
+- `npm.cmd run lint` — clean
+- `npm.cmd run build` — clean
 
 ---
 

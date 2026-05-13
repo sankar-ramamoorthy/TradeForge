@@ -5,7 +5,7 @@ type: index
 status: canonical
 tags: [TradeForge, roadmap, milestones, architecture, cognition, workspaces]
 created: 2026-05-09
-updated: 2026-05-11
+updated: 2026-05-13
 supersedes: MILESTONE_ROADMAP_DEPRECATED.md
 ---
 
@@ -421,7 +421,7 @@ TradeForge transitions from conceptual architecture into usable operational soft
 
 # M8 â€” First Operational MVP Vertical Slice
 
-**Status:** Planned
+**Status:** Done
 
 ## Semantic Intent
 
@@ -456,13 +456,13 @@ Idea
 
 ## Linked Runtime Issues
 
-* TF-0035: Implement Operating Workspace
-* TF-0036: Implement Opportunity Workspace
-* TF-0037: Implement Plan Review Workspace
-* TF-0038: Implement Active Position Workspace
-* TF-0039: Implement Replay Workspace
-* TF-0040: Implement Review Workspace
-* TF-0041: Implement first replayable lifecycle flow
+* TF-0035: Implement Operating Workspace (**Done**)
+* TF-0036: Implement Opportunity Workspace (**Done**)
+* TF-0037: Implement Plan Review Workspace (**Done**)
+* TF-0038: Implement Active Position Workspace (**Done**)
+* TF-0039: Implement Replay Workspace (**Done**)
+* TF-0040: Implement Review Workspace (**Done**)
+* TF-0041: Implement first replayable lifecycle flow (**Done**)
 
 ## Acceptance Meaning
 

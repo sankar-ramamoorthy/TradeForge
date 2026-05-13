@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(uv run *)",
+      "Bash(npm.cmd run *)",
+      "Bash(cp \"C:/Users/bosto/dockerstuff/knowledge-base/TradeForge/knowledge/raw/20260512-tf-0035-operating-workspace-planning.md\" \"C:/Users/bosto/dockerstuff/knowledge-base/TradeForge/knowledge/processed/plan-20260512-tf-0035-operating-workspace.md\")",
+      "Bash(cp \"C:/Users/bosto/dockerstuff/knowledge-base/TradeForge/knowledge/raw/20260512-tf-0035-operating-workspace-implementation.md\" \"C:/Users/bosto/dockerstuff/knowledge-base/TradeForge/knowledge/processed/implemented-20260512-tf-0035-operating-workspace.md\")",
+      "Bash(git checkout *)"
+    ]
+  }
+}
