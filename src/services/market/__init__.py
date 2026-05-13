@@ -4,6 +4,11 @@ from src.services.market.context import (
     MarketContextResult,
     SymbolFetchResult,
 )
+from src.services.market.provenance_query import (
+    ProvenanceQueryAuthority,
+    ProvenanceQueryResult,
+    ProvenanceQueryService,
+)
 from src.services.market.snapshot_service import MarketSnapshotService
 
 __all__ = [
@@ -11,5 +16,8 @@ __all__ = [
     "MarketContextRequest",
     "MarketContextResult",
     "MarketSnapshotService",
+    "ProvenanceQueryAuthority",
+    "ProvenanceQueryResult",
+    "ProvenanceQueryService",
     "SymbolFetchResult",
 ]

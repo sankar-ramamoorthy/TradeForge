@@ -5,9 +5,11 @@ from src.app.api.routes import runtime_router
 from src.app.session import LocalSessionProvider, SessionProvider
 from src.domain.events import EventStore
 from src.infrastructure.event_store.in_memory import InMemoryEventStore
+from src.infrastructure.market.in_memory_provenance_store import InMemoryProvenanceStore
 from src.infrastructure.market.yfinance_adapter import YFinanceProvider
 from src.services.lifecycle import LifecycleOrchestrationService
 from src.services.market.contextual_summary import ContextualSummaryService
+from src.services.market.provenance_query import ProvenanceQueryService
 from src.services.market.regime_interpreter import SingleBarRegimeInterpreter
 from src.services.market.snapshot_service import MarketSnapshotService
 from src.services.replay import (
@@ -37,6 +39,7 @@ def create_app(
     session_provider: SessionProvider | None = None,
     market_snapshot_service: MarketSnapshotService | None = None,
     contextual_summary_service: ContextualSummaryService | None = None,
+    provenance_query_service: ProvenanceQueryService | None = None,
 ) -> FastAPI:
     shared_event_store = event_store or InMemoryEventStore()
     app = FastAPI(
@@ -74,10 +77,15 @@ def create_app(
         if session_provider is not None
         else LocalSessionProvider()
     )
+    _provenance_store = InMemoryProvenanceStore()
     _market_svc = (
         market_snapshot_service
         if market_snapshot_service is not None
-        else MarketSnapshotService(YFinanceProvider(), SingleBarRegimeInterpreter())
+        else MarketSnapshotService(
+            YFinanceProvider(),
+            SingleBarRegimeInterpreter(),
+            provenance_store=_provenance_store,
+        )
     )
     app.state.market_snapshot_service = _market_svc
     app.state.contextual_summary_service = (
@@ -87,6 +95,11 @@ def create_app(
             event_store=shared_event_store,
             market_snapshot_service=_market_svc,
         )
+    )
+    app.state.provenance_query_service = (
+        provenance_query_service
+        if provenance_query_service is not None
+        else ProvenanceQueryService(_provenance_store)
     )
     app.include_router(runtime_router)
     return app
