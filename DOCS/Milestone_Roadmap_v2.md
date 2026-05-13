@@ -476,7 +476,7 @@ Idea
 
 # M9 — Market Context and Provider Layer
 
-**Status:** Planned
+**Status:** Done
 
 ## Semantic Intent
 
@@ -583,8 +583,8 @@ non-authoritative
 
 ### Demo Enablement
 
-* TF-0051: Add seeded demo market context flow
-* TF-0052: Add replay-compatible market snapshot persistence strategy
+* TF-0051: Add seeded demo market context flow (**Done**)
+* TF-0052: Add replay-compatible market snapshot persistence strategy (**Done**)
 
 ## Acceptance Meaning
 

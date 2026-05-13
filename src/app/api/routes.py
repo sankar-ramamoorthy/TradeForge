@@ -25,6 +25,7 @@ from src.services.lifecycle import (
 from src.services.market.context import MarketContextRequest
 from src.services.market.contextual_summary import ContextualSummaryService
 from src.services.market.provenance_query import ProvenanceQueryService
+from src.services.market.snapshot_query import MarketSnapshotQueryService
 from src.services.market.snapshot_service import MarketSnapshotService
 from src.services.replay import (
     HistoricalReconstructionPipeline,
@@ -48,6 +49,7 @@ lifecycle_router = APIRouter(prefix="/lifecycle", tags=["lifecycle"])
 replay_router = APIRouter(prefix="/replay", tags=["replay"])
 workspace_router = APIRouter(prefix="/workspaces", tags=["workspaces"])
 provenance_router = APIRouter(prefix="/provenance", tags=["provenance"])
+market_router = APIRouter(prefix="/market", tags=["market"])
 
 
 class RuntimeStatusResponse(BaseModel):
@@ -300,6 +302,29 @@ class ContextualSummaryResponse(BaseModel):
     authority_boundaries: list[str]
 
 
+class PersistedMarketSnapshotResponse(BaseModel):
+    snapshot_id: int
+    provider_id: str
+    provider_version: str
+    symbol: str
+    fetched_at: datetime
+    data_as_of: datetime
+    open: str
+    high: str
+    low: str
+    close: str
+    volume: int
+    regime: str
+    persisted_at: datetime
+    is_advisory: bool
+
+
+class MarketSnapshotQueryResponse(BaseModel):
+    authority: Literal["advisory"]
+    total_count: int
+    snapshots: list[PersistedMarketSnapshotResponse]
+
+
 class ProviderFetchRecordResponse(BaseModel):
     provider_id: str
     provider_version: str
@@ -386,6 +411,15 @@ def _contextual_summary_service_from(request: Request) -> ContextualSummaryServi
     service = getattr(request.app.state, "contextual_summary_service", None)
     if not isinstance(service, ContextualSummaryService):
         raise RuntimeError("contextual summary service is not configured")
+    return service
+
+
+def _market_snapshot_query_service_from(
+    request: Request,
+) -> MarketSnapshotQueryService:
+    service = getattr(request.app.state, "market_snapshot_query_service", None)
+    if not isinstance(service, MarketSnapshotQueryService):
+        raise RuntimeError("market snapshot query service is not configured")
     return service
 
 
@@ -991,7 +1025,52 @@ def get_market_data_provenance(
     )
 
 
+@market_router.get("/snapshots", response_model=MarketSnapshotQueryResponse)
+def get_market_snapshots(
+    request: Request,
+    since: datetime | None = None,
+    until: datetime | None = None,
+    provider_id: str | None = Query(default=None, min_length=1),
+    symbol: str | None = Query(default=None, min_length=1),
+) -> MarketSnapshotQueryResponse:
+    """Return persisted advisory market snapshots from the snapshot archive.
+
+    Supports optional filtering by time range, provider, and symbol.
+    All returned snapshots are advisory derived artifacts — not canonical facts.
+    """
+    result = _market_snapshot_query_service_from(request).query(
+        since=since,
+        until=until,
+        provider_id=provider_id,
+        symbol=symbol,
+    )
+    return MarketSnapshotQueryResponse(
+        authority="advisory",
+        total_count=result.total_count,
+        snapshots=[
+            PersistedMarketSnapshotResponse(
+                snapshot_id=record.snapshot_id,
+                provider_id=record.snapshot.provenance.provider_id,
+                provider_version=record.snapshot.provenance.provider_version,
+                symbol=record.symbol,
+                fetched_at=record.snapshot.provenance.fetched_at,
+                data_as_of=record.snapshot.provenance.data_as_of,
+                open=str(record.snapshot.price.open),
+                high=str(record.snapshot.price.high),
+                low=str(record.snapshot.price.low),
+                close=str(record.snapshot.price.close),
+                volume=record.snapshot.price.volume,
+                regime=record.snapshot.regime.value,
+                persisted_at=record.persisted_at,
+                is_advisory=record.is_advisory,
+            )
+            for record in result.snapshots
+        ],
+    )
+
+
 runtime_router.include_router(lifecycle_router)
 runtime_router.include_router(replay_router)
 runtime_router.include_router(workspace_router)
 runtime_router.include_router(provenance_router)
+runtime_router.include_router(market_router)

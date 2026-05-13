@@ -90,6 +90,8 @@ Explicit roadmap checkpoint completed M9 Updated*Done*.
 | TF-0048 | Done | M9 | Implement market regime interpretation model | `feature/tf-0048-market-regime-interpreter` |
 | TF-0049 | Done | M9 | Implement contextual operational summaries | `feature/tf-0049-contextual-operational-summaries` |
 | TF-0050 | Done | M9 | Implement provider provenance tracking | `feature/tf-0050-provider-provenance-tracking` |
+| TF-0051 | Done | M9 | Add seeded demo market context flow | `feature/tf-0051-seeded-demo-flow` |
+| TF-0052 | Done | M9 | Add replay-compatible market snapshot persistence strategy | `feature/tf-0050-provider-provenance-tracking` |
 
 Explicit roadmap checkpoint completed M9 Updated*Done*.
 Post-MVP Roadmap v2 implementation begins with M9 market-context infrastructure and provider-boundary work. 
@@ -1920,6 +1922,87 @@ M9 remains constrained to read-only advisory context and must not introduce brok
 - `uv run pytest` — 415 passed
 - `uv run ruff check .` — clean
 - `uv run mypy src tests` — clean (90 files)
+
+---
+
+## TF-0051: Add Seeded Demo Market Context Flow
+
+**Status:** Done
+
+**Milestone:** M9
+
+**Branch:** `feature/tf-0051-seeded-demo-flow`
+
+**Affected Layer:** infrastructure, tests
+
+**Linked ADRs:** ADR-0032
+
+**Impacted Invariants:** Layer Separation, Market Intelligence Is Interpreted Context, Event Integrity (no ledger writes)
+
+**Implementation Summary:** Implemented `SeededMarketDataProvider` satisfying the `MarketDataProvider` Protocol structurally — same normalized boundary as live providers per ADR-0032. The provider holds a static `_DEMO_SEED` dataset of 7 symbols (AAPL, TSLA, NVDA, SPY, QQQ, GLD, TLT) that together cover all five interpretable regime outcomes (BULL, HIGH_VOLATILITY, RANGING, BEAR, LOW_VOLATILITY). Raises `ProviderUnavailableError` for unknown symbols consistent with live adapters. Optional `fetched_at` injection supports deterministic test timestamps. `available_symbols` property exposes the seeded symbol set. The demo flow is enabled by injecting `SeededMarketDataProvider` into `MarketSnapshotService` via the existing `create_app(market_snapshot_service=...)` parameter — no application-layer or domain-layer changes required. The test suite exercises the complete M9 stack end-to-end: provider → regime interpreter → provenance tracking → workspace overlays → contextual summary → API endpoints.
+
+**Acceptance Criteria:**
+
+- SeededMarketDataProvider satisfies MarketDataProvider Protocol structurally.
+- Seed data produces deterministic snapshots with full ProviderProvenance.
+- All five interpretable regimes are covered by the seed dataset.
+- Unknown symbols raise ProviderUnavailableError consistent with live providers.
+- Complete M9 API demo flow passes with seeded data and no live API calls.
+- Demo flow uses same normalized boundary as production providers (ADR-0032).
+
+**Out Of Scope:**
+
+- Replay-compatible market snapshot persistence (TF-0052).
+- Frontend demo mode toggle.
+- Seeding historical multi-day data.
+
+**Completed Verification:**
+
+- `uv run pytest tests/test_seeded_demo_flow.py` — 33 passed
+- `uv run pytest` — 448 passed
+- `uv run ruff check .` — clean
+- `uv run mypy src tests` — clean (92 files)
+
+---
+
+## TF-0052: Add Replay-Compatible Market Snapshot Persistence Strategy
+
+**Status:** Done
+
+**Milestone:** M9
+
+**Branch:** `feature/tf-0050-provider-provenance-tracking`
+
+**Affected Layer:** domain, infrastructure, services, app
+
+**Linked ADRs:** ADR-0032
+
+**Impacted Invariants:** Layer Separation, Market Intelligence Is Interpreted Context, Derived State Must Remain Distinguishable, Event Integrity (separate from event ledger), Replay
+
+**Implementation Summary:** Implemented the advisory market snapshot persistence architecture. `PersistedMarketSnapshot` (domain value object) wraps a `MarketSnapshot` with stable `snapshot_id` and `persisted_at`. `MarketSnapshotPersistenceStore` Protocol port defines the persistence contract. `InMemoryMarketSnapshotStore` provides session-scoped storage. `PostgresMarketSnapshotStore` provides durable Postgres storage via `market_advisory_snapshots` table (separate from `event_ledger`; Alembic migration `20260513_0003` with advisory/replay indices). `MarketSnapshotService` gained optional `snapshot_persistence_store` — on each successful fetch the snapshot is persisted silently (failures never break the fetch). `MarketSnapshotQueryService` provides read-only time/provider/symbol-filtered queries. Added `GET /market/snapshots` endpoint. In `create_app()`, a shared `InMemoryMarketSnapshotStore` is wired between the service (write) and query service (read). All persisted records carry `is_advisory=True`. Decimal prices stored as TEXT for precision preservation. The table comment and naming (`market_advisory_snapshots`) explicitly distinguish this from the canonical `event_ledger`.
+
+**Acceptance Criteria:**
+
+- `MarketSnapshotPersistenceStore` Protocol defines the persistence contract.
+- `InMemoryMarketSnapshotStore` and `PostgresMarketSnapshotStore` satisfy Protocol structurally.
+- Persistence failures never break market data fetches (silent failure tolerance).
+- `market_advisory_snapshots` table is explicitly separate from `event_ledger`.
+- Alembic migration creates table with replay-oriented indices (symbol+fetched_at, provider+fetched_at).
+- `GET /market/snapshots` returns advisory persisted snapshots with optional filters.
+- All persisted records are explicitly advisory — `is_advisory=True`.
+
+**Out Of Scope:**
+
+- Postgres live integration tests (require Docker Postgres connection).
+- Snapshot expiry or rotation policy.
+- Replay Workspace UI consumption of persisted snapshots.
+
+**Completed Verification:**
+
+- `uv run pytest tests/test_market_snapshot_persistence.py` — 45 passed
+- `uv run pytest` — 493 passed
+- `uv run ruff check .` — clean
+- `uv run mypy src tests` — clean (97 files)
 
 ---
 
