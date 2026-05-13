@@ -9,7 +9,9 @@
       "Bash(git stash *)",
       "Bash(git merge *)",
       "PowerShell(\\(Get-Content \"C:\\\\Users\\\\bosto\\\\dockerstuff\\\\TradeForge\\\\frontend\\\\src\\\\styles.css\" | Measure-Object -Line\\).Lines)",
-      "PowerShell(Get-Content *)"
+      "PowerShell(Get-Content *)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)"
     ]
   }
 }
