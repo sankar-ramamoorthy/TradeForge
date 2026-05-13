@@ -85,6 +85,7 @@ Explicit roadmap checkpoint completed M9 Updated*Done*.
 | TF-0043 | Done | M9 | Implement normalized market snapshot model | `feature/tf-0043-normalized-market-snapshot-model` |
 | TF-0044 | Done | M9 | Add read-only yfinance provider adapter | `feature/tf-0044-yfinance-provider-adapter` |
 | TF-0045 | Done | M9 | Add Massive.com market data adapter | `feature/tf-0045-massive-com-provider-adapter` |
+| TF-0046 | Done | M9 | Add Alpaca market data adapter | `feature/tf-0046-alpaca-provider-adapter` |
 
 Explicit roadmap checkpoint completed M9 Updated*Done*.
 Post-MVP Roadmap v2 implementation begins with M9 market-context infrastructure and provider-boundary work. 
@@ -1705,6 +1706,46 @@ M9 remains constrained to read-only advisory context and must not introduce brok
 - `uv run pytest` — 297 passed
 - `uv run ruff check .` — clean
 - `uv run mypy src tests` — clean (78 files)
+
+---
+
+## TF-0046: Add Alpaca Market Data Adapter
+
+**Status:** Done
+
+**Milestone:** M9
+
+**Branch:** `feature/tf-0046-alpaca-provider-adapter`
+
+**Affected Layer:** infrastructure
+
+**Linked ADRs:** ADR-0032
+
+**Impacted Invariants:** Layer Separation, Market Intelligence Is Interpreted Context, Event Integrity (no ledger writes)
+
+**Implementation Summary:** Created `src/infrastructure/market/AlpacaProvider` satisfying the `MarketDataProvider` Protocol structurally. Added `alpaca-py>=0.30` as a runtime dependency (installed as `alpaca-py==0.43.4`). Added `[[tool.mypy.overrides]]` for alpaca modules (`ignore_missing_imports=true`). Adapter uses `StockHistoricalDataClient.get_stock_bars(StockBarsRequest(...))` with `timeframe=TimeFrame.Day` and a 5-day lookback window; takes `bars[-1]` as most recent bar. Alpaca `Bar.timestamp` is already a `datetime` object — normalized to UTC via tzinfo check. Volume arrives as float — cast to `int(float(...))`. Provider version resolved via `importlib.metadata.version("alpaca-py")`. API key and secret key accepted as constructor parameters — infrastructure concerns only. All SDK errors, missing symbol keys, and empty bar lists wrapped in `ProviderUnavailableError`. Alpaca SDK coupling is fully contained in this file — domain and services layers have no alpaca imports. Tests use `unittest.mock.patch` — no real network calls.
+
+**Acceptance Criteria:**
+
+- Adapter satisfies `MarketDataProvider` Protocol (structural, no inheritance).
+- Returns `MarketSnapshot` with full `ProviderProvenance` (fetched_at + data_as_of).
+- All SDK errors map to `ProviderUnavailableError`.
+- No event ledger writes anywhere in the adapter.
+- Tests do not make real network calls.
+
+**Out Of Scope:**
+
+- Workspace overlays (TF-0047).
+- Caching or rate-limit handling.
+- Intraday or multi-day history ranges.
+- Alpaca broker execution (separate SDK capability, not market data).
+
+**Completed Verification:**
+
+- `uv run pytest tests/test_alpaca_adapter.py` — 25 passed (all mocked)
+- `uv run pytest` — 322 passed
+- `uv run ruff check .` — clean
+- `uv run mypy src tests` — clean (80 files)
 
 ---
 
