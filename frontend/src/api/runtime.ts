@@ -504,6 +504,41 @@ export async function fetchPlanArtifact(
   return response.json() as Promise<TradePlanArtifact>;
 }
 
+export type ReadinessCheck = {
+  check_id: string;
+  label: string;
+  passed: boolean;
+  advisory: boolean;
+  message: string;
+};
+
+export type PlanReadiness = {
+  decision_id: string;
+  current_stage: string | null;
+  next_allowed_transition: string | null;
+  has_structured_thesis: boolean;
+  has_structured_plan: boolean;
+  can_proceed_to_approval: boolean;
+  checks: ReadinessCheck[];
+  authority: "derived";
+};
+
+export async function fetchPlanReadiness(
+  decisionId: string,
+  signal?: AbortSignal,
+): Promise<PlanReadiness> {
+  const response = await fetch(
+    `/lifecycle/decisions/${encodeURIComponent(decisionId)}/plan-readiness`,
+    { signal },
+  );
+
+  if (!response.ok) {
+    throw new Error(`Plan readiness request failed: ${response.status}`);
+  }
+
+  return response.json() as Promise<PlanReadiness>;
+}
+
 export async function fetchOperatingAttentionQueue(
   params: WorkspaceApiParams,
   signal?: AbortSignal,

@@ -6,7 +6,9 @@ import {
   fetchWorkspaceProjection,
   fetchThesisArtifact,
   fetchPlanArtifact,
+  fetchPlanReadiness,
   postLifecycleTransition,
+  type PlanReadiness,
   type ThesisArtifact,
   type TradePlanArtifact,
   type WorkspaceApiParams,
@@ -15,6 +17,7 @@ import {
 import { type WorkspaceContext } from "../workspaceRouting";
 import { ThesisRevisionModal } from "./ThesisRevisionModal";
 import { PlanDevelopmentModal } from "./PlanDevelopmentModal";
+import { PlanReadinessPanel } from "./PlanReadinessPanel";
 
 type TransitionState = "idle" | "transitioning" | "error";
 
@@ -188,6 +191,7 @@ export function PlanReviewWorkspace({ context, onNavigateProgrammatic, onStageLo
   const [projection, setProjection] = useState<WorkspaceProjection | null>(null);
   const [thesis, setThesis] = useState<ThesisArtifact | null>(null);
   const [plan, setPlan] = useState<TradePlanArtifact | null>(null);
+  const [readiness, setReadiness] = useState<PlanReadiness | null>(null);
   const [showRevisionModal, setShowRevisionModal] = useState(false);
   const [showPlanModal, setShowPlanModal] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -226,6 +230,11 @@ export function PlanReviewWorkspace({ context, onNavigateProgrammatic, onStageLo
           });
         fetchPlanArtifact(context.decision_id, signal)
           .then((artifact) => setPlan(artifact))
+          .catch((err: unknown) => {
+            if (err instanceof DOMException && err.name === "AbortError") return;
+          });
+        fetchPlanReadiness(context.decision_id, signal)
+          .then((r) => setReadiness(r))
           .catch((err: unknown) => {
             if (err instanceof DOMException && err.name === "AbortError") return;
           });
@@ -398,27 +407,30 @@ export function PlanReviewWorkspace({ context, onNavigateProgrammatic, onStageLo
               </button>
             </div>
           ) : canAuthorizePlan ? (
-            <div className="lifecycle-action-surface">
-              <p className="eyebrow">Available Lifecycle Action</p>
-              <p className="lifecycle-action-note">
-                Authorizing a plan confirms deliberate risk acceptance. The lifecycle
-                service validates the transition before appending an event — this is
-                not trade execution.
-              </p>
-              {transitionError ? (
-                <div className="runtime-error">{transitionError}</div>
-              ) : null}
-              <button
-                className="lifecycle-action-btn"
-                disabled={transitionState === "transitioning"}
-                onClick={handleAuthorizePlan}
-                type="button"
-              >
-                {transitionState === "transitioning"
-                  ? "Requesting transition…"
-                  : "Authorize Plan"}
-              </button>
-            </div>
+            <>
+              {readiness ? <PlanReadinessPanel readiness={readiness} /> : null}
+              <div className="lifecycle-action-surface">
+                <p className="eyebrow">Available Lifecycle Action</p>
+                <p className="lifecycle-action-note">
+                  Authorizing a plan confirms deliberate risk acceptance. The lifecycle
+                  service validates the transition before appending an event — this is
+                  not trade execution.
+                </p>
+                {transitionError ? (
+                  <div className="runtime-error">{transitionError}</div>
+                ) : null}
+                <button
+                  className="lifecycle-action-btn"
+                  disabled={transitionState === "transitioning"}
+                  onClick={handleAuthorizePlan}
+                  type="button"
+                >
+                  {transitionState === "transitioning"
+                    ? "Requesting transition…"
+                    : "Authorize Plan"}
+                </button>
+              </div>
+            </>
           ) : canRecordExecution ? (
             <div className="lifecycle-action-surface">
               <p className="eyebrow">Available Lifecycle Action</p>

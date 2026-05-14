@@ -10,6 +10,7 @@ from src.app.session import SessionProvider
 from src.domain.events import EntityReference, EventEnvelope
 from src.domain.lifecycle import LifecycleStage
 from src.domain.lifecycle.state import LIFECYCLE_EVENT_STAGE_MAP
+from src.domain.lifecycle.transitions import ALLOWED_LIFECYCLE_TRANSITIONS
 from src.domain.personas import (
     PersonaContext,
     PersonaDecisionVelocity,
@@ -223,6 +224,25 @@ class TradePlanArtifactResponse(BaseModel):
     playbook_alignment: str
     source_event_type: str
     event_timestamp: datetime
+
+
+class ReadinessCheckResponse(BaseModel):
+    check_id: str
+    label: str
+    passed: bool
+    advisory: bool
+    message: str
+
+
+class PlanReadinessResponse(BaseModel):
+    decision_id: str
+    current_stage: LifecycleStage | None
+    next_allowed_transition: LifecycleStage | None
+    has_structured_thesis: bool
+    has_structured_plan: bool
+    can_proceed_to_approval: bool
+    checks: list[ReadinessCheckResponse]
+    authority: Literal["derived"]
 
 
 class ReplayProjectionLifecycleStateResponse(BaseModel):
@@ -1309,6 +1329,181 @@ def get_plan_artifact(
         playbook_alignment=artifact.playbook_alignment,
         source_event_type=plan_event.event_type,
         event_timestamp=plan_event.timestamp,
+    )
+
+
+@lifecycle_router.get(
+    "/decisions/{decision_id}/plan-readiness",
+    response_model=PlanReadinessResponse,
+)
+def get_plan_readiness(
+    request: Request,
+    decision_id: str,
+) -> PlanReadinessResponse:
+    """Return cognition readiness and lifecycle rule preview for plan authorization.
+
+    Derives readiness from event history — checks whether structured thesis
+    and plan artifacts are present, surfaces conviction and completeness indicators,
+    and reports lifecycle stage and next allowed transition.
+    All outputs are derived and advisory — this endpoint does not authorize transitions.
+    """
+    events = _event_store_from(request).read_events()
+    thesis_event_types = frozenset(
+        ("decision.thesis_created", "decision.thesis_revised")
+    )
+
+    current_stage: LifecycleStage | None = None
+    latest_thesis_payload: dict[str, object] | None = None
+    latest_plan_payload: dict[str, object] | None = None
+
+    for event in events:
+        if not any(
+            ref.entity_type == "decision" and ref.entity_id == decision_id
+            for ref in event.entity_references
+        ):
+            continue
+
+        stage = LIFECYCLE_EVENT_STAGE_MAP.get(event.event_type)
+        if stage is not None:
+            current_stage = stage
+
+        if event.event_type in thesis_event_types:
+            latest_thesis_payload = dict(event.payload)
+
+        if event.event_type == "decision.plan_created":
+            latest_plan_payload = dict(event.payload)
+
+    thesis_artifact = (
+        ThesisArtifact.from_payload(latest_thesis_payload)
+        if latest_thesis_payload is not None
+        else None
+    )
+    plan_artifact = (
+        TradePlanArtifact.from_payload(latest_plan_payload)
+        if latest_plan_payload is not None
+        else None
+    )
+
+    has_structured_thesis = thesis_artifact is not None
+    has_structured_plan = plan_artifact is not None
+
+    next_transition = ALLOWED_LIFECYCLE_TRANSITIONS.get(current_stage)
+
+    checks: list[ReadinessCheckResponse] = []
+
+    checks.append(
+        ReadinessCheckResponse(
+            check_id="has_structured_thesis",
+            label="Structured Thesis",
+            passed=has_structured_thesis,
+            advisory=False,
+            message=(
+                "Structured thesis present — narrative and catalysts captured."
+                if has_structured_thesis
+                else "No structured thesis found. Develop a thesis before creating a plan."
+            ),
+        )
+    )
+
+    checks.append(
+        ReadinessCheckResponse(
+            check_id="has_structured_plan",
+            label="Structured Plan",
+            passed=has_structured_plan,
+            advisory=False,
+            message=(
+                "Structured plan present — entry, stop, and target rationale captured."
+                if has_structured_plan
+                else "No structured plan found. Create a plan before seeking approval."
+            ),
+        )
+    )
+
+    if thesis_artifact is not None:
+        conviction_ok = thesis_artifact.confidence_level >= 3
+        conviction_labels = {
+            1: "Speculative", 2: "Low", 3: "Moderate", 4: "High", 5: "Conviction"
+        }
+        conviction_label = conviction_labels.get(
+            thesis_artifact.confidence_level, str(thesis_artifact.confidence_level)
+        )
+        checks.append(
+            ReadinessCheckResponse(
+                check_id="conviction_level",
+                label="Thesis Conviction",
+                passed=conviction_ok,
+                advisory=True,
+                message=(
+                    f"Conviction: {conviction_label} ({thesis_artifact.confidence_level}/5)."
+                    if conviction_ok
+                    else f"Low conviction: {conviction_label} ({thesis_artifact.confidence_level}/5). "
+                    "Consider whether the plan reflects this uncertainty."
+                ),
+            )
+        )
+
+        invalidation_count = len(thesis_artifact.invalidation_conditions)
+        checks.append(
+            ReadinessCheckResponse(
+                check_id="invalidation_conditions",
+                label="Invalidation Conditions",
+                passed=invalidation_count >= 2,
+                advisory=True,
+                message=(
+                    f"{invalidation_count} invalidation condition{'s' if invalidation_count != 1 else ''} defined."
+                    if invalidation_count >= 2
+                    else f"Only {invalidation_count} invalidation condition defined. "
+                    "Consider adding more conditions for clarity."
+                ),
+            )
+        )
+
+    if plan_artifact is not None:
+        assumption_count = len(plan_artifact.execution_assumptions)
+        checks.append(
+            ReadinessCheckResponse(
+                check_id="execution_assumptions",
+                label="Execution Assumptions",
+                passed=assumption_count >= 2,
+                advisory=True,
+                message=(
+                    f"{assumption_count} execution assumption{'s' if assumption_count != 1 else ''} defined."
+                    if assumption_count >= 2
+                    else f"Only {assumption_count} execution assumption defined. "
+                    "Consider reviewing execution risks."
+                ),
+            )
+        )
+
+        checks.append(
+            ReadinessCheckResponse(
+                check_id="playbook_alignment",
+                label="Playbook Alignment",
+                passed=bool(plan_artifact.playbook_alignment),
+                advisory=True,
+                message=(
+                    f"Aligned with playbook: {plan_artifact.playbook_alignment}."
+                    if plan_artifact.playbook_alignment
+                    else "No playbook alignment specified. Consider tagging for behavioral review."
+                ),
+            )
+        )
+
+    all_required_pass = all(not c.advisory and c.passed for c in checks if not c.advisory)
+    can_proceed = (
+        current_stage == LifecycleStage.PLAN
+        and all_required_pass
+    )
+
+    return PlanReadinessResponse(
+        decision_id=decision_id,
+        current_stage=current_stage,
+        next_allowed_transition=next_transition,
+        has_structured_thesis=has_structured_thesis,
+        has_structured_plan=has_structured_plan,
+        can_proceed_to_approval=can_proceed,
+        checks=checks,
+        authority="derived",
     )
 
 

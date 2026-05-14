@@ -111,7 +111,7 @@ Explicit roadmap checkpoint completed M9 Updated*Done*.
 | M10AIS05 | Planned | M10A | Implement scenario visualization projection | — |
 | M10AIS06 | Done | M10A | Implement structured trade plan domain model | `feature/tf-0064-operational-attention-continuity` |
 | M10AIS07 | Done | M10A | Implement trade plan authoring workspace | `feature/tf-0064-operational-attention-continuity` |
-| M10AIS08 | Planned | M10A | Implement plan validation preview layer | — |
+| M10AIS08 | Done | M10A | Implement plan validation preview layer | `feature/tf-0064-operational-attention-continuity` |
 | M10AIS09 | Planned | M10A | Implement replay cognitive artifact timeline | — |
 | M10AIS10 | Planned | M10A | Implement cognitive snapshot reconstruction | — |
 | M10AIS11 | Planned | M10A | Implement structured review reflection model | — |
@@ -121,7 +121,7 @@ Explicit roadmap checkpoint completed M9 Updated*Done*.
 | M10AIS15 | Planned | M10A | Implement cross-workspace cognitive continuity | — |
 
 Explicit roadmap checkpoint completed M9 Updated*Done*.
-M10A started 2026-05-14. M10AIS01-03, M10AIS06-07 complete.
+M10A started 2026-05-14. M10AIS01-03, M10AIS06-08 complete.
 Post-MVP Roadmap v2 implementation begins with M9 market-context infrastructure and provider-boundary work. 
 M9 remains constrained to read-only advisory context and must not introduce broker execution authority, autonomous AI decision systems, or non-replayable runtime behavior.
 
@@ -2624,6 +2624,41 @@ M9 remains constrained to read-only advisory context and must not introduce brok
 - `npm.cmd run typecheck` — clean
 - `npm.cmd run lint` — clean
 - `npm.cmd run build` — clean (290.12 kB JS, 30.79 kB CSS)
+
+---
+
+## M10AIS08: Implement Plan Validation Preview Layer
+
+**Status:** Done
+
+**Milestone:** M10A
+
+**Branch:** `feature/tf-0064-operational-attention-continuity`
+
+**Affected Layer:** api, frontend
+
+**Linked ADRs:** ADR-0033, ADR-0004
+
+**Impacted Invariants:** UX Is Architectural, Derived State Must Remain Distinguishable, Human Decision Sovereignty
+
+**Implementation Summary:** Added `GET /lifecycle/decisions/{decision_id}/plan-readiness` endpoint returning `PlanReadinessResponse` with: `current_stage`, `next_allowed_transition`, `has_structured_thesis`, `has_structured_plan`, `can_proceed_to_approval`, and a `checks` list of `ReadinessCheckResponse`. Hard-gate checks (advisory=False): has_structured_thesis, has_structured_plan. Advisory checks: conviction_level (warn < 3), invalidation_conditions (warn < 2), execution_assumptions (warn < 2), playbook_alignment (warn when absent). `can_proceed_to_approval` is True only when stage = Plan AND all hard gates pass. Added ALLOWED_LIFECYCLE_TRANSITIONS to top-level imports. Created `PlanReadinessPanel.tsx` with `CheckRow` subcomponent rendering pass/advisory/fail icons, summary status line, and authority boundary note. Added `PlanReadiness`, `ReadinessCheck` types and `fetchPlanReadiness()` to runtime.ts. Updated `PlanReviewWorkspace.tsx`: `readiness` state, fetch in `loadProjection`, render `PlanReadinessPanel` above "Authorize Plan" button in a React fragment. 12 new backend tests (575 total).
+
+**Acceptance Criteria:**
+
+- Operators receive cognition-aware planning guidance.
+
+**Out Of Scope:**
+
+- NLP-based consistency checking between thesis and plan rationale.
+- Blocking the Authorize button based on advisory failures.
+- Persistent rule engine (M12 scope).
+
+**Completed Verification:**
+
+- `uv run pytest` — 575 passed (12 new tests)
+- `npm.cmd run typecheck` — clean
+- `npm.cmd run lint` — clean
+- `npm.cmd run build` — clean (292.47 kB JS, 30.79 kB CSS)
 
 ---
 
