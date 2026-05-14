@@ -539,6 +539,82 @@ export async function fetchPlanReadiness(
   return response.json() as Promise<PlanReadiness>;
 }
 
+export type CompleteReviewRequest = {
+  decision_id: string;
+  symbol: string;
+  thesis_vs_outcome: string;
+  decision_quality: number;
+  execution_quality: number;
+  discipline_observations: string;
+  lessons_learned: string[];
+  behavioral_observations?: string;
+  persona_id: string;
+  workspace_id: string;
+};
+
+export type CompleteReviewResponse = {
+  decision_id: string;
+  event_type: string;
+  timestamp: string;
+};
+
+export type ReviewReflectionArtifact = {
+  decision_id: string;
+  symbol: string;
+  thesis_vs_outcome: string;
+  decision_quality: number;
+  execution_quality: number;
+  discipline_observations: string;
+  lessons_learned: string[];
+  behavioral_observations: string;
+  source_event_type: string;
+  event_timestamp: string;
+};
+
+export async function postCompleteReview(
+  request: CompleteReviewRequest,
+  signal?: AbortSignal,
+): Promise<CompleteReviewResponse> {
+  const response = await fetch("/lifecycle/decisions/complete-review", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(request),
+    signal,
+  });
+
+  if (!response.ok) {
+    const detail = await response.json().catch(() => null);
+    const message =
+      typeof detail === "object" && detail !== null && "detail" in detail
+        ? typeof (detail as Record<string, unknown>).detail === "object"
+          ? ((detail as Record<string, { message?: string }>).detail?.message ??
+            `Review completion failed: ${response.status}`)
+          : `Review completion failed: ${response.status}`
+        : `Review completion failed: ${response.status}`;
+    throw new Error(message);
+  }
+
+  return response.json() as Promise<CompleteReviewResponse>;
+}
+
+export async function fetchReviewReflection(
+  decisionId: string,
+  signal?: AbortSignal,
+): Promise<ReviewReflectionArtifact | null> {
+  const response = await fetch(
+    `/lifecycle/decisions/${encodeURIComponent(decisionId)}/review`,
+    { signal },
+  );
+
+  if (response.status === 404) return null;
+
+  if (!response.ok) {
+    throw new Error(`Review reflection request failed: ${response.status}`);
+  }
+
+  return response.json() as Promise<ReviewReflectionArtifact>;
+}
+
 export async function fetchOperatingAttentionQueue(
   params: WorkspaceApiParams,
   signal?: AbortSignal,

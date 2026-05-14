@@ -22,6 +22,8 @@ from src.domain.personas import (
 )
 from src.domain.replay import ProjectionAuthority, ReplayTimelineEntryKind
 from src.domain.cognition import (
+    ReviewReflectionArtifact,
+    ReviewReflectionArtifactValidationError,
     ThesisArtifact,
     ThesisArtifactValidationError,
     TradePlanArtifact,
@@ -243,6 +245,38 @@ class PlanReadinessResponse(BaseModel):
     can_proceed_to_approval: bool
     checks: list[ReadinessCheckResponse]
     authority: Literal["derived"]
+
+
+class CompleteReviewPayload(BaseModel):
+    decision_id: str = Field(min_length=1)
+    symbol: str = Field(min_length=1, max_length=10)
+    thesis_vs_outcome: str = Field(min_length=10, max_length=5000)
+    decision_quality: int = Field(ge=1, le=5)
+    execution_quality: int = Field(ge=1, le=5)
+    discipline_observations: str = Field(min_length=10, max_length=5000)
+    lessons_learned: list[str] = Field(min_length=1)
+    behavioral_observations: str = Field(default="", max_length=3000)
+    persona_id: str = Field(min_length=1)
+    workspace_id: str = Field(min_length=1)
+
+
+class CompleteReviewResponse(BaseModel):
+    decision_id: str
+    event_type: str
+    timestamp: datetime
+
+
+class ReviewReflectionArtifactResponse(BaseModel):
+    decision_id: str
+    symbol: str
+    thesis_vs_outcome: str
+    decision_quality: int
+    execution_quality: int
+    discipline_observations: str
+    lessons_learned: list[str]
+    behavioral_observations: str
+    source_event_type: str
+    event_timestamp: datetime
 
 
 class ReplayProjectionLifecycleStateResponse(BaseModel):
@@ -1504,6 +1538,128 @@ def get_plan_readiness(
         can_proceed_to_approval=can_proceed,
         checks=checks,
         authority="derived",
+    )
+
+
+@lifecycle_router.post(
+    "/decisions/complete-review",
+    response_model=CompleteReviewResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+def complete_review(
+    request: Request,
+    payload: CompleteReviewPayload,
+) -> CompleteReviewResponse:
+    """Complete the review stage with a structured reflection artifact.
+
+    Validates required reflection fields and creates the review.review_completed
+    lifecycle event with structured cognitive content embedded in the payload.
+    The lifecycle service validates the Position→Review transition before appending.
+    """
+    try:
+        artifact = ReviewReflectionArtifact.create(
+            thesis_vs_outcome=payload.thesis_vs_outcome,
+            decision_quality=payload.decision_quality,
+            execution_quality=payload.execution_quality,
+            discipline_observations=payload.discipline_observations,
+            lessons_learned=payload.lessons_learned,
+            behavioral_observations=payload.behavioral_observations,
+        )
+    except ReviewReflectionArtifactValidationError as error:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={"message": str(error)},
+        ) from error
+
+    service = _lifecycle_service_from(request)
+    symbol = payload.symbol.strip().upper()
+    now = datetime.now(tz=UTC)
+
+    event_payload: dict[str, object] = {
+        "symbol": symbol,
+        **artifact.to_payload(),
+    }
+
+    result = service.transition(
+        LifecycleTransitionRequest(
+            requested_stage=LifecycleStage.REVIEW,
+            timestamp=now,
+            persona_id=payload.persona_id,
+            workspace_id=payload.workspace_id,
+            entity_references=(
+                EntityReference(entity_type="decision", entity_id=payload.decision_id),
+                EntityReference(entity_type="ticker", entity_id=symbol),
+            ),
+            payload=event_payload,
+            provenance={"actor": "human", "source": "review-reflection-workflow"},
+        )
+    )
+
+    if not result.appended or result.appended_event is None:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail={"message": "lifecycle transition to Review rejected — current stage may not be Position"},
+        )
+
+    return CompleteReviewResponse(
+        decision_id=payload.decision_id,
+        event_type=result.appended_event.event_type,
+        timestamp=result.appended_event.timestamp,
+    )
+
+
+@lifecycle_router.get(
+    "/decisions/{decision_id}/review",
+    response_model=ReviewReflectionArtifactResponse,
+)
+def get_review_reflection(
+    request: Request,
+    decision_id: str,
+) -> ReviewReflectionArtifactResponse:
+    """Return the structured review reflection artifact for a decision.
+
+    Reads the review.review_completed event payload for the given decision_id.
+    Returns 404 if no structured review exists.
+    """
+    events = _event_store_from(request).read_events()
+
+    review_event = None
+    for event in reversed(events):
+        if event.event_type != "review.review_completed":
+            continue
+        if any(
+            ref.entity_type == "decision" and ref.entity_id == decision_id
+            for ref in event.entity_references
+        ):
+            review_event = event
+            break
+
+    if review_event is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"message": f"no review found for decision {decision_id}"},
+        )
+
+    artifact = ReviewReflectionArtifact.from_payload(dict(review_event.payload))
+    if artifact is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"message": f"decision {decision_id} has a review event but no structured reflection content"},
+        )
+
+    symbol = str(review_event.payload.get("symbol", ""))
+
+    return ReviewReflectionArtifactResponse(
+        decision_id=decision_id,
+        symbol=symbol,
+        thesis_vs_outcome=artifact.thesis_vs_outcome,
+        decision_quality=artifact.decision_quality,
+        execution_quality=artifact.execution_quality,
+        discipline_observations=artifact.discipline_observations,
+        lessons_learned=list(artifact.lessons_learned),
+        behavioral_observations=artifact.behavioral_observations,
+        source_event_type=review_event.event_type,
+        event_timestamp=review_event.timestamp,
     )
 
 

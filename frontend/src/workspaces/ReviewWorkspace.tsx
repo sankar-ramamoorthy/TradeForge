@@ -4,19 +4,27 @@ import { LifecycleProgressStrip, WorkflowGuidanceNote } from "./LifecycleProgres
 
 import {
   fetchWorkspaceProjection,
-  postLifecycleTransition,
+  fetchThesisArtifact,
+  fetchPlanArtifact,
+  fetchReviewReflection,
+  type ReviewReflectionArtifact,
+  type ThesisArtifact,
+  type TradePlanArtifact,
   type WorkspaceApiParams,
   type WorkspaceProjection,
 } from "../api/runtime";
 import { type WorkspaceContext } from "../workspaceRouting";
+import { ReviewReflectionModal } from "./ReviewReflectionModal";
 
-type TransitionState = "idle" | "transitioning" | "error";
+type TransitionState = "idle" | "open-review-modal" | "error";
+
+const QUALITY_LABELS: Record<number, string> = {
+  1: "Poor", 2: "Below average", 3: "Adequate", 4: "Good", 5: "Excellent",
+};
 
 const AUTHORITY_LABELS: Record<string, string> = {
-  canonical: "Canonical",
-  derived: "Derived",
-  inferred: "Inferred",
-  advisory: "Advisory",
+  canonical: "Canonical", derived: "Derived",
+  inferred: "Inferred", advisory: "Advisory",
 };
 
 const AUTHORITY_DESCRIPTIONS: Record<string, string> = {
@@ -27,49 +35,120 @@ const AUTHORITY_DESCRIPTIONS: Record<string, string> = {
 };
 
 function FieldSurface({
-  name,
-  authority,
-  sourceEventCount,
-  sourceEventTypes,
+  name, authority, sourceEventCount, sourceEventTypes,
 }: {
-  name: string;
-  authority: string;
-  sourceEventCount: number;
-  sourceEventTypes: string[];
+  name: string; authority: string; sourceEventCount: number; sourceEventTypes: string[];
 }) {
   const label = AUTHORITY_LABELS[authority] ?? authority;
   const desc = AUTHORITY_DESCRIPTIONS[authority] ?? "";
-  const hasData = sourceEventCount > 0;
-
   return (
-    <div
-      className="field-surface"
-      data-authority={authority}
-      aria-label={`${name} — ${label}`}
-    >
+    <div className="field-surface" data-authority={authority} aria-label={`${name} — ${label}`}>
       <div className="field-surface-header">
-        <span className="field-surface-name">
-          {name.replace(/_/g, " ")}
-        </span>
-        <span className={`field-authority-badge authority-${authority}`}>
-          {label}
-        </span>
+        <span className="field-surface-name">{name.replace(/_/g, " ")}</span>
+        <span className={`field-authority-badge authority-${authority}`}>{label}</span>
       </div>
       <p className="field-surface-desc">{desc}</p>
-      {hasData ? (
+      {sourceEventCount > 0 ? (
         <div className="field-source-events">
           <span className="eyebrow">
             {sourceEventCount} source event{sourceEventCount !== 1 ? "s" : ""}
           </span>
           <div className="source-event-types">
-            {sourceEventTypes.map((t) => (
-              <code className="event-type-tag" key={t}>{t}</code>
-            ))}
+            {sourceEventTypes.map((t) => <code className="event-type-tag" key={t}>{t}</code>)}
           </div>
         </div>
       ) : (
         <p className="field-no-data">No source events yet.</p>
       )}
+    </div>
+  );
+}
+
+function truncate(text: string, max: number): string {
+  return text.length > max ? text.slice(0, max) + "…" : text;
+}
+
+function ReviewFoundationPanel({
+  thesis, plan,
+}: {
+  thesis: ThesisArtifact | null;
+  plan: TradePlanArtifact | null;
+}) {
+  if (!thesis && !plan) return null;
+  return (
+    <div className="review-foundation-panel" aria-label="Decision context for review">
+      <p className="eyebrow">Decision Context</p>
+      <p className="review-foundation-note">
+        Review your original reasoning before recording your reflection.
+      </p>
+      {thesis ? (
+        <div className="review-foundation-section">
+          <p className="thesis-context-label">Original Thesis</p>
+          <p className="review-foundation-text" title={thesis.narrative}>
+            {truncate(thesis.narrative, 200)}
+          </p>
+          <p className="review-foundation-meta">
+            Conviction: {thesis.confidence_level}/5
+            {thesis.regime_alignment ? ` · Regime: ${thesis.regime_alignment}` : ""}
+          </p>
+        </div>
+      ) : null}
+      {plan ? (
+        <div className="review-foundation-section">
+          <p className="thesis-context-label">Original Plan</p>
+          <p className="review-foundation-text" title={plan.entry_rationale}>
+            <span className="cognitive-field-label">Entry: </span>
+            {truncate(plan.entry_rationale, 160)}
+          </p>
+          {plan.playbook_alignment ? (
+            <span className="cognitive-playbook-badge">{plan.playbook_alignment}</span>
+          ) : null}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function ReviewReflectionPanel({ reflection }: { reflection: ReviewReflectionArtifact }) {
+  return (
+    <div className="review-reflection-panel" aria-label="Review reflection">
+      <p className="eyebrow">Review Reflection</p>
+      <div className="review-reflection-outcome">
+        <p className="thesis-context-label">Thesis vs Outcome</p>
+        <p className="review-reflection-text">{reflection.thesis_vs_outcome}</p>
+      </div>
+      <div className="review-quality-grid">
+        <div className="review-quality-item">
+          <p className="thesis-context-label">Decision Quality</p>
+          <p className="review-quality-value">
+            {QUALITY_LABELS[reflection.decision_quality] ?? reflection.decision_quality}
+            {" "}({reflection.decision_quality}/5)
+          </p>
+        </div>
+        <div className="review-quality-item">
+          <p className="thesis-context-label">Execution Quality</p>
+          <p className="review-quality-value">
+            {QUALITY_LABELS[reflection.execution_quality] ?? reflection.execution_quality}
+            {" "}({reflection.execution_quality}/5)
+          </p>
+        </div>
+      </div>
+      <div className="review-reflection-section">
+        <p className="thesis-context-label">Discipline Observations</p>
+        <p className="review-reflection-text">{reflection.discipline_observations}</p>
+      </div>
+      <div className="review-reflection-section">
+        <p className="thesis-context-label">Lessons Learned</p>
+        <ul className="thesis-context-list">
+          {reflection.lessons_learned.map((l) => <li key={l}>{l}</li>)}
+        </ul>
+      </div>
+      {reflection.behavioral_observations ? (
+        <div className="review-reflection-section">
+          <p className="thesis-context-label">Behavioral Observations</p>
+          <p className="review-reflection-text">{reflection.behavioral_observations}</p>
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -82,9 +161,12 @@ type ReviewWorkspaceProps = {
 
 export function ReviewWorkspace({ context, onStageLoaded }: ReviewWorkspaceProps) {
   const [projection, setProjection] = useState<WorkspaceProjection | null>(null);
+  const [thesis, setThesis] = useState<ThesisArtifact | null>(null);
+  const [plan, setPlan] = useState<TradePlanArtifact | null>(null);
+  const [reflection, setReflection] = useState<ReviewReflectionArtifact | null>(null);
+  const [showReviewModal, setShowReviewModal] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [transitionState, setTransitionState] = useState<TransitionState>("idle");
-  const [transitionError, setTransitionError] = useState<string | null>(null);
+  const [, setTransitionState] = useState<TransitionState>("idle");
   const fetchControllerRef = useRef<AbortController | null>(null);
 
   const params: WorkspaceApiParams = {
@@ -109,6 +191,24 @@ export function ReviewWorkspace({ context, onStageLoaded }: ReviewWorkspaceProps
             err instanceof Error ? err.message : "Failed to load review workspace",
           );
         });
+
+      if (context.decision_id) {
+        fetchThesisArtifact(context.decision_id, signal)
+          .then(setThesis)
+          .catch((err: unknown) => {
+            if (err instanceof DOMException && err.name === "AbortError") return;
+          });
+        fetchPlanArtifact(context.decision_id, signal)
+          .then(setPlan)
+          .catch((err: unknown) => {
+            if (err instanceof DOMException && err.name === "AbortError") return;
+          });
+        fetchReviewReflection(context.decision_id, signal)
+          .then(setReflection)
+          .catch((err: unknown) => {
+            if (err instanceof DOMException && err.name === "AbortError") return;
+          });
+      }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [
@@ -131,59 +231,27 @@ export function ReviewWorkspace({ context, onStageLoaded }: ReviewWorkspaceProps
   const canCompleteReview = lifecycleStage === "Position";
   const reviewComplete = lifecycleStage === "Review";
 
-  function handleCompleteReview() {
-    setTransitionState("transitioning");
-    setTransitionError(null);
-
-    postLifecycleTransition({
-      requested_stage: "Review",
-      timestamp: new Date().toISOString(),
-      persona_id: context.persona_id,
-      workspace_id: context.workspace_id,
-      entity_references: context.decision_id
-        ? [{ entity_type: "decision", entity_id: context.decision_id }]
-        : [],
-      payload: {},
-      provenance: { actor: "human", source: "review-workspace" },
-    })
-      .then(() => {
-        setTransitionState("idle");
-        const controller = new AbortController();
-        fetchControllerRef.current = controller;
-        loadProjection(controller.signal);
-      })
-      .catch((err: unknown) => {
-        setTransitionState("error");
-        setTransitionError(
-          err instanceof Error ? err.message : "Lifecycle transition failed",
-        );
-      });
+  function handleReviewSuccess() {
+    setShowReviewModal(false);
+    setTransitionState("idle");
+    const controller = new AbortController();
+    fetchControllerRef.current = controller;
+    loadProjection(controller.signal);
   }
 
-  const fieldOrder = [
-    "review_references",
-    "decision_quality_context",
-    "behavioral_signal",
-  ];
+  const fieldOrder = ["review_references", "decision_quality_context", "behavioral_signal"];
 
   return (
-    <section
-      className="workspace-surface"
-      aria-labelledby="review-workspace-title"
-    >
+    <section className="workspace-surface" aria-labelledby="review-workspace-title">
       <div className="surface-title">
         <Compass aria-hidden="true" />
         <div>
           <p className="eyebrow">Review Workspace</p>
-          <h1 id="review-workspace-title">
-            What should be learned from the decision?
-          </h1>
+          <h1 id="review-workspace-title">What should be learned from the decision?</h1>
         </div>
       </div>
 
-      {loadError ? (
-        <div className="runtime-error">{loadError}</div>
-      ) : null}
+      {loadError ? <div className="runtime-error">{loadError}</div> : null}
 
       <LifecycleProgressStrip currentStage={lifecycleStage} />
       <WorkflowGuidanceNote currentStage={lifecycleStage} />
@@ -206,14 +274,27 @@ export function ReviewWorkspace({ context, onStageLoaded }: ReviewWorkspaceProps
             })}
           </div>
 
+          <ReviewFoundationPanel plan={plan} thesis={thesis} />
+
+          {reflection ? <ReviewReflectionPanel reflection={reflection} /> : null}
+
+          {showReviewModal && context.decision_id ? (
+            <ReviewReflectionModal
+              context={context}
+              onCancel={() => setShowReviewModal(false)}
+              onSuccess={handleReviewSuccess}
+              symbol={thesis?.symbol ?? plan?.symbol ?? ""}
+            />
+          ) : null}
+
           {reviewComplete ? (
             <div className="lifecycle-complete-surface" aria-label="Review complete">
               <CheckCircle aria-hidden="true" />
               <div>
                 <p className="eyebrow">Review Recorded</p>
                 <p className="lifecycle-action-note">
-                  This decision has completed the full lifecycle. The review event
-                  is durable in the event ledger and supports replay reconstruction.
+                  This decision has completed the full lifecycle. The review reflection
+                  is a durable learning artifact in the event ledger.
                 </p>
               </div>
             </div>
@@ -221,34 +302,22 @@ export function ReviewWorkspace({ context, onStageLoaded }: ReviewWorkspaceProps
             <div className="lifecycle-action-surface">
               <p className="eyebrow">Available Lifecycle Action</p>
               <p className="lifecycle-action-note">
-                Completing the review records a durable event in the ledger.
-                Review separates decision quality from outcome — the focus is on
-                process, adherence, and learning, not PnL.
+                Record a structured reflection — thesis vs outcome, decision quality,
+                execution quality, and lessons learned become replayable learning artifacts.
               </p>
-              {transitionError ? (
-                <div className="runtime-error">{transitionError}</div>
-              ) : null}
               <button
                 className="lifecycle-action-btn"
-                disabled={transitionState === "transitioning"}
-                onClick={handleCompleteReview}
+                onClick={() => setShowReviewModal(true)}
                 type="button"
               >
-                {transitionState === "transitioning"
-                  ? "Requesting transition…"
-                  : "Complete Review"}
+                Complete Review
               </button>
             </div>
           ) : null}
 
-          <div
-            className="attention-authority-note"
-            aria-label="Authority boundaries"
-          >
+          <div className="attention-authority-note" aria-label="Authority boundaries">
             {projection.authority_boundaries.map((boundary) => (
-              <p className="authority-boundary" key={boundary}>
-                {boundary}
-              </p>
+              <p className="authority-boundary" key={boundary}>{boundary}</p>
             ))}
           </div>
 

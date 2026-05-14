@@ -114,14 +114,14 @@ Explicit roadmap checkpoint completed M9 Updated*Done*.
 | M10AIS08 | Done | M10A | Implement plan validation preview layer | `feature/tf-0064-operational-attention-continuity` |
 | M10AIS09 | Done | M10A | Implement replay cognitive artifact timeline | `feature/tf-0064-operational-attention-continuity` |
 | M10AIS10 | Planned | M10A | Implement cognitive snapshot reconstruction | — |
-| M10AIS11 | Planned | M10A | Implement structured review reflection model | — |
-| M10AIS12 | Planned | M10A | Implement review reflection workspace | — |
+| M10AIS11 | Done | M10A | Implement structured review reflection model | `feature/tf-0064-operational-attention-continuity` |
+| M10AIS12 | Done | M10A | Implement review reflection workspace | `feature/tf-0064-operational-attention-continuity` |
 | M10AIS13 | Planned | M10A | Implement replay annotation system | — |
 | M10AIS14 | Planned | M10A | Implement playbook alignment projection layer | — |
 | M10AIS15 | Planned | M10A | Implement cross-workspace cognitive continuity | — |
 
 Explicit roadmap checkpoint completed M9 Updated*Done*.
-M10A started 2026-05-14. M10AIS01-03, M10AIS06-09 complete.
+M10A started 2026-05-14. M10AIS01-03, M10AIS06-09, M10AIS11-12 complete.
 Post-MVP Roadmap v2 implementation begins with M9 market-context infrastructure and provider-boundary work. 
 M9 remains constrained to read-only advisory context and must not introduce broker execution authority, autonomous AI decision systems, or non-replayable runtime behavior.
 
@@ -2693,6 +2693,62 @@ M9 remains constrained to read-only advisory context and must not introduce brok
 - `npm.cmd run typecheck` — clean
 - `npm.cmd run lint` — clean
 - `npm.cmd run build` — clean (298.13 kB JS, 30.79 kB CSS)
+
+---
+
+## M10AIS11: Implement Structured Review Reflection Model
+
+**Status:** Done
+
+**Milestone:** M10A
+
+**Branch:** `feature/tf-0064-operational-attention-continuity`
+
+**Affected Layer:** domain, api
+
+**Linked ADRs:** ADR-0033, ADR-0002
+
+**Impacted Invariants:** Event Ledger Canonical Truth, Replayability Is Foundational, Reflection And Review Are First-Class
+
+**Implementation Summary:** Created `src/domain/cognition/review.py` with `ReviewReflectionArtifact` — frozen dataclass with `create()` validating: `thesis_vs_outcome` (required), `decision_quality` (1-5), `execution_quality` (1-5), `discipline_observations` (required), `lessons_learned` (list, min 1), `behavioral_observations` (optional). `to_payload()`/`from_payload()` for event serialization with graceful legacy degradation. Added `POST /lifecycle/decisions/complete-review` endpoint that validates reflection fields and creates the `review.review_completed` lifecycle transition (Position→Review) via `LifecycleOrchestrationService` with structured payload `{review: {...}}`. Added `GET /lifecycle/decisions/{id}/review` that reads `review.review_completed` event payload and returns `ReviewReflectionArtifactResponse`. Updated `cognition/__init__.py` to export `ReviewReflectionArtifact`. 23 new tests (598 total).
+
+**Acceptance Criteria:**
+
+- Reviews become durable learning artifacts.
+
+**Completed Verification:**
+
+- `uv run pytest` — 598 passed (23 new tests: 13 unit + 10 integration)
+- `npm.cmd run typecheck` — clean
+- `npm.cmd run build` — clean (307.69 kB JS, 30.79 kB CSS)
+
+---
+
+## M10AIS12: Implement Review Reflection Workspace
+
+**Status:** Done
+
+**Milestone:** M10A
+
+**Branch:** `feature/tf-0064-operational-attention-continuity`
+
+**Affected Layer:** frontend
+
+**Linked ADRs:** ADR-0034
+
+**Impacted Invariants:** UX Is Architectural, Reflection And Review Are First-Class, Human Decision Sovereignty
+
+**Implementation Summary:** Created `ReviewReflectionModal.tsx` — form with `thesis_vs_outcome` textarea, `QualitySlider` subcomponent for `decision_quality` and `execution_quality` (1-5, Poor–Excellent labels), `discipline_observations` textarea, `lessons_learned` dynamic list, and optional `behavioral_observations` textarea. Submits to `POST /lifecycle/decisions/complete-review`. On success: reloads projection (stays in review workspace). Rewrote `ReviewWorkspace.tsx` entirely: imports `fetchThesisArtifact`, `fetchPlanArtifact`, `fetchReviewReflection` and respective types; fetches all three alongside workspace projection on load; added `ReviewFoundationPanel` showing original thesis narrative and plan entry rationale for cognitive comparison context before writing reflection; added `ReviewReflectionPanel` displaying completed review content (thesis vs outcome, quality scores, discipline observations, lessons, behavioral observations); `handleCompleteReview` button opens `ReviewReflectionModal` via `showReviewModal` state; "Review Recorded" complete surface shown at Review stage. Added `CompleteReviewRequest`, `CompleteReviewResponse`, `ReviewReflectionArtifact` types and `postCompleteReview()`, `fetchReviewReflection()` to `runtime.ts`.
+
+**Acceptance Criteria:**
+
+- Review becomes operationally meaningful.
+
+**Completed Verification:**
+
+- `uv run pytest` — 598 passed (no additional backend tests)
+- `npm.cmd run typecheck` — clean
+- `npm.cmd run build` — clean (307.69 kB JS, 30.79 kB CSS)
 
 ---
 
