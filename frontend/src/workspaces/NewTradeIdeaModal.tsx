@@ -2,18 +2,26 @@ import { PlusCircle, X } from "lucide-react";
 import { type FormEvent, useRef, useState } from "react";
 
 import { initNewTradeIdea } from "../api/runtime";
+import {
+  setActiveDecision,
+  type ActiveDecisionRecord,
+} from "../activeDecision";
 
 type NewTradeIdeaModalProps = {
   personaId: string;
+  personaVersion: string;
   workspaceId: string;
   onCreated: (decisionId: string, symbol: string) => void;
+  onDecisionActivated: (record: ActiveDecisionRecord) => void;
   onCancel: () => void;
 };
 
 export function NewTradeIdeaModal({
   personaId,
+  personaVersion,
   workspaceId,
   onCreated,
+  onDecisionActivated,
   onCancel,
 }: NewTradeIdeaModalProps) {
   const [symbol, setSymbol] = useState("");
@@ -41,6 +49,15 @@ export function NewTradeIdeaModal({
         persona_id: personaId,
         workspace_id: workspaceId,
       });
+      const record: ActiveDecisionRecord = {
+        decision_id: result.decision_id,
+        symbol: result.symbol,
+        persona_id: personaId,
+        persona_version: personaVersion,
+        created_at: result.timestamp,
+      };
+      setActiveDecision(record);
+      onDecisionActivated(record);
       onCreated(result.decision_id, result.symbol);
     } catch (err: unknown) {
       setError(

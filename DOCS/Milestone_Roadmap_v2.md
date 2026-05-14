@@ -749,7 +749,7 @@ Introduce:
 
 ---
 
-### TF-0054 — Implement Persistent Active Decision Context
+### TF-0054 — Implement Persistent Active Decision Context (**Done**)
 
 #### Purpose
 

@@ -93,6 +93,7 @@ Explicit roadmap checkpoint completed M9 Updated*Done*.
 | TF-0051 | Done | M9 | Add seeded demo market context flow | `feature/tf-0051-seeded-demo-flow` |
 | TF-0052 | Done | M9 | Add replay-compatible market snapshot persistence strategy | `feature/tf-0050-provider-provenance-tracking` |
 | TF-0053 | Done | M10 | Implement new trade idea workflow | `feature/tf-0053-new-trade-idea-workflow` |
+| TF-0054 | Done | M10 | Implement persistent active decision context | `feature/tf-0054-persistent-active-decision-context` |
 
 Explicit roadmap checkpoint completed M9 Updated*Done*.
 Post-MVP Roadmap v2 implementation begins with M9 market-context infrastructure and provider-boundary work. 
@@ -2041,6 +2042,45 @@ M9 remains constrained to read-only advisory context and must not introduce brok
 - `uv run pytest` — 504 passed
 - `uv run ruff check src tests` — clean
 - `uv run mypy src tests` — clean (98 files)
+- `npm.cmd run typecheck` — clean
+- `npm.cmd run lint` — clean
+- `npm.cmd run build` — clean
+
+---
+
+## TF-0054: Implement Persistent Active Decision Context
+
+**Status:** Done
+
+**Milestone:** M10
+
+**Branch:** `feature/tf-0054-persistent-active-decision-context`
+
+**Affected Layer:** app, frontend
+
+**Linked ADRs:** ADR-0028, ADR-0022
+
+**Impacted Invariants:** Workspace, Workflow-Centric Architecture, Derived State Must Remain Distinguishable
+
+**Implementation Summary:** Fixed the root cause of the M9 demo failure and added localStorage-backed active decision persistence. Root cause: `_matches_context` in `projections.py` filters events by `decision_id` when it is non-null — the `LocalSessionProvider` and frontend `DEFAULT_WORKSPACE_CONTEXT` both used placeholder strings (`"decision.focus"`, `"workflow.current"`) that never matched any real event entity_references, silently emptying all workspace projections and attention queues. Fix: `LocalSessionProvider` now defaults `decision_id=None, selected_workflow_id=None`. Frontend `DEFAULT_WORKSPACE_CONTEXT` now uses empty strings for both. Added `frontend/src/activeDecision.ts` with localStorage persistence (`getActiveDecision`, `setActiveDecision`, `clearActiveDecision`). `App.tsx` now initializes from localStorage on mount, exposes `handleDecisionActivated`, and builds context with merge priority: URL params > (session + activeDecision) > static defaults. `NewTradeIdeaModal` writes the real decision record to localStorage and calls `onDecisionActivated` on successful creation. 9 new tests in `test_active_decision_context.py` — explicitly prove the M9 bug and verify the fix.
+
+**Acceptance Criteria:**
+
+- Active decision context survives navigation.
+- Manual query parameter propagation is eliminated.
+- Workspace continuity becomes operationally stable.
+
+**Out Of Scope:**
+
+- Clearing active decision when review completes (future M10 issue).
+- Multi-decision session support.
+
+**Completed Verification:**
+
+- `uv run pytest tests/test_active_decision_context.py` — 9 passed
+- `uv run pytest` — 513 passed
+- `uv run ruff check src tests` — clean
+- `uv run mypy src tests` — clean (99 files)
 - `npm.cmd run typecheck` — clean
 - `npm.cmd run lint` — clean
 - `npm.cmd run build` — clean

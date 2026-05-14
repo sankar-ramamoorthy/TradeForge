@@ -14,6 +14,11 @@ import {
   type RuntimeStatus,
 } from "./api/runtime";
 import {
+  getActiveDecision,
+  setActiveDecision,
+  type ActiveDecisionRecord,
+} from "./activeDecision";
+import {
   AppShell,
   AuthorityCue,
   ContextLink,
@@ -114,12 +119,25 @@ function sessionContextDefaults(
   };
 }
 
+function activeDecisionDefaults(
+  record: ActiveDecisionRecord | null,
+): WorkspaceContext {
+  if (record === null) return {};
+  return {
+    persona_id: record.persona_id,
+    persona_version: record.persona_version,
+    decision_id: record.decision_id,
+  };
+}
+
 export default function App() {
   const [location, setLocation] = useState<WorkspaceLocation>(() =>
     readCurrentLocation(),
   );
   const [session, setSession] = useState<RuntimeSession | null>(null);
   const [sessionError, setSessionError] = useState<string | null>(null);
+  const [activeDecision, setActiveDecisionState] =
+    useState<ActiveDecisionRecord | null>(() => getActiveDecision());
 
   useEffect(() => {
     const handlePopState = () => setLocation(readCurrentLocation());
@@ -161,9 +179,12 @@ export default function App() {
     () =>
       mergeWorkspaceContext(
         readWorkspaceContext(location.search),
-        sessionContextDefaults(session),
+        {
+          ...sessionContextDefaults(session),
+          ...activeDecisionDefaults(activeDecision),
+        },
       ),
-    [location.search, session],
+    [location.search, session, activeDecision],
   );
   const activeHref = buildWorkspaceHref(activeRoute, context);
 
@@ -179,6 +200,11 @@ export default function App() {
   function handleNavigateProgrammatic(href: string) {
     window.history.pushState(null, "", href);
     setLocation(readCurrentLocation());
+  }
+
+  function handleDecisionActivated(record: ActiveDecisionRecord) {
+    setActiveDecision(record);
+    setActiveDecisionState(record);
   }
 
   return (
@@ -220,6 +246,7 @@ export default function App() {
             context={context}
             onNavigate={handleNavigate}
             onNavigateProgrammatic={handleNavigateProgrammatic}
+            onDecisionActivated={handleDecisionActivated}
           />
         ) : activeRoute.id === "opportunity" ? (
           <OpportunityWorkspace

@@ -14,6 +14,7 @@ import {
   findWorkspaceRoute,
   type WorkspaceContext,
 } from "../workspaceRouting";
+import { type ActiveDecisionRecord } from "../activeDecision";
 import { ContextualBriefingPanel } from "./ContextualBriefingPanel";
 import { NewTradeIdeaModal } from "./NewTradeIdeaModal";
 
@@ -87,12 +88,14 @@ type OperatingWorkspaceProps = {
   context: Required<WorkspaceContext>;
   onNavigate: (event: MouseEvent<HTMLAnchorElement>, href: string) => void;
   onNavigateProgrammatic: (href: string) => void;
+  onDecisionActivated: (record: ActiveDecisionRecord) => void;
 };
 
 export function OperatingWorkspace({
   context,
   onNavigate,
   onNavigateProgrammatic,
+  onDecisionActivated,
 }: OperatingWorkspaceProps) {
   const [projection, setProjection] = useState<WorkspaceProjection | null>(
     null,
@@ -152,8 +155,10 @@ export function OperatingWorkspace({
     {showNewIdeaModal ? (
       <NewTradeIdeaModal
         personaId={context.persona_id}
+        personaVersion={context.persona_version}
         workspaceId={context.workspace_id}
         onCreated={handleIdeaCreated}
+        onDecisionActivated={onDecisionActivated}
         onCancel={() => setShowNewIdeaModal(false)}
       />
     ) : null}
