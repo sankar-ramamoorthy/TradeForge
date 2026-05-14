@@ -112,7 +112,7 @@ Explicit roadmap checkpoint completed M9 Updated*Done*.
 | M10AIS06 | Done | M10A | Implement structured trade plan domain model | `feature/tf-0064-operational-attention-continuity` |
 | M10AIS07 | Done | M10A | Implement trade plan authoring workspace | `feature/tf-0064-operational-attention-continuity` |
 | M10AIS08 | Done | M10A | Implement plan validation preview layer | `feature/tf-0064-operational-attention-continuity` |
-| M10AIS09 | Planned | M10A | Implement replay cognitive artifact timeline | — |
+| M10AIS09 | Done | M10A | Implement replay cognitive artifact timeline | `feature/tf-0064-operational-attention-continuity` |
 | M10AIS10 | Planned | M10A | Implement cognitive snapshot reconstruction | — |
 | M10AIS11 | Planned | M10A | Implement structured review reflection model | — |
 | M10AIS12 | Planned | M10A | Implement review reflection workspace | — |
@@ -121,7 +121,7 @@ Explicit roadmap checkpoint completed M9 Updated*Done*.
 | M10AIS15 | Planned | M10A | Implement cross-workspace cognitive continuity | — |
 
 Explicit roadmap checkpoint completed M9 Updated*Done*.
-M10A started 2026-05-14. M10AIS01-03, M10AIS06-08 complete.
+M10A started 2026-05-14. M10AIS01-03, M10AIS06-09 complete.
 Post-MVP Roadmap v2 implementation begins with M9 market-context infrastructure and provider-boundary work. 
 M9 remains constrained to read-only advisory context and must not introduce broker execution authority, autonomous AI decision systems, or non-replayable runtime behavior.
 
@@ -2659,6 +2659,40 @@ M9 remains constrained to read-only advisory context and must not introduce brok
 - `npm.cmd run typecheck` — clean
 - `npm.cmd run lint` — clean
 - `npm.cmd run build` — clean (292.47 kB JS, 30.79 kB CSS)
+
+---
+
+## M10AIS09: Implement Replay Cognitive Artifact Timeline
+
+**Status:** Done
+
+**Milestone:** M10A
+
+**Branch:** `feature/tf-0064-operational-attention-continuity`
+
+**Affected Layer:** frontend
+
+**Linked ADRs:** ADR-0035
+
+**Impacted Invariants:** Replayability Is Foundational, Derived State Must Remain Distinguishable
+
+**Implementation Summary:** Extended `ReplayWorkspace.tsx` with cognitive artifact rendering — no backend changes (ADR-0035 confirmed timeline already carries full payloads). Added `extractThesisPayload()` and `extractPlanPayload()` type-guarded helpers that safely read structured artifact data from event payload dicts, returning null for legacy empty-payload events. Added `ThesisPayloadPreview` inline component — shows narrative (truncated to 160 chars), conviction badge, catalyst/invalidation/assumption counts, and regime alignment for `decision.thesis_created` and `decision.thesis_revised` entries. Added `PlanPayloadPreview` inline component — shows entry rationale (truncated), playbook badge, and execution assumption count for `decision.plan_created` entries. Added `CognitiveSnapshotSummary` panel rendered above the timeline `<ol>` — derives latest thesis and plan state by scanning all entries, shows narrative excerpt, conviction, regime, and plan entry excerpt with "N versions" indicator when thesis was revised. All artifact content labeled "Derived from event payloads" to distinguish from canonical truth. Graceful degradation: entries without structured payload show no artifact section.
+
+**Acceptance Criteria:**
+
+- Replay reconstructs reasoning, not merely events.
+
+**Out Of Scope:**
+
+- Point-in-time cognitive snapshot at a user-selected timestamp (M10AIS10).
+- Diff/comparison between thesis versions (M10AIS03 follow-on).
+
+**Completed Verification:**
+
+- `uv run pytest` — 575 passed (no backend changes)
+- `npm.cmd run typecheck` — clean
+- `npm.cmd run lint` — clean
+- `npm.cmd run build` — clean (298.13 kB JS, 30.79 kB CSS)
 
 ---
 

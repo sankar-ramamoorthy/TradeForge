@@ -32,6 +32,257 @@ const KIND_LABELS: Record<string, string> = {
   system: "System",
 };
 
+const CONFIDENCE_LABELS: Record<number, string> = {
+  1: "Speculative", 2: "Low", 3: "Moderate", 4: "High", 5: "Conviction",
+};
+
+// ── Payload type guards ────────────────────────────────────────────────────
+
+type ThesisPayloadData = {
+  narrative: string;
+  catalysts: string[];
+  assumptions: string[];
+  invalidation_conditions: string[];
+  confidence_level: number;
+  regime_alignment: string;
+};
+
+type PlanPayloadData = {
+  entry_rationale: string;
+  stop_rationale: string;
+  target_rationale: string;
+  sizing_rationale: string;
+  execution_assumptions: string[];
+  playbook_alignment: string;
+};
+
+function extractThesisPayload(
+  payload: Record<string, unknown>,
+): ThesisPayloadData | null {
+  const t = payload["thesis"];
+  if (!t || typeof t !== "object") return null;
+  const thesis = t as Record<string, unknown>;
+  const narrative = thesis["narrative"];
+  if (typeof narrative !== "string" || !narrative) return null;
+  return {
+    narrative,
+    catalysts: Array.isArray(thesis["catalysts"])
+      ? (thesis["catalysts"] as unknown[]).filter((x): x is string => typeof x === "string")
+      : [],
+    assumptions: Array.isArray(thesis["assumptions"])
+      ? (thesis["assumptions"] as unknown[]).filter((x): x is string => typeof x === "string")
+      : [],
+    invalidation_conditions: Array.isArray(thesis["invalidation_conditions"])
+      ? (thesis["invalidation_conditions"] as unknown[]).filter(
+          (x): x is string => typeof x === "string",
+        )
+      : [],
+    confidence_level:
+      typeof thesis["confidence_level"] === "number"
+        ? (thesis["confidence_level"] as number)
+        : 3,
+    regime_alignment:
+      typeof thesis["regime_alignment"] === "string"
+        ? (thesis["regime_alignment"] as string)
+        : "",
+  };
+}
+
+function extractPlanPayload(
+  payload: Record<string, unknown>,
+): PlanPayloadData | null {
+  const p = payload["plan"];
+  if (!p || typeof p !== "object") return null;
+  const plan = p as Record<string, unknown>;
+  const entry = plan["entry_rationale"];
+  if (typeof entry !== "string" || !entry) return null;
+  return {
+    entry_rationale: entry,
+    stop_rationale:
+      typeof plan["stop_rationale"] === "string"
+        ? (plan["stop_rationale"] as string)
+        : "",
+    target_rationale:
+      typeof plan["target_rationale"] === "string"
+        ? (plan["target_rationale"] as string)
+        : "",
+    sizing_rationale:
+      typeof plan["sizing_rationale"] === "string"
+        ? (plan["sizing_rationale"] as string)
+        : "",
+    execution_assumptions: Array.isArray(plan["execution_assumptions"])
+      ? (plan["execution_assumptions"] as unknown[]).filter(
+          (x): x is string => typeof x === "string",
+        )
+      : [],
+    playbook_alignment:
+      typeof plan["playbook_alignment"] === "string"
+        ? (plan["playbook_alignment"] as string)
+        : "",
+  };
+}
+
+function truncate(text: string, max: number): string {
+  return text.length > max ? text.slice(0, max) + "…" : text;
+}
+
+// ── Cognitive artifact inline previews ────────────────────────────────────
+
+function ThesisPayloadPreview({ thesis, eventType }: { thesis: ThesisPayloadData; eventType: string }) {
+  const isRevision = eventType === "decision.thesis_revised";
+  const convictionLabel = CONFIDENCE_LABELS[thesis.confidence_level] ?? String(thesis.confidence_level);
+
+  return (
+    <div className="cognitive-artifact-preview thesis-preview">
+      <div className="cognitive-artifact-header">
+        <span className="cognitive-artifact-type">
+          {isRevision ? "Thesis Revision" : "Thesis"}
+        </span>
+        <span className="cognitive-conviction-badge">
+          {convictionLabel} ({thesis.confidence_level}/5)
+        </span>
+        {thesis.regime_alignment ? (
+          <span className="cognitive-regime-badge">{thesis.regime_alignment}</span>
+        ) : null}
+      </div>
+      <p className="cognitive-narrative" title={thesis.narrative}>
+        {truncate(thesis.narrative, 160)}
+      </p>
+      <div className="cognitive-counts">
+        <span className="cognitive-count-item">
+          {thesis.catalysts.length} catalyst{thesis.catalysts.length !== 1 ? "s" : ""}
+        </span>
+        <span className="cognitive-count-sep">·</span>
+        <span className="cognitive-count-item">
+          {thesis.invalidation_conditions.length} invalidation condition{thesis.invalidation_conditions.length !== 1 ? "s" : ""}
+        </span>
+        {thesis.assumptions.length > 0 ? (
+          <>
+            <span className="cognitive-count-sep">·</span>
+            <span className="cognitive-count-item">
+              {thesis.assumptions.length} assumption{thesis.assumptions.length !== 1 ? "s" : ""}
+            </span>
+          </>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+function PlanPayloadPreview({ plan }: { plan: PlanPayloadData }) {
+  return (
+    <div className="cognitive-artifact-preview plan-preview">
+      <div className="cognitive-artifact-header">
+        <span className="cognitive-artifact-type">Trade Plan</span>
+        {plan.playbook_alignment ? (
+          <span className="cognitive-playbook-badge">{plan.playbook_alignment}</span>
+        ) : null}
+      </div>
+      <p className="cognitive-entry-rationale" title={plan.entry_rationale}>
+        <span className="cognitive-field-label">Entry: </span>
+        {truncate(plan.entry_rationale, 130)}
+      </p>
+      <p className="cognitive-stop-rationale" title={plan.stop_rationale}>
+        <span className="cognitive-field-label">Stop: </span>
+        {truncate(plan.stop_rationale, 130)}
+      </p>
+      {plan.execution_assumptions.length > 0 ? (
+        <div className="cognitive-counts">
+          <span className="cognitive-count-item">
+            {plan.execution_assumptions.length} execution assumption{plan.execution_assumptions.length !== 1 ? "s" : ""}
+          </span>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+// ── Cognitive snapshot summary ─────────────────────────────────────────────
+
+const THESIS_EVENT_TYPES = new Set([
+  "decision.thesis_created",
+  "decision.thesis_revised",
+]);
+
+function CognitiveSnapshotSummary({ entries }: { entries: ReplayTimelineEntry[] }) {
+  let latestThesis: ThesisPayloadData | null = null;
+  let latestThesisType = "";
+  let latestPlan: PlanPayloadData | null = null;
+  let thesisEventCount = 0;
+
+  for (const entry of entries) {
+    if (THESIS_EVENT_TYPES.has(entry.event_type)) {
+      const t = extractThesisPayload(entry.payload);
+      if (t) {
+        latestThesis = t;
+        latestThesisType = entry.event_type;
+        thesisEventCount += 1;
+      }
+    }
+    if (entry.event_type === "decision.plan_created") {
+      const p = extractPlanPayload(entry.payload);
+      if (p) latestPlan = p;
+    }
+  }
+
+  if (!latestThesis && !latestPlan) return null;
+
+  const isRevised = thesisEventCount > 1 || latestThesisType === "decision.thesis_revised";
+
+  return (
+    <div className="cognitive-snapshot-summary" aria-label="Cognitive snapshot">
+      <p className="eyebrow">
+        Cognitive Snapshot
+        <span className="cognitive-snapshot-note"> — latest operator reasoning at this point in replay</span>
+      </p>
+
+      {latestThesis ? (
+        <div className="cognitive-snapshot-thesis">
+          <p className="cognitive-snapshot-label">
+            Thesis
+            {isRevised ? (
+              <span className="cognitive-revised-indicator">
+                {" "}— {thesisEventCount > 1 ? `${thesisEventCount} versions` : "revised"}
+              </span>
+            ) : null}
+          </p>
+          <p className="cognitive-snapshot-narrative" title={latestThesis.narrative}>
+            {truncate(latestThesis.narrative, 200)}
+          </p>
+          <div className="cognitive-snapshot-meta">
+            <span className="cognitive-conviction-badge">
+              {CONFIDENCE_LABELS[latestThesis.confidence_level] ?? latestThesis.confidence_level}
+              {" "}({latestThesis.confidence_level}/5)
+            </span>
+            {latestThesis.regime_alignment ? (
+              <span className="cognitive-regime-badge">{latestThesis.regime_alignment}</span>
+            ) : null}
+          </div>
+        </div>
+      ) : null}
+
+      {latestPlan ? (
+        <div className="cognitive-snapshot-plan">
+          <p className="cognitive-snapshot-label">Plan</p>
+          <p className="cognitive-snapshot-entry" title={latestPlan.entry_rationale}>
+            <span className="cognitive-field-label">Entry: </span>
+            {truncate(latestPlan.entry_rationale, 160)}
+          </p>
+          {latestPlan.playbook_alignment ? (
+            <span className="cognitive-playbook-badge">{latestPlan.playbook_alignment}</span>
+          ) : null}
+        </div>
+      ) : null}
+
+      <p className="cognitive-snapshot-authority">
+        Derived from event payloads — not canonical truth.
+      </p>
+    </div>
+  );
+}
+
+// ── Timeline entry row ─────────────────────────────────────────────────────
+
 function FieldSurface({
   name,
   authority,
@@ -87,6 +338,14 @@ function TimelineEntryRow({ entry }: { entry: ReplayTimelineEntry }) {
     timeStyle: "medium",
   });
 
+  const thesisData = THESIS_EVENT_TYPES.has(entry.event_type)
+    ? extractThesisPayload(entry.payload)
+    : null;
+  const planData =
+    entry.event_type === "decision.plan_created"
+      ? extractPlanPayload(entry.payload)
+      : null;
+
   return (
     <li
       className="timeline-entry"
@@ -106,9 +365,16 @@ function TimelineEntryRow({ entry }: { entry: ReplayTimelineEntry }) {
         <span className="eyebrow">#{entry.source_sequence}</span>
         <span className="timeline-timestamp">{ts}</span>
       </div>
+      {thesisData ? (
+        <ThesisPayloadPreview eventType={entry.event_type} thesis={thesisData} />
+      ) : planData ? (
+        <PlanPayloadPreview plan={planData} />
+      ) : null}
     </li>
   );
 }
+
+// ── Main workspace ─────────────────────────────────────────────────────────
 
 type ReplayWorkspaceProps = {
   context: Required<WorkspaceContext>;
@@ -226,14 +492,17 @@ export function ReplayWorkspace({ context }: ReplayWorkspaceProps) {
               No replayable events in the ledger yet.
             </p>
           ) : (
-            <ol className="timeline-entries" aria-label="Replay timeline">
-              {timeline.entries.map((entry) => (
-                <TimelineEntryRow
-                  entry={entry}
-                  key={`${entry.source_sequence}-${entry.event_type}`}
-                />
-              ))}
-            </ol>
+            <>
+              <CognitiveSnapshotSummary entries={timeline.entries} />
+              <ol className="timeline-entries" aria-label="Replay timeline">
+                {timeline.entries.map((entry) => (
+                  <TimelineEntryRow
+                    entry={entry}
+                    key={`${entry.source_sequence}-${entry.event_type}`}
+                  />
+                ))}
+              </ol>
+            </>
           )}
 
           <p className="timeline-authority-note">
