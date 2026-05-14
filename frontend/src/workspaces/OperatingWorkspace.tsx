@@ -1,4 +1,4 @@
-import { Activity, ArrowRight, CheckCircle, PlusCircle } from "lucide-react";
+import { Activity, ArrowRight, CheckCircle, PlayCircle, PlusCircle } from "lucide-react";
 import { LifecycleProgressStrip, WorkflowGuidanceNote } from "./LifecycleProgress";
 import { type MouseEvent, useEffect, useState } from "react";
 
@@ -16,6 +16,7 @@ import {
   type WorkspaceContext,
 } from "../workspaceRouting";
 import { type ActiveDecisionRecord } from "../activeDecision";
+import { DEMO_SEED, runDemoFlow } from "../demo";
 import { ContextualBriefingPanel } from "./ContextualBriefingPanel";
 import { NewTradeIdeaModal } from "./NewTradeIdeaModal";
 
@@ -106,6 +107,8 @@ export function OperatingWorkspace({
   const [queue, setQueue] = useState<OperatingAttentionQueue | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [showNewIdeaModal, setShowNewIdeaModal] = useState(false);
+  const [demoLoading, setDemoLoading] = useState(false);
+  const [demoError, setDemoError] = useState<string | null>(null);
 
   const params = contextToApiParams(context);
 
@@ -152,6 +155,28 @@ export function OperatingWorkspace({
     });
     onNavigateProgrammatic(href);
     void symbol;
+  }
+
+  async function handleStartDemo() {
+    setDemoLoading(true);
+    setDemoError(null);
+    try {
+      const result = await runDemoFlow({
+        personaId: context.persona_id,
+        personaVersion: context.persona_version,
+        workspaceId: context.workspace_id,
+      });
+      onDecisionActivated(result.record);
+      const href =
+        "/workspaces/plan-review" +
+        `?decision_id=${encodeURIComponent(result.decisionId)}`;
+      onNavigateProgrammatic(href);
+    } catch (err: unknown) {
+      setDemoError(
+        err instanceof Error ? err.message : "Failed to start demo. Please try again.",
+      );
+      setDemoLoading(false);
+    }
   }
 
   return (
@@ -206,6 +231,32 @@ export function OperatingWorkspace({
           <div className="attention-empty">
             <CheckCircle aria-hidden="true" />
             <span>No pending operational attention items.</span>
+          </div>
+        ) : null}
+
+        {queue !== null && queue.items.length === 0 && !lifecycleStage ? (
+          <div className="demo-invite-panel" aria-label="Demo scenario">
+            <div className="demo-invite-header">
+              <PlayCircle aria-hidden="true" />
+              <span>Explore a demo scenario</span>
+            </div>
+            <p className="demo-invite-description">
+              See TradeForge in action with a seeded{" "}
+              <strong>{DEMO_SEED.symbol}</strong> breakout trade. The workflow
+              will be seeded to the Plan stage so you can experience
+              authorization, execution, and review immediately.
+            </p>
+            {demoError ? (
+              <p className="demo-invite-error" role="alert">{demoError}</p>
+            ) : null}
+            <button
+              className="demo-invite-btn"
+              disabled={demoLoading}
+              onClick={() => { void handleStartDemo(); }}
+              type="button"
+            >
+              {demoLoading ? "Setting up demo scenario…" : "Start Demo"}
+            </button>
           </div>
         ) : null}
 

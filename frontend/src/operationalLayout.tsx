@@ -143,6 +143,9 @@ export function ActiveDecisionBadge({
         ) : (
           <span className="authority-tag">in workflow</span>
         )}
+        {activeDecision.is_demo ? (
+          <span className="demo-badge">Demo</span>
+        ) : null}
       </div>
     </aside>
   );

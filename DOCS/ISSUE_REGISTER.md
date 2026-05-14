@@ -97,6 +97,7 @@ Explicit roadmap checkpoint completed M9 Updated*Done*.
 | TF-0055 | Done | M10 | Eliminate manual workspace context propagation | `feature/tf-0055-eliminate-manual-context-propagation` |
 | TF-0056 | Done | M10 | Implement guided lifecycle navigation | `feature/tf-0056-guided-lifecycle-navigation` |
 | TF-0057 | Done | M10 | Implement operational workflow continuity model | `feature/tf-0057-workflow-continuity-model` |
+| TF-0058 | Done | M10 | Implement guided demo mode | `feature/tf-0058-guided-demo-mode` |
 
 Explicit roadmap checkpoint completed M9 Updated*Done*.
 Post-MVP Roadmap v2 implementation begins with M9 market-context infrastructure and provider-boundary work. 
@@ -2187,6 +2188,44 @@ M9 remains constrained to read-only advisory context and must not introduce brok
 
 - Guided demo mode with scripted walkthroughs (TF-0058).
 - Cross-workspace context memory beyond localStorage (TF-0062).
+
+**Completed Verification:**
+
+- `uv run pytest` — 513 passed (no backend changes)
+- `uv run ruff check src tests` — clean
+- `uv run mypy src tests` — clean (99 files)
+- `npm.cmd run typecheck` — clean
+- `npm.cmd run lint` — clean
+- `npm.cmd run build` — clean
+
+---
+
+## TF-0058: Implement Guided Demo Mode
+
+**Status:** Done
+
+**Milestone:** M10
+
+**Branch:** `feature/tf-0058-guided-demo-mode`
+
+**Affected Layer:** frontend
+
+**Linked ADRs:** ADR-0021
+
+**Impacted Invariants:** Workflow-Centric Architecture, UX Is Architectural, Human Decision Sovereignty (demo does not bypass lifecycle rules — it uses the same lifecycle API surface)
+
+**Implementation Summary:** Created `frontend/src/demo.ts` with `DEMO_SEED` (AAPL breakout scenario with realistic thesis and plan text) and `runDemoFlow` (fires 3 API calls: init → Thesis transition → Plan transition, calls `setActiveDecision` with `is_demo: true`, returns the record). Added `is_demo?: boolean` to `ActiveDecisionRecord`. In `OperatingWorkspace`, added a `DemoInvitePanel` shown when the attention queue is empty and there is no active lifecycle stage — it describes the AAPL demo scenario and offers a "Start Demo" button with loading/error states. On success, activates the seeded decision and navigates to Plan Review Workspace. The sidebar `ActiveDecisionBadge` shows a warm-amber "Demo" pill when `is_demo` is true. All demo transitions use the same lifecycle API surface as normal workflow — demo mode does not bypass any lifecycle rules.
+
+**Acceptance Criteria:**
+
+- A user can experience TradeForge without manual setup.
+- Demo flow remains replayable and deterministic.
+
+**Out Of Scope:**
+
+- Multiple named demo scenarios (TF-0059).
+- One-click full walkthrough with automated stage advancement (TF-0060).
+- Demo scenario persistence across server restarts (event store is in-memory).
 
 **Completed Verification:**
 
