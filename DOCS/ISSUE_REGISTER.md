@@ -100,6 +100,7 @@ Explicit roadmap checkpoint completed M9 Updated*Done*.
 | TF-0058 | Done | M10 | Implement guided demo mode | `feature/tf-0058-guided-demo-mode` |
 | TF-0059 | Done | M10 | Implement seeded replayable demo scenarios | `feature/tf-0059-seeded-replayable-demo-scenarios` |
 | TF-0060 | Done | M10 | Implement one-click operational walkthrough | `feature/tf-0060-one-click-operational-walkthrough` |
+| TF-0061 | Done | M10 | Implement operational onboarding flow | `feature/tf-0061-operational-onboarding-flow` |
 
 Explicit roadmap checkpoint completed M9 Updated*Done*.
 Post-MVP Roadmap v2 implementation begins with M9 market-context infrastructure and provider-boundary work. 
@@ -2306,6 +2307,40 @@ M9 remains constrained to read-only advisory context and must not introduce brok
 - `npm.cmd run typecheck` — clean
 - `npm.cmd run lint` — clean
 - `npm.cmd run build` — clean (263.03 kB JS, 26.83 kB CSS)
+
+---
+
+## TF-0061: Implement Operational Onboarding Flow
+
+**Status:** Done
+
+**Milestone:** M10
+
+**Branch:** `feature/tf-0061-operational-onboarding-flow`
+
+**Affected Layer:** frontend
+
+**Linked ADRs:** ADR-0021
+
+**Impacted Invariants:** UX Is Architectural, Human Decision Sovereignty (philosophy communicated before operation)
+
+**Implementation Summary:** Implemented a 5-screen philosophical onboarding modal shown on first visit via `localStorage["tradeforge.onboarding_complete"]` flag. No API calls, no lifecycle events — purely informational. Screens cover: human decision sovereignty (Compass), canonical lifecycle (GitBranch), workspaces as cognitive environments (Layout), review as first-class workflow (BookOpen), replayability (History). Navigation: Previous/Next + "Get Started →" on last screen, "Skip" top-right. New `onboarding.ts` provides localStorage helpers. `OnboardingModal.tsx` renders from App.tsx before AppShell in a React fragment — `position: fixed; inset: 0` overlay with `z-index: 1000`. App.tsx adds `onboardingDone` state and `handleOnboardingComplete()`.
+
+**Acceptance Criteria:**
+
+- New users understand the system philosophically before operationally.
+
+**Out Of Scope:**
+
+- Onboarding reset mechanism.
+- Persona-specific onboarding variants.
+
+**Completed Verification:**
+
+- `uv run pytest` — 513 passed (no backend changes)
+- `npm.cmd run typecheck` — clean
+- `npm.cmd run lint` — clean
+- `npm.cmd run build` — clean (266.45 kB JS, 29.13 kB CSS)
 
 ---
 
