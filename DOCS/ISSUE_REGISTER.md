@@ -103,6 +103,7 @@ Explicit roadmap checkpoint completed M9 Updated*Done*.
 | TF-0061 | Done | M10 | Implement operational onboarding flow | `feature/tf-0061-operational-onboarding-flow` |
 | TF-0062 | Done | M10 | Implement cross-workspace context persistence | `feature/tf-0062-cross-workspace-context-persistence` |
 | TF-0063 | Done | M10 | Stabilize workspace transition ergonomics | `feature/tf-0063-workspace-transition-ergonomics` |
+| TF-0064 | Done | M10 | Implement operational attention continuity | `feature/tf-0064-operational-attention-continuity` |
 
 Explicit roadmap checkpoint completed M9 Updated*Done*.
 Post-MVP Roadmap v2 implementation begins with M9 market-context infrastructure and provider-boundary work. 
@@ -2411,6 +2412,40 @@ M9 remains constrained to read-only advisory context and must not introduce brok
 - `npm.cmd run typecheck` — clean
 - `npm.cmd run lint` — clean
 - `npm.cmd run build` — clean (268.18 kB JS, 29.35 kB CSS)
+
+---
+
+## TF-0064: Implement Operational Attention Continuity
+
+**Status:** Done
+
+**Milestone:** M10
+
+**Branch:** `feature/tf-0064-operational-attention-continuity`
+
+**Affected Layer:** frontend
+
+**Linked ADRs:** ADR-0021
+
+**Impacted Invariants:** Workflow-Centric Architecture, UX Is Architectural, Human Decision Sovereignty
+
+**Implementation Summary:** Added `AttentionSummaryPanel` to the sidebar between `ActiveDecisionBadge` and `SessionPanel`, making the attention queue state visible on every workspace. The panel fetches `GET /workspaces/operating/attention` independently; it renders nothing when no decision is active and fails silently on API errors. Two states: items pending (count + urgency badge + top item explanation + "View full queue →" link) and queue clear ("Queue clear ✓" indicator). The explicit "clear" state is important — it tells the user nothing is pending rather than leaving them to wonder if state was lost. App.tsx passes inline-constructed `WorkspaceApiParams` from `context` and a `handleNavigateProgrammatic("/workspaces/operating")` callback. No new API endpoints; reuses `GET /workspaces/operating/attention`.
+
+**Acceptance Criteria:**
+
+- Important operational context is not lost during workflow progression.
+
+**Out Of Scope:**
+
+- Auto-polling for real-time attention queue updates.
+- Per-workspace attention filtering.
+
+**Completed Verification:**
+
+- `uv run pytest` — 513 passed (no backend changes)
+- `npm.cmd run typecheck` — clean
+- `npm.cmd run lint` — clean
+- `npm.cmd run build` — clean (269.92 kB JS, 30.79 kB CSS)
 
 ---
 

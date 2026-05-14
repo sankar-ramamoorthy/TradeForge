@@ -41,6 +41,7 @@ import {
   WorkspaceSurface,
 } from "./operationalLayout";
 import { ActivePositionWorkspace } from "./workspaces/ActivePositionWorkspace";
+import { AttentionSummaryPanel } from "./workspaces/AttentionSummaryPanel";
 import { OperatingWorkspace } from "./workspaces/OperatingWorkspace";
 import { OpportunityWorkspace } from "./workspaces/OpportunityWorkspace";
 import { PlanReviewWorkspace } from "./workspaces/PlanReviewWorkspace";
@@ -326,6 +327,18 @@ export default function App() {
               activeDecision={activeDecision}
               activeStage={activeStage}
               onClear={handleClearDecision}
+            />
+            <AttentionSummaryPanel
+              params={{
+                persona_id: context.persona_id,
+                persona_version: context.persona_version,
+                workspace_id: context.workspace_id,
+                workflow_id: context.selected_workflow_id || undefined,
+                decision_id: context.decision_id || undefined,
+              }}
+              onNavigateToOperating={() =>
+                handleNavigateProgrammatic("/workspaces/operating")
+              }
             />
             {session ? (
               <SessionPanel
