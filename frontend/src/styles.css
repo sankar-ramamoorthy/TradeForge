@@ -1224,6 +1224,102 @@ p {
   gap: 10px;
 }
 
+/* ─── Demo scenario panel (TF-0059) ─────────────────────────────────────── */
+
+.demo-scenario-panel {
+  margin-top: 16px;
+  padding: 16px;
+  background: var(--color-surface-warm);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.demo-scenario-intro {
+  font-size: 0.82rem;
+  color: var(--color-text-muted);
+  margin: 0;
+  line-height: 1.5;
+}
+
+.demo-scenario-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.demo-scenario-card {
+  padding: 12px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.demo-scenario-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.demo-scenario-symbol {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.demo-stage-badge {
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+.demo-stage-plan {
+  background: var(--color-accent-surface);
+  color: var(--color-accent);
+  border: 1px solid var(--color-accent);
+}
+
+.demo-stage-approval {
+  background: #f0f8ff;
+  color: #2563a8;
+  border: 1px solid #93c5fd;
+}
+
+.demo-stage-position {
+  background: var(--color-attention-surface);
+  color: var(--color-attention);
+  border: 1px solid #c99a42;
+}
+
+.demo-stage-review {
+  background: #f3f0fa;
+  color: #6b3fa0;
+  border: 1px solid #c4b5fd;
+}
+
+.demo-scenario-name {
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: var(--color-text);
+  margin: 0;
+}
+
+.demo-scenario-desc {
+  font-size: 0.79rem;
+  color: var(--color-text-muted);
+  margin: 0;
+  line-height: 1.5;
+  flex: 1;
+}
+
 .demo-invite-header {
   display: flex;
   align-items: center;

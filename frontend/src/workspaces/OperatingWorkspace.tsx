@@ -16,7 +16,7 @@ import {
   type WorkspaceContext,
 } from "../workspaceRouting";
 import { type ActiveDecisionRecord } from "../activeDecision";
-import { DEMO_SEED, runDemoFlow } from "../demo";
+import { DEMO_SCENARIOS, runDemoFlow, type DemoScenario } from "../demo";
 import { ContextualBriefingPanel } from "./ContextualBriefingPanel";
 import { NewTradeIdeaModal } from "./NewTradeIdeaModal";
 
@@ -108,6 +108,7 @@ export function OperatingWorkspace({
   const [loadError, setLoadError] = useState<string | null>(null);
   const [showNewIdeaModal, setShowNewIdeaModal] = useState(false);
   const [demoLoading, setDemoLoading] = useState(false);
+  const [activeScenarioId, setActiveScenarioId] = useState<string | null>(null);
   const [demoError, setDemoError] = useState<string | null>(null);
 
   const params = contextToApiParams(context);
@@ -157,18 +158,19 @@ export function OperatingWorkspace({
     void symbol;
   }
 
-  async function handleStartDemo() {
+  async function handleStartDemo(scenario: DemoScenario) {
     setDemoLoading(true);
+    setActiveScenarioId(scenario.id);
     setDemoError(null);
     try {
-      const result = await runDemoFlow({
+      const result = await runDemoFlow(scenario, {
         personaId: context.persona_id,
         personaVersion: context.persona_version,
         workspaceId: context.workspace_id,
       });
       onDecisionActivated(result.record);
       const href =
-        "/workspaces/plan-review" +
+        scenario.landingPath +
         `?decision_id=${encodeURIComponent(result.decisionId)}`;
       onNavigateProgrammatic(href);
     } catch (err: unknown) {
@@ -176,6 +178,7 @@ export function OperatingWorkspace({
         err instanceof Error ? err.message : "Failed to start demo. Please try again.",
       );
       setDemoLoading(false);
+      setActiveScenarioId(null);
     }
   }
 
@@ -235,28 +238,52 @@ export function OperatingWorkspace({
         ) : null}
 
         {queue !== null && queue.items.length === 0 && !lifecycleStage ? (
-          <div className="demo-invite-panel" aria-label="Demo scenario">
+          <div className="demo-scenario-panel" aria-label="Demo scenarios">
             <div className="demo-invite-header">
               <PlayCircle aria-hidden="true" />
               <span>Explore a demo scenario</span>
             </div>
-            <p className="demo-invite-description">
-              See TradeForge in action with a seeded{" "}
-              <strong>{DEMO_SEED.symbol}</strong> breakout trade. The workflow
-              will be seeded to the Plan stage so you can experience
-              authorization, execution, and review immediately.
+            <p className="demo-scenario-intro">
+              Select a scenario to experience TradeForge in action. Each
+              illustrates a different aspect of the decision workflow lifecycle.
             </p>
             {demoError ? (
               <p className="demo-invite-error" role="alert">{demoError}</p>
             ) : null}
-            <button
-              className="demo-invite-btn"
-              disabled={demoLoading}
-              onClick={() => { void handleStartDemo(); }}
-              type="button"
-            >
-              {demoLoading ? "Setting up demo scenario…" : "Start Demo"}
-            </button>
+            <div className="demo-scenario-grid">
+              {DEMO_SCENARIOS.map((scenario) => (
+                <div
+                  className="demo-scenario-card"
+                  key={scenario.id}
+                  aria-label={`Demo: ${scenario.name}`}
+                >
+                  <div className="demo-scenario-card-header">
+                    <strong className="demo-scenario-symbol">
+                      {scenario.symbol}
+                    </strong>
+                    <span
+                      className={`demo-stage-badge demo-stage-${scenario.targetStage.toLowerCase()}`}
+                    >
+                      → {scenario.targetStage}
+                    </span>
+                  </div>
+                  <p className="demo-scenario-name">{scenario.name}</p>
+                  <p className="demo-scenario-desc">{scenario.description}</p>
+                  <button
+                    className="demo-invite-btn"
+                    disabled={demoLoading}
+                    onClick={() => {
+                      void handleStartDemo(scenario);
+                    }}
+                    type="button"
+                  >
+                    {demoLoading && activeScenarioId === scenario.id
+                      ? "Setting up…"
+                      : "Start"}
+                  </button>
+                </div>
+              ))}
+            </div>
           </div>
         ) : null}
 
