@@ -1,5 +1,6 @@
 import { ShieldCheck } from "lucide-react";
 import { type MouseEvent, useCallback, useEffect, useRef, useState } from "react";
+import { LifecycleProgressStrip, WorkflowGuidanceNote } from "./LifecycleProgress";
 
 import {
   fetchWorkspaceProjection,
@@ -184,15 +185,8 @@ export function ActivePositionWorkspace({ context }: ActivePositionWorkspaceProp
         <div className="runtime-error">{loadError}</div>
       ) : null}
 
-      {lifecycleStage ? (
-        <div className="lifecycle-context" aria-label="Current lifecycle stage">
-          <span className="eyebrow">Current Lifecycle Stage</span>
-          <div className="lifecycle-stage-row">
-            <strong className="lifecycle-stage-label">{lifecycleStage}</strong>
-            <span className="authority-tag">canonical</span>
-          </div>
-        </div>
-      ) : null}
+      <LifecycleProgressStrip currentStage={lifecycleStage} />
+      <WorkflowGuidanceNote currentStage={lifecycleStage} />
 
       {projection !== null ? (
         <>

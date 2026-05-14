@@ -95,6 +95,7 @@ Explicit roadmap checkpoint completed M9 Updated*Done*.
 | TF-0053 | Done | M10 | Implement new trade idea workflow | `feature/tf-0053-new-trade-idea-workflow` |
 | TF-0054 | Done | M10 | Implement persistent active decision context | `feature/tf-0054-persistent-active-decision-context` |
 | TF-0055 | Done | M10 | Eliminate manual workspace context propagation | `feature/tf-0055-eliminate-manual-context-propagation` |
+| TF-0056 | Done | M10 | Implement guided lifecycle navigation | `feature/tf-0056-guided-lifecycle-navigation` |
 
 Explicit roadmap checkpoint completed M9 Updated*Done*.
 Post-MVP Roadmap v2 implementation begins with M9 market-context infrastructure and provider-boundary work. 
@@ -2119,6 +2120,41 @@ M9 remains constrained to read-only advisory context and must not introduce brok
 - `uv run pytest` — 513 passed (no backend changes)
 - `uv run ruff check src tests` — clean
 - `uv run mypy src tests` — clean (99 files)
+- `npm.cmd run typecheck` — clean
+- `npm.cmd run lint` — clean
+- `npm.cmd run build` — clean
+
+---
+
+## TF-0056: Implement Guided Lifecycle Navigation
+
+**Status:** Done
+
+**Milestone:** M10
+
+**Branch:** `feature/tf-0056-guided-lifecycle-navigation`
+
+**Affected Layer:** frontend
+
+**Linked ADRs:** ADR-0021
+
+**Impacted Invariants:** UX Is Architectural, Workflow-Centric Architecture
+
+**Implementation Summary:** Created `frontend/src/workspaces/LifecycleProgress.tsx` with `LifecycleProgressStrip` (compact 7-step horizontal tracker showing done/current/future states with colored dots and connector lines) and `WorkflowGuidanceNote` (stage-specific meaning + guidance sentence in an accent-bordered info block). Both components handle null/unknown stages silently. Replaced the minimal `lifecycle-context` div in all five active workspaces (Operating, Opportunity, PlanReview, ActivePosition, Review) with these two components. Added corresponding CSS. No backend changes, no domain logic touched.
+
+**Acceptance Criteria:**
+
+- Users can understand operational progression without architectural knowledge.
+- Workflow continuity becomes visually understandable.
+
+**Out Of Scope:**
+
+- Clickable stage navigation (stages are informational, not shortcuts).
+- Guided demo mode infrastructure (TF-0058).
+
+**Completed Verification:**
+
+- `uv run pytest` — 513 passed (no backend changes)
 - `npm.cmd run typecheck` — clean
 - `npm.cmd run lint` — clean
 - `npm.cmd run build` — clean

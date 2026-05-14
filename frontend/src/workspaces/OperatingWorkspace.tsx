@@ -1,4 +1,5 @@
 import { Activity, ArrowRight, CheckCircle, PlusCircle } from "lucide-react";
+import { LifecycleProgressStrip, WorkflowGuidanceNote } from "./LifecycleProgress";
 import { type MouseEvent, useEffect, useState } from "react";
 
 import {
@@ -188,15 +189,8 @@ export function OperatingWorkspace({
         <div className="runtime-error">{loadError}</div>
       ) : null}
 
-      {lifecycleStage ? (
-        <div className="lifecycle-context" aria-label="Current lifecycle stage">
-          <span className="eyebrow">Current Lifecycle Stage</span>
-          <div className="lifecycle-stage-row">
-            <strong className="lifecycle-stage-label">{lifecycleStage}</strong>
-            <span className="authority-tag">canonical</span>
-          </div>
-        </div>
-      ) : null}
+      <LifecycleProgressStrip currentStage={lifecycleStage} />
+      <WorkflowGuidanceNote currentStage={lifecycleStage} />
 
       <div className="attention-queue-section">
         <p className="eyebrow">Operational Attention</p>
