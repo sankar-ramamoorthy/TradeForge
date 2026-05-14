@@ -200,6 +200,19 @@ p {
   color: #f7fbf9;
 }
 
+.workspace-nav a.recommended {
+  border-color: var(--color-accent);
+  background: var(--color-accent-surface);
+}
+
+.workspace-nav-recommended-indicator {
+  margin-left: auto;
+  color: var(--color-accent);
+  font-size: 0.9rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
 .workspace-nav svg,
 .context-link svg {
   width: 18px;

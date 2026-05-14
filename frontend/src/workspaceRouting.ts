@@ -105,6 +105,23 @@ export const WORKSPACE_ROUTES: readonly WorkspaceRouteDefinition[] = [
 
 export const DEFAULT_WORKSPACE_ROUTE = WORKSPACE_ROUTES[0];
 
+export const STAGE_TO_WORKSPACE: Partial<Record<string, WorkspaceRouteId>> = {
+  Idea: "opportunity",
+  Thesis: "plan-review",
+  Plan: "plan-review",
+  Approval: "plan-review",
+  Execution: "active-position",
+  Position: "active-position",
+  Review: "review",
+};
+
+export function getRecommendedWorkspace(
+  stage: string | null,
+): WorkspaceRouteId | null {
+  if (!stage) return null;
+  return STAGE_TO_WORKSPACE[stage] ?? null;
+}
+
 export function findWorkspaceRoute(
   pathname: string,
 ): WorkspaceRouteDefinition {

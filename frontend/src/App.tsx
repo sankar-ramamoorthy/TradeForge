@@ -49,6 +49,7 @@ import { ReviewWorkspace } from "./workspaces/ReviewWorkspace";
 import "./styles.css";
 import {
   findWorkspaceRoute,
+  getRecommendedWorkspace,
   mergeWorkspaceContext,
   readWorkspaceContext,
   type WorkspaceContext,
@@ -198,6 +199,10 @@ export default function App() {
     () => findWorkspaceRoute(location.pathname),
     [location.pathname],
   );
+  const recommendedRouteId = useMemo(
+    () => getRecommendedWorkspace(activeStage),
+    [activeStage],
+  );
   const context = useMemo(
     () =>
       mergeWorkspaceContext(
@@ -315,6 +320,7 @@ export default function App() {
               activeRoute={activeRoute}
               context={context}
               onNavigate={handleNavigate}
+              recommendedRouteId={recommendedRouteId}
             />
             <ActiveDecisionBadge
               activeDecision={activeDecision}

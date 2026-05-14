@@ -102,6 +102,7 @@ Explicit roadmap checkpoint completed M9 Updated*Done*.
 | TF-0060 | Done | M10 | Implement one-click operational walkthrough | `feature/tf-0060-one-click-operational-walkthrough` |
 | TF-0061 | Done | M10 | Implement operational onboarding flow | `feature/tf-0061-operational-onboarding-flow` |
 | TF-0062 | Done | M10 | Implement cross-workspace context persistence | `feature/tf-0062-cross-workspace-context-persistence` |
+| TF-0063 | Done | M10 | Stabilize workspace transition ergonomics | `feature/tf-0063-workspace-transition-ergonomics` |
 
 Explicit roadmap checkpoint completed M9 Updated*Done*.
 Post-MVP Roadmap v2 implementation begins with M9 market-context infrastructure and provider-boundary work. 
@@ -2376,6 +2377,40 @@ M9 remains constrained to read-only advisory context and must not introduce brok
 - `npm.cmd run typecheck` — clean
 - `npm.cmd run lint` — clean
 - `npm.cmd run build` — clean (267.63 kB JS)
+
+---
+
+## TF-0063: Stabilize Workspace Transition Ergonomics
+
+**Status:** Done
+
+**Milestone:** M10
+
+**Branch:** `feature/tf-0063-workspace-transition-ergonomics`
+
+**Affected Layer:** frontend
+
+**Linked ADRs:** ADR-0021
+
+**Impacted Invariants:** UX Is Architectural, Workflow-Centric Architecture
+
+**Implementation Summary:** Added a stage-aware recommended workspace indicator to the sidebar nav. New `STAGE_TO_WORKSPACE` map in `workspaceRouting.ts` defines the canonical stage→workspace relationship (Idea→opportunity, Thesis/Plan/Approval→plan-review, Execution/Position→active-position, Review→review). `getRecommendedWorkspace(stage)` returns the mapped id. `WorkspaceNavigation` gains optional `recommendedRouteId` prop — the matching link (when not the active page) receives CSS class `"recommended"` (accent border + surface) and a right-justified `"→"` indicator span with accessible aria-label. App.tsx derives `recommendedRouteId` from `activeStage` via `useMemo`. Because `activeStage` is now initialized from persisted `last_known_stage` (TF-0062), the recommendation is correct immediately after page refresh.
+
+**Acceptance Criteria:**
+
+- Workspace transitions feel operationally deliberate rather than technical.
+
+**Out Of Scope:**
+
+- Disabling or hiding non-recommended workspaces.
+- Stage-specific nav tooltips.
+
+**Completed Verification:**
+
+- `uv run pytest` — 513 passed (no backend changes)
+- `npm.cmd run typecheck` — clean
+- `npm.cmd run lint` — clean
+- `npm.cmd run build` — clean (268.18 kB JS, 29.35 kB CSS)
 
 ---
 

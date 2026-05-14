@@ -7,6 +7,7 @@ import {
   buildWorkspaceHref,
   type WorkspaceContext,
   type WorkspaceRouteDefinition,
+  type WorkspaceRouteId,
 } from "./workspaceRouting";
 import type { ActiveDecisionRecord } from "./activeDecision";
 
@@ -74,28 +75,51 @@ export function WorkspaceNavigation({
   activeRoute,
   context,
   onNavigate,
+  recommendedRouteId,
 }: {
   activeRoute: WorkspaceRouteDefinition;
   context: Required<WorkspaceContext>;
   onNavigate: (event: MouseEvent<HTMLAnchorElement>, href: string) => void;
+  recommendedRouteId?: WorkspaceRouteId | null;
 }) {
   return (
     <nav className="workspace-nav" aria-label="Workspace routes">
       {WORKSPACE_ROUTES.map((route) => {
         const href = buildWorkspaceHref(route, context);
         const isActive = route.id === activeRoute.id;
+        const isRecommended = !isActive && route.id === recommendedRouteId;
         const Icon = route.Icon;
+
+        const className = [
+          isActive ? "active" : "",
+          isRecommended ? "recommended" : "",
+        ]
+          .filter(Boolean)
+          .join(" ");
 
         return (
           <a
             aria-current={isActive ? "page" : undefined}
-            className={isActive ? "active" : undefined}
+            aria-label={
+              isRecommended
+                ? `${route.name.replace(" Workspace", "")} — recommended for current stage`
+                : undefined
+            }
+            className={className || undefined}
             href={href}
             key={route.id}
             onClick={(event) => onNavigate(event, href)}
           >
             <Icon aria-hidden="true" />
             <span>{route.name.replace(" Workspace", "")}</span>
+            {isRecommended ? (
+              <span
+                className="workspace-nav-recommended-indicator"
+                aria-hidden="true"
+              >
+                →
+              </span>
+            ) : null}
           </a>
         );
       })}

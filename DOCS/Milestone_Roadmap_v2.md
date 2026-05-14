@@ -962,7 +962,7 @@ Introduce:
 
 ---
 
-### TF-0063 — Stabilize Workspace Transition Ergonomics
+### TF-0063 — Stabilize Workspace Transition Ergonomics (**Done**)
 
 #### Purpose
 
