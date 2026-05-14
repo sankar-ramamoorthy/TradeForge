@@ -105,9 +105,11 @@ export function WorkspaceNavigation({
 
 export function ActiveDecisionBadge({
   activeDecision,
+  activeStage,
   onClear,
 }: {
   activeDecision: ActiveDecisionRecord | null;
+  activeStage?: string | null;
   onClear: () => void;
 }) {
   if (!activeDecision) {
@@ -136,7 +138,11 @@ export function ActiveDecisionBadge({
       </div>
       <div className="active-decision-symbol">{activeDecision.symbol}</div>
       <div className="active-decision-meta">
-        <span className="authority-tag">in workflow</span>
+        {activeStage ? (
+          <span className="active-decision-stage">{activeStage}</span>
+        ) : (
+          <span className="authority-tag">in workflow</span>
+        )}
       </div>
     </aside>
   );

@@ -1201,6 +1201,16 @@ p {
   align-items: center;
 }
 
+.active-decision-stage {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--color-accent);
+  background: var(--color-accent-surface);
+  border: 1px solid rgba(47, 118, 105, 0.25);
+  border-radius: 4px;
+  padding: 2px 6px;
+}
+
 /* ─── New Trade Idea trigger ─────────────────────────────────────────────── */
 
 .new-idea-trigger {

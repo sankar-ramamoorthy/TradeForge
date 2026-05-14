@@ -96,6 +96,7 @@ Explicit roadmap checkpoint completed M9 Updated*Done*.
 | TF-0054 | Done | M10 | Implement persistent active decision context | `feature/tf-0054-persistent-active-decision-context` |
 | TF-0055 | Done | M10 | Eliminate manual workspace context propagation | `feature/tf-0055-eliminate-manual-context-propagation` |
 | TF-0056 | Done | M10 | Implement guided lifecycle navigation | `feature/tf-0056-guided-lifecycle-navigation` |
+| TF-0057 | Done | M10 | Implement operational workflow continuity model | `feature/tf-0057-workflow-continuity-model` |
 
 Explicit roadmap checkpoint completed M9 Updated*Done*.
 Post-MVP Roadmap v2 implementation begins with M9 market-context infrastructure and provider-boundary work. 
@@ -2155,6 +2156,43 @@ M9 remains constrained to read-only advisory context and must not introduce brok
 **Completed Verification:**
 
 - `uv run pytest` — 513 passed (no backend changes)
+- `npm.cmd run typecheck` — clean
+- `npm.cmd run lint` — clean
+- `npm.cmd run build` — clean
+
+---
+
+## TF-0057: Implement Operational Workflow Continuity Model
+
+**Status:** Done
+
+**Milestone:** M10
+
+**Branch:** `feature/tf-0057-workflow-continuity-model`
+
+**Affected Layer:** frontend
+
+**Linked ADRs:** ADR-0021
+
+**Impacted Invariants:** Workflow-Centric Architecture, UX Is Architectural
+
+**Implementation Summary:** Implemented two continuity mechanisms. (1) Post-transition auto-navigation: after "Develop Thesis" (Idea→Thesis), the system routes to Plan Review; after "Record Execution" (Approval→Execution), routes to Active Position; after "Begin Position Review" (Position→Review), routes to Review Workspace. All other transitions reload the current workspace projection (they stay in the same workspace). Implemented via `makeTransitionHandler(stage, nextHref?)` pattern in PlanReviewWorkspace and ActivePositionWorkspace; direct `onNavigateProgrammatic` call in OpportunityWorkspace. (2) Live stage indicator in sidebar badge: all 5 workspaces call `onStageLoaded?(stage)` after projection loads; App.tsx holds `activeStage` state updated via `handleStageLoaded` (useCallback-memoized); `ActiveDecisionBadge` gains `activeStage?` prop, rendering a `.active-decision-stage` pill showing the current stage name in accent color.
+
+**Acceptance Criteria:**
+
+- Workspace movement preserves cognitive continuity.
+- The system feels like one operational environment rather than disconnected screens.
+
+**Out Of Scope:**
+
+- Guided demo mode with scripted walkthroughs (TF-0058).
+- Cross-workspace context memory beyond localStorage (TF-0062).
+
+**Completed Verification:**
+
+- `uv run pytest` — 513 passed (no backend changes)
+- `uv run ruff check src tests` — clean
+- `uv run mypy src tests` — clean (99 files)
 - `npm.cmd run typecheck` — clean
 - `npm.cmd run lint` — clean
 - `npm.cmd run build` — clean

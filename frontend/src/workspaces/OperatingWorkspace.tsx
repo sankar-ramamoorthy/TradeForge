@@ -90,6 +90,7 @@ type OperatingWorkspaceProps = {
   onNavigate: (event: MouseEvent<HTMLAnchorElement>, href: string) => void;
   onNavigateProgrammatic: (href: string) => void;
   onDecisionActivated: (record: ActiveDecisionRecord) => void;
+  onStageLoaded?: (stage: string | null) => void;
 };
 
 export function OperatingWorkspace({
@@ -97,6 +98,7 @@ export function OperatingWorkspace({
   onNavigate,
   onNavigateProgrammatic,
   onDecisionActivated,
+  onStageLoaded,
 }: OperatingWorkspaceProps) {
   const [projection, setProjection] = useState<WorkspaceProjection | null>(
     null,
@@ -118,6 +120,7 @@ export function OperatingWorkspace({
         setProjection(projectionData);
         setQueue(queueData);
         setLoadError(null);
+        onStageLoaded?.(projectionData.lifecycle_state?.current_stage ?? null);
       })
       .catch((err: unknown) => {
         if (err instanceof DOMException && err.name === "AbortError") return;

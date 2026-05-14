@@ -1,5 +1,5 @@
 import { ShieldCheck } from "lucide-react";
-import { MouseEvent, useEffect, useMemo, useState } from "react";
+import { MouseEvent, useCallback, useEffect, useMemo, useState } from "react";
 
 import {
   fetchRuntimeSession,
@@ -129,6 +129,7 @@ export default function App() {
   const [sessionError, setSessionError] = useState<string | null>(null);
   const [activeDecision, setActiveDecisionState] =
     useState<ActiveDecisionRecord | null>(() => getActiveDecision());
+  const [activeStage, setActiveStage] = useState<string | null>(null);
 
   useEffect(() => {
     const handlePopState = () => setLocation(readCurrentLocation());
@@ -199,9 +200,14 @@ export default function App() {
   function handleClearDecision() {
     clearActiveDecision();
     setActiveDecisionState(null);
+    setActiveStage(null);
     const operatingRoute = findWorkspaceRoute("/workspaces/operating");
     handleNavigateProgrammatic(operatingRoute.path);
   }
+
+  const handleStageLoaded = useCallback((stage: string | null) => {
+    setActiveStage(stage);
+  }, []);
 
   return (
     <AppShell>
@@ -215,6 +221,7 @@ export default function App() {
             />
             <ActiveDecisionBadge
               activeDecision={activeDecision}
+              activeStage={activeStage}
               onClear={handleClearDecision}
             />
             {session ? (
@@ -236,21 +243,28 @@ export default function App() {
             onNavigate={handleNavigate}
             onNavigateProgrammatic={handleNavigateProgrammatic}
             onDecisionActivated={handleDecisionActivated}
+            onStageLoaded={handleStageLoaded}
           />
         ) : activeRoute.id === "opportunity" ? (
           <OpportunityWorkspace
             context={context}
             onNavigate={handleNavigate}
+            onNavigateProgrammatic={handleNavigateProgrammatic}
+            onStageLoaded={handleStageLoaded}
           />
         ) : activeRoute.id === "plan-review" ? (
           <PlanReviewWorkspace
             context={context}
             onNavigate={handleNavigate}
+            onNavigateProgrammatic={handleNavigateProgrammatic}
+            onStageLoaded={handleStageLoaded}
           />
         ) : activeRoute.id === "active-position" ? (
           <ActivePositionWorkspace
             context={context}
             onNavigate={handleNavigate}
+            onNavigateProgrammatic={handleNavigateProgrammatic}
+            onStageLoaded={handleStageLoaded}
           />
         ) : activeRoute.id === "replay" ? (
           <ReplayWorkspace
@@ -261,6 +275,7 @@ export default function App() {
           <ReviewWorkspace
             context={context}
             onNavigate={handleNavigate}
+            onStageLoaded={handleStageLoaded}
           />
         ) : (
           <WorkspaceSurface route={activeRoute} />

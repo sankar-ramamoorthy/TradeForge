@@ -77,9 +77,10 @@ function FieldSurface({
 type ReviewWorkspaceProps = {
   context: Required<WorkspaceContext>;
   onNavigate: (event: MouseEvent<HTMLAnchorElement>, href: string) => void;
+  onStageLoaded?: (stage: string | null) => void;
 };
 
-export function ReviewWorkspace({ context }: ReviewWorkspaceProps) {
+export function ReviewWorkspace({ context, onStageLoaded }: ReviewWorkspaceProps) {
   const [projection, setProjection] = useState<WorkspaceProjection | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [transitionState, setTransitionState] = useState<TransitionState>("idle");
@@ -100,6 +101,7 @@ export function ReviewWorkspace({ context }: ReviewWorkspaceProps) {
         .then((data) => {
           setProjection(data);
           setLoadError(null);
+          onStageLoaded?.(data.lifecycle_state?.current_stage ?? null);
         })
         .catch((err: unknown) => {
           if (err instanceof DOMException && err.name === "AbortError") return;
