@@ -11,7 +11,18 @@
       "PowerShell(\\(Get-Content \"C:\\\\Users\\\\bosto\\\\dockerstuff\\\\TradeForge\\\\frontend\\\\src\\\\styles.css\" | Measure-Object -Line\\).Lines)",
       "PowerShell(Get-Content *)",
       "Bash(git add *)",
-      "Bash(git commit -m ' *)"
+      "Bash(git commit -m ' *)",
+      "Bash(git branch *)",
+      "Bash(del *)",
+      "Bash(Get-Content \"C:\\\\Users\\\\bosto\\\\dockerstuff\\\\TradeForge\\\\frontend\\\\src\\\\styles.css\")",
+      "Bash(Select-Object -Last 20)",
+      "Bash(git -C \"C:\\\\Users\\\\bosto\\\\dockerstuff\\\\knowledge-base\\\\TradeForge\" status)",
+      "Bash(git -C \"C:\\\\Users\\\\bosto\\\\dockerstuff\\\\knowledge-base\\\\TradeForge\" add knowledge/raw/20260513-tf0053-new-trade-idea-workflow-planning.md knowledge/raw/20260513-tf0053-new-trade-idea-workflow-implementation.md knowledge/processed/tf0053-new-trade-idea-workflow.md)",
+      "Bash(git -C 'C:\\\\Users\\\\bosto\\\\dockerstuff\\\\knowledge-base\\\\TradeForge' commit -m ' *)",
+      "Bash(git -C \"C:\\\\Users\\\\bosto\\\\dockerstuff\\\\knowledge-base\\\\TradeForge\" add knowledge/raw/20260513-tf0054-persistent-active-decision-context-planning.md knowledge/raw/20260513-tf0054-persistent-active-decision-context-implementation.md)",
+      "Bash(git -C \"C:\\\\Users\\\\bosto\\\\dockerstuff\\\\knowledge-base\\\\TradeForge\" add knowledge/raw/20260513-tf0055-eliminate-manual-context-propagation-planning.md knowledge/raw/20260513-tf0055-eliminate-manual-context-propagation-implementation.md)",
+      "Bash(git -C \"C:\\\\Users\\\\bosto\\\\dockerstuff\\\\knowledge-base\\\\TradeForge\" add knowledge/raw/20260513-tf0056-guided-lifecycle-navigation-planning.md knowledge/raw/20260513-tf0056-guided-lifecycle-navigation-implementation.md)",
+      "Bash(git -C \"C:\\\\Users\\\\bosto\\\\dockerstuff\\\\knowledge-base\\\\TradeForge\" add knowledge/raw/20260513-tf0057-workflow-continuity-model-planning.md knowledge/raw/20260513-tf0057-workflow-continuity-model-implementation.md)"
     ]
   }
 }

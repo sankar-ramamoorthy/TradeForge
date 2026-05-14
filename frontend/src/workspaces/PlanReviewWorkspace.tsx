@@ -1,4 +1,5 @@
 import { ClipboardCheck } from "lucide-react";
+import { LifecycleProgressStrip, WorkflowGuidanceNote } from "./LifecycleProgress";
 import { type MouseEvent, useCallback, useEffect, useRef, useState } from "react";
 
 import {
@@ -76,9 +77,11 @@ function FieldSurface({
 type PlanReviewWorkspaceProps = {
   context: Required<WorkspaceContext>;
   onNavigate: (event: MouseEvent<HTMLAnchorElement>, href: string) => void;
+  onNavigateProgrammatic?: (href: string) => void;
+  onStageLoaded?: (stage: string | null) => void;
 };
 
-export function PlanReviewWorkspace({ context }: PlanReviewWorkspaceProps) {
+export function PlanReviewWorkspace({ context, onNavigateProgrammatic, onStageLoaded }: PlanReviewWorkspaceProps) {
   const [projection, setProjection] = useState<WorkspaceProjection | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [transitionState, setTransitionState] = useState<TransitionState>("idle");
@@ -99,6 +102,7 @@ export function PlanReviewWorkspace({ context }: PlanReviewWorkspaceProps) {
         .then((data) => {
           setProjection(data);
           setLoadError(null);
+          onStageLoaded?.(data.lifecycle_state?.current_stage ?? null);
         })
         .catch((err: unknown) => {
           if (err instanceof DOMException && err.name === "AbortError") return;
@@ -129,7 +133,7 @@ export function PlanReviewWorkspace({ context }: PlanReviewWorkspaceProps) {
   const canAuthorizePlan = lifecycleStage === "Plan";
   const canRecordExecution = lifecycleStage === "Approval";
 
-  function makeTransitionHandler(requestedStage: string) {
+  function makeTransitionHandler(requestedStage: string, nextHref?: string) {
     return function () {
       setTransitionState("transitioning");
       setTransitionError(null);
@@ -147,9 +151,13 @@ export function PlanReviewWorkspace({ context }: PlanReviewWorkspaceProps) {
       })
         .then(() => {
           setTransitionState("idle");
-          const controller = new AbortController();
-          fetchControllerRef.current = controller;
-          loadProjection(controller.signal);
+          if (nextHref) {
+            onNavigateProgrammatic?.(nextHref);
+          } else {
+            const controller = new AbortController();
+            fetchControllerRef.current = controller;
+            loadProjection(controller.signal);
+          }
         })
         .catch((err: unknown) => {
           setTransitionState("error");
@@ -162,7 +170,13 @@ export function PlanReviewWorkspace({ context }: PlanReviewWorkspaceProps) {
 
   const handleCreatePlan = makeTransitionHandler("Plan");
   const handleAuthorizePlan = makeTransitionHandler("Approval");
-  const handleRecordExecution = makeTransitionHandler("Execution");
+  const handleRecordExecution = makeTransitionHandler(
+    "Execution",
+    "/workspaces/active-position" +
+      (context.decision_id
+        ? `?decision_id=${encodeURIComponent(context.decision_id)}`
+        : ""),
+  );
 
   const fieldOrder = ["plan_references", "risk_review", "rule_evaluation"];
 
@@ -185,15 +199,8 @@ export function PlanReviewWorkspace({ context }: PlanReviewWorkspaceProps) {
         <div className="runtime-error">{loadError}</div>
       ) : null}
 
-      {lifecycleStage ? (
-        <div className="lifecycle-context" aria-label="Current lifecycle stage">
-          <span className="eyebrow">Current Lifecycle Stage</span>
-          <div className="lifecycle-stage-row">
-            <strong className="lifecycle-stage-label">{lifecycleStage}</strong>
-            <span className="authority-tag">canonical</span>
-          </div>
-        </div>
-      ) : null}
+      <LifecycleProgressStrip currentStage={lifecycleStage} />
+      <WorkflowGuidanceNote currentStage={lifecycleStage} />
 
       {projection !== null ? (
         <>

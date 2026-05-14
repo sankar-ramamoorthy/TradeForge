@@ -1,4 +1,5 @@
-import { Activity, ArrowRight, CheckCircle } from "lucide-react";
+import { Activity, ArrowRight, CheckCircle, PlusCircle } from "lucide-react";
+import { LifecycleProgressStrip, WorkflowGuidanceNote } from "./LifecycleProgress";
 import { type MouseEvent, useEffect, useState } from "react";
 
 import {
@@ -14,7 +15,9 @@ import {
   findWorkspaceRoute,
   type WorkspaceContext,
 } from "../workspaceRouting";
+import { type ActiveDecisionRecord } from "../activeDecision";
 import { ContextualBriefingPanel } from "./ContextualBriefingPanel";
+import { NewTradeIdeaModal } from "./NewTradeIdeaModal";
 
 const CATEGORY_LABELS: Record<string, string> = {
   decision: "Decision",
@@ -85,17 +88,24 @@ function AttentionItemCard({
 type OperatingWorkspaceProps = {
   context: Required<WorkspaceContext>;
   onNavigate: (event: MouseEvent<HTMLAnchorElement>, href: string) => void;
+  onNavigateProgrammatic: (href: string) => void;
+  onDecisionActivated: (record: ActiveDecisionRecord) => void;
+  onStageLoaded?: (stage: string | null) => void;
 };
 
 export function OperatingWorkspace({
   context,
   onNavigate,
+  onNavigateProgrammatic,
+  onDecisionActivated,
+  onStageLoaded,
 }: OperatingWorkspaceProps) {
   const [projection, setProjection] = useState<WorkspaceProjection | null>(
     null,
   );
   const [queue, setQueue] = useState<OperatingAttentionQueue | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [showNewIdeaModal, setShowNewIdeaModal] = useState(false);
 
   const params = contextToApiParams(context);
 
@@ -110,6 +120,7 @@ export function OperatingWorkspace({
         setProjection(projectionData);
         setQueue(queueData);
         setLoadError(null);
+        onStageLoaded?.(projectionData.lifecycle_state?.current_stage ?? null);
       })
       .catch((err: unknown) => {
         if (err instanceof DOMException && err.name === "AbortError") return;
@@ -132,7 +143,29 @@ export function OperatingWorkspace({
 
   const lifecycleStage = projection?.lifecycle_state?.current_stage ?? null;
 
+  function handleIdeaCreated(decisionId: string, symbol: string) {
+    setShowNewIdeaModal(false);
+    const opportunityRoute = findWorkspaceRoute("/workspaces/opportunity");
+    const href = buildWorkspaceHref(opportunityRoute, {
+      ...context,
+      decision_id: decisionId,
+    });
+    onNavigateProgrammatic(href);
+    void symbol;
+  }
+
   return (
+    <>
+    {showNewIdeaModal ? (
+      <NewTradeIdeaModal
+        personaId={context.persona_id}
+        personaVersion={context.persona_version}
+        workspaceId={context.workspace_id}
+        onCreated={handleIdeaCreated}
+        onDecisionActivated={onDecisionActivated}
+        onCancel={() => setShowNewIdeaModal(false)}
+      />
+    ) : null}
     <section
       className="workspace-surface"
       aria-labelledby="operating-workspace-title"
@@ -145,21 +178,22 @@ export function OperatingWorkspace({
             What requires attention now?
           </h1>
         </div>
+        <button
+          className="new-idea-trigger"
+          onClick={() => setShowNewIdeaModal(true)}
+          type="button"
+        >
+          <PlusCircle aria-hidden="true" />
+          New Trade Idea
+        </button>
       </div>
 
       {loadError ? (
         <div className="runtime-error">{loadError}</div>
       ) : null}
 
-      {lifecycleStage ? (
-        <div className="lifecycle-context" aria-label="Current lifecycle stage">
-          <span className="eyebrow">Current Lifecycle Stage</span>
-          <div className="lifecycle-stage-row">
-            <strong className="lifecycle-stage-label">{lifecycleStage}</strong>
-            <span className="authority-tag">canonical</span>
-          </div>
-        </div>
-      ) : null}
+      <LifecycleProgressStrip currentStage={lifecycleStage} />
+      <WorkflowGuidanceNote currentStage={lifecycleStage} />
 
       <div className="attention-queue-section">
         <p className="eyebrow">Operational Attention</p>
@@ -211,5 +245,6 @@ export function OperatingWorkspace({
         </div>
       ) : null}
     </section>
+    </>
   );
 }

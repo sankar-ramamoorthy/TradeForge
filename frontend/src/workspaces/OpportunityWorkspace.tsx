@@ -1,4 +1,5 @@
 import { Lightbulb } from "lucide-react";
+import { LifecycleProgressStrip, WorkflowGuidanceNote } from "./LifecycleProgress";
 import { type MouseEvent, useCallback, useEffect, useRef, useState } from "react";
 
 import {
@@ -75,9 +76,11 @@ function FieldSurface({
 type OpportunityWorkspaceProps = {
   context: Required<WorkspaceContext>;
   onNavigate: (event: MouseEvent<HTMLAnchorElement>, href: string) => void;
+  onNavigateProgrammatic?: (href: string) => void;
+  onStageLoaded?: (stage: string | null) => void;
 };
 
-export function OpportunityWorkspace({ context }: OpportunityWorkspaceProps) {
+export function OpportunityWorkspace({ context, onNavigateProgrammatic, onStageLoaded }: OpportunityWorkspaceProps) {
   const [projection, setProjection] = useState<WorkspaceProjection | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [transitionState, setTransitionState] = useState<TransitionState>("idle");
@@ -98,6 +101,7 @@ export function OpportunityWorkspace({ context }: OpportunityWorkspaceProps) {
         .then((data) => {
           setProjection(data);
           setLoadError(null);
+          onStageLoaded?.(data.lifecycle_state?.current_stage ?? null);
         })
         .catch((err: unknown) => {
           if (err instanceof DOMException && err.name === "AbortError") return;
@@ -143,9 +147,12 @@ export function OpportunityWorkspace({ context }: OpportunityWorkspaceProps) {
     })
       .then(() => {
         setTransitionState("idle");
-        const controller = new AbortController();
-        fetchControllerRef.current = controller;
-        loadProjection(controller.signal);
+        const href =
+          "/workspaces/plan-review" +
+          (context.decision_id
+            ? `?decision_id=${encodeURIComponent(context.decision_id)}`
+            : "");
+        onNavigateProgrammatic?.(href);
       })
       .catch((err: unknown) => {
         setTransitionState("error");
@@ -181,15 +188,8 @@ export function OpportunityWorkspace({ context }: OpportunityWorkspaceProps) {
         <div className="runtime-error">{loadError}</div>
       ) : null}
 
-      {lifecycleStage ? (
-        <div className="lifecycle-context" aria-label="Current lifecycle stage">
-          <span className="eyebrow">Current Lifecycle Stage</span>
-          <div className="lifecycle-stage-row">
-            <strong className="lifecycle-stage-label">{lifecycleStage}</strong>
-            <span className="authority-tag">canonical</span>
-          </div>
-        </div>
-      ) : null}
+      <LifecycleProgressStrip currentStage={lifecycleStage} />
+      <WorkflowGuidanceNote currentStage={lifecycleStage} />
 
       {projection !== null ? (
         <>

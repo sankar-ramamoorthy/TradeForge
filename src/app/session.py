@@ -64,8 +64,8 @@ class LocalSessionProvider:
                 persona_id="persona.swing",
                 persona_version="2026-05-11",
                 workspace_id="workspace.operating",
-                selected_workflow_id="workflow.current",
-                decision_id="decision.focus",
+                selected_workflow_id=None,
+                decision_id=None,
             ),
         )
 

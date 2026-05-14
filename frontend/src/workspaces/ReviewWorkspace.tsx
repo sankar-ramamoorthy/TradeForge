@@ -1,5 +1,6 @@
 import { CheckCircle, Compass } from "lucide-react";
 import { type MouseEvent, useCallback, useEffect, useRef, useState } from "react";
+import { LifecycleProgressStrip, WorkflowGuidanceNote } from "./LifecycleProgress";
 
 import {
   fetchWorkspaceProjection,
@@ -76,9 +77,10 @@ function FieldSurface({
 type ReviewWorkspaceProps = {
   context: Required<WorkspaceContext>;
   onNavigate: (event: MouseEvent<HTMLAnchorElement>, href: string) => void;
+  onStageLoaded?: (stage: string | null) => void;
 };
 
-export function ReviewWorkspace({ context }: ReviewWorkspaceProps) {
+export function ReviewWorkspace({ context, onStageLoaded }: ReviewWorkspaceProps) {
   const [projection, setProjection] = useState<WorkspaceProjection | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [transitionState, setTransitionState] = useState<TransitionState>("idle");
@@ -99,6 +101,7 @@ export function ReviewWorkspace({ context }: ReviewWorkspaceProps) {
         .then((data) => {
           setProjection(data);
           setLoadError(null);
+          onStageLoaded?.(data.lifecycle_state?.current_stage ?? null);
         })
         .catch((err: unknown) => {
           if (err instanceof DOMException && err.name === "AbortError") return;
@@ -182,15 +185,8 @@ export function ReviewWorkspace({ context }: ReviewWorkspaceProps) {
         <div className="runtime-error">{loadError}</div>
       ) : null}
 
-      {lifecycleStage ? (
-        <div className="lifecycle-context" aria-label="Current lifecycle stage">
-          <span className="eyebrow">Current Lifecycle Stage</span>
-          <div className="lifecycle-stage-row">
-            <strong className="lifecycle-stage-label">{lifecycleStage}</strong>
-            <span className="authority-tag">canonical</span>
-          </div>
-        </div>
-      ) : null}
+      <LifecycleProgressStrip currentStage={lifecycleStage} />
+      <WorkflowGuidanceNote currentStage={lifecycleStage} />
 
       {projection !== null ? (
         <>

@@ -92,6 +92,11 @@ Explicit roadmap checkpoint completed M9 Updated*Done*.
 | TF-0050 | Done | M9 | Implement provider provenance tracking | `feature/tf-0050-provider-provenance-tracking` |
 | TF-0051 | Done | M9 | Add seeded demo market context flow | `feature/tf-0051-seeded-demo-flow` |
 | TF-0052 | Done | M9 | Add replay-compatible market snapshot persistence strategy | `feature/tf-0050-provider-provenance-tracking` |
+| TF-0053 | Done | M10 | Implement new trade idea workflow | `feature/tf-0053-new-trade-idea-workflow` |
+| TF-0054 | Done | M10 | Implement persistent active decision context | `feature/tf-0054-persistent-active-decision-context` |
+| TF-0055 | Done | M10 | Eliminate manual workspace context propagation | `feature/tf-0055-eliminate-manual-context-propagation` |
+| TF-0056 | Done | M10 | Implement guided lifecycle navigation | `feature/tf-0056-guided-lifecycle-navigation` |
+| TF-0057 | Done | M10 | Implement operational workflow continuity model | `feature/tf-0057-workflow-continuity-model` |
 
 Explicit roadmap checkpoint completed M9 Updated*Done*.
 Post-MVP Roadmap v2 implementation begins with M9 market-context infrastructure and provider-boundary work. 
@@ -2003,6 +2008,194 @@ M9 remains constrained to read-only advisory context and must not introduce brok
 - `uv run pytest` — 493 passed
 - `uv run ruff check .` — clean
 - `uv run mypy src tests` — clean (97 files)
+
+---
+
+## TF-0053: Implement New Trade Idea Workflow
+
+**Status:** Done
+
+**Milestone:** M10
+
+**Branch:** `feature/tf-0053-new-trade-idea-workflow`
+
+**Affected Layer:** app, frontend
+
+**Linked ADRs:** ADR-0002, ADR-0028
+
+**Impacted Invariants:** Decision Lifecycle, Human Decision Sovereignty, Workflow-Centric Architecture
+
+**Implementation Summary:** Added `POST /lifecycle/decisions/init` endpoint as a semantic initialization wrapper over the existing `LifecycleOrchestrationService`. The endpoint generates a UUID4 decision_id server-side, uppercases the symbol, constructs entity_references `[{decision, uuid}, {ticker, SYMBOL}]`, and calls the lifecycle service with `LifecycleStage.IDEA`. Returns `decision_id`, `symbol`, `event_type`, and `timestamp`. Added `NewTradeIdeaPayload` and `NewTradeIdeaResponse` Pydantic models. Frontend: created `NewTradeIdeaModal.tsx` with symbol input, optional thesis notes, loading state, and error display. Added `initNewTradeIdea()` to `api/runtime.ts`. Added `onNavigateProgrammatic` prop to `OperatingWorkspace` for post-creation routing. On success, navigates to OpportunityWorkspace with the new `decision_id`. Added "New Trade Idea" button (PlusCircle) to `OperatingWorkspace` header area. Added modal, form, and button CSS primitives to `styles.css`. `App.tsx` provides `handleNavigateProgrammatic`.
+
+**Acceptance Criteria:**
+
+- No curl/API call required to initiate workflow.
+- New decisions initialize through operational UI flow.
+- Lifecycle integrity remains event-backed.
+
+**Out Of Scope:**
+
+- Persistent active decision context across workspace transitions (TF-0054).
+- Eliminating manual query param propagation (TF-0055).
+- Multi-decision-per-session support.
+
+**Completed Verification:**
+
+- `uv run pytest tests/test_new_trade_idea_workflow.py` — 11 passed
+- `uv run pytest` — 504 passed
+- `uv run ruff check src tests` — clean
+- `uv run mypy src tests` — clean (98 files)
+- `npm.cmd run typecheck` — clean
+- `npm.cmd run lint` — clean
+- `npm.cmd run build` — clean
+
+---
+
+## TF-0054: Implement Persistent Active Decision Context
+
+**Status:** Done
+
+**Milestone:** M10
+
+**Branch:** `feature/tf-0054-persistent-active-decision-context`
+
+**Affected Layer:** app, frontend
+
+**Linked ADRs:** ADR-0028, ADR-0022
+
+**Impacted Invariants:** Workspace, Workflow-Centric Architecture, Derived State Must Remain Distinguishable
+
+**Implementation Summary:** Fixed the root cause of the M9 demo failure and added localStorage-backed active decision persistence. Root cause: `_matches_context` in `projections.py` filters events by `decision_id` when it is non-null — the `LocalSessionProvider` and frontend `DEFAULT_WORKSPACE_CONTEXT` both used placeholder strings (`"decision.focus"`, `"workflow.current"`) that never matched any real event entity_references, silently emptying all workspace projections and attention queues. Fix: `LocalSessionProvider` now defaults `decision_id=None, selected_workflow_id=None`. Frontend `DEFAULT_WORKSPACE_CONTEXT` now uses empty strings for both. Added `frontend/src/activeDecision.ts` with localStorage persistence (`getActiveDecision`, `setActiveDecision`, `clearActiveDecision`). `App.tsx` now initializes from localStorage on mount, exposes `handleDecisionActivated`, and builds context with merge priority: URL params > (session + activeDecision) > static defaults. `NewTradeIdeaModal` writes the real decision record to localStorage and calls `onDecisionActivated` on successful creation. 9 new tests in `test_active_decision_context.py` — explicitly prove the M9 bug and verify the fix.
+
+**Acceptance Criteria:**
+
+- Active decision context survives navigation.
+- Manual query parameter propagation is eliminated.
+- Workspace continuity becomes operationally stable.
+
+**Out Of Scope:**
+
+- Clearing active decision when review completes (future M10 issue).
+- Multi-decision session support.
+
+**Completed Verification:**
+
+- `uv run pytest tests/test_active_decision_context.py` — 9 passed
+- `uv run pytest` — 513 passed
+- `uv run ruff check src tests` — clean
+- `uv run mypy src tests` — clean (99 files)
+- `npm.cmd run typecheck` — clean
+- `npm.cmd run lint` — clean
+- `npm.cmd run build` — clean
+
+---
+
+## TF-0055: Eliminate Manual Workspace Context Propagation
+
+**Status:** Done
+
+**Milestone:** M10
+
+**Branch:** `feature/tf-0055-eliminate-manual-context-propagation`
+
+**Affected Layer:** frontend
+
+**Linked ADRs:** ADR-0021
+
+**Impacted Invariants:** Workspace, UX Is Architectural, Derived State Must Remain Distinguishable
+
+**Implementation Summary:** Eliminated three remaining developer-centric artifacts: (1) `buildWorkspaceHref` now only encodes `decision_id` in navigation URLs — all other internal routing params (persona_id, persona_version, workspace_id, selected_workflow_id) are dropped from the URL since they are automatically resolved from session and localStorage. Navigation links are now clean paths like `/workspaces/opportunity` or `/workspaces/opportunity?decision_id=<uuid>`. (2) `ContextPanel` (raw internal ID display) replaced with `ActiveDecisionBadge` — shows the active symbol prominently with an "in workflow" tag and a clear button; shows a helpful hint when no decision is active. (3) `WorkspaceBriefing` (developer meta-commentary banner) and `ContextLink` ("Current routed context" URL artifact) removed from App.tsx. Added `handleClearDecision` which calls `clearActiveDecision()`, resets state, and navigates to Operating Workspace. No backend changes.
+
+**Acceptance Criteria:**
+
+- Workspaces automatically resolve active operational context.
+- Manual URL parameter workflows are unnecessary.
+
+**Out Of Scope:**
+
+- Guided lifecycle navigation (TF-0056).
+- Workspace transition continuity model (TF-0057).
+
+**Completed Verification:**
+
+- `uv run pytest` — 513 passed (no backend changes)
+- `uv run ruff check src tests` — clean
+- `uv run mypy src tests` — clean (99 files)
+- `npm.cmd run typecheck` — clean
+- `npm.cmd run lint` — clean
+- `npm.cmd run build` — clean
+
+---
+
+## TF-0056: Implement Guided Lifecycle Navigation
+
+**Status:** Done
+
+**Milestone:** M10
+
+**Branch:** `feature/tf-0056-guided-lifecycle-navigation`
+
+**Affected Layer:** frontend
+
+**Linked ADRs:** ADR-0021
+
+**Impacted Invariants:** UX Is Architectural, Workflow-Centric Architecture
+
+**Implementation Summary:** Created `frontend/src/workspaces/LifecycleProgress.tsx` with `LifecycleProgressStrip` (compact 7-step horizontal tracker showing done/current/future states with colored dots and connector lines) and `WorkflowGuidanceNote` (stage-specific meaning + guidance sentence in an accent-bordered info block). Both components handle null/unknown stages silently. Replaced the minimal `lifecycle-context` div in all five active workspaces (Operating, Opportunity, PlanReview, ActivePosition, Review) with these two components. Added corresponding CSS. No backend changes, no domain logic touched.
+
+**Acceptance Criteria:**
+
+- Users can understand operational progression without architectural knowledge.
+- Workflow continuity becomes visually understandable.
+
+**Out Of Scope:**
+
+- Clickable stage navigation (stages are informational, not shortcuts).
+- Guided demo mode infrastructure (TF-0058).
+
+**Completed Verification:**
+
+- `uv run pytest` — 513 passed (no backend changes)
+- `npm.cmd run typecheck` — clean
+- `npm.cmd run lint` — clean
+- `npm.cmd run build` — clean
+
+---
+
+## TF-0057: Implement Operational Workflow Continuity Model
+
+**Status:** Done
+
+**Milestone:** M10
+
+**Branch:** `feature/tf-0057-workflow-continuity-model`
+
+**Affected Layer:** frontend
+
+**Linked ADRs:** ADR-0021
+
+**Impacted Invariants:** Workflow-Centric Architecture, UX Is Architectural
+
+**Implementation Summary:** Implemented two continuity mechanisms. (1) Post-transition auto-navigation: after "Develop Thesis" (Idea→Thesis), the system routes to Plan Review; after "Record Execution" (Approval→Execution), routes to Active Position; after "Begin Position Review" (Position→Review), routes to Review Workspace. All other transitions reload the current workspace projection (they stay in the same workspace). Implemented via `makeTransitionHandler(stage, nextHref?)` pattern in PlanReviewWorkspace and ActivePositionWorkspace; direct `onNavigateProgrammatic` call in OpportunityWorkspace. (2) Live stage indicator in sidebar badge: all 5 workspaces call `onStageLoaded?(stage)` after projection loads; App.tsx holds `activeStage` state updated via `handleStageLoaded` (useCallback-memoized); `ActiveDecisionBadge` gains `activeStage?` prop, rendering a `.active-decision-stage` pill showing the current stage name in accent color.
+
+**Acceptance Criteria:**
+
+- Workspace movement preserves cognitive continuity.
+- The system feels like one operational environment rather than disconnected screens.
+
+**Out Of Scope:**
+
+- Guided demo mode with scripted walkthroughs (TF-0058).
+- Cross-workspace context memory beyond localStorage (TF-0062).
+
+**Completed Verification:**
+
+- `uv run pytest` — 513 passed (no backend changes)
+- `uv run ruff check src tests` — clean
+- `uv run mypy src tests` — clean (99 files)
+- `npm.cmd run typecheck` — clean
+- `npm.cmd run lint` — clean
+- `npm.cmd run build` — clean
 
 ---
 
