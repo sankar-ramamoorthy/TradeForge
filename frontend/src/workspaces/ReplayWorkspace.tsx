@@ -5,6 +5,9 @@ import {
   fetchReplayTimeline,
   fetchWorkspaceProjection,
   fetchCognitiveSnapshot,
+  fetchAnnotations,
+  type Annotation,
+  type AnnotationList,
   type CognitiveSnapshot,
   type ReplayTimeline,
   type ReplayTimelineEntry,
@@ -13,6 +16,7 @@ import {
 } from "../api/runtime";
 import { type WorkspaceContext } from "../workspaceRouting";
 import { CognitiveSnapshotPanel } from "./CognitiveSnapshotPanel";
+import { AnnotationModal } from "./AnnotationModal";
 
 const AUTHORITY_LABELS: Record<string, string> = {
   canonical: "Canonical",
@@ -409,14 +413,36 @@ function FieldSurface({
   );
 }
 
+const ANNOTATION_TYPE_LABELS: Record<string, string> = {
+  observation: "Observation",
+  question: "Question",
+  insight: "Insight",
+  postmortem: "Postmortem",
+};
+
+function AnnotationBadge({ annotation }: { annotation: Annotation }) {
+  return (
+    <div className="annotation-badge" aria-label={`Annotation: ${annotation.annotation_type}`}>
+      <span className={`annotation-type-tag ann-${annotation.annotation_type}`}>
+        {ANNOTATION_TYPE_LABELS[annotation.annotation_type] ?? annotation.annotation_type}
+      </span>
+      <p className="annotation-note-text">{annotation.note}</p>
+    </div>
+  );
+}
+
 function TimelineEntryRow({
   entry,
   isSelected,
   onClick,
+  annotations,
+  onAnnotate,
 }: {
   entry: ReplayTimelineEntry;
   isSelected?: boolean;
   onClick?: (timestamp: string) => void;
+  annotations?: Annotation[];
+  onAnnotate?: (sequence: number, eventType: string) => void;
 }) {
   const kindLabel = KIND_LABELS[entry.kind] ?? entry.kind;
   const ts = new Date(entry.timestamp).toLocaleString(undefined, {
@@ -466,6 +492,28 @@ function TimelineEntryRow({
       ) : branchData ? (
         <ScenarioBranchPreview branch={branchData} />
       ) : null}
+
+      {annotations && annotations.length > 0 ? (
+        <div className="timeline-annotations">
+          {annotations.map((ann, i) => (
+            <AnnotationBadge annotation={ann} key={i} />
+          ))}
+        </div>
+      ) : null}
+
+      {onAnnotate ? (
+        <button
+          aria-label={`Add note to event ${entry.source_sequence}`}
+          className="annotation-add-btn"
+          onClick={(e) => {
+            e.stopPropagation();
+            onAnnotate(entry.source_sequence, entry.event_type);
+          }}
+          type="button"
+        >
+          + Note
+        </button>
+      ) : null}
     </li>
   );
 }
@@ -482,6 +530,8 @@ export function ReplayWorkspace({ context }: ReplayWorkspaceProps) {
   const [timeline, setTimeline] = useState<ReplayTimeline | null>(null);
   const [cognitiveSnapshot, setCognitiveSnapshot] = useState<CognitiveSnapshot | null>(null);
   const [selectedEntryTimestamp, setSelectedEntryTimestamp] = useState<string | null>(null);
+  const [annotationList, setAnnotationList] = useState<AnnotationList | null>(null);
+  const [annotatingEntry, setAnnotatingEntry] = useState<{ sequence: number; eventType: string } | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
 
   const params: WorkspaceApiParams = {
@@ -514,6 +564,11 @@ export function ReplayWorkspace({ context }: ReplayWorkspaceProps) {
     if (context.decision_id) {
       fetchCognitiveSnapshot(context.decision_id, undefined, controller.signal)
         .then(setCognitiveSnapshot)
+        .catch((err: unknown) => {
+          if (err instanceof DOMException && err.name === "AbortError") return;
+        });
+      fetchAnnotations(context.decision_id, controller.signal)
+        .then(setAnnotationList)
         .catch((err: unknown) => {
           if (err instanceof DOMException && err.name === "AbortError") return;
         });
@@ -633,15 +688,44 @@ export function ReplayWorkspace({ context }: ReplayWorkspaceProps) {
                   ? "Click a timeline entry to reconstruct cognitive state at that moment."
                   : null}
               </p>
+              {annotatingEntry && context.decision_id ? (
+                <AnnotationModal
+                  context={context}
+                  eventType={annotatingEntry.eventType}
+                  onCancel={() => setAnnotatingEntry(null)}
+                  onSuccess={() => {
+                    setAnnotatingEntry(null);
+                    if (context.decision_id) {
+                      fetchAnnotations(context.decision_id)
+                        .then(setAnnotationList)
+                        .catch(() => {});
+                    }
+                  }}
+                  sequence={annotatingEntry.sequence}
+                />
+              ) : null}
+
               <ol className="timeline-entries" aria-label="Replay timeline">
-                {timeline.entries.map((entry) => (
-                  <TimelineEntryRow
-                    entry={entry}
-                    isSelected={selectedEntryTimestamp === entry.timestamp}
-                    key={`${entry.source_sequence}-${entry.event_type}`}
-                    onClick={context.decision_id ? handleEntryClick : undefined}
-                  />
-                ))}
+                {timeline.entries.map((entry) => {
+                  const entryAnnotations = annotationList?.annotations.filter(
+                    (a) => a.sequence === entry.source_sequence,
+                  );
+                  return (
+                    <TimelineEntryRow
+                      annotations={entryAnnotations}
+                      entry={entry}
+                      isSelected={selectedEntryTimestamp === entry.timestamp}
+                      key={`${entry.source_sequence}-${entry.event_type}`}
+                      onAnnotate={
+                        context.decision_id
+                          ? (seq, evtType) =>
+                              setAnnotatingEntry({ sequence: seq, eventType: evtType })
+                          : undefined
+                      }
+                      onClick={context.decision_id ? handleEntryClick : undefined}
+                    />
+                  );
+                })}
               </ol>
             </>
           )}

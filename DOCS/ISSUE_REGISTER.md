@@ -116,12 +116,12 @@ Explicit roadmap checkpoint completed M9 Updated*Done*.
 | M10AIS10 | Done | M10A | Implement cognitive snapshot reconstruction | `feature/tf-0064-operational-attention-continuity` |
 | M10AIS11 | Done | M10A | Implement structured review reflection model | `feature/tf-0064-operational-attention-continuity` |
 | M10AIS12 | Done | M10A | Implement review reflection workspace | `feature/tf-0064-operational-attention-continuity` |
-| M10AIS13 | Planned | M10A | Implement replay annotation system | — |
+| M10AIS13 | Done | M10A | Implement replay annotation system | `feature/tf-0064-operational-attention-continuity` |
 | M10AIS14 | Planned | M10A | Implement playbook alignment projection layer | — |
 | M10AIS15 | Planned | M10A | Implement cross-workspace cognitive continuity | — |
 
 Explicit roadmap checkpoint completed M9 Updated*Done*.
-M10A started 2026-05-14. M10AIS01-12 complete (13 of 15 issues). Remaining: M10AIS13-15.
+M10A started 2026-05-14. M10AIS01-13 complete (14 of 15 issues). Remaining: M10AIS14-15.
 Post-MVP Roadmap v2 implementation begins with M9 market-context infrastructure and provider-boundary work. 
 M9 remains constrained to read-only advisory context and must not introduce broker execution authority, autonomous AI decision systems, or non-replayable runtime behavior.
 
@@ -2825,6 +2825,34 @@ M9 remains constrained to read-only advisory context and must not introduce brok
 - `uv run pytest` — 629 passed (8 new tests)
 - `npm.cmd run typecheck` — clean
 - `npm.cmd run build` — clean (323.38 kB JS, 30.79 kB CSS)
+
+---
+
+## M10AIS13: Implement Replay Annotation System
+
+**Status:** Done
+
+**Milestone:** M10A
+
+**Branch:** `feature/tf-0064-operational-attention-continuity`
+
+**Affected Layer:** domain, api, frontend
+
+**Linked ADRs:** ADR-0033, ADR-0035
+
+**Impacted Invariants:** Replayability Is Foundational, Events Are Immutable, Reflection And Review Are First-Class
+
+**Implementation Summary:** Created `src/domain/cognition/annotation.py` with `ReplayAnnotationArtifact` and `AnnotationType` StrEnum (`observation`, `question`, `insight`, `postmortem`). Validates sequence >= 0, annotated_event_type, note (required), and annotation_type (enum check). `decision.replay_annotation_created` events are appended directly (not lifecycle transitions); they appear in the replay timeline as `COGNITION` kind (covered by the EventDomain.DECISION → COGNITION mapping from M10AIS04). Added `POST /lifecycle/decisions/create-annotation` (validates fields, checks decision exists, appends annotation event) and `GET /lifecycle/decisions/{id}/annotations` (all annotations chronologically, filterable by sequence on frontend). 18 new tests (647 total). Created `AnnotationModal.tsx` with annotation_type select (Observation/Question/Insight/Postmortem with descriptions), note textarea, and `postCreateAnnotation()` call. Updated `ReplayWorkspace.tsx`: `annotationList` state fetched alongside cognitive snapshot on load; `annotatingEntry` state tracks which entry's modal is open; `AnnotationBadge` subcomponent shows type tag and note text beneath annotated entries; `TimelineEntryRow` gains `annotations` and `onAnnotate` props — "+ Note" button appears on every entry (stopPropagation prevents triggering the cognitive snapshot click); `AnnotationModal` rendered when `annotatingEntry` is set; re-fetches annotations after successful creation. Added `AnnotationType`, `Annotation`, `AnnotationList`, `postCreateAnnotation()`, `fetchAnnotations()` to runtime.ts.
+
+**Acceptance Criteria:**
+
+- Replay becomes cognitively interactive.
+
+**Completed Verification:**
+
+- `uv run pytest` — 647 passed (18 new tests: 9 unit + 9 integration)
+- `npm.cmd run typecheck` — clean
+- `npm.cmd run build` — clean (328.37 kB JS, 30.79 kB CSS)
 
 ---
 

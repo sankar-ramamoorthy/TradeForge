@@ -22,6 +22,9 @@ from src.domain.personas import (
 )
 from src.domain.replay import ProjectionAuthority, ReplayTimelineEntryKind
 from src.domain.cognition import (
+    ANNOTATION_TYPES,
+    ReplayAnnotationArtifact,
+    ReplayAnnotationArtifactValidationError,
     ReviewReflectionArtifact,
     ReviewReflectionArtifactValidationError,
     ScenarioBranchArtifact,
@@ -354,6 +357,37 @@ class CognitiveSnapshotResponse(BaseModel):
     plan: CognitiveSnapshotPlanData | None
     scenario_branches: list[CognitiveSnapshotBranchData]
     authority: Literal["derived"]
+
+
+class CreateAnnotationPayload(BaseModel):
+    decision_id: str = Field(min_length=1)
+    sequence: int = Field(ge=0)
+    annotated_event_type: str = Field(min_length=1, max_length=200)
+    note: str = Field(min_length=1, max_length=5000)
+    annotation_type: str = Field(min_length=1)
+    persona_id: str = Field(min_length=1)
+    workspace_id: str = Field(min_length=1)
+
+
+class CreateAnnotationResponse(BaseModel):
+    decision_id: str
+    sequence: int
+    event_type: str
+    timestamp: datetime
+
+
+class AnnotationResponse(BaseModel):
+    sequence: int
+    annotated_event_type: str
+    note: str
+    annotation_type: str
+    created_at: datetime
+
+
+class AnnotationListResponse(BaseModel):
+    decision_id: str
+    total_annotations: int
+    annotations: list[AnnotationResponse]
 
 
 class ReplayProjectionLifecycleStateResponse(BaseModel):
@@ -1985,6 +2019,118 @@ def get_cognitive_snapshot(
         plan=plan,
         scenario_branches=branches,
         authority="derived",
+    )
+
+
+@lifecycle_router.post(
+    "/decisions/create-annotation",
+    response_model=CreateAnnotationResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+def create_annotation(
+    request: Request,
+    payload: CreateAnnotationPayload,
+) -> CreateAnnotationResponse:
+    """Add a replay annotation to a specific timeline event.
+
+    Annotations are enrichment events — not lifecycle transitions.
+    They make replay cognitively interactive: operators record observations,
+    questions, insights, and postmortem notes on any annotated event.
+    """
+    if payload.annotation_type not in ANNOTATION_TYPES:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={"message": f"annotation_type must be one of: {', '.join(sorted(ANNOTATION_TYPES))}"},
+        )
+
+    try:
+        artifact = ReplayAnnotationArtifact.create(
+            sequence=payload.sequence,
+            annotated_event_type=payload.annotated_event_type,
+            note=payload.note,
+            annotation_type=payload.annotation_type,
+        )
+    except ReplayAnnotationArtifactValidationError as error:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={"message": str(error)},
+        ) from error
+
+    event_store = _event_store_from(request)
+    events = event_store.read_events()
+
+    decision_exists = any(
+        any(
+            ref.entity_type == "decision" and ref.entity_id == payload.decision_id
+            for ref in event.entity_references
+        )
+        for event in events
+    )
+    if not decision_exists:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"message": f"decision {payload.decision_id} not found"},
+        )
+
+    now = datetime.now(tz=UTC)
+    annotation_event = EventEnvelope(
+        event_type="decision.replay_annotation_created",
+        timestamp=now,
+        persona_id=payload.persona_id,
+        workspace_id=payload.workspace_id,
+        entity_references=(
+            EntityReference(entity_type="decision", entity_id=payload.decision_id),
+        ),
+        payload=artifact.to_payload(),
+        provenance={"actor": "human", "source": "replay-annotation-workflow"},
+    )
+    event_store.append(annotation_event)
+
+    return CreateAnnotationResponse(
+        decision_id=payload.decision_id,
+        sequence=artifact.sequence,
+        event_type="decision.replay_annotation_created",
+        timestamp=now,
+    )
+
+
+@lifecycle_router.get(
+    "/decisions/{decision_id}/annotations",
+    response_model=AnnotationListResponse,
+)
+def get_annotations(
+    request: Request,
+    decision_id: str,
+) -> AnnotationListResponse:
+    """Return all replay annotations for a decision in chronological order."""
+    events = _event_store_from(request).read_events()
+
+    annotations: list[AnnotationResponse] = []
+    for event in events:
+        if event.event_type != "decision.replay_annotation_created":
+            continue
+        if not any(
+            ref.entity_type == "decision" and ref.entity_id == decision_id
+            for ref in event.entity_references
+        ):
+            continue
+        artifact = ReplayAnnotationArtifact.from_payload(dict(event.payload))
+        if artifact is None:
+            continue
+        annotations.append(
+            AnnotationResponse(
+                sequence=artifact.sequence,
+                annotated_event_type=artifact.annotated_event_type,
+                note=artifact.note,
+                annotation_type=artifact.annotation_type.value,
+                created_at=event.timestamp,
+            )
+        )
+
+    return AnnotationListResponse(
+        decision_id=decision_id,
+        total_annotations=len(annotations),
+        annotations=annotations,
     )
 
 

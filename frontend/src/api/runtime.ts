@@ -750,6 +750,76 @@ export async function fetchCognitiveSnapshot(
   return response.json() as Promise<CognitiveSnapshot>;
 }
 
+export type AnnotationType =
+  | "observation"
+  | "question"
+  | "insight"
+  | "postmortem";
+
+export type Annotation = {
+  sequence: number;
+  annotated_event_type: string;
+  note: string;
+  annotation_type: AnnotationType;
+  created_at: string;
+};
+
+export type AnnotationList = {
+  decision_id: string;
+  total_annotations: number;
+  annotations: Annotation[];
+};
+
+export async function postCreateAnnotation(
+  request: {
+    decision_id: string;
+    sequence: number;
+    annotated_event_type: string;
+    note: string;
+    annotation_type: AnnotationType;
+    persona_id: string;
+    workspace_id: string;
+  },
+  signal?: AbortSignal,
+): Promise<{ decision_id: string; sequence: number; event_type: string; timestamp: string }> {
+  const response = await fetch("/lifecycle/decisions/create-annotation", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(request),
+    signal,
+  });
+
+  if (!response.ok) {
+    const detail = await response.json().catch(() => null);
+    const message =
+      typeof detail === "object" && detail !== null && "detail" in detail
+        ? typeof (detail as Record<string, unknown>).detail === "object"
+          ? ((detail as Record<string, { message?: string }>).detail?.message ??
+            `Annotation creation failed: ${response.status}`)
+          : `Annotation creation failed: ${response.status}`
+        : `Annotation creation failed: ${response.status}`;
+    throw new Error(message);
+  }
+
+  return response.json() as Promise<{ decision_id: string; sequence: number; event_type: string; timestamp: string }>;
+}
+
+export async function fetchAnnotations(
+  decisionId: string,
+  signal?: AbortSignal,
+): Promise<AnnotationList> {
+  const response = await fetch(
+    `/lifecycle/decisions/${encodeURIComponent(decisionId)}/annotations`,
+    { signal },
+  );
+
+  if (!response.ok) {
+    throw new Error(`Annotations request failed: ${response.status}`);
+  }
+
+  return response.json() as Promise<AnnotationList>;
+}
+
 export async function fetchOperatingAttentionQueue(
   params: WorkspaceApiParams,
   signal?: AbortSignal,
