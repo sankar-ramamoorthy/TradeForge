@@ -602,7 +602,7 @@ non-authoritative
 
 # M10 — Operational Workflow UX And Demoability
 
-**Status:** Planned
+**Status:** Done
 
 ---
 
@@ -983,7 +983,7 @@ Improve:
 
 ---
 
-### TF-0064 — Implement Operational Attention Continuity
+### TF-0064 — Implement Operational Attention Continuity (**Done**)
 
 #### Purpose
 
