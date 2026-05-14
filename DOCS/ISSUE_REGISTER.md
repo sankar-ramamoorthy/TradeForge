@@ -118,10 +118,10 @@ Explicit roadmap checkpoint completed M9 Updated*Done*.
 | M10AIS12 | Done | M10A | Implement review reflection workspace | `feature/tf-0064-operational-attention-continuity` |
 | M10AIS13 | Done | M10A | Implement replay annotation system | `feature/tf-0064-operational-attention-continuity` |
 | M10AIS14 | Done | M10A | Implement playbook alignment projection layer | `feature/tf-0064-operational-attention-continuity` |
-| M10AIS15 | Planned | M10A | Implement cross-workspace cognitive continuity | — |
+| M10AIS15 | Done | M10A | Implement cross-workspace cognitive continuity | `feature/tf-0064-operational-attention-continuity` |
 
 Explicit roadmap checkpoint completed M9 Updated*Done*.
-M10A started 2026-05-14. M10AIS01-14 complete (14 of 15 issues). Remaining: M10AIS15.
+M10A COMPLETE 2026-05-14. All 15 issues done: M10AIS01-15.
 Post-MVP Roadmap v2 implementation begins with M9 market-context infrastructure and provider-boundary work. 
 M9 remains constrained to read-only advisory context and must not introduce broker execution authority, autonomous AI decision systems, or non-replayable runtime behavior.
 
