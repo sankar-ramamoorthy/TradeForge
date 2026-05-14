@@ -894,7 +894,7 @@ Introduce seeded scenarios for:
 
 ---
 
-### TF-0060 — Implement One-Click Operational Walkthrough
+### TF-0060 — Implement One-Click Operational Walkthrough (**Done**)
 
 #### Purpose
 
