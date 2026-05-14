@@ -101,6 +101,7 @@ Explicit roadmap checkpoint completed M9 Updated*Done*.
 | TF-0059 | Done | M10 | Implement seeded replayable demo scenarios | `feature/tf-0059-seeded-replayable-demo-scenarios` |
 | TF-0060 | Done | M10 | Implement one-click operational walkthrough | `feature/tf-0060-one-click-operational-walkthrough` |
 | TF-0061 | Done | M10 | Implement operational onboarding flow | `feature/tf-0061-operational-onboarding-flow` |
+| TF-0062 | Done | M10 | Implement cross-workspace context persistence | `feature/tf-0062-cross-workspace-context-persistence` |
 
 Explicit roadmap checkpoint completed M9 Updated*Done*.
 Post-MVP Roadmap v2 implementation begins with M9 market-context infrastructure and provider-boundary work. 
@@ -2341,6 +2342,40 @@ M9 remains constrained to read-only advisory context and must not introduce brok
 - `npm.cmd run typecheck` — clean
 - `npm.cmd run lint` — clean
 - `npm.cmd run build` — clean (266.45 kB JS, 29.13 kB CSS)
+
+---
+
+## TF-0062: Implement Cross-Workspace Context Persistence
+
+**Status:** Done
+
+**Milestone:** M10
+
+**Branch:** `feature/tf-0062-cross-workspace-context-persistence`
+
+**Affected Layer:** frontend
+
+**Linked ADRs:** ADR-0021
+
+**Impacted Invariants:** Workspace, Workflow-Centric Architecture, Derived State Must Remain Distinguishable
+
+**Implementation Summary:** Added `frontend/src/operationalContext.ts` — a localStorage-backed store (`tradeforge.operational_context`) holding `watched_symbols: string[]` and `last_known_stage: string | null`. `MarketContextPanel` and `ContextualBriefingPanel` now pre-fill their symbol inputs with `getWatchedSymbolsString()` on mount and call `addWatchedSymbols()` after each successful fetch. App.tsx syncs the active decision symbol via `useEffect` on `activeDecision?.symbol`, initializes `activeStage` from persisted `last_known_stage` (eliminating the null-flash on navigation), and calls `syncLastKnownStage()` in `handleStageLoaded`. `clearOperationalContext()` is called in `handleClearDecision()`. No prop drilling — panels and App.tsx communicate through the store directly.
+
+**Acceptance Criteria:**
+
+- Workspace transitions preserve operational meaning.
+
+**Out Of Scope:**
+
+- Symbol removal/management UI.
+- Server-side operational context persistence.
+
+**Completed Verification:**
+
+- `uv run pytest` — 513 passed (no backend changes)
+- `npm.cmd run typecheck` — clean
+- `npm.cmd run lint` — clean
+- `npm.cmd run build` — clean (267.63 kB JS)
 
 ---
 

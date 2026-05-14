@@ -20,6 +20,12 @@ import { WalkthroughPanel } from "./workspaces/WalkthroughPanel";
 import { isOnboardingComplete, markOnboardingComplete } from "./onboarding";
 import { OnboardingModal } from "./workspaces/OnboardingModal";
 import {
+  getOperationalContext,
+  syncDecisionSymbol,
+  syncLastKnownStage,
+  clearOperationalContext,
+} from "./operationalContext";
+import {
   getActiveDecision,
   setActiveDecision,
   clearActiveDecision,
@@ -141,7 +147,9 @@ export default function App() {
   const [sessionError, setSessionError] = useState<string | null>(null);
   const [activeDecision, setActiveDecisionState] =
     useState<ActiveDecisionRecord | null>(() => getActiveDecision());
-  const [activeStage, setActiveStage] = useState<string | null>(null);
+  const [activeStage, setActiveStage] = useState<string | null>(
+    () => getOperationalContext().last_known_stage,
+  );
   const [walkthroughSession, setWalkthroughSessionState] =
     useState<WalkthroughSession | null>(() => getWalkthroughSession());
   const [walkthroughAdvancing, setWalkthroughAdvancing] = useState(false);
@@ -156,6 +164,10 @@ export default function App() {
     window.addEventListener("popstate", handlePopState);
     return () => window.removeEventListener("popstate", handlePopState);
   }, []);
+
+  useEffect(() => {
+    syncDecisionSymbol(activeDecision?.symbol ?? null);
+  }, [activeDecision?.symbol]);
   useEffect(() => {
     const controller = new AbortController();
 
@@ -219,6 +231,7 @@ export default function App() {
   function handleClearDecision() {
     clearActiveDecision();
     clearWalkthroughSession();
+    clearOperationalContext();
     setActiveDecisionState(null);
     setWalkthroughSessionState(null);
     setActiveStage(null);
@@ -286,6 +299,7 @@ export default function App() {
 
   const handleStageLoaded = useCallback((stage: string | null) => {
     setActiveStage(stage);
+    syncLastKnownStage(stage);
   }, []);
 
   return (
