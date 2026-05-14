@@ -20,7 +20,12 @@ from src.domain.personas import (
     PersonaVersion,
 )
 from src.domain.replay import ProjectionAuthority, ReplayTimelineEntryKind
-from src.domain.cognition import ThesisArtifact, ThesisArtifactValidationError
+from src.domain.cognition import (
+    ThesisArtifact,
+    ThesisArtifactValidationError,
+    TradePlanArtifact,
+    TradePlanArtifactValidationError,
+)
 from src.services.lifecycle import (
     LifecycleOrchestrationService,
     LifecycleTransitionRequest,
@@ -186,6 +191,38 @@ class ThesisHistoryResponse(BaseModel):
     decision_id: str
     total_revisions: int
     snapshots: list[ThesisSnapshotResponse]
+
+
+class CreatePlanPayload(BaseModel):
+    decision_id: str = Field(min_length=1)
+    symbol: str = Field(min_length=1, max_length=10)
+    entry_rationale: str = Field(min_length=10, max_length=5000)
+    stop_rationale: str = Field(min_length=10, max_length=5000)
+    target_rationale: str = Field(min_length=10, max_length=5000)
+    sizing_rationale: str = Field(min_length=10, max_length=5000)
+    execution_assumptions: list[str] = Field(min_length=1)
+    playbook_alignment: str = Field(default="", max_length=500)
+    persona_id: str = Field(min_length=1)
+    workspace_id: str = Field(min_length=1)
+
+
+class CreatePlanResponse(BaseModel):
+    decision_id: str
+    event_type: str
+    timestamp: datetime
+
+
+class TradePlanArtifactResponse(BaseModel):
+    decision_id: str
+    symbol: str
+    entry_rationale: str
+    stop_rationale: str
+    target_rationale: str
+    sizing_rationale: str
+    execution_assumptions: list[str]
+    playbook_alignment: str
+    source_event_type: str
+    event_timestamp: datetime
 
 
 class ReplayProjectionLifecycleStateResponse(BaseModel):
@@ -940,6 +977,7 @@ def develop_thesis(
 
 class ThesisArtifactResponse(BaseModel):
     decision_id: str
+    symbol: str
     narrative: str
     catalysts: list[str]
     assumptions: list[str]
@@ -993,8 +1031,11 @@ def get_thesis_artifact(
             detail={"message": f"decision {decision_id} has a thesis event but no structured thesis content"},
         )
 
+    symbol = str(thesis_event.payload.get("symbol", ""))
+
     return ThesisArtifactResponse(
         decision_id=decision_id,
+        symbol=symbol,
         narrative=artifact.narrative,
         catalysts=list(artifact.catalysts),
         assumptions=list(artifact.assumptions),
@@ -1145,6 +1186,129 @@ def revise_thesis(
         event_type="decision.thesis_revised",
         timestamp=now,
         revision_number=revision_count + 1,
+    )
+
+
+@lifecycle_router.post(
+    "/decisions/create-plan",
+    response_model=CreatePlanResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+def create_plan(
+    request: Request,
+    payload: CreatePlanPayload,
+) -> CreatePlanResponse:
+    """Create a structured trade plan for a decision in the Thesis lifecycle stage.
+
+    Validates required plan artifact fields and creates the decision.plan_created
+    lifecycle event with structured cognitive content embedded in the payload.
+    The lifecycle service validates the Thesis→Plan transition before appending.
+    """
+    try:
+        artifact = TradePlanArtifact.create(
+            entry_rationale=payload.entry_rationale,
+            stop_rationale=payload.stop_rationale,
+            target_rationale=payload.target_rationale,
+            sizing_rationale=payload.sizing_rationale,
+            execution_assumptions=payload.execution_assumptions,
+            playbook_alignment=payload.playbook_alignment,
+        )
+    except TradePlanArtifactValidationError as error:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={"message": str(error)},
+        ) from error
+
+    service = _lifecycle_service_from(request)
+    symbol = payload.symbol.strip().upper()
+    now = datetime.now(tz=UTC)
+
+    event_payload: dict[str, object] = {
+        "symbol": symbol,
+        **artifact.to_payload(),
+    }
+
+    result = service.transition(
+        LifecycleTransitionRequest(
+            requested_stage=LifecycleStage.PLAN,
+            timestamp=now,
+            persona_id=payload.persona_id,
+            workspace_id=payload.workspace_id,
+            entity_references=(
+                EntityReference(entity_type="decision", entity_id=payload.decision_id),
+                EntityReference(entity_type="ticker", entity_id=symbol),
+            ),
+            payload=event_payload,
+            provenance={"actor": "human", "source": "plan-creation-workflow"},
+        )
+    )
+
+    if not result.appended or result.appended_event is None:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail={"message": "lifecycle transition to Plan rejected — current stage may not be Thesis"},
+        )
+
+    return CreatePlanResponse(
+        decision_id=payload.decision_id,
+        event_type=result.appended_event.event_type,
+        timestamp=result.appended_event.timestamp,
+    )
+
+
+@lifecycle_router.get(
+    "/decisions/{decision_id}/plan",
+    response_model=TradePlanArtifactResponse,
+)
+def get_plan_artifact(
+    request: Request,
+    decision_id: str,
+) -> TradePlanArtifactResponse:
+    """Return the structured trade plan artifact for a decision.
+
+    Reads the decision.plan_created event payload for the given decision_id.
+    Returns 404 if no structured plan exists (legacy empty-payload events
+    or decisions that have not yet created a plan).
+    """
+    events = _event_store_from(request).read_events()
+
+    plan_event = None
+    for event in reversed(events):
+        if event.event_type != "decision.plan_created":
+            continue
+        if any(
+            ref.entity_type == "decision" and ref.entity_id == decision_id
+            for ref in event.entity_references
+        ):
+            plan_event = event
+            break
+
+    if plan_event is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"message": f"no plan found for decision {decision_id}"},
+        )
+
+    artifact = TradePlanArtifact.from_payload(dict(plan_event.payload))
+    if artifact is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"message": f"decision {decision_id} has a plan event but no structured plan content"},
+        )
+
+    symbol = str(plan_event.payload.get("symbol", ""))
+
+    return TradePlanArtifactResponse(
+        decision_id=decision_id,
+        symbol=symbol,
+        entry_rationale=artifact.entry_rationale,
+        stop_rationale=artifact.stop_rationale,
+        target_rationale=artifact.target_rationale,
+        sizing_rationale=artifact.sizing_rationale,
+        execution_assumptions=list(artifact.execution_assumptions),
+        playbook_alignment=artifact.playbook_alignment,
+        source_event_type=plan_event.event_type,
+        event_timestamp=plan_event.timestamp,
     )
 
 

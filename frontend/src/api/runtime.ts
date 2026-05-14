@@ -398,6 +398,7 @@ export async function postDevelopThesis(
 
 export type ThesisArtifact = {
   decision_id: string;
+  symbol: string;
   narrative: string;
   catalysts: string[];
   assumptions: string[];
@@ -423,6 +424,84 @@ export async function fetchThesisArtifact(
   }
 
   return response.json() as Promise<ThesisArtifact>;
+}
+
+export type CreatePlanRequest = {
+  decision_id: string;
+  symbol: string;
+  entry_rationale: string;
+  stop_rationale: string;
+  target_rationale: string;
+  sizing_rationale: string;
+  execution_assumptions: string[];
+  playbook_alignment?: string;
+  persona_id: string;
+  workspace_id: string;
+};
+
+export type CreatePlanResponse = {
+  decision_id: string;
+  event_type: string;
+  timestamp: string;
+};
+
+export type TradePlanArtifact = {
+  decision_id: string;
+  symbol: string;
+  entry_rationale: string;
+  stop_rationale: string;
+  target_rationale: string;
+  sizing_rationale: string;
+  execution_assumptions: string[];
+  playbook_alignment: string;
+  source_event_type: string;
+  event_timestamp: string;
+};
+
+export async function postCreatePlan(
+  request: CreatePlanRequest,
+  signal?: AbortSignal,
+): Promise<CreatePlanResponse> {
+  const response = await fetch("/lifecycle/decisions/create-plan", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(request),
+    signal,
+  });
+
+  if (!response.ok) {
+    const detail = await response.json().catch(() => null);
+    const message =
+      typeof detail === "object" && detail !== null && "detail" in detail
+        ? typeof (detail as Record<string, unknown>).detail === "object"
+          ? ((detail as Record<string, { message?: string }>).detail?.message ??
+            `Plan creation failed: ${response.status}`)
+          : `Plan creation failed: ${response.status}`
+        : `Plan creation failed: ${response.status}`;
+    throw new Error(message);
+  }
+
+  return response.json() as Promise<CreatePlanResponse>;
+}
+
+export async function fetchPlanArtifact(
+  decisionId: string,
+  signal?: AbortSignal,
+): Promise<TradePlanArtifact | null> {
+  const response = await fetch(
+    `/lifecycle/decisions/${encodeURIComponent(decisionId)}/plan`,
+    { signal },
+  );
+
+  if (response.status === 404) {
+    return null;
+  }
+
+  if (!response.ok) {
+    throw new Error(`Plan artifact request failed: ${response.status}`);
+  }
+
+  return response.json() as Promise<TradePlanArtifact>;
 }
 
 export async function fetchOperatingAttentionQueue(

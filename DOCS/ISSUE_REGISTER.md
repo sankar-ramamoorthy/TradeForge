@@ -109,8 +109,8 @@ Explicit roadmap checkpoint completed M9 Updated*Done*.
 | M10AIS03 | Done | M10A | Implement thesis revision history | `feature/tf-0064-operational-attention-continuity` |
 | M10AIS04 | Planned | M10A | Implement scenario branch modeling | — |
 | M10AIS05 | Planned | M10A | Implement scenario visualization projection | — |
-| M10AIS06 | Planned | M10A | Implement structured trade plan domain model | — |
-| M10AIS07 | Planned | M10A | Implement trade plan authoring workspace | — |
+| M10AIS06 | Done | M10A | Implement structured trade plan domain model | `feature/tf-0064-operational-attention-continuity` |
+| M10AIS07 | Done | M10A | Implement trade plan authoring workspace | `feature/tf-0064-operational-attention-continuity` |
 | M10AIS08 | Planned | M10A | Implement plan validation preview layer | — |
 | M10AIS09 | Planned | M10A | Implement replay cognitive artifact timeline | — |
 | M10AIS10 | Planned | M10A | Implement cognitive snapshot reconstruction | — |
@@ -121,7 +121,7 @@ Explicit roadmap checkpoint completed M9 Updated*Done*.
 | M10AIS15 | Planned | M10A | Implement cross-workspace cognitive continuity | — |
 
 Explicit roadmap checkpoint completed M9 Updated*Done*.
-M10A started 2026-05-14. M10AIS01 and M10AIS02 complete.
+M10A started 2026-05-14. M10AIS01-03, M10AIS06-07 complete.
 Post-MVP Roadmap v2 implementation begins with M9 market-context infrastructure and provider-boundary work. 
 M9 remains constrained to read-only advisory context and must not introduce broker execution authority, autonomous AI decision systems, or non-replayable runtime behavior.
 
@@ -2566,6 +2566,64 @@ M9 remains constrained to read-only advisory context and must not introduce brok
 - `npm.cmd run typecheck` — clean
 - `npm.cmd run lint` — clean
 - `npm.cmd run build` — clean (282.66 kB JS, 30.79 kB CSS)
+
+---
+
+## M10AIS06: Implement Structured Trade Plan Domain Model
+
+**Status:** Done
+
+**Milestone:** M10A
+
+**Branch:** `feature/tf-0064-operational-attention-continuity`
+
+**Affected Layer:** domain, api
+
+**Linked ADRs:** ADR-0033, ADR-0034
+
+**Impacted Invariants:** Event Ledger Canonical Truth, Events Are Immutable, Replayability Is Foundational, Lifecycle Authority
+
+**Implementation Summary:** Introduced `src/domain/cognition/plan.py` with `TradePlanArtifact` — frozen dataclass with `create()` factory validating entry_rationale, stop_rationale, target_rationale, sizing_rationale (all required, min 10 chars), execution_assumptions (list, min 1), and optional playbook_alignment. `to_payload()`/`from_payload()` for event serialization with graceful legacy degradation. Added `POST /lifecycle/decisions/create-plan` endpoint that validates plan fields and creates `decision.plan_created` lifecycle transition (Thesis→Plan) via LifecycleOrchestrationService with structured payload `{plan: {...}}`. Added `GET /lifecycle/decisions/{id}/plan` endpoint that reads decision.plan_created event payload and returns TradePlanArtifactResponse. Added `symbol` field to ThesisArtifactResponse and TradePlanArtifactResponse (populated from event payload). Updated cognition module `__init__.py` to export TradePlanArtifact. 22 new tests (563 total).
+
+**Acceptance Criteria:**
+
+- Trade plans become durable cognitive artifacts.
+
+**Completed Verification:**
+
+- `uv run pytest` — 563 passed (22 new tests: 12 unit + 10 integration)
+- `npm.cmd run typecheck` — clean
+- `npm.cmd run lint` — clean
+- `npm.cmd run build` — clean (290.12 kB JS, 30.79 kB CSS)
+
+---
+
+## M10AIS07: Implement Trade Plan Authoring Workspace
+
+**Status:** Done
+
+**Milestone:** M10A
+
+**Branch:** `feature/tf-0064-operational-attention-continuity`
+
+**Affected Layer:** frontend
+
+**Linked ADRs:** ADR-0034
+
+**Impacted Invariants:** UX Is Architectural, Human Decision Sovereignty, Workflow-Centric Architecture
+
+**Implementation Summary:** Created `PlanDevelopmentModal.tsx` — modal form with `RationaleField` components for entry/stop/target/sizing rationale (textarea, required) and a dynamic list for execution_assumptions. Playbook alignment input (optional). Client-side validation before submission. Submits to `POST /lifecycle/decisions/create-plan`. On success: reloads projection (stays in plan-review at Plan stage) and re-fetches plan artifact. Added `CreatePlanRequest`, `CreatePlanResponse`, `TradePlanArtifact` types and `postCreatePlan()`, `fetchPlanArtifact()` API functions to `runtime.ts`. Updated `PlanReviewWorkspace.tsx`: `handleCreatePlan` opens `PlanDevelopmentModal` instead of empty transition, added `plan` state and `showPlanModal` state, added `PlanContextPanel` showing plan content (entry/stop/target/sizing rationale, execution assumptions, playbook) below thesis panel when plan exists, fetch plan artifact in loadProjection alongside thesis.
+
+**Acceptance Criteria:**
+
+- Plans become operationally authorable.
+
+**Completed Verification:**
+
+- `uv run pytest` — 563 passed (no additional backend tests)
+- `npm.cmd run typecheck` — clean
+- `npm.cmd run lint` — clean
+- `npm.cmd run build` — clean (290.12 kB JS, 30.79 kB CSS)
 
 ---
 
