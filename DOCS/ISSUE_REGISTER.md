@@ -106,7 +106,7 @@ Explicit roadmap checkpoint completed M9 Updated*Done*.
 | TF-0064 | Done | M10 | Implement operational attention continuity | `feature/tf-0064-operational-attention-continuity` |
 | M10AIS01 | Done | M10A | Implement structured thesis domain model | `feature/tf-0064-operational-attention-continuity` |
 | M10AIS02 | Done | M10A | Implement thesis authoring workspace | `feature/tf-0064-operational-attention-continuity` |
-| M10AIS03 | Planned | M10A | Implement thesis revision history | — |
+| M10AIS03 | Done | M10A | Implement thesis revision history | `feature/tf-0064-operational-attention-continuity` |
 | M10AIS04 | Planned | M10A | Implement scenario branch modeling | — |
 | M10AIS05 | Planned | M10A | Implement scenario visualization projection | — |
 | M10AIS06 | Planned | M10A | Implement structured trade plan domain model | — |
@@ -2532,6 +2532,40 @@ M9 remains constrained to read-only advisory context and must not introduce brok
 - `npm.cmd run typecheck` — clean
 - `npm.cmd run lint` — clean
 - `npm.cmd run build` — clean (276.72 kB JS, 30.79 kB CSS)
+
+---
+
+## M10AIS03: Implement Thesis Revision History
+
+**Status:** Done
+
+**Milestone:** M10A
+
+**Branch:** `feature/tf-0064-operational-attention-continuity`
+
+**Affected Layer:** domain, api, frontend
+
+**Linked ADRs:** ADR-0033, ADR-0035
+
+**Impacted Invariants:** Events Are Immutable, Replayability Is Foundational, Lifecycle Authority
+
+**Implementation Summary:** Added `decision.thesis_revised` event type — not a lifecycle stage transition; appended directly to event_store. Added `POST /lifecycle/decisions/revise-thesis` endpoint (validates thesis fields, checks stage is Thesis, sets revision_number, appends revision event). Updated `GET /lifecycle/decisions/{id}/thesis` to scan both thesis_created and thesis_revised event types returning the most recent. Added `GET /lifecycle/decisions/{id}/thesis/history` returning all thesis snapshots chronologically (ThesisHistoryResponse with total_revisions + ordered snapshots including revision_number). Added top-level imports for LIFECYCLE_EVENT_STAGE_MAP and EventEnvelope. Created `ThesisRevisionModal.tsx` (pre-populated with current thesis values, same form structure as ThesisDevelopmentModal). Updated `ThesisContextPanel` with `canRevise`/`onRevise` props (shows "Revise Thesis" button at Thesis stage, shows "— Revised" badge for revised events). Updated `PlanReviewWorkspace.tsx` with showRevisionModal state and ThesisRevisionModal integration.
+
+**Acceptance Criteria:**
+
+- Replay can reconstruct thesis evolution chronologically.
+
+**Out Of Scope:**
+
+- Thesis revision after Plan stage is entered.
+- Diffing between revisions.
+
+**Completed Verification:**
+
+- `uv run pytest` — 541 passed (7 new tests)
+- `npm.cmd run typecheck` — clean
+- `npm.cmd run lint` — clean
+- `npm.cmd run build` — clean (282.66 kB JS, 30.79 kB CSS)
 
 ---
 

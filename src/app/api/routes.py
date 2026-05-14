@@ -7,8 +7,9 @@ from typing import Any, Literal
 from fastapi import APIRouter, HTTPException, Query, Request, status
 from pydantic import BaseModel, Field
 from src.app.session import SessionProvider
-from src.domain.events import EntityReference
+from src.domain.events import EntityReference, EventEnvelope
 from src.domain.lifecycle import LifecycleStage
+from src.domain.lifecycle.state import LIFECYCLE_EVENT_STAGE_MAP
 from src.domain.personas import (
     PersonaContext,
     PersonaDecisionVelocity,
@@ -147,6 +148,44 @@ class DevelopThesisResponse(BaseModel):
     decision_id: str
     event_type: str
     timestamp: datetime
+
+
+class ReviseThesisPayload(BaseModel):
+    decision_id: str = Field(min_length=1)
+    symbol: str = Field(min_length=1, max_length=10)
+    narrative: str = Field(min_length=10, max_length=5000)
+    catalysts: list[str] = Field(min_length=1)
+    assumptions: list[str] = Field(min_length=1)
+    invalidation_conditions: list[str] = Field(min_length=1)
+    confidence_level: int = Field(ge=1, le=5)
+    regime_alignment: str = Field(default="", max_length=500)
+    persona_id: str = Field(min_length=1)
+    workspace_id: str = Field(min_length=1)
+
+
+class ReviseThesisResponse(BaseModel):
+    decision_id: str
+    event_type: str
+    timestamp: datetime
+    revision_number: int
+
+
+class ThesisSnapshotResponse(BaseModel):
+    narrative: str
+    catalysts: list[str]
+    assumptions: list[str]
+    invalidation_conditions: list[str]
+    confidence_level: int
+    regime_alignment: str
+    event_type: str
+    event_timestamp: datetime
+    revision_number: int
+
+
+class ThesisHistoryResponse(BaseModel):
+    decision_id: str
+    total_revisions: int
+    snapshots: list[ThesisSnapshotResponse]
 
 
 class ReplayProjectionLifecycleStateResponse(BaseModel):
@@ -919,22 +958,24 @@ def get_thesis_artifact(
     request: Request,
     decision_id: str,
 ) -> ThesisArtifactResponse:
-    """Return the structured thesis artifact for a decision.
+    """Return the most recent structured thesis artifact for a decision.
 
-    Reads the decision.thesis_created event payload for the given decision_id.
-    Returns 404 if no structured thesis exists (legacy empty-payload events
-    or Idea-stage decisions that have not yet developed a thesis).
+    Scans decision.thesis_created and decision.thesis_revised events.
+    Returns the most recent structured thesis (latest revision wins).
+    Returns 404 if no structured thesis exists.
     """
     events = _event_store_from(request).read_events()
+    thesis_event_types = frozenset(
+        ("decision.thesis_created", "decision.thesis_revised")
+    )
 
     thesis_event = None
     for event in reversed(events):
-        if event.event_type != "decision.thesis_created":
+        if event.event_type not in thesis_event_types:
             continue
-        references = event.entity_references
         if any(
             ref.entity_type == "decision" and ref.entity_id == decision_id
-            for ref in references
+            for ref in event.entity_references
         ):
             thesis_event = event
             break
@@ -962,6 +1003,148 @@ def get_thesis_artifact(
         regime_alignment=artifact.regime_alignment,
         source_event_type=thesis_event.event_type,
         event_timestamp=thesis_event.timestamp,
+    )
+
+
+@lifecycle_router.get(
+    "/decisions/{decision_id}/thesis/history",
+    response_model=ThesisHistoryResponse,
+)
+def get_thesis_history(
+    request: Request,
+    decision_id: str,
+) -> ThesisHistoryResponse:
+    """Return all thesis snapshots for a decision in chronological order.
+
+    Includes both the initial thesis_created event and any thesis_revised events,
+    enabling replay reconstruction of thesis evolution over time.
+    """
+    events = _event_store_from(request).read_events()
+    thesis_event_types = frozenset(
+        ("decision.thesis_created", "decision.thesis_revised")
+    )
+
+    snapshots: list[ThesisSnapshotResponse] = []
+    for event in events:
+        if event.event_type not in thesis_event_types:
+            continue
+        if not any(
+            ref.entity_type == "decision" and ref.entity_id == decision_id
+            for ref in event.entity_references
+        ):
+            continue
+        artifact = ThesisArtifact.from_payload(dict(event.payload))
+        if artifact is None:
+            continue
+        snapshots.append(
+            ThesisSnapshotResponse(
+                narrative=artifact.narrative,
+                catalysts=list(artifact.catalysts),
+                assumptions=list(artifact.assumptions),
+                invalidation_conditions=list(artifact.invalidation_conditions),
+                confidence_level=artifact.confidence_level,
+                regime_alignment=artifact.regime_alignment,
+                event_type=event.event_type,
+                event_timestamp=event.timestamp,
+                revision_number=len(snapshots) + 1,
+            )
+        )
+
+    return ThesisHistoryResponse(
+        decision_id=decision_id,
+        total_revisions=len(snapshots),
+        snapshots=snapshots,
+    )
+
+
+@lifecycle_router.post(
+    "/decisions/revise-thesis",
+    response_model=ReviseThesisResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+def revise_thesis(
+    request: Request,
+    payload: ReviseThesisPayload,
+) -> ReviseThesisResponse:
+    """Revise the structured thesis for a decision in the Thesis lifecycle stage.
+
+    Creates an immutable decision.thesis_revised event with updated thesis content.
+    This is not a lifecycle transition — the stage remains Thesis.
+    Revision is only valid when the current lifecycle stage is Thesis.
+    """
+    try:
+        artifact = ThesisArtifact.create(
+            narrative=payload.narrative,
+            catalysts=payload.catalysts,
+            assumptions=payload.assumptions,
+            invalidation_conditions=payload.invalidation_conditions,
+            confidence_level=payload.confidence_level,
+            regime_alignment=payload.regime_alignment,
+        )
+    except ThesisArtifactValidationError as error:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={"message": str(error)},
+        ) from error
+
+    event_store = _event_store_from(request)
+    events = event_store.read_events()
+
+    current_state = None
+    for event in events:
+        stage = LIFECYCLE_EVENT_STAGE_MAP.get(event.event_type)
+        if stage is not None and any(
+            ref.entity_type == "decision" and ref.entity_id == payload.decision_id
+            for ref in event.entity_references
+        ):
+            current_state = stage
+
+    if current_state != LifecycleStage.THESIS:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail={"message": "thesis revision is only valid when the decision is in Thesis stage"},
+        )
+
+    thesis_event_types = frozenset(
+        ("decision.thesis_created", "decision.thesis_revised")
+    )
+    revision_count = sum(
+        1
+        for event in events
+        if event.event_type in thesis_event_types
+        and any(
+            ref.entity_type == "decision" and ref.entity_id == payload.decision_id
+            for ref in event.entity_references
+        )
+    )
+
+    symbol = payload.symbol.strip().upper()
+    now = datetime.now(tz=UTC)
+    event_payload: dict[str, object] = {
+        "symbol": symbol,
+        "revision_number": revision_count + 1,
+        **artifact.to_payload(),
+    }
+
+    revision_event = EventEnvelope(
+        event_type="decision.thesis_revised",
+        timestamp=now,
+        persona_id=payload.persona_id,
+        workspace_id=payload.workspace_id,
+        entity_references=(
+            EntityReference(entity_type="decision", entity_id=payload.decision_id),
+            EntityReference(entity_type="ticker", entity_id=symbol),
+        ),
+        payload=event_payload,
+        provenance={"actor": "human", "source": "thesis-revision-workflow"},
+    )
+    event_store.append(revision_event)
+
+    return ReviseThesisResponse(
+        decision_id=payload.decision_id,
+        event_type="decision.thesis_revised",
+        timestamp=now,
+        revision_number=revision_count + 1,
     )
 
 

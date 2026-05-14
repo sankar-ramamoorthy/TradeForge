@@ -11,6 +11,7 @@ import {
   type WorkspaceProjection,
 } from "../api/runtime";
 import { type WorkspaceContext } from "../workspaceRouting";
+import { ThesisRevisionModal } from "./ThesisRevisionModal";
 
 type TransitionState = "idle" | "transitioning" | "error";
 
@@ -83,13 +84,36 @@ type PlanReviewWorkspaceProps = {
   onStageLoaded?: (stage: string | null) => void;
 };
 
-function ThesisContextPanel({ thesis }: { thesis: ThesisArtifact }) {
+function ThesisContextPanel({
+  thesis,
+  onRevise,
+  canRevise,
+}: {
+  thesis: ThesisArtifact;
+  onRevise?: () => void;
+  canRevise?: boolean;
+}) {
   const CONFIDENCE_LABELS: Record<number, string> = {
     1: "Speculative", 2: "Low", 3: "Moderate", 4: "High", 5: "Conviction",
   };
+  const isRevised = thesis.source_event_type === "decision.thesis_revised";
   return (
     <div className="thesis-context-panel" aria-label="Thesis foundation">
-      <p className="eyebrow">Thesis Foundation</p>
+      <div className="thesis-context-header">
+        <p className="eyebrow">
+          Thesis Foundation
+          {isRevised ? <span className="thesis-revision-badge"> — Revised</span> : null}
+        </p>
+        {canRevise && onRevise ? (
+          <button
+            className="thesis-revise-btn"
+            onClick={onRevise}
+            type="button"
+          >
+            Revise Thesis
+          </button>
+        ) : null}
+      </div>
       <p className="thesis-context-narrative">{thesis.narrative}</p>
       {thesis.regime_alignment ? (
         <p className="thesis-context-regime">
@@ -120,6 +144,7 @@ function ThesisContextPanel({ thesis }: { thesis: ThesisArtifact }) {
 export function PlanReviewWorkspace({ context, onNavigateProgrammatic, onStageLoaded }: PlanReviewWorkspaceProps) {
   const [projection, setProjection] = useState<WorkspaceProjection | null>(null);
   const [thesis, setThesis] = useState<ThesisArtifact | null>(null);
+  const [showRevisionModal, setShowRevisionModal] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [transitionState, setTransitionState] = useState<TransitionState>("idle");
   const [transitionError, setTransitionError] = useState<string | null>(null);
@@ -265,7 +290,28 @@ export function PlanReviewWorkspace({ context, onNavigateProgrammatic, onStageLo
             })}
           </div>
 
-          {thesis ? <ThesisContextPanel thesis={thesis} /> : null}
+          {thesis && showRevisionModal ? (
+            <ThesisRevisionModal
+              context={context}
+              currentThesis={thesis}
+              onCancel={() => setShowRevisionModal(false)}
+              onSuccess={() => {
+                setShowRevisionModal(false);
+                if (context.decision_id) {
+                  fetchThesisArtifact(context.decision_id).then(setThesis).catch(() => {});
+                }
+              }}
+              symbol={thesis.decision_id}
+            />
+          ) : null}
+
+          {thesis ? (
+            <ThesisContextPanel
+              canRevise={lifecycleStage === "Thesis"}
+              onRevise={() => setShowRevisionModal(true)}
+              thesis={thesis}
+            />
+          ) : null}
 
           {canCreatePlan ? (
             <div className="lifecycle-action-surface">
