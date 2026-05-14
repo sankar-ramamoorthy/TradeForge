@@ -17,6 +17,8 @@ import {
   type WalkthroughSession,
 } from "./walkthrough";
 import { WalkthroughPanel } from "./workspaces/WalkthroughPanel";
+import { isOnboardingComplete, markOnboardingComplete } from "./onboarding";
+import { OnboardingModal } from "./workspaces/OnboardingModal";
 import {
   getActiveDecision,
   setActiveDecision,
@@ -144,6 +146,9 @@ export default function App() {
     useState<WalkthroughSession | null>(() => getWalkthroughSession());
   const [walkthroughAdvancing, setWalkthroughAdvancing] = useState(false);
   const [walkthroughError, setWalkthroughError] = useState<string | null>(null);
+  const [onboardingDone, setOnboardingDone] = useState<boolean>(
+    () => isOnboardingComplete(),
+  );
 
   useEffect(() => {
     const handlePopState = () => setLocation(readCurrentLocation());
@@ -274,11 +279,20 @@ export default function App() {
     setWalkthroughError(null);
   }
 
+  function handleOnboardingComplete() {
+    markOnboardingComplete();
+    setOnboardingDone(true);
+  }
+
   const handleStageLoaded = useCallback((stage: string | null) => {
     setActiveStage(stage);
   }, []);
 
   return (
+    <>
+      {!onboardingDone ? (
+        <OnboardingModal onComplete={handleOnboardingComplete} />
+      ) : null}
     <AppShell>
       <WorkspaceLayout
         sidebar={
@@ -366,5 +380,6 @@ export default function App() {
 
       <RuntimeBoundaryStatus />
     </AppShell>
+    </>
   );
 }

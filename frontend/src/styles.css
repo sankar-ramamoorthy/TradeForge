@@ -1567,6 +1567,164 @@ p {
   background: var(--color-text-muted);
 }
 
+/* ─── Onboarding modal ───────────────────────────────────────────────────── */
+
+.onboarding-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(18, 28, 26, 0.72);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 24px;
+}
+
+.onboarding-card {
+  position: relative;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  padding: 40px 44px 32px;
+  max-width: 480px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.18);
+}
+
+.onboarding-skip {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  background: transparent;
+  border: 1px solid var(--color-border);
+  border-radius: 5px;
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.onboarding-skip svg {
+  width: 13px;
+  height: 13px;
+}
+
+.onboarding-skip:hover {
+  color: var(--color-text);
+  border-color: var(--color-text-muted);
+}
+
+.onboarding-icon-wrap {
+  width: 56px;
+  height: 56px;
+  background: var(--color-accent-surface);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 4px;
+}
+
+.onboarding-icon {
+  width: 26px;
+  height: 26px;
+  color: var(--color-accent);
+}
+
+.onboarding-headline {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--color-text);
+  text-align: center;
+  margin: 0;
+  line-height: 1.3;
+}
+
+.onboarding-body {
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
+  text-align: center;
+  line-height: 1.6;
+  margin: 0;
+  max-width: 380px;
+}
+
+.onboarding-dots {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 4px 0;
+}
+
+.onboarding-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-border);
+  transition: background 0.2s;
+}
+
+.onboarding-dot.ob-done {
+  background: var(--color-accent);
+  opacity: 0.45;
+}
+
+.onboarding-dot.ob-current {
+  background: var(--color-accent);
+}
+
+.onboarding-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  margin-top: 4px;
+}
+
+.onboarding-prev {
+  padding: 8px 14px;
+  background: transparent;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  font-size: 0.84rem;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.onboarding-prev:hover {
+  border-color: var(--color-text-muted);
+  color: var(--color-text);
+}
+
+.onboarding-next {
+  padding: 8px 20px;
+  background: var(--color-accent);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.86rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.onboarding-next:hover {
+  opacity: 0.88;
+}
+
+.onboarding-finish {
+  background: var(--color-text);
+}
+
 /* ─── Demo badge (sidebar) ───────────────────────────────────────────────── */
 
 .demo-badge {
