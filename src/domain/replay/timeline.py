@@ -14,6 +14,7 @@ from src.domain.replay.projector import ProjectionAuthority
 
 class ReplayTimelineEntryKind(StrEnum):
     LIFECYCLE = "lifecycle"
+    COGNITION = "cognition"
     EXECUTION = "execution"
     REVIEW = "review"
     SYSTEM = "system"
@@ -104,6 +105,8 @@ class ReplayTimelineBuilder:
     ) -> ReplayTimelineEntryKind | None:
         if event.event_type in LIFECYCLE_EVENT_STAGE_MAP:
             return ReplayTimelineEntryKind.LIFECYCLE
+        if event.event_domain is EventDomain.DECISION:
+            return ReplayTimelineEntryKind.COGNITION
         if event.event_domain is EventDomain.EXECUTION:
             return ReplayTimelineEntryKind.EXECUTION
         if event.event_domain is EventDomain.REVIEW:

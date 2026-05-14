@@ -4,12 +4,15 @@ import { type MouseEvent, useCallback, useEffect, useRef, useState } from "react
 
 import {
   fetchWorkspaceProjection,
+  fetchScenarioBranches,
+  type ScenarioBranchList,
   type WorkspaceApiParams,
   type WorkspaceProjection,
 } from "../api/runtime";
 import { type WorkspaceContext } from "../workspaceRouting";
 import { MarketContextPanel } from "./MarketContextPanel";
 import { ThesisDevelopmentModal } from "./ThesisDevelopmentModal";
+import { ScenarioBranchPanel } from "./ScenarioBranchPanel";
 
 type TransitionState = "idle" | "open-thesis-modal" | "error";
 
@@ -82,6 +85,7 @@ type OpportunityWorkspaceProps = {
 
 export function OpportunityWorkspace({ context, onNavigateProgrammatic, onStageLoaded }: OpportunityWorkspaceProps) {
   const [projection, setProjection] = useState<WorkspaceProjection | null>(null);
+  const [branchList, setBranchList] = useState<ScenarioBranchList | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [transitionState, setTransitionState] = useState<TransitionState>("idle");
   const fetchControllerRef = useRef<AbortController | null>(null);
@@ -108,6 +112,14 @@ export function OpportunityWorkspace({ context, onNavigateProgrammatic, onStageL
             err instanceof Error ? err.message : "Failed to load opportunity workspace",
           );
         });
+
+      if (context.decision_id) {
+        fetchScenarioBranches(context.decision_id, signal)
+          .then(setBranchList)
+          .catch((err: unknown) => {
+            if (err instanceof DOMException && err.name === "AbortError") return;
+          });
+      }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [
@@ -188,6 +200,19 @@ export function OpportunityWorkspace({ context, onNavigateProgrammatic, onStageL
               );
             })}
           </div>
+
+          {branchList && context.decision_id ? (
+            <ScenarioBranchPanel
+              branchList={branchList}
+              canAdd={!!lifecycleStage && lifecycleStage !== "Review"}
+              context={context}
+              onBranchAdded={() => {
+                if (context.decision_id) {
+                  fetchScenarioBranches(context.decision_id).then(setBranchList).catch(() => {});
+                }
+              }}
+            />
+          ) : null}
 
           {transitionState === "open-thesis-modal" && context.decision_id ? (
             <ThesisDevelopmentModal

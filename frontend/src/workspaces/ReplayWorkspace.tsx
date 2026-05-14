@@ -27,6 +27,7 @@ const AUTHORITY_DESCRIPTIONS: Record<string, string> = {
 
 const KIND_LABELS: Record<string, string> = {
   lifecycle: "Lifecycle",
+  cognition: "Cognition",
   execution: "Execution",
   review: "Review",
   system: "System",
@@ -34,6 +35,13 @@ const KIND_LABELS: Record<string, string> = {
 
 const CONFIDENCE_LABELS: Record<number, string> = {
   1: "Speculative", 2: "Low", 3: "Moderate", 4: "High", 5: "Conviction",
+};
+
+const BRANCH_TYPE_LABELS: Record<string, string> = {
+  primary: "Primary",
+  alternative: "Alternative",
+  invalidation: "Invalidation",
+  regime_transition: "Regime Transition",
 };
 
 // ── Payload type guards ────────────────────────────────────────────────────
@@ -85,6 +93,31 @@ function extractThesisPayload(
       typeof thesis["regime_alignment"] === "string"
         ? (thesis["regime_alignment"] as string)
         : "",
+  };
+}
+
+type ScenarioBranchData = {
+  branch_type: string;
+  condition: string;
+  implication: string;
+  confidence: number;
+  notes: string;
+};
+
+function extractScenarioBranchPayload(
+  payload: Record<string, unknown>,
+): ScenarioBranchData | null {
+  const b = payload["branch"];
+  if (!b || typeof b !== "object") return null;
+  const branch = b as Record<string, unknown>;
+  const condition = branch["condition"];
+  if (typeof condition !== "string" || !condition) return null;
+  return {
+    branch_type: typeof branch["branch_type"] === "string" ? (branch["branch_type"] as string) : "",
+    condition,
+    implication: typeof branch["implication"] === "string" ? (branch["implication"] as string) : "",
+    confidence: typeof branch["confidence"] === "number" ? (branch["confidence"] as number) : 3,
+    notes: typeof branch["notes"] === "string" ? (branch["notes"] as string) : "",
   };
 }
 
@@ -197,6 +230,34 @@ function PlanPayloadPreview({ plan }: { plan: PlanPayloadData }) {
   );
 }
 
+function ScenarioBranchPreview({ branch }: { branch: ScenarioBranchData }) {
+  const typeLabel = BRANCH_TYPE_LABELS[branch.branch_type] ?? branch.branch_type;
+  return (
+    <div className="cognitive-artifact-preview scenario-preview">
+      <div className="cognitive-artifact-header">
+        <span className="cognitive-artifact-type">Scenario</span>
+        <span className={`cognitive-branch-type-badge branch-${branch.branch_type}`}>
+          {typeLabel}
+        </span>
+        <span className="cognitive-conviction-badge">
+          {branch.confidence}/5
+        </span>
+      </div>
+      <p className="cognitive-narrative" title={branch.condition}>
+        <span className="cognitive-field-label">If: </span>
+        {truncate(branch.condition, 130)}
+      </p>
+      <p className="cognitive-narrative" title={branch.implication}>
+        <span className="cognitive-field-label">Then: </span>
+        {truncate(branch.implication, 130)}
+      </p>
+      {branch.notes ? (
+        <p className="cognitive-count-item">{truncate(branch.notes, 80)}</p>
+      ) : null}
+    </div>
+  );
+}
+
 // ── Cognitive snapshot summary ─────────────────────────────────────────────
 
 const THESIS_EVENT_TYPES = new Set([
@@ -209,6 +270,7 @@ function CognitiveSnapshotSummary({ entries }: { entries: ReplayTimelineEntry[] 
   let latestThesisType = "";
   let latestPlan: PlanPayloadData | null = null;
   let thesisEventCount = 0;
+  let scenarioBranchCount = 0;
 
   for (const entry of entries) {
     if (THESIS_EVENT_TYPES.has(entry.event_type)) {
@@ -223,9 +285,13 @@ function CognitiveSnapshotSummary({ entries }: { entries: ReplayTimelineEntry[] 
       const p = extractPlanPayload(entry.payload);
       if (p) latestPlan = p;
     }
+    if (entry.event_type === "decision.scenario_branch_created") {
+      const b = extractScenarioBranchPayload(entry.payload);
+      if (b) scenarioBranchCount += 1;
+    }
   }
 
-  if (!latestThesis && !latestPlan) return null;
+  if (!latestThesis && !latestPlan && scenarioBranchCount === 0) return null;
 
   const isRevised = thesisEventCount > 1 || latestThesisType === "decision.thesis_revised";
 
@@ -271,6 +337,15 @@ function CognitiveSnapshotSummary({ entries }: { entries: ReplayTimelineEntry[] 
           {latestPlan.playbook_alignment ? (
             <span className="cognitive-playbook-badge">{latestPlan.playbook_alignment}</span>
           ) : null}
+        </div>
+      ) : null}
+
+      {scenarioBranchCount > 0 ? (
+        <div className="cognitive-snapshot-plan">
+          <p className="cognitive-snapshot-label">Scenario Branches</p>
+          <p className="cognitive-snapshot-entry">
+            {scenarioBranchCount} scenario branch{scenarioBranchCount !== 1 ? "es" : ""} defined
+          </p>
         </div>
       ) : null}
 
@@ -345,6 +420,10 @@ function TimelineEntryRow({ entry }: { entry: ReplayTimelineEntry }) {
     entry.event_type === "decision.plan_created"
       ? extractPlanPayload(entry.payload)
       : null;
+  const branchData =
+    entry.event_type === "decision.scenario_branch_created"
+      ? extractScenarioBranchPayload(entry.payload)
+      : null;
 
   return (
     <li
@@ -369,6 +448,8 @@ function TimelineEntryRow({ entry }: { entry: ReplayTimelineEntry }) {
         <ThesisPayloadPreview eventType={entry.event_type} thesis={thesisData} />
       ) : planData ? (
         <PlanPayloadPreview plan={planData} />
+      ) : branchData ? (
+        <ScenarioBranchPreview branch={branchData} />
       ) : null}
     </li>
   );

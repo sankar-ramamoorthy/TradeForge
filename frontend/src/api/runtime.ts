@@ -615,6 +615,80 @@ export async function fetchReviewReflection(
   return response.json() as Promise<ReviewReflectionArtifact>;
 }
 
+export type ScenarioBranchType =
+  | "primary"
+  | "alternative"
+  | "invalidation"
+  | "regime_transition";
+
+export type CreateScenarioBranchRequest = {
+  decision_id: string;
+  branch_type: ScenarioBranchType;
+  condition: string;
+  implication: string;
+  confidence: number;
+  notes?: string;
+  persona_id: string;
+  workspace_id: string;
+};
+
+export type ScenarioBranch = {
+  branch_type: ScenarioBranchType;
+  condition: string;
+  implication: string;
+  confidence: number;
+  notes: string;
+  event_timestamp: string;
+};
+
+export type ScenarioBranchList = {
+  decision_id: string;
+  total_branches: number;
+  branches: ScenarioBranch[];
+};
+
+export async function postCreateScenarioBranch(
+  request: CreateScenarioBranchRequest,
+  signal?: AbortSignal,
+): Promise<{ decision_id: string; branch_type: string; event_type: string; timestamp: string }> {
+  const response = await fetch("/lifecycle/decisions/create-scenario-branch", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(request),
+    signal,
+  });
+
+  if (!response.ok) {
+    const detail = await response.json().catch(() => null);
+    const message =
+      typeof detail === "object" && detail !== null && "detail" in detail
+        ? typeof (detail as Record<string, unknown>).detail === "object"
+          ? ((detail as Record<string, { message?: string }>).detail?.message ??
+            `Scenario branch creation failed: ${response.status}`)
+          : `Scenario branch creation failed: ${response.status}`
+        : `Scenario branch creation failed: ${response.status}`;
+    throw new Error(message);
+  }
+
+  return response.json() as Promise<{ decision_id: string; branch_type: string; event_type: string; timestamp: string }>;
+}
+
+export async function fetchScenarioBranches(
+  decisionId: string,
+  signal?: AbortSignal,
+): Promise<ScenarioBranchList> {
+  const response = await fetch(
+    `/lifecycle/decisions/${encodeURIComponent(decisionId)}/scenario-branches`,
+    { signal },
+  );
+
+  if (!response.ok) {
+    throw new Error(`Scenario branches request failed: ${response.status}`);
+  }
+
+  return response.json() as Promise<ScenarioBranchList>;
+}
+
 export async function fetchOperatingAttentionQueue(
   params: WorkspaceApiParams,
   signal?: AbortSignal,

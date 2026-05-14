@@ -24,6 +24,9 @@ from src.domain.replay import ProjectionAuthority, ReplayTimelineEntryKind
 from src.domain.cognition import (
     ReviewReflectionArtifact,
     ReviewReflectionArtifactValidationError,
+    ScenarioBranchArtifact,
+    ScenarioBranchArtifactValidationError,
+    SCENARIO_BRANCH_TYPES,
     ThesisArtifact,
     ThesisArtifactValidationError,
     TradePlanArtifact,
@@ -277,6 +280,39 @@ class ReviewReflectionArtifactResponse(BaseModel):
     behavioral_observations: str
     source_event_type: str
     event_timestamp: datetime
+
+
+class CreateScenarioBranchPayload(BaseModel):
+    decision_id: str = Field(min_length=1)
+    branch_type: str = Field(min_length=1)
+    condition: str = Field(min_length=5, max_length=3000)
+    implication: str = Field(min_length=5, max_length=3000)
+    confidence: int = Field(ge=1, le=5)
+    notes: str = Field(default="", max_length=2000)
+    persona_id: str = Field(min_length=1)
+    workspace_id: str = Field(min_length=1)
+
+
+class CreateScenarioBranchResponse(BaseModel):
+    decision_id: str
+    branch_type: str
+    event_type: str
+    timestamp: datetime
+
+
+class ScenarioBranchResponse(BaseModel):
+    branch_type: str
+    condition: str
+    implication: str
+    confidence: int
+    notes: str
+    event_timestamp: datetime
+
+
+class ScenarioBranchListResponse(BaseModel):
+    decision_id: str
+    total_branches: int
+    branches: list[ScenarioBranchResponse]
 
 
 class ReplayProjectionLifecycleStateResponse(BaseModel):
@@ -1660,6 +1696,131 @@ def get_review_reflection(
         behavioral_observations=artifact.behavioral_observations,
         source_event_type=review_event.event_type,
         event_timestamp=review_event.timestamp,
+    )
+
+
+@lifecycle_router.post(
+    "/decisions/create-scenario-branch",
+    response_model=CreateScenarioBranchResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+def create_scenario_branch(
+    request: Request,
+    payload: CreateScenarioBranchPayload,
+) -> CreateScenarioBranchResponse:
+    """Create a scenario branch for an active decision.
+
+    Scenario branches capture conditional reasoning — they are enrichment events,
+    not lifecycle transitions. Multiple branches accumulate as immutable events.
+    Valid at any active stage (Idea through Position); rejected after Review.
+    """
+    if payload.branch_type not in SCENARIO_BRANCH_TYPES:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={"message": f"branch_type must be one of: {', '.join(sorted(SCENARIO_BRANCH_TYPES))}"},
+        )
+
+    try:
+        artifact = ScenarioBranchArtifact.create(
+            branch_type=payload.branch_type,
+            condition=payload.condition,
+            implication=payload.implication,
+            confidence=payload.confidence,
+            notes=payload.notes,
+        )
+    except ScenarioBranchArtifactValidationError as error:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={"message": str(error)},
+        ) from error
+
+    event_store = _event_store_from(request)
+    events = event_store.read_events()
+
+    current_stage: LifecycleStage | None = None
+    decision_exists = False
+    for event in events:
+        if any(
+            ref.entity_type == "decision" and ref.entity_id == payload.decision_id
+            for ref in event.entity_references
+        ):
+            decision_exists = True
+            stage = LIFECYCLE_EVENT_STAGE_MAP.get(event.event_type)
+            if stage is not None:
+                current_stage = stage
+
+    if not decision_exists:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"message": f"decision {payload.decision_id} not found"},
+        )
+
+    if current_stage == LifecycleStage.REVIEW:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail={"message": "scenario branches cannot be added to a completed (Review) decision"},
+        )
+
+    now = datetime.now(tz=UTC)
+    branch_event = EventEnvelope(
+        event_type="decision.scenario_branch_created",
+        timestamp=now,
+        persona_id=payload.persona_id,
+        workspace_id=payload.workspace_id,
+        entity_references=(
+            EntityReference(entity_type="decision", entity_id=payload.decision_id),
+        ),
+        payload=artifact.to_payload(),
+        provenance={"actor": "human", "source": "scenario-branch-workflow"},
+    )
+    event_store.append(branch_event)
+
+    return CreateScenarioBranchResponse(
+        decision_id=payload.decision_id,
+        branch_type=artifact.branch_type.value,
+        event_type="decision.scenario_branch_created",
+        timestamp=now,
+    )
+
+
+@lifecycle_router.get(
+    "/decisions/{decision_id}/scenario-branches",
+    response_model=ScenarioBranchListResponse,
+)
+def get_scenario_branches(
+    request: Request,
+    decision_id: str,
+) -> ScenarioBranchListResponse:
+    """Return all scenario branches for a decision in chronological order."""
+    events = _event_store_from(request).read_events()
+
+    branches: list[ScenarioBranchResponse] = []
+    for event in events:
+        if event.event_type != "decision.scenario_branch_created":
+            continue
+        if not any(
+            ref.entity_type == "decision" and ref.entity_id == decision_id
+            for ref in event.entity_references
+        ):
+            continue
+        artifact = ScenarioBranchArtifact.from_payload(dict(event.payload))
+        if artifact is None:
+            continue
+        branches.append(
+            ScenarioBranchResponse(
+                branch_type=artifact.branch_type.value,
+                condition=artifact.condition,
+                implication=artifact.implication,
+                confidence=artifact.confidence,
+                notes=artifact.notes,
+                event_timestamp=event.timestamp,
+            )
+        )
+
+    return ScenarioBranchListResponse(
+        decision_id=decision_id,
+        total_branches=len(branches),
+        branches=branches,
     )
 
 

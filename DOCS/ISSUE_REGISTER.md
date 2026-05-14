@@ -107,8 +107,8 @@ Explicit roadmap checkpoint completed M9 Updated*Done*.
 | M10AIS01 | Done | M10A | Implement structured thesis domain model | `feature/tf-0064-operational-attention-continuity` |
 | M10AIS02 | Done | M10A | Implement thesis authoring workspace | `feature/tf-0064-operational-attention-continuity` |
 | M10AIS03 | Done | M10A | Implement thesis revision history | `feature/tf-0064-operational-attention-continuity` |
-| M10AIS04 | Planned | M10A | Implement scenario branch modeling | — |
-| M10AIS05 | Planned | M10A | Implement scenario visualization projection | — |
+| M10AIS04 | Done | M10A | Implement scenario branch modeling | `feature/tf-0064-operational-attention-continuity` |
+| M10AIS05 | Done | M10A | Implement scenario visualization projection | `feature/tf-0064-operational-attention-continuity` |
 | M10AIS06 | Done | M10A | Implement structured trade plan domain model | `feature/tf-0064-operational-attention-continuity` |
 | M10AIS07 | Done | M10A | Implement trade plan authoring workspace | `feature/tf-0064-operational-attention-continuity` |
 | M10AIS08 | Done | M10A | Implement plan validation preview layer | `feature/tf-0064-operational-attention-continuity` |
@@ -121,7 +121,7 @@ Explicit roadmap checkpoint completed M9 Updated*Done*.
 | M10AIS15 | Planned | M10A | Implement cross-workspace cognitive continuity | — |
 
 Explicit roadmap checkpoint completed M9 Updated*Done*.
-M10A started 2026-05-14. M10AIS01-03, M10AIS06-09, M10AIS11-12 complete.
+M10A started 2026-05-14. M10AIS01-09, M10AIS11-12 complete (12 of 15 issues).
 Post-MVP Roadmap v2 implementation begins with M9 market-context infrastructure and provider-boundary work. 
 M9 remains constrained to read-only advisory context and must not introduce broker execution authority, autonomous AI decision systems, or non-replayable runtime behavior.
 
@@ -2749,6 +2749,54 @@ M9 remains constrained to read-only advisory context and must not introduce brok
 - `uv run pytest` — 598 passed (no additional backend tests)
 - `npm.cmd run typecheck` — clean
 - `npm.cmd run build` — clean (307.69 kB JS, 30.79 kB CSS)
+
+---
+
+## M10AIS04: Implement Scenario Branch Modeling
+
+**Status:** Done
+
+**Milestone:** M10A
+
+**Branch:** `feature/tf-0064-operational-attention-continuity`
+
+**Affected Layer:** domain, api
+
+**Linked ADRs:** ADR-0033
+
+**Impacted Invariants:** Events Are Immutable, Replayability Is Foundational
+
+**Implementation Summary:** Created `src/domain/cognition/scenario.py` with `ScenarioBranchArtifact` (frozen dataclass) and `ScenarioBranchType` StrEnum (`primary`, `alternative`, `invalidation`, `regime_transition`). `create()` validates branch_type (enum check), condition (required), implication (required), and confidence (1-5). `to_payload()`/`from_payload()` for event serialization. Added `POST /lifecycle/decisions/create-scenario-branch` endpoint — validates fields, checks decision exists and is not in Review stage, appends `decision.scenario_branch_created` event directly to event store (not a lifecycle transition). Added `GET /lifecycle/decisions/{decision_id}/scenario-branches` returning all branches chronologically. Extended `ReplayTimelineBuilder._kind_for_event()` to include `COGNITION = "cognition"` kind for non-lifecycle `EventDomain.DECISION` events — ensures `decision.scenario_branch_created` and `decision.thesis_revised` appear in replay timeline. 23 new tests (621 total).
+
+**Completed Verification:**
+
+- `uv run pytest` — 621 passed (23 new: 13 unit + 10 integration)
+- `npm.cmd run typecheck` — clean
+- `npm.cmd run build` — clean (317.91 kB JS, 30.79 kB CSS)
+
+---
+
+## M10AIS05: Implement Scenario Visualization Projection
+
+**Status:** Done
+
+**Milestone:** M10A
+
+**Branch:** `feature/tf-0064-operational-attention-continuity`
+
+**Affected Layer:** frontend
+
+**Linked ADRs:** ADR-0035
+
+**Impacted Invariants:** Replayability Is Foundational, UX Is Architectural
+
+**Implementation Summary:** Extended `ReplayWorkspace.tsx` with scenario branch rendering. Added `extractScenarioBranchPayload()` type guard, `ScenarioBranchPreview` component (branch type badge, likelihood badge, condition/implication excerpts), `BRANCH_TYPE_LABELS` and `COGNITION` kind label. Updated `TimelineEntryRow` to render `ScenarioBranchPreview` for `decision.scenario_branch_created` entries. Updated `CognitiveSnapshotSummary` to count scenario branches and show "N scenario branches defined". Created `ScenarioBranchPanel.tsx` with `BranchCard` subcomponent, ordered by type (primary → alternative → invalidation → regime_transition), "Add Scenario" button opening `ScenarioBranchModal`. Created `ScenarioBranchModal.tsx` with branch_type select, condition/implication textareas, likelihood slider, optional notes. Updated `OpportunityWorkspace.tsx` to fetch branches on load, show `ScenarioBranchPanel` below field surfaces, re-fetch after branch added. Added `ScenarioBranchType`, `ScenarioBranch`, `ScenarioBranchList`, `postCreateScenarioBranch()`, `fetchScenarioBranches()` to `runtime.ts`.
+
+**Completed Verification:**
+
+- `uv run pytest` — 621 passed (no new backend tests)
+- `npm.cmd run typecheck` — clean
+- `npm.cmd run build` — clean (317.91 kB JS, 30.79 kB CSS)
 
 ---
 
