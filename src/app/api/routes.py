@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from datetime import datetime
+import uuid
+from datetime import UTC, datetime
 from typing import Any, Literal
 
 from fastapi import APIRouter, HTTPException, Query, Request, status
@@ -112,6 +113,20 @@ class LifecycleTransitionResponse(BaseModel):
     persona_id: str
     workspace_id: str | None
     validation: LifecycleValidationResponse
+
+
+class NewTradeIdeaPayload(BaseModel):
+    symbol: str = Field(min_length=1, max_length=10)
+    initial_thesis: str | None = Field(default=None, max_length=2000)
+    persona_id: str = Field(min_length=1)
+    workspace_id: str = Field(min_length=1)
+
+
+class NewTradeIdeaResponse(BaseModel):
+    decision_id: str
+    symbol: str
+    event_type: str
+    timestamp: datetime
 
 
 class ReplayProjectionLifecycleStateResponse(BaseModel):
@@ -739,6 +754,54 @@ def create_lifecycle_transition(
         persona_id=result.appended_event.persona_id,
         workspace_id=result.appended_event.workspace_id,
         validation=validation,
+    )
+
+
+@lifecycle_router.post(
+    "/decisions/init",
+    response_model=NewTradeIdeaResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+def init_new_trade_idea(
+    request: Request,
+    payload: NewTradeIdeaPayload,
+) -> NewTradeIdeaResponse:
+    """Initialize a new trade idea decision workflow.
+
+    Generates a decision_id, creates the canonical trade_idea_created lifecycle
+    event, and returns the decision_id for workspace routing. No curl required.
+    """
+    service = _lifecycle_service_from(request)
+    decision_id = str(uuid.uuid4())
+    symbol = payload.symbol.strip().upper()
+    now = datetime.now(tz=UTC)
+
+    result = service.transition(
+        LifecycleTransitionRequest(
+            requested_stage=LifecycleStage.IDEA,
+            timestamp=now,
+            persona_id=payload.persona_id,
+            workspace_id=payload.workspace_id,
+            entity_references=(
+                EntityReference(entity_type="decision", entity_id=decision_id),
+                EntityReference(entity_type="ticker", entity_id=symbol),
+            ),
+            payload={"symbol": symbol, "initial_thesis": payload.initial_thesis or ""},
+            provenance={"actor": "human", "source": "new-trade-idea-workflow"},
+        )
+    )
+
+    if not result.appended or result.appended_event is None:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail={"message": "failed to initialize trade idea lifecycle event"},
+        )
+
+    return NewTradeIdeaResponse(
+        decision_id=decision_id,
+        symbol=symbol,
+        event_type=result.appended_event.event_type,
+        timestamp=result.appended_event.timestamp,
     )
 
 

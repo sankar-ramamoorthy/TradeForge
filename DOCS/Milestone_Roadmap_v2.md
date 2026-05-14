@@ -598,7 +598,425 @@ non-authoritative
 ---
 
 
-## M10 — AI Advisory Boundary
+---
+
+# M10 — Operational Workflow UX And Demoability
+
+**Status:** Planned
+
+---
+
+## Semantic Intent
+
+Transform TradeForge from an architecturally operational system into a human-operable discretionary cognition environment.
+
+---
+
+## Architectural Significance
+
+TradeForge has established:
+
+* replayable workflow authority
+* workspace cognition
+* lifecycle continuity
+* market context augmentation
+* event-backed operational truth
+
+However, operational usability remains overly developer-centric.
+
+M10 stabilizes the operational interaction layer required for:
+
+* human workflow continuity
+* friction-light cognition
+* guided operational flow
+* trader-oriented onboarding
+* demoability
+* operational coherence
+
+without compromising:
+
+* replayability
+* semantic integrity
+* lifecycle authority
+* human decision sovereignty
+
+TradeForge therefore evolves from:
+
+```text id="rcljmo"
+an architecturally operational cognition platform
+```
+
+toward:
+
+```text id="itjwm7"
+a human-operable discretionary trading workflow system
+```
+
+---
+
+## Core Principle
+
+Operational workflow enforcement should feel:
+
+```text id="oq7g3k"
+continuous
+context-aware
+intentional
+operationally natural
+```
+
+rather than:
+
+```text id="b2c1eu"
+procedural
+fragmented
+developer-oriented
+```
+
+The workflow architecture remains authoritative while interaction friction becomes subordinate to cognition.
+
+---
+
+## Canonical Concepts
+
+* [[Operational Continuity]]
+* [[Guided Workflow]]
+* [[Workflow Ergonomics]]
+* [[Demoability]]
+* [[Decision Context]]
+* [[Workspace Cohesion]]
+* [[Operational Navigation]]
+* [[Attention Continuity]]
+* [[Lifecycle Bootstrapping]]
+
+---
+
+## M10 Scope
+
+M10 introduces:
+
+* guided lifecycle onboarding
+* friction-light workflow progression
+* automatic operational context propagation
+* persistent active decision continuity
+* cross-workspace operational cohesion
+* seeded guided demo flows
+* simplified lifecycle initialization
+* trader-oriented workflow ergonomics
+* operational navigation stabilization
+* workspace continuity infrastructure
+
+M10 explicitly excludes:
+
+* autonomous AI execution
+* AI trade approval
+* broker integration
+* automated trade execution
+* RL systems
+* strategy automation
+* autonomous scanning agents
+
+---
+
+# Linked Runtime Issues
+
+---
+
+## Lifecycle Bootstrapping
+
+### TF-0053 — Implement New Trade Idea Workflow (**Done**)
+
+#### Purpose
+
+Replace manual lifecycle bootstrapping through API calls with an operational workflow-native entry experience.
+
+#### Scope
+
+Introduce:
+
+* “New Trade Idea” workflow entry
+* symbol initialization
+* thesis seed capture
+* persona association
+* workspace initialization
+* canonical lifecycle event creation
+
+#### Acceptance Criteria
+
+* No curl/API call required to initiate workflow.
+* New decisions initialize through operational UI flow.
+* Lifecycle integrity remains event-backed.
+
+---
+
+### TF-0054 — Implement Persistent Active Decision Context
+
+#### Purpose
+
+Stabilize operational continuity across workspace transitions.
+
+#### Scope
+
+Introduce:
+
+* active decision persistence
+* session continuity
+* workspace restoration
+* operational context recovery
+
+#### Acceptance Criteria
+
+* Active decision context survives navigation.
+* Manual query parameter propagation is eliminated.
+* Workspace continuity becomes operationally stable.
+
+---
+
+### TF-0055 — Eliminate Manual Workspace Context Propagation
+
+#### Purpose
+
+Remove developer-centric routing dependencies from operational workflow usage.
+
+#### Scope
+
+Remove dependency on:
+
+* manual query params
+* explicit workspace identifiers in navigation
+* manual persona propagation
+
+Introduce:
+
+* centralized operational context resolution
+* shared workflow state
+
+#### Acceptance Criteria
+
+* Workspaces automatically resolve active operational context.
+* Manual URL parameter workflows are unnecessary.
+
+---
+
+# Guided Operational Flow
+
+---
+
+### TF-0056 — Implement Guided Lifecycle Navigation
+
+#### Purpose
+
+Make lifecycle progression cognitively explicit and operationally discoverable.
+
+#### Scope
+
+Introduce:
+
+* guided lifecycle progression
+* contextual next-step navigation
+* stage-aware operational prompts
+* workspace progression awareness
+
+#### Acceptance Criteria
+
+* Users can understand operational progression without architectural knowledge.
+* Workflow continuity becomes visually understandable.
+
+---
+
+### TF-0057 — Implement Operational Workflow Continuity Model
+
+#### Purpose
+
+Ensure workspace transitions feel continuous rather than fragmented.
+
+#### Scope
+
+Introduce:
+
+* workflow continuity state
+* operational breadcrumbs
+* cross-workspace decision awareness
+* lifecycle continuity indicators
+
+#### Acceptance Criteria
+
+* Workspace movement preserves cognitive continuity.
+* The system feels like one operational environment rather than disconnected screens.
+
+---
+
+# Demoability Infrastructure
+
+---
+
+### TF-0058 — Implement Guided Demo Mode
+
+#### Purpose
+
+Create a deterministic operational walkthrough experience for demonstrations and onboarding.
+
+#### Scope
+
+Introduce:
+
+* guided operational walkthroughs
+* deterministic seeded lifecycle flows
+* stage-by-stage progression
+* operational explanation overlays
+
+#### Acceptance Criteria
+
+* A user can experience TradeForge without manual setup.
+* Demo flow remains replayable and deterministic.
+
+---
+
+### TF-0059 — Implement Seeded Replayable Demo Scenarios
+
+#### Purpose
+
+Provide realistic operational scenarios for demonstrations and replay workflows.
+
+#### Scope
+
+Introduce seeded scenarios for:
+
+* breakout swing trade
+* failed thesis drift
+* regime transition
+* disciplined exit review
+
+#### Acceptance Criteria
+
+* Replay workspaces contain meaningful operational examples.
+* Demo scenarios illustrate workflow philosophy.
+
+---
+
+### TF-0060 — Implement One-Click Operational Walkthrough
+
+#### Purpose
+
+Reduce operational onboarding friction.
+
+#### Scope
+
+Introduce:
+
+* one-click demo initialization
+* automatic scenario loading
+* operational workspace initialization
+* guided workflow activation
+
+#### Acceptance Criteria
+
+* A complete operational walkthrough launches from a single entry point.
+
+---
+
+### TF-0061 — Implement Operational Onboarding Flow
+
+#### Purpose
+
+Introduce trader-oriented onboarding aligned with TradeForge philosophy.
+
+#### Scope
+
+Introduce onboarding for:
+
+* lifecycle philosophy
+* workspace meaning
+* review-centric workflow
+* decision sovereignty
+* replay concepts
+
+#### Acceptance Criteria
+
+* New users understand the system philosophically before operationally.
+
+---
+
+# Workspace Cohesion
+
+---
+
+### TF-0062 — Implement Cross-Workspace Context Persistence
+
+#### Purpose
+
+Stabilize operational cognition across all workspace surfaces.
+
+#### Scope
+
+Introduce:
+
+* shared operational state
+* cross-workspace context memory
+* synchronized decision context
+* operational continuity services
+
+#### Acceptance Criteria
+
+* Workspace transitions preserve operational meaning.
+
+---
+
+### TF-0063 — Stabilize Workspace Transition Ergonomics
+
+#### Purpose
+
+Reduce operational friction between cognitive environments.
+
+#### Scope
+
+Improve:
+
+* navigation flow
+* transition clarity
+* workspace movement behavior
+* contextual navigation stability
+
+#### Acceptance Criteria
+
+* Workspace transitions feel operationally deliberate rather than technical.
+
+---
+
+### TF-0064 — Implement Operational Attention Continuity
+
+#### Purpose
+
+Preserve trader attention state throughout workflow progression.
+
+#### Scope
+
+Introduce:
+
+* operational attention queues
+* persistent focus state
+* workflow reminders
+* stage-aware operational surfacing
+
+#### Acceptance Criteria
+
+* Important operational context is not lost during workflow progression.
+
+---
+
+# Acceptance Meaning
+
+* TradeForge becomes operationally demoable.
+* Human traders can operate workflows without architectural knowledge.
+* Workflow continuity becomes operationally natural.
+* Replayability remains foundational.
+* Lifecycle authority remains preserved.
+* Cognition-first interaction architecture becomes operationally believable.
+* The system transitions from architecture demonstration toward usable operational product experience.
+
+---
+
+## M11 — AI Advisory Boundary
 Status: Planned
 ## Semantic Intent
 Introduce AI assistance without compromising human sovereignty.
@@ -611,10 +1029,10 @@ AI remains advisory rather than authoritative.
 
 ## Linked Runtime Issues
 
-* TF-0053: Define AI advisory interfaces
-* TF-0054: Implement replay summarization assistance
-* TF-0055: Implement review assistance
-* TF-0056: Implement advisory provenance tracking
+* TF-0065: Define AI advisory interfaces
+* TF-0066: Implement replay summarization assistance
+* TF-0067: Implement review assistance
+* TF-0068: Implement advisory provenance tracking
 
 ## Acceptance Meaning
 
@@ -624,7 +1042,7 @@ AI remains advisory rather than authoritative.
 
 ---
 
-## M11 — Behavioral Intelligence And Adaptive Review
+## M12 — Behavioral Intelligence And Adaptive Review
 Status: Planned
 ## Semantic Intent
 Detect recurring behavioral and discipline patterns.
@@ -638,10 +1056,10 @@ TradeForge evolves from replay infrastructure into adaptive operational cognitio
 
 ## Linked Runtime Issues
 
-* TF-0057: Detect recurring behavioral patterns
-* TF-0058: Implement discipline signal engine
-* TF-0059: Implement review clustering
-* TF-0060: Implement historical behavior overlays
+* TF-0069: Detect recurring behavioral patterns
+* TF-0070: Implement discipline signal engine
+* TF-0071: Implement review clustering
+* TF-0071: Implement historical behavior overlays
 
 ## Acceptance Meaning
 
@@ -651,7 +1069,7 @@ TradeForge evolves from replay infrastructure into adaptive operational cognitio
 
 ---
 
-## M12 — Simulation And Scenario Engine
+## M13 — Simulation And Scenario Engine
 Status: Planned
 ## Semantic Intent
 Enable simulated operational cognition environments.
@@ -665,10 +1083,10 @@ Simulation supports hypothetical replay, regime experimentation, and strategy st
 
 ## Linked Runtime Issues
 
-* TF-0061: Implement simulation event environment
-* TF-0062: Implement hypothetical replay branching
-* TF-0063: Implement regime simulation engine
-* TF-0064: Implement simulated workspace playback
+* TF-0073: Implement simulation event environment
+* TF-0074: Implement hypothetical replay branching
+* TF-0075: Implement regime simulation engine
+* TF-0076: Implement simulated workspace playback
 
 ## Acceptance Meaning
 
@@ -678,7 +1096,7 @@ Simulation supports hypothetical replay, regime experimentation, and strategy st
 
 ---
 
-## M13 — Adaptive AI And RL Infrastructure
+## M14 — Adaptive AI And RL Infrastructure
 Status: Planned
 ## Semantic Intent
 Introduce adaptive behavioral and reinforcement-learning infrastructure.
@@ -692,10 +1110,10 @@ Adaptive systems remain subordinate to replayable human cognition.
 
 ## Linked Runtime Issues
 
-* TF-0065: Define RL experimentation boundaries
-* TF-0066: Implement adaptive scenario evaluation
-* TF-0067: Implement reinforcement-learning research environment
-* TF-0068: Implement adaptive playbook experimentation
+* TF-0077: Define RL experimentation boundaries
+* TF-0078: Implement adaptive scenario evaluation
+* TF-0079: Implement reinforcement-learning research environment
+* TF-0080: Implement adaptive playbook experimentation
 
 ## Acceptance Meaning
 

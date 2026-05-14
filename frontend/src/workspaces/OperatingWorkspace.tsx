@@ -1,4 +1,4 @@
-import { Activity, ArrowRight, CheckCircle } from "lucide-react";
+import { Activity, ArrowRight, CheckCircle, PlusCircle } from "lucide-react";
 import { type MouseEvent, useEffect, useState } from "react";
 
 import {
@@ -15,6 +15,7 @@ import {
   type WorkspaceContext,
 } from "../workspaceRouting";
 import { ContextualBriefingPanel } from "./ContextualBriefingPanel";
+import { NewTradeIdeaModal } from "./NewTradeIdeaModal";
 
 const CATEGORY_LABELS: Record<string, string> = {
   decision: "Decision",
@@ -85,17 +86,20 @@ function AttentionItemCard({
 type OperatingWorkspaceProps = {
   context: Required<WorkspaceContext>;
   onNavigate: (event: MouseEvent<HTMLAnchorElement>, href: string) => void;
+  onNavigateProgrammatic: (href: string) => void;
 };
 
 export function OperatingWorkspace({
   context,
   onNavigate,
+  onNavigateProgrammatic,
 }: OperatingWorkspaceProps) {
   const [projection, setProjection] = useState<WorkspaceProjection | null>(
     null,
   );
   const [queue, setQueue] = useState<OperatingAttentionQueue | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [showNewIdeaModal, setShowNewIdeaModal] = useState(false);
 
   const params = contextToApiParams(context);
 
@@ -132,7 +136,27 @@ export function OperatingWorkspace({
 
   const lifecycleStage = projection?.lifecycle_state?.current_stage ?? null;
 
+  function handleIdeaCreated(decisionId: string, symbol: string) {
+    setShowNewIdeaModal(false);
+    const opportunityRoute = findWorkspaceRoute("/workspaces/opportunity");
+    const href = buildWorkspaceHref(opportunityRoute, {
+      ...context,
+      decision_id: decisionId,
+    });
+    onNavigateProgrammatic(href);
+    void symbol;
+  }
+
   return (
+    <>
+    {showNewIdeaModal ? (
+      <NewTradeIdeaModal
+        personaId={context.persona_id}
+        workspaceId={context.workspace_id}
+        onCreated={handleIdeaCreated}
+        onCancel={() => setShowNewIdeaModal(false)}
+      />
+    ) : null}
     <section
       className="workspace-surface"
       aria-labelledby="operating-workspace-title"
@@ -145,6 +169,14 @@ export function OperatingWorkspace({
             What requires attention now?
           </h1>
         </div>
+        <button
+          className="new-idea-trigger"
+          onClick={() => setShowNewIdeaModal(true)}
+          type="button"
+        >
+          <PlusCircle aria-hidden="true" />
+          New Trade Idea
+        </button>
       </div>
 
       {loadError ? (
@@ -211,5 +243,6 @@ export function OperatingWorkspace({
         </div>
       ) : null}
     </section>
+    </>
   );
 }

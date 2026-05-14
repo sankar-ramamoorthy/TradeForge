@@ -92,6 +92,7 @@ Explicit roadmap checkpoint completed M9 Updated*Done*.
 | TF-0050 | Done | M9 | Implement provider provenance tracking | `feature/tf-0050-provider-provenance-tracking` |
 | TF-0051 | Done | M9 | Add seeded demo market context flow | `feature/tf-0051-seeded-demo-flow` |
 | TF-0052 | Done | M9 | Add replay-compatible market snapshot persistence strategy | `feature/tf-0050-provider-provenance-tracking` |
+| TF-0053 | Done | M10 | Implement new trade idea workflow | `feature/tf-0053-new-trade-idea-workflow` |
 
 Explicit roadmap checkpoint completed M9 Updated*Done*.
 Post-MVP Roadmap v2 implementation begins with M9 market-context infrastructure and provider-boundary work. 
@@ -2003,6 +2004,46 @@ M9 remains constrained to read-only advisory context and must not introduce brok
 - `uv run pytest` — 493 passed
 - `uv run ruff check .` — clean
 - `uv run mypy src tests` — clean (97 files)
+
+---
+
+## TF-0053: Implement New Trade Idea Workflow
+
+**Status:** Done
+
+**Milestone:** M10
+
+**Branch:** `feature/tf-0053-new-trade-idea-workflow`
+
+**Affected Layer:** app, frontend
+
+**Linked ADRs:** ADR-0002, ADR-0028
+
+**Impacted Invariants:** Decision Lifecycle, Human Decision Sovereignty, Workflow-Centric Architecture
+
+**Implementation Summary:** Added `POST /lifecycle/decisions/init` endpoint as a semantic initialization wrapper over the existing `LifecycleOrchestrationService`. The endpoint generates a UUID4 decision_id server-side, uppercases the symbol, constructs entity_references `[{decision, uuid}, {ticker, SYMBOL}]`, and calls the lifecycle service with `LifecycleStage.IDEA`. Returns `decision_id`, `symbol`, `event_type`, and `timestamp`. Added `NewTradeIdeaPayload` and `NewTradeIdeaResponse` Pydantic models. Frontend: created `NewTradeIdeaModal.tsx` with symbol input, optional thesis notes, loading state, and error display. Added `initNewTradeIdea()` to `api/runtime.ts`. Added `onNavigateProgrammatic` prop to `OperatingWorkspace` for post-creation routing. On success, navigates to OpportunityWorkspace with the new `decision_id`. Added "New Trade Idea" button (PlusCircle) to `OperatingWorkspace` header area. Added modal, form, and button CSS primitives to `styles.css`. `App.tsx` provides `handleNavigateProgrammatic`.
+
+**Acceptance Criteria:**
+
+- No curl/API call required to initiate workflow.
+- New decisions initialize through operational UI flow.
+- Lifecycle integrity remains event-backed.
+
+**Out Of Scope:**
+
+- Persistent active decision context across workspace transitions (TF-0054).
+- Eliminating manual query param propagation (TF-0055).
+- Multi-decision-per-session support.
+
+**Completed Verification:**
+
+- `uv run pytest tests/test_new_trade_idea_workflow.py` — 11 passed
+- `uv run pytest` — 504 passed
+- `uv run ruff check src tests` — clean
+- `uv run mypy src tests` — clean (98 files)
+- `npm.cmd run typecheck` — clean
+- `npm.cmd run lint` — clean
+- `npm.cmd run build` — clean
 
 ---
 

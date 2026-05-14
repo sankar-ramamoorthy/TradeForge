@@ -176,6 +176,11 @@ export default function App() {
     setLocation(readCurrentLocation());
   }
 
+  function handleNavigateProgrammatic(href: string) {
+    window.history.pushState(null, "", href);
+    setLocation(readCurrentLocation());
+  }
+
   return (
     <AppShell>
       <WorkspaceBriefing
@@ -214,6 +219,7 @@ export default function App() {
           <OperatingWorkspace
             context={context}
             onNavigate={handleNavigate}
+            onNavigateProgrammatic={handleNavigateProgrammatic}
           />
         ) : activeRoute.id === "opportunity" ? (
           <OpportunityWorkspace

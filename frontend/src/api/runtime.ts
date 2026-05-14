@@ -306,6 +306,47 @@ export async function fetchReplayTimeline(
   return response.json() as Promise<ReplayTimeline>;
 }
 
+export type NewTradeIdeaRequest = {
+  symbol: string;
+  initial_thesis?: string;
+  persona_id: string;
+  workspace_id: string;
+};
+
+export type NewTradeIdeaResponse = {
+  decision_id: string;
+  symbol: string;
+  event_type: string;
+  timestamp: string;
+};
+
+export async function initNewTradeIdea(
+  request: NewTradeIdeaRequest,
+  signal?: AbortSignal,
+): Promise<NewTradeIdeaResponse> {
+  const response = await fetch("/lifecycle/decisions/init", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(request),
+    signal,
+  });
+
+  if (!response.ok) {
+    const detail = await response.json().catch(() => null);
+    const message =
+      typeof detail === "object" &&
+      detail !== null &&
+      "detail" in detail &&
+      typeof (detail as Record<string, unknown>).detail === "object"
+        ? ((detail as Record<string, { message?: string }>).detail?.message ??
+          `Trade idea initialization failed: ${response.status}`)
+        : `Trade idea initialization failed: ${response.status}`;
+    throw new Error(message);
+  }
+
+  return response.json() as Promise<NewTradeIdeaResponse>;
+}
+
 export async function fetchOperatingAttentionQueue(
   params: WorkspaceApiParams,
   signal?: AbortSignal,
