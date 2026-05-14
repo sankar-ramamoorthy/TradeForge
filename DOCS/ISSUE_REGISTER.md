@@ -98,6 +98,7 @@ Explicit roadmap checkpoint completed M9 Updated*Done*.
 | TF-0056 | Done | M10 | Implement guided lifecycle navigation | `feature/tf-0056-guided-lifecycle-navigation` |
 | TF-0057 | Done | M10 | Implement operational workflow continuity model | `feature/tf-0057-workflow-continuity-model` |
 | TF-0058 | Done | M10 | Implement guided demo mode | `feature/tf-0058-guided-demo-mode` |
+| TF-0059 | Done | M10 | Implement seeded replayable demo scenarios | `feature/tf-0059-seeded-replayable-demo-scenarios` |
 
 Explicit roadmap checkpoint completed M9 Updated*Done*.
 Post-MVP Roadmap v2 implementation begins with M9 market-context infrastructure and provider-boundary work. 
@@ -2232,6 +2233,41 @@ M9 remains constrained to read-only advisory context and must not introduce brok
 - `uv run pytest` — 513 passed (no backend changes)
 - `uv run ruff check src tests` — clean
 - `uv run mypy src tests` — clean (99 files)
+- `npm.cmd run typecheck` — clean
+- `npm.cmd run lint` — clean
+- `npm.cmd run build` — clean
+
+---
+
+## TF-0059: Implement Seeded Replayable Demo Scenarios
+
+**Status:** Done
+
+**Milestone:** M10
+
+**Branch:** `feature/tf-0059-seeded-replayable-demo-scenarios`
+
+**Affected Layer:** frontend
+
+**Linked ADRs:** ADR-0021
+
+**Impacted Invariants:** Workflow-Centric Architecture, UX Is Architectural, Human Decision Sovereignty (demo uses same lifecycle API surface)
+
+**Implementation Summary:** Replaced the single AAPL "Start Demo" button (TF-0058) with a 4-scenario selection grid. Each named scenario is a `DemoScenario` value object in `frontend/src/demo.ts` specifying symbol, lifecycle target depth, landing workspace, and stage-specific payloads. `runDemoFlow` was updated to accept a scenario parameter and seed the lifecycle through Plan, Approval, Position, or Review as required. Scenarios: (1) AAPL Breakout Swing Trade → Plan stage → Plan Review workspace; (2) TSLA Completed Lifecycle Review → Review stage → Replay workspace (7-event timeline); (3) NVDA Active Position Management → Position stage → Active Position workspace; (4) SPY Disciplined Exit Review → Review stage → Review workspace. Added `scenario_name?: string` to `ActiveDecisionRecord`. Added scenario card grid CSS with stage-specific badge colors. All demo transitions use the same lifecycle API surface as normal workflow — no lifecycle bypass.
+
+**Acceptance Criteria:**
+
+- Replay workspaces contain meaningful operational examples.
+- Demo scenarios illustrate workflow philosophy.
+
+**Out Of Scope:**
+
+- One-click full walkthrough with automated stage advancement (TF-0060).
+- Demo scenario persistence across server restarts (event store is in-memory).
+
+**Completed Verification:**
+
+- `uv run pytest` — 513 passed (no backend changes)
 - `npm.cmd run typecheck` — clean
 - `npm.cmd run lint` — clean
 - `npm.cmd run build` — clean
