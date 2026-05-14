@@ -8,6 +8,16 @@ import {
   type RuntimeStatus,
 } from "./api/runtime";
 import {
+  WALKTHROUGH_STEPS,
+  advanceWalkthroughStep,
+  clearWalkthroughSession,
+  getWalkthroughSession,
+  initWalkthrough,
+  setWalkthroughSession,
+  type WalkthroughSession,
+} from "./walkthrough";
+import { WalkthroughPanel } from "./workspaces/WalkthroughPanel";
+import {
   getActiveDecision,
   setActiveDecision,
   clearActiveDecision,
@@ -130,6 +140,10 @@ export default function App() {
   const [activeDecision, setActiveDecisionState] =
     useState<ActiveDecisionRecord | null>(() => getActiveDecision());
   const [activeStage, setActiveStage] = useState<string | null>(null);
+  const [walkthroughSession, setWalkthroughSessionState] =
+    useState<WalkthroughSession | null>(() => getWalkthroughSession());
+  const [walkthroughAdvancing, setWalkthroughAdvancing] = useState(false);
+  const [walkthroughError, setWalkthroughError] = useState<string | null>(null);
 
   useEffect(() => {
     const handlePopState = () => setLocation(readCurrentLocation());
@@ -199,10 +213,65 @@ export default function App() {
 
   function handleClearDecision() {
     clearActiveDecision();
+    clearWalkthroughSession();
     setActiveDecisionState(null);
+    setWalkthroughSessionState(null);
     setActiveStage(null);
     const operatingRoute = findWorkspaceRoute("/workspaces/operating");
     handleNavigateProgrammatic(operatingRoute.path);
+  }
+
+  async function handleStartWalkthrough() {
+    const result = await initWalkthrough({
+      personaId: context.persona_id,
+      personaVersion: context.persona_version,
+      workspaceId: context.workspace_id,
+    });
+    const record = getActiveDecision();
+    if (record) setActiveDecisionState(record);
+    setWalkthroughSessionState(result.session);
+    setWalkthroughError(null);
+    handleNavigateProgrammatic(WALKTHROUGH_STEPS[0].workspacePath);
+  }
+
+  async function handleWalkthroughAdvance() {
+    if (!walkthroughSession) return;
+    const step = WALKTHROUGH_STEPS[walkthroughSession.current_step_index];
+    if (!step) return;
+
+    if (step.nextWorkspacePath === null) {
+      clearWalkthroughSession();
+      setWalkthroughSessionState(null);
+      return;
+    }
+
+    setWalkthroughAdvancing(true);
+    setWalkthroughError(null);
+    try {
+      await advanceWalkthroughStep(walkthroughSession, step);
+      const nextIndex = walkthroughSession.current_step_index + 1;
+      const updated: WalkthroughSession = {
+        ...walkthroughSession,
+        current_step_index: nextIndex,
+      };
+      setWalkthroughSession(updated);
+      setWalkthroughSessionState(updated);
+      handleNavigateProgrammatic(step.nextWorkspacePath);
+    } catch (err: unknown) {
+      setWalkthroughError(
+        err instanceof Error
+          ? err.message
+          : "Failed to advance walkthrough. Please try again.",
+      );
+    } finally {
+      setWalkthroughAdvancing(false);
+    }
+  }
+
+  function handleExitWalkthrough() {
+    clearWalkthroughSession();
+    setWalkthroughSessionState(null);
+    setWalkthroughError(null);
   }
 
   const handleStageLoaded = useCallback((stage: string | null) => {
@@ -237,6 +306,18 @@ export default function App() {
           </>
         }
       >
+        {walkthroughSession?.active &&
+        WALKTHROUGH_STEPS[walkthroughSession.current_step_index] ? (
+          <WalkthroughPanel
+            error={walkthroughError}
+            isAdvancing={walkthroughAdvancing}
+            onAdvance={() => {
+              void handleWalkthroughAdvance();
+            }}
+            onExit={handleExitWalkthrough}
+            step={WALKTHROUGH_STEPS[walkthroughSession.current_step_index]!}
+          />
+        ) : null}
         {activeRoute.id === "operating" ? (
           <OperatingWorkspace
             context={context}
@@ -244,6 +325,7 @@ export default function App() {
             onNavigateProgrammatic={handleNavigateProgrammatic}
             onDecisionActivated={handleDecisionActivated}
             onStageLoaded={handleStageLoaded}
+            onStartWalkthrough={() => handleStartWalkthrough()}
           />
         ) : activeRoute.id === "opportunity" ? (
           <OpportunityWorkspace

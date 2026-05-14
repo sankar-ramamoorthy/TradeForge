@@ -99,6 +99,7 @@ Explicit roadmap checkpoint completed M9 Updated*Done*.
 | TF-0057 | Done | M10 | Implement operational workflow continuity model | `feature/tf-0057-workflow-continuity-model` |
 | TF-0058 | Done | M10 | Implement guided demo mode | `feature/tf-0058-guided-demo-mode` |
 | TF-0059 | Done | M10 | Implement seeded replayable demo scenarios | `feature/tf-0059-seeded-replayable-demo-scenarios` |
+| TF-0060 | Done | M10 | Implement one-click operational walkthrough | `feature/tf-0060-one-click-operational-walkthrough` |
 
 Explicit roadmap checkpoint completed M9 Updated*Done*.
 Post-MVP Roadmap v2 implementation begins with M9 market-context infrastructure and provider-boundary work. 
@@ -2271,6 +2272,40 @@ M9 remains constrained to read-only advisory context and must not introduce brok
 - `npm.cmd run typecheck` — clean
 - `npm.cmd run lint` — clean
 - `npm.cmd run build` — clean
+
+---
+
+## TF-0060: Implement One-Click Operational Walkthrough
+
+**Status:** Done
+
+**Milestone:** M10
+
+**Branch:** `feature/tf-0060-one-click-operational-walkthrough`
+
+**Affected Layer:** frontend
+
+**Linked ADRs:** ADR-0021
+
+**Impacted Invariants:** Workflow-Centric Architecture, UX Is Architectural, Human Decision Sovereignty (walkthrough uses same lifecycle API surface)
+
+**Implementation Summary:** Implemented a 7-step guided walkthrough that progresses through all lifecycle stages with contextual explanation at each workspace. New `frontend/src/walkthrough.ts` defines `WalkthroughStepDef` (7 steps), `WalkthroughSession` (localStorage-persisted), `initWalkthrough()` (creates Idea-stage AAPL decision), `advanceWalkthroughStep()` (fires sequential lifecycle transitions). New `WalkthroughPanel.tsx` is a persistent `<aside>` rendered from App.tsx as the first child of the workspace main area — no individual workspace components need modification. App.tsx adds `walkthroughSession` state, `handleStartWalkthrough`, `handleWalkthroughAdvance`, `handleExitWalkthrough`. OperatingWorkspace gains `onStartWalkthrough` prop and shows "Start Guided Walkthrough →" below the demo scenario grid. Step 3 fires two transitions (Execution + Position) in one click. Last step (Replay) exits the walkthrough instead of advancing. Session persists across page refreshes. `handleClearDecision` also clears walkthrough session.
+
+**Acceptance Criteria:**
+
+- A complete operational walkthrough launches from a single entry point.
+
+**Out Of Scope:**
+
+- Guided walkthrough resume from mid-step (starts from step 0).
+- Multiple walkthrough themes.
+
+**Completed Verification:**
+
+- `uv run pytest` — 513 passed (no backend changes)
+- `npm.cmd run typecheck` — clean
+- `npm.cmd run lint` — clean
+- `npm.cmd run build` — clean (263.03 kB JS, 26.83 kB CSS)
 
 ---
 

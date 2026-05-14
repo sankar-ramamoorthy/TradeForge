@@ -92,6 +92,7 @@ type OperatingWorkspaceProps = {
   onNavigateProgrammatic: (href: string) => void;
   onDecisionActivated: (record: ActiveDecisionRecord) => void;
   onStageLoaded?: (stage: string | null) => void;
+  onStartWalkthrough?: () => Promise<void>;
 };
 
 export function OperatingWorkspace({
@@ -100,6 +101,7 @@ export function OperatingWorkspace({
   onNavigateProgrammatic,
   onDecisionActivated,
   onStageLoaded,
+  onStartWalkthrough,
 }: OperatingWorkspaceProps) {
   const [projection, setProjection] = useState<WorkspaceProjection | null>(
     null,
@@ -110,6 +112,8 @@ export function OperatingWorkspace({
   const [demoLoading, setDemoLoading] = useState(false);
   const [activeScenarioId, setActiveScenarioId] = useState<string | null>(null);
   const [demoError, setDemoError] = useState<string | null>(null);
+  const [walkthroughStarting, setWalkthroughStarting] = useState(false);
+  const [walkthroughStartError, setWalkthroughStartError] = useState<string | null>(null);
 
   const params = contextToApiParams(context);
 
@@ -284,6 +288,41 @@ export function OperatingWorkspace({
                 </div>
               ))}
             </div>
+            {onStartWalkthrough ? (
+              <div className="walkthrough-invite">
+                <hr className="demo-section-divider" aria-hidden="true" />
+                <p className="walkthrough-invite-text">
+                  Prefer a step-by-step guided tour?
+                </p>
+                {walkthroughStartError ? (
+                  <p className="demo-invite-error" role="alert">
+                    {walkthroughStartError}
+                  </p>
+                ) : null}
+                <button
+                  className="walkthrough-invite-btn"
+                  disabled={demoLoading || walkthroughStarting}
+                  onClick={() => {
+                    setWalkthroughStarting(true);
+                    setWalkthroughStartError(null);
+                    onStartWalkthrough()
+                      .catch((err: unknown) => {
+                        setWalkthroughStartError(
+                          err instanceof Error
+                            ? err.message
+                            : "Failed to start walkthrough.",
+                        );
+                      })
+                      .finally(() => setWalkthroughStarting(false));
+                  }}
+                  type="button"
+                >
+                  {walkthroughStarting
+                    ? "Initializing…"
+                    : "Start Guided Walkthrough →"}
+                </button>
+              </div>
+            ) : null}
           </div>
         ) : null}
 
