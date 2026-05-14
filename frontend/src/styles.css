@@ -1211,6 +1211,84 @@ p {
   padding: 2px 6px;
 }
 
+/* ─── Demo invite panel ──────────────────────────────────────────────────── */
+
+.demo-invite-panel {
+  margin-top: 16px;
+  padding: 16px;
+  background: var(--color-surface-warm);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.demo-invite-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.demo-invite-header svg {
+  color: var(--color-accent);
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+.demo-invite-description {
+  font-size: 0.82rem;
+  color: var(--color-text-muted);
+  margin: 0;
+  line-height: 1.5;
+}
+
+.demo-invite-error {
+  font-size: 0.82rem;
+  color: #b00;
+  margin: 0;
+}
+
+.demo-invite-btn {
+  align-self: flex-start;
+  padding: 8px 16px;
+  background: var(--color-accent);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.demo-invite-btn:hover:not(:disabled) {
+  opacity: 0.88;
+}
+
+.demo-invite-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* ─── Demo badge (sidebar) ───────────────────────────────────────────────── */
+
+.demo-badge {
+  font-size: 0.66rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #7c4d00;
+  background: #fff3cd;
+  border: 1px solid #f0c040;
+  border-radius: 3px;
+  padding: 1px 5px;
+}
+
 /* ─── New Trade Idea trigger ─────────────────────────────────────────────── */
 
 .new-idea-trigger {

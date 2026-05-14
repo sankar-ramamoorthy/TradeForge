@@ -22,7 +22,13 @@
       "Bash(git -C \"C:\\\\Users\\\\bosto\\\\dockerstuff\\\\knowledge-base\\\\TradeForge\" add knowledge/raw/20260513-tf0054-persistent-active-decision-context-planning.md knowledge/raw/20260513-tf0054-persistent-active-decision-context-implementation.md)",
       "Bash(git -C \"C:\\\\Users\\\\bosto\\\\dockerstuff\\\\knowledge-base\\\\TradeForge\" add knowledge/raw/20260513-tf0055-eliminate-manual-context-propagation-planning.md knowledge/raw/20260513-tf0055-eliminate-manual-context-propagation-implementation.md)",
       "Bash(git -C \"C:\\\\Users\\\\bosto\\\\dockerstuff\\\\knowledge-base\\\\TradeForge\" add knowledge/raw/20260513-tf0056-guided-lifecycle-navigation-planning.md knowledge/raw/20260513-tf0056-guided-lifecycle-navigation-implementation.md)",
-      "Bash(git -C \"C:\\\\Users\\\\bosto\\\\dockerstuff\\\\knowledge-base\\\\TradeForge\" add knowledge/raw/20260513-tf0057-workflow-continuity-model-planning.md knowledge/raw/20260513-tf0057-workflow-continuity-model-implementation.md)"
+      "Bash(git -C \"C:\\\\Users\\\\bosto\\\\dockerstuff\\\\knowledge-base\\\\TradeForge\" add knowledge/raw/20260513-tf0057-workflow-continuity-model-planning.md knowledge/raw/20260513-tf0057-workflow-continuity-model-implementation.md)",
+      "Bash(git -C \"C:\\\\Users\\\\bosto\\\\dockerstuff\\\\knowledge-base\\\\TradeForge\" add knowledge/raw/20260513-tf0058-guided-demo-mode-planning.md knowledge/raw/20260513-tf0058-guided-demo-mode-implementation.md)",
+      "Bash(git commit *)",
+      "Bash(git -C \"C:\\\\Users\\\\bosto\\\\dockerstuff\\\\knowledge-base\\\\TradeForge\" remote get-url origin)",
+      "Bash(git -C \"C:\\\\Users\\\\bosto\\\\dockerstuff\\\\TradeForge\" remote get-url origin)",
+      "Bash(git -C \"C:\\\\Users\\\\bosto\\\\dockerstuff\\\\knowledge-base\\\\TradeForge\" add README.md)",
+      "Bash(git -C \"C:\\\\Users\\\\bosto\\\\dockerstuff\\\\knowledge-base\\\\TradeForge\" commit -m \"Update README for public repo — remove private paths, add context for public visitors, link runtime repo\")"
     ]
   }
 }

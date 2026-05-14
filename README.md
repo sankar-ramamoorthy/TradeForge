@@ -1,8 +1,8 @@
-# TradeForge Runtime System
+# TradeForge Runtime
 
-TradeForge is an event-sourced, persona-driven, workflow-centric decision support system for trading and investing workflows.
+> **Work in progress.** Core workflow is functional and demoable. Architecture and features are under active development.
 
-This repository contains the executable runtime implementation of TradeForge.
+TradeForge is an event-sourced, persona-driven, workflow-centric decision support system for discretionary trading and investing.
 
 It is NOT:
 
@@ -14,366 +14,175 @@ It is NOT:
 
 TradeForge is:
 
-> a structured cognition and decision system for trading workflows.
+> a structured cognition and decision system for discretionary trading workflows — built around replayability, lifecycle integrity, and human decision sovereignty.
 
 ---
 
-# Runtime Purpose
+## What Works Now (M10)
 
-This repository implements:
-
-* event-sourced workflow execution
-* decision lifecycle orchestration
-* scenario analysis systems
-* market intelligence systems
-* replay/review infrastructure
-* operational workspaces
-* deterministic rule enforcement
-
-The canonical semantic and architectural doctrine lives in:
-
-```text
-C:\Users\bosto\dockerstuff\knowledge-base\TradeForge\
-```
+* Full 7-stage decision lifecycle: **Idea → Thesis → Plan → Approval → Execution → Position → Review**
+* Event-sourced workflow — all state derives from immutable ledger events
+* Six operational workspaces with lifecycle progress tracking and contextual guidance
+* New Trade Idea entry flow — no API calls required
+* Active decision context that persists across workspace navigation
+* Guided demo mode — seed a realistic AAPL breakout trade in one click
+* Market context overlays via yfinance (advisory, non-canonical)
+* Deterministic replay and historical reconstruction
+* Postgres-backed event ledger (optional; defaults to in-memory)
 
 ---
 
-# Core Architectural Principles
+## Try It (Two Terminals)
 
-## Event Sourcing
+No broker account, no API keys, no database required. The default runtime uses an in-memory event store.
 
-All durable state derives from immutable events.
+**Terminal 1 — Backend**
 
-The event ledger is canonical runtime truth.
-
-Projections are derived views only.
-
----
-
-## Decision Lifecycle Integrity
-
-Canonical lifecycle:
-
-```text
-Idea → Thesis → Plan → Approval → Execution → Position → Review
-```
-
-Lifecycle stages must not be collapsed or bypassed.
-
----
-
-## Replayability
-
-The system must support deterministic replay and review of:
-
-* market context
-* workflow state
-* decision state
-* active positions
-* scenarios
-* rule evaluations
-* reviews and annotations
-
-Replayability is a first-class architectural concern.
-
----
-
-## AI Governance
-
-AI is advisory only.
-
-AI may:
-
-* summarize
-* rank
-* contextualize
-* surface scenarios
-
-AI may NOT:
-
-* mutate canonical state
-* bypass lifecycle controls
-* execute trades
-* override deterministic rules
-
----
-
-# Repository Structure
-
-```text
-TradeForge/
-├── DOCS/
-│   └── adr/
-│
-├── src/
-│   ├── app/
-│   ├── domain/
-│   ├── infrastructure/
-│   └── services/
-│
-├── tests/
-│
-├── AGENTS.md
-├── ARCHITECTURE.md
-├── INVARIANTS.md
-├── PROJECT.md
-└── README.md
-```
-
----
-
-# Source Structure
-
-## src/domain/
-
-Pure domain model and event semantics.
-
-Contains:
-
-* entities
-* value objects
-* lifecycle rules
-* domain events
-* invariant enforcement
-
-No infrastructure concerns allowed.
-
----
-
-## src/services/
-
-Application orchestration layer.
-
-Coordinates:
-
-* workflows
-* lifecycle transitions
-* scenario processing
-* workspace orchestration
-* replay orchestration
-
-Services do NOT own persistence semantics.
-
----
-
-## src/infrastructure/
-
-Infrastructure adapters and runtime integrations.
-
-Contains:
-
-* event store implementations
-* broker adapters
-* persistence adapters
-* external API integrations
-
-Infrastructure must not redefine domain semantics.
-
----
-
-## src/app/
-
-Runtime entrypoints.
-
-Examples:
-
-* CLI
-* API
-* background processes
-
----
-
-# Runtime Documentation
-
-## DOCS/
-
-Contains:
-
-* runtime architecture
-* ADRs
-* implementation decisions
-* technical domain mappings
-* event schema evolution
-
----
-
-# Developer Setup
-
-The local runtime environment uses `uv`, Docker, Docker Compose, linting, type
-checking, and tests as execution-environment concerns. These tools support
-repeatable implementation work; they do not define domain architecture, event
-semantics, lifecycle authority, persona meaning, workspace behavior, replay
-rules, or AI governance.
-
-Install dependencies:
-
-```powershell
+```bash
 uv sync
+uv run uvicorn src.app.api.application:app --host 127.0.0.1 --port 8000 --reload
 ```
 
-Run tests:
+**Terminal 2 — Frontend**
 
-```powershell
-uv run pytest
-```
-
-Run lint checks:
-
-```powershell
-uv run ruff check .
-```
-
-Run type checks:
-
-```powershell
-uv run mypy src tests
-```
-
-Validate Docker Compose configuration:
-
-```powershell
-docker compose config
-```
-
-Start local Postgres for runtime infrastructure work:
-
-```powershell
-docker compose up -d postgres
-```
-
-Run database migrations:
-
-```powershell
-uv run alembic upgrade head
-```
-
-The Postgres event ledger adapter lives behind the existing `EventStore` port.
-Runtime services should continue to depend on the port rather than importing
-Postgres or SQLAlchemy directly.
-
-Run the local FastAPI runtime:
-
-```powershell
-uv run uvicorn src.app.api.application:app --host 127.0.0.1 --port 8000
-```
-
-Run the React workspace runtime scaffold:
-
-```powershell
+```bash
 cd frontend
 npm install
 npm run dev
 ```
 
-Build or type-check the frontend:
+Open **http://localhost:5173** in your browser.
 
-```powershell
+**Demo flow:**
+1. The Operating Workspace opens. Click **"Start Demo"** to seed an AAPL breakout scenario (seeds Idea → Thesis → Plan in one click).
+2. You land in Plan Review at the Plan stage — progress strip shows `✓ Idea  ✓ Thesis  ● Plan`.
+3. Click **Authorize Plan** → **Record Execution** → auto-navigated to Active Position.
+4. Click **Record Position Opened** → **Begin Position Review** → auto-navigated to Review.
+5. Complete the review. The full lifecycle runs in under two minutes.
+
+Or start a fresh decision with the **New Trade Idea** button (top right of Operating Workspace).
+
+> **Note:** the event store is in-memory by default. Restarting the backend clears all decisions. Click "×" on the sidebar badge to clear and start fresh.
+
+---
+
+## Architecture
+
+### Core principles
+
+**Event sourcing** — All durable state derives from immutable events. The event ledger is canonical truth. Projections are derived and discardable.
+
+**Decision lifecycle integrity** — The canonical lifecycle is `Idea → Thesis → Plan → Approval → Execution → Position → Review`. Stages cannot be collapsed or bypassed.
+
+**Replayability** — All material workflows support deterministic reconstruction from event history. Replay does not depend on live APIs or mutable external state.
+
+**AI is advisory only** — AI may summarize, rank, and contextualize. It may not mutate canonical state, bypass lifecycle controls, execute trades, or override deterministic rules. Human decision sovereignty is mandatory.
+
+**Workspace-centric, not dashboard-centric** — Workspaces are operational cognition environments, not generic screens or tabs.
+
+---
+
+### Repository structure
+
+```
+src/
+├── app/           HTTP boundary (FastAPI)
+├── domain/        Pure domain model — events, lifecycle, personas
+├── infrastructure/  Adapters — event store, market data, persistence
+└── services/      Orchestration — lifecycle, replay, workspace, market
+
+frontend/
+└── src/           React workspace runtime
+
+tests/             Integration tests (513 passing)
+DOCS/
+└── adr/           Architecture Decision Records
+```
+
+---
+
+### Layer rules
+
+| Layer | Owns | Must not |
+|---|---|---|
+| `domain/` | entities, value objects, lifecycle rules, event types | import infrastructure, persistence, or framework code |
+| `services/` | workflow orchestration, projection services | own persistence or define domain rules |
+| `infrastructure/` | event store, market adapters, Postgres | redefine domain semantics |
+| `app/` | HTTP routes, FastAPI wiring | own domain rules or lifecycle authority |
+| `frontend/` | workspace UI, API consumption | treat browser state as canonical truth |
+
+---
+
+## Developer Setup
+
+### Prerequisites
+
+* Python 3.12+ with [uv](https://docs.astral.sh/uv/)
+* Node.js 18+ with npm
+* Docker + Docker Compose (optional — only needed for Postgres)
+
+### Backend
+
+```bash
+uv sync
+uv run pytest              # 513 tests
+uv run ruff check .        # lint
+uv run mypy src tests      # type check
+```
+
+### Frontend
+
+```bash
 cd frontend
-npm run build
+npm install
 npm run typecheck
+npm run lint
+npm run build
 ```
 
-The frontend is an HTTP API consumer. It must not import runtime internals or
-treat browser state as canonical workspace, lifecycle, replay, or event truth.
+### With Postgres (optional)
 
-Build the local runtime image:
-
-```powershell
-docker compose build tradeforge
+```bash
+docker compose up -d postgres
+uv run alembic upgrade head
 ```
 
-Run the local runtime container:
+Then start the backend as normal — it will use Postgres for the event ledger.
 
-```powershell
-docker compose run --rm tradeforge
-```
+### ADRs
 
-Before making code changes, read:
+Architecture decisions are recorded in `DOCS/adr/`. Read them before making structural changes.
 
-* `AGENTS.md`
-* `DOCS/ISSUE_REGISTER.md`
-* `DOCS/adr/0011-runtime-development-environment.md`
-* `DOCS/adr/0018-postgres-event-store-persistence.md`
-* `DOCS/adr/0019-projection-persistence-architecture.md`
-* `DOCS/adr/0020-fastapi-runtime-boundary.md`
+Key ADRs:
+* `0001` — Event sourcing core model
+* `0002` — Decision lifecycle engine
+* `0006` — AI advisory boundary model
+* `0008` — Replay system design
+* `0032` — External provider boundary model
 
 ---
 
-# Development Workflow
+## Milestone Status
 
-Before implementation work:
-
-1. Load semantic context from:
-
-   * SEMANTIC_BOOTSTRAP.md
-   * INVARIANTS.md
-   * ARCHITECTURE.md
-
-2. Identify:
-
-   * affected architecture layer
-   * impacted invariants
-   * lifecycle impact
-   * event model impact
-
-3. Produce explicit design reasoning.
-
-4. Only then implement.
-
-See:
-
-```text
-AGENTS.md
-```
-
-for mandatory operational rules.
+| Milestone | Status | Focus |
+|---|---|---|
+| M0–M1 | Done | Planning discipline, runtime scaffold |
+| M2–M3 | Done | Event ledger, lifecycle engine |
+| M4–M6 | Done | Workspace architecture, replay, persona projection |
+| M7 | Done | Postgres, FastAPI, React runtime |
+| M8 | Done | First replayable MVP lifecycle flow |
+| M9 | Done | Market context, provider boundary, advisory overlays |
+| M10 | Done | Operational UX, demoability, guided workflow |
+| M11+ | Planned | AI advisory integration, behavioral intelligence, simulation |
 
 ---
 
-# Relationship to Knowledge Base
+## Contributing
 
-This runtime repository executes the system.
+This is a solo architectural project in active development. The codebase is public for transparency and learning, not for general contribution at this stage.
 
-The knowledge-base repository defines:
-
-* semantic truth
-* ontology
-* workflow semantics
-* architectural doctrine
-* AI governance philosophy
-* cognition structure
-
-Knowledge-base repository:
-
-```text
-C:\Users\bosto\dockerstuff\knowledge-base\TradeForge\
-```
+If you have questions or observations, open an issue.
 
 ---
 
-# Current Status
-
-TradeForge is currently in active architectural and foundational implementation development.
-
-Primary focus areas:
-
-* event ledger foundation
-* lifecycle engine
-* deterministic replayability
-* scenario analysis
-* workspace cognition systems
-* semantic/runtime alignment
-
----
-
-# Final Principle
-
-Correct architecture is more important than rapid feature delivery.
-
-When uncertain:
-
-* preserve invariants
-* preserve replayability
-* preserve semantic consistency
-* preserve lifecycle integrity
-* prefer explicit design over shortcuts
+*TradeForge — structured cognition for discretionary trading.*

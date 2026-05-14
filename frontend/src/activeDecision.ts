@@ -6,6 +6,7 @@ export type ActiveDecisionRecord = {
   persona_id: string;
   persona_version: string;
   created_at: string;
+  is_demo?: boolean;
 };
 
 export function getActiveDecision(): ActiveDecisionRecord | null {
