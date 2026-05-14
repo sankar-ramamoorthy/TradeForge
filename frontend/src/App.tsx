@@ -1,10 +1,4 @@
-import {
-  ArrowRight,
-  GitBranch,
-  History,
-  ListChecks,
-  ShieldCheck,
-} from "lucide-react";
+import { ShieldCheck } from "lucide-react";
 import { MouseEvent, useEffect, useMemo, useState } from "react";
 
 import {
@@ -16,16 +10,14 @@ import {
 import {
   getActiveDecision,
   setActiveDecision,
+  clearActiveDecision,
   type ActiveDecisionRecord,
 } from "./activeDecision";
 import {
+  ActiveDecisionBadge,
   AppShell,
-  AuthorityCue,
-  ContextLink,
-  ContextPanel,
   RuntimeBoundaryPanel,
   SessionPanel,
-  WorkspaceBriefing,
   WorkspaceLayout,
   WorkspaceNavigation,
   WorkspaceSurface,
@@ -38,7 +30,6 @@ import { ReplayWorkspace } from "./workspaces/ReplayWorkspace";
 import { ReviewWorkspace } from "./workspaces/ReviewWorkspace";
 import "./styles.css";
 import {
-  buildWorkspaceHref,
   findWorkspaceRoute,
   mergeWorkspaceContext,
   readWorkspaceContext,
@@ -186,8 +177,6 @@ export default function App() {
       ),
     [location.search, session, activeDecision],
   );
-  const activeHref = buildWorkspaceHref(activeRoute, context);
-
   function handleNavigate(
     event: MouseEvent<HTMLAnchorElement>,
     href: string,
@@ -207,18 +196,15 @@ export default function App() {
     setActiveDecisionState(record);
   }
 
+  function handleClearDecision() {
+    clearActiveDecision();
+    setActiveDecisionState(null);
+    const operatingRoute = findWorkspaceRoute("/workspaces/operating");
+    handleNavigateProgrammatic(operatingRoute.path);
+  }
+
   return (
     <AppShell>
-      <WorkspaceBriefing
-        eyebrow="TradeForge"
-        summary="Session identity, persona activation, and workspace focus stay separate while the frontend consumes runtime API context."
-        title="Operational session context"
-      >
-        <AuthorityCue Icon={ListChecks} label="Six MVP routes" />
-        <AuthorityCue Icon={GitBranch} label="Context preserved" />
-        <AuthorityCue Icon={History} label="Replay-aware URLs" />
-      </WorkspaceBriefing>
-
       <WorkspaceLayout
         sidebar={
           <>
@@ -226,6 +212,10 @@ export default function App() {
               activeRoute={activeRoute}
               context={context}
               onNavigate={handleNavigate}
+            />
+            <ActiveDecisionBadge
+              activeDecision={activeDecision}
+              onClear={handleClearDecision}
             />
             {session ? (
               <SessionPanel
@@ -237,7 +227,6 @@ export default function App() {
             {sessionError ? (
               <div className="runtime-error">{sessionError}</div>
             ) : null}
-            <ContextPanel context={context} />
           </>
         }
       >
@@ -276,12 +265,6 @@ export default function App() {
         ) : (
           <WorkspaceSurface route={activeRoute} />
         )}
-        <ContextLink
-          Icon={ArrowRight}
-          href={activeHref}
-          label="Current routed context"
-          onNavigate={handleNavigate}
-        />
       </WorkspaceLayout>
 
       <RuntimeBoundaryStatus />

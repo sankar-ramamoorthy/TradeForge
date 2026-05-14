@@ -1015,6 +1015,78 @@ p {
   }
 }
 
+/* ─── Active Decision Badge ──────────────────────────────────────────────── */
+
+.active-decision-badge {
+  margin: 8px 0;
+  padding: 12px 14px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.active-decision-empty {
+  background: var(--color-surface-muted);
+}
+
+.active-decision-hint {
+  font-size: 0.78rem;
+  color: var(--color-text-subtle);
+  margin: 0;
+  line-height: 1.4;
+}
+
+.active-decision-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.active-decision-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-subtle);
+}
+
+.active-decision-clear {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 2px;
+  color: var(--color-text-subtle);
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+}
+
+.active-decision-clear:hover {
+  background: var(--color-canvas);
+  color: var(--color-text);
+}
+
+.active-decision-clear svg {
+  width: 13px;
+  height: 13px;
+}
+
+.active-decision-symbol {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--color-text);
+  letter-spacing: 0.02em;
+}
+
+.active-decision-meta {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
 /* ─── New Trade Idea trigger ─────────────────────────────────────────────── */
 
 .new-idea-trigger {

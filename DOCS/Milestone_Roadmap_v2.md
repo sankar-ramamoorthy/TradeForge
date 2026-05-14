@@ -772,7 +772,7 @@ Introduce:
 
 ---
 
-### TF-0055 — Eliminate Manual Workspace Context Propagation
+### TF-0055 — Eliminate Manual Workspace Context Propagation (**Done**)
 
 #### Purpose
 

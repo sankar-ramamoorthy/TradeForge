@@ -142,15 +142,10 @@ export function buildWorkspaceHref(
   route: WorkspaceRouteDefinition,
   context: WorkspaceContext,
 ): string {
-  const params = new URLSearchParams();
-
-  WORKSPACE_CONTEXT_KEYS.forEach((key) => {
-    const value = context[key];
-    if (value !== undefined && value.trim() !== "") {
-      params.set(key, value);
-    }
-  });
-
-  const query = params.toString();
-  return query ? `${route.path}?${query}` : route.path;
+  const decisionId = context.decision_id;
+  const query =
+    decisionId && decisionId.trim()
+      ? `?decision_id=${encodeURIComponent(decisionId)}`
+      : "";
+  return `${route.path}${query}`;
 }

@@ -1,3 +1,4 @@
+import { X } from "lucide-react";
 import type { MouseEvent, ReactNode } from "react";
 import type { LucideIcon } from "lucide-react";
 
@@ -7,6 +8,7 @@ import {
   type WorkspaceContext,
   type WorkspaceRouteDefinition,
 } from "./workspaceRouting";
+import type { ActiveDecisionRecord } from "./activeDecision";
 
 export function AppShell({ children }: { children: ReactNode }) {
   return <main className="app-shell">{children}</main>;
@@ -101,18 +103,41 @@ export function WorkspaceNavigation({
   );
 }
 
-export function ContextPanel({
-  context,
+export function ActiveDecisionBadge({
+  activeDecision,
+  onClear,
 }: {
-  context: Required<WorkspaceContext>;
+  activeDecision: ActiveDecisionRecord | null;
+  onClear: () => void;
 }) {
+  if (!activeDecision) {
+    return (
+      <aside className="active-decision-badge active-decision-empty" aria-label="Active decision">
+        <p className="active-decision-hint">
+          No active decision — use <strong>New Trade Idea</strong> to begin.
+        </p>
+      </aside>
+    );
+  }
+
   return (
-    <aside className="context-panel" aria-label="Selected workspace context">
-      <ContextPanelItem label="Persona" value={context.persona_id} />
-      <ContextPanelItem label="Persona Version" value={context.persona_version} />
-      <ContextPanelItem label="Workspace" value={context.workspace_id} />
-      <ContextPanelItem label="Workflow" value={context.selected_workflow_id} />
-      <ContextPanelItem label="Decision" value={context.decision_id} />
+    <aside className="active-decision-badge" aria-label="Active decision">
+      <div className="active-decision-header">
+        <span className="active-decision-label">Active Decision</span>
+        <button
+          aria-label="Clear active decision"
+          className="active-decision-clear"
+          onClick={onClear}
+          title="Clear active decision"
+          type="button"
+        >
+          <X aria-hidden="true" />
+        </button>
+      </div>
+      <div className="active-decision-symbol">{activeDecision.symbol}</div>
+      <div className="active-decision-meta">
+        <span className="authority-tag">in workflow</span>
+      </div>
     </aside>
   );
 }

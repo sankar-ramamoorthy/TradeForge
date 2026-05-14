@@ -94,6 +94,7 @@ Explicit roadmap checkpoint completed M9 Updated*Done*.
 | TF-0052 | Done | M9 | Add replay-compatible market snapshot persistence strategy | `feature/tf-0050-provider-provenance-tracking` |
 | TF-0053 | Done | M10 | Implement new trade idea workflow | `feature/tf-0053-new-trade-idea-workflow` |
 | TF-0054 | Done | M10 | Implement persistent active decision context | `feature/tf-0054-persistent-active-decision-context` |
+| TF-0055 | Done | M10 | Eliminate manual workspace context propagation | `feature/tf-0055-eliminate-manual-context-propagation` |
 
 Explicit roadmap checkpoint completed M9 Updated*Done*.
 Post-MVP Roadmap v2 implementation begins with M9 market-context infrastructure and provider-boundary work. 
@@ -2079,6 +2080,43 @@ M9 remains constrained to read-only advisory context and must not introduce brok
 
 - `uv run pytest tests/test_active_decision_context.py` — 9 passed
 - `uv run pytest` — 513 passed
+- `uv run ruff check src tests` — clean
+- `uv run mypy src tests` — clean (99 files)
+- `npm.cmd run typecheck` — clean
+- `npm.cmd run lint` — clean
+- `npm.cmd run build` — clean
+
+---
+
+## TF-0055: Eliminate Manual Workspace Context Propagation
+
+**Status:** Done
+
+**Milestone:** M10
+
+**Branch:** `feature/tf-0055-eliminate-manual-context-propagation`
+
+**Affected Layer:** frontend
+
+**Linked ADRs:** ADR-0021
+
+**Impacted Invariants:** Workspace, UX Is Architectural, Derived State Must Remain Distinguishable
+
+**Implementation Summary:** Eliminated three remaining developer-centric artifacts: (1) `buildWorkspaceHref` now only encodes `decision_id` in navigation URLs — all other internal routing params (persona_id, persona_version, workspace_id, selected_workflow_id) are dropped from the URL since they are automatically resolved from session and localStorage. Navigation links are now clean paths like `/workspaces/opportunity` or `/workspaces/opportunity?decision_id=<uuid>`. (2) `ContextPanel` (raw internal ID display) replaced with `ActiveDecisionBadge` — shows the active symbol prominently with an "in workflow" tag and a clear button; shows a helpful hint when no decision is active. (3) `WorkspaceBriefing` (developer meta-commentary banner) and `ContextLink` ("Current routed context" URL artifact) removed from App.tsx. Added `handleClearDecision` which calls `clearActiveDecision()`, resets state, and navigates to Operating Workspace. No backend changes.
+
+**Acceptance Criteria:**
+
+- Workspaces automatically resolve active operational context.
+- Manual URL parameter workflows are unnecessary.
+
+**Out Of Scope:**
+
+- Guided lifecycle navigation (TF-0056).
+- Workspace transition continuity model (TF-0057).
+
+**Completed Verification:**
+
+- `uv run pytest` — 513 passed (no backend changes)
 - `uv run ruff check src tests` — clean
 - `uv run mypy src tests` — clean (99 files)
 - `npm.cmd run typecheck` — clean
