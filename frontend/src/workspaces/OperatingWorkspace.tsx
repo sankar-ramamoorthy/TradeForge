@@ -4,9 +4,11 @@ import { type MouseEvent, useEffect, useState } from "react";
 
 import {
   fetchOperatingAttentionQueue,
+  fetchPlaybookSummary,
   fetchWorkspaceProjection,
   type AttentionItem,
   type OperatingAttentionQueue,
+  type PlaybookSummary,
   type WorkspaceApiParams,
   type WorkspaceProjection,
 } from "../api/runtime";
@@ -19,6 +21,7 @@ import { type ActiveDecisionRecord } from "../activeDecision";
 import { DEMO_SCENARIOS, runDemoFlow, type DemoScenario } from "../demo";
 import { ContextualBriefingPanel } from "./ContextualBriefingPanel";
 import { NewTradeIdeaModal } from "./NewTradeIdeaModal";
+import { PlaybookAlignmentPanel } from "./PlaybookAlignmentPanel";
 
 const CATEGORY_LABELS: Record<string, string> = {
   decision: "Decision",
@@ -107,6 +110,7 @@ export function OperatingWorkspace({
     null,
   );
   const [queue, setQueue] = useState<OperatingAttentionQueue | null>(null);
+  const [playbookSummary, setPlaybookSummary] = useState<PlaybookSummary | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [showNewIdeaModal, setShowNewIdeaModal] = useState(false);
   const [demoLoading, setDemoLoading] = useState(false);
@@ -119,6 +123,12 @@ export function OperatingWorkspace({
 
   useEffect(() => {
     const controller = new AbortController();
+
+    fetchPlaybookSummary(controller.signal)
+      .then(setPlaybookSummary)
+      .catch((err: unknown) => {
+        if (err instanceof DOMException && err.name === "AbortError") return;
+      });
 
     Promise.all([
       fetchWorkspaceProjection("operating", params, controller.signal),
@@ -351,6 +361,10 @@ export function OperatingWorkspace({
       </div>
 
       <ContextualBriefingPanel params={params} />
+
+      {playbookSummary ? (
+        <PlaybookAlignmentPanel summary={playbookSummary} />
+      ) : null}
 
       {projection !== null ? (
         <div className="projection-metadata">

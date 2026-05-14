@@ -71,7 +71,26 @@ class LifecycleOrchestrationService:
         self,
         request: LifecycleTransitionRequest,
     ) -> LifecycleOrchestrationResult:
-        previous_state = derive_lifecycle_state(self._event_store.read_events())
+        all_events = self._event_store.read_events()
+
+        decision_id = next(
+            (ref.entity_id for ref in request.entity_references
+             if ref.entity_type == "decision"),
+            None,
+        )
+
+        if decision_id is not None:
+            scoped_events: tuple[EventEnvelope, ...] = tuple(
+                event for event in all_events
+                if any(
+                    ref.entity_type == "decision" and ref.entity_id == decision_id
+                    for ref in event.entity_references
+                )
+            )
+        else:
+            scoped_events = all_events
+
+        previous_state = derive_lifecycle_state(scoped_events)
         validation = validate_lifecycle_transition(
             previous_state,
             request.requested_stage,

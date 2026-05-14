@@ -820,6 +820,37 @@ export async function fetchAnnotations(
   return response.json() as Promise<AnnotationList>;
 }
 
+export type PlaybookAlignedDecision = {
+  decision_id: string;
+  symbol: string;
+  current_stage: string | null;
+};
+
+export type PlaybookGroup = {
+  playbook_name: string;
+  decision_count: number;
+  decisions: PlaybookAlignedDecision[];
+};
+
+export type PlaybookSummary = {
+  playbooks: PlaybookGroup[];
+  unaligned_decision_count: number;
+  total_decisions_with_plan: number;
+  authority: "derived";
+};
+
+export async function fetchPlaybookSummary(
+  signal?: AbortSignal,
+): Promise<PlaybookSummary> {
+  const response = await fetch("/workspaces/playbook-summary", { signal });
+
+  if (!response.ok) {
+    throw new Error(`Playbook summary request failed: ${response.status}`);
+  }
+
+  return response.json() as Promise<PlaybookSummary>;
+}
+
 export async function fetchOperatingAttentionQueue(
   params: WorkspaceApiParams,
   signal?: AbortSignal,

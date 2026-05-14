@@ -390,6 +390,25 @@ class AnnotationListResponse(BaseModel):
     annotations: list[AnnotationResponse]
 
 
+class PlaybookAlignedDecision(BaseModel):
+    decision_id: str
+    symbol: str
+    current_stage: LifecycleStage | None
+
+
+class PlaybookGroupResponse(BaseModel):
+    playbook_name: str
+    decision_count: int
+    decisions: list[PlaybookAlignedDecision]
+
+
+class PlaybookSummaryResponse(BaseModel):
+    playbooks: list[PlaybookGroupResponse]
+    unaligned_decision_count: int
+    total_decisions_with_plan: int
+    authority: Literal["derived"]
+
+
 class ReplayProjectionLifecycleStateResponse(BaseModel):
     current_stage: LifecycleStage
 
@@ -2189,6 +2208,79 @@ def get_replay_reconstruction(
 def get_replay_timeline(request: Request) -> ReplayTimelineResponse:
     return _replay_timeline_response(
         _replay_timeline_service_from(request).build()
+    )
+
+
+@workspace_router.get("/playbook-summary", response_model=PlaybookSummaryResponse)
+def get_playbook_summary(
+    request: Request,
+) -> PlaybookSummaryResponse:
+    """Return a derived cross-decision summary grouped by playbook alignment.
+
+    Scans all plan_created events in the event store and groups decisions by
+    their playbook_alignment field. Decisions with empty playbook_alignment
+    are counted as unaligned.
+
+    All outputs are derived — not canonical truth.
+    """
+    events = _event_store_from(request).read_events()
+
+    # Pass 1: track current lifecycle stage per decision
+    decision_stages: dict[str, LifecycleStage] = {}
+    decision_symbols: dict[str, str] = {}
+    plan_data: dict[str, str] = {}  # decision_id -> playbook_alignment
+
+    for event in events:
+        decision_id = next(
+            (ref.entity_id for ref in event.entity_references
+             if ref.entity_type == "decision"),
+            None,
+        )
+        if decision_id is None:
+            continue
+
+        stage = LIFECYCLE_EVENT_STAGE_MAP.get(event.event_type)
+        if stage is not None:
+            decision_stages[decision_id] = stage
+
+        symbol = event.payload.get("symbol", "")
+        if isinstance(symbol, str) and symbol:
+            decision_symbols[decision_id] = symbol
+
+        if event.event_type == "decision.plan_created":
+            plan_artifact = TradePlanArtifact.from_payload(dict(event.payload))
+            plan_data[decision_id] = (
+                plan_artifact.playbook_alignment if plan_artifact else ""
+            )
+
+    playbook_groups: dict[str, list[PlaybookAlignedDecision]] = {}
+    unaligned_count = 0
+
+    for dec_id, playbook in plan_data.items():
+        entry = PlaybookAlignedDecision(
+            decision_id=dec_id,
+            symbol=decision_symbols.get(dec_id, ""),
+            current_stage=decision_stages.get(dec_id),
+        )
+        if playbook:
+            playbook_groups.setdefault(playbook, []).append(entry)
+        else:
+            unaligned_count += 1
+
+    playbooks = [
+        PlaybookGroupResponse(
+            playbook_name=name,
+            decision_count=len(decisions),
+            decisions=decisions,
+        )
+        for name, decisions in sorted(playbook_groups.items())
+    ]
+
+    return PlaybookSummaryResponse(
+        playbooks=playbooks,
+        unaligned_decision_count=unaligned_count,
+        total_decisions_with_plan=len(plan_data),
+        authority="derived",
     )
 
 
