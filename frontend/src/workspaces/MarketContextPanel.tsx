@@ -6,6 +6,10 @@ import {
   type MarketContextOverlay,
   type MarketSnapshotOverlay,
 } from "../api/runtime";
+import {
+  addWatchedSymbols,
+  getWatchedSymbolsString,
+} from "../operationalContext";
 
 const REGIME_LABELS: Record<string, string> = {
   bull: "Bull",
@@ -70,7 +74,7 @@ function SnapshotRow({ snap }: { snap: MarketSnapshotOverlay }) {
 type LoadState = "idle" | "loading" | "loaded" | "error";
 
 export function MarketContextPanel() {
-  const [inputValue, setInputValue] = useState("");
+  const [inputValue, setInputValue] = useState(() => getWatchedSymbolsString());
   const [overlay, setOverlay] = useState<MarketContextOverlay | null>(null);
   const [loadState, setLoadState] = useState<LoadState>("idle");
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -90,6 +94,7 @@ export function MarketContextPanel() {
       .then((data) => {
         setOverlay(data);
         setLoadState("loaded");
+        addWatchedSymbols(symbols);
       })
       .catch((err: unknown) => {
         setLoadError(

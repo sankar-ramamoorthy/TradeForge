@@ -941,7 +941,7 @@ Introduce onboarding for:
 
 ---
 
-### TF-0062 — Implement Cross-Workspace Context Persistence
+### TF-0062 — Implement Cross-Workspace Context Persistence (**Done**)
 
 #### Purpose
 

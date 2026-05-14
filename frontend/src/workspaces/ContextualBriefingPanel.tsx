@@ -6,6 +6,10 @@ import {
   type ContextualSummary,
   type WorkspaceApiParams,
 } from "../api/runtime";
+import {
+  addWatchedSymbols,
+  getWatchedSymbolsString,
+} from "../operationalContext";
 
 const REGIME_LABELS: Record<string, string> = {
   bull: "Bull",
@@ -23,7 +27,7 @@ type Props = {
 };
 
 export function ContextualBriefingPanel({ params }: Props) {
-  const [symbolInput, setSymbolInput] = useState("");
+  const [symbolInput, setSymbolInput] = useState(() => getWatchedSymbolsString());
   const [summary, setSummary] = useState<ContextualSummary | null>(null);
   const [loadState, setLoadState] = useState<LoadState>("idle");
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -41,6 +45,7 @@ export function ContextualBriefingPanel({ params }: Props) {
       .then((data) => {
         setSummary(data);
         setLoadState("loaded");
+        if (symbols.length > 0) addWatchedSymbols(symbols);
       })
       .catch((err: unknown) => {
         setLoadError(
