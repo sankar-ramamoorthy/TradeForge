@@ -315,6 +315,47 @@ class ScenarioBranchListResponse(BaseModel):
     branches: list[ScenarioBranchResponse]
 
 
+class CognitiveSnapshotThesisData(BaseModel):
+    narrative: str
+    catalysts: list[str]
+    assumptions: list[str]
+    invalidation_conditions: list[str]
+    confidence_level: int
+    regime_alignment: str
+    event_type: str
+    event_timestamp: datetime
+
+
+class CognitiveSnapshotPlanData(BaseModel):
+    entry_rationale: str
+    stop_rationale: str
+    target_rationale: str
+    sizing_rationale: str
+    execution_assumptions: list[str]
+    playbook_alignment: str
+    event_timestamp: datetime
+
+
+class CognitiveSnapshotBranchData(BaseModel):
+    branch_type: str
+    condition: str
+    implication: str
+    confidence: int
+    notes: str
+    event_timestamp: datetime
+
+
+class CognitiveSnapshotResponse(BaseModel):
+    decision_id: str
+    snapshot_at: datetime
+    event_count_at_snapshot: int
+    current_stage: LifecycleStage | None
+    thesis: CognitiveSnapshotThesisData | None
+    plan: CognitiveSnapshotPlanData | None
+    scenario_branches: list[CognitiveSnapshotBranchData]
+    authority: Literal["derived"]
+
+
 class ReplayProjectionLifecycleStateResponse(BaseModel):
     current_stage: LifecycleStage
 
@@ -1821,6 +1862,129 @@ def get_scenario_branches(
         decision_id=decision_id,
         total_branches=len(branches),
         branches=branches,
+    )
+
+
+@lifecycle_router.get(
+    "/decisions/{decision_id}/cognitive-snapshot",
+    response_model=CognitiveSnapshotResponse,
+)
+def get_cognitive_snapshot(
+    request: Request,
+    decision_id: str,
+    at: datetime | None = Query(default=None),
+) -> CognitiveSnapshotResponse:
+    """Reconstruct operator cognition at a historical timestamp.
+
+    Given an optional timestamp T (defaults to now), scans all decision events
+    before T and reconstructs: lifecycle stage, most recent thesis, most recent plan,
+    and all scenario branches visible at that moment.
+
+    Reconstruction is deterministic and fully replayable from immutable events.
+    All outputs are derived — not canonical truth.
+    """
+    snapshot_at = at if at is not None else datetime.now(tz=UTC)
+
+    thesis_event_types = frozenset(("decision.thesis_created", "decision.thesis_revised"))
+    events = _event_store_from(request).read_events()
+
+    current_stage: LifecycleStage | None = None
+    latest_thesis_event = None
+    latest_plan_event = None
+    scenario_branch_events: list[Any] = []
+    event_count = 0
+
+    for event in events:
+        if not any(
+            ref.entity_type == "decision" and ref.entity_id == decision_id
+            for ref in event.entity_references
+        ):
+            continue
+
+        if at is not None:
+            ts = event.timestamp
+            if ts.tzinfo is None:
+                from datetime import timezone
+                ts = ts.replace(tzinfo=timezone.utc)
+
+            snap_ts = snapshot_at
+            if snap_ts.tzinfo is None:
+                from datetime import timezone
+                snap_ts = snap_ts.replace(tzinfo=timezone.utc)
+
+            if ts >= snap_ts:
+                continue
+
+        event_count += 1
+
+        stage = LIFECYCLE_EVENT_STAGE_MAP.get(event.event_type)
+        if stage is not None:
+            current_stage = stage
+
+        if event.event_type in thesis_event_types:
+            latest_thesis_event = event
+
+        if event.event_type == "decision.plan_created":
+            latest_plan_event = event
+
+        if event.event_type == "decision.scenario_branch_created":
+            scenario_branch_events.append(event)
+
+    thesis: CognitiveSnapshotThesisData | None = None
+    if latest_thesis_event is not None:
+        artifact = ThesisArtifact.from_payload(dict(latest_thesis_event.payload))
+        if artifact is not None:
+            thesis = CognitiveSnapshotThesisData(
+                narrative=artifact.narrative,
+                catalysts=list(artifact.catalysts),
+                assumptions=list(artifact.assumptions),
+                invalidation_conditions=list(artifact.invalidation_conditions),
+                confidence_level=artifact.confidence_level,
+                regime_alignment=artifact.regime_alignment,
+                event_type=latest_thesis_event.event_type,
+                event_timestamp=latest_thesis_event.timestamp,
+            )
+
+    plan: CognitiveSnapshotPlanData | None = None
+    if latest_plan_event is not None:
+        plan_artifact = TradePlanArtifact.from_payload(dict(latest_plan_event.payload))
+        if plan_artifact is not None:
+            plan = CognitiveSnapshotPlanData(
+                entry_rationale=plan_artifact.entry_rationale,
+                stop_rationale=plan_artifact.stop_rationale,
+                target_rationale=plan_artifact.target_rationale,
+                sizing_rationale=plan_artifact.sizing_rationale,
+                execution_assumptions=list(plan_artifact.execution_assumptions),
+                playbook_alignment=plan_artifact.playbook_alignment,
+                event_timestamp=latest_plan_event.timestamp,
+            )
+
+    branches: list[CognitiveSnapshotBranchData] = []
+    for branch_event in scenario_branch_events:
+        branch_artifact = ScenarioBranchArtifact.from_payload(
+            dict(branch_event.payload)
+        )
+        if branch_artifact is not None:
+            branches.append(
+                CognitiveSnapshotBranchData(
+                    branch_type=branch_artifact.branch_type.value,
+                    condition=branch_artifact.condition,
+                    implication=branch_artifact.implication,
+                    confidence=branch_artifact.confidence,
+                    notes=branch_artifact.notes,
+                    event_timestamp=branch_event.timestamp,
+                )
+            )
+
+    return CognitiveSnapshotResponse(
+        decision_id=decision_id,
+        snapshot_at=snapshot_at,
+        event_count_at_snapshot=event_count,
+        current_stage=current_stage,
+        thesis=thesis,
+        plan=plan,
+        scenario_branches=branches,
+        authority="derived",
     )
 
 

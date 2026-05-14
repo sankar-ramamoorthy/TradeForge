@@ -1,15 +1,18 @@
 import { History } from "lucide-react";
-import { type MouseEvent, useEffect, useState } from "react";
+import { type MouseEvent, useCallback, useEffect, useState } from "react";
 
 import {
   fetchReplayTimeline,
   fetchWorkspaceProjection,
+  fetchCognitiveSnapshot,
+  type CognitiveSnapshot,
   type ReplayTimeline,
   type ReplayTimelineEntry,
   type WorkspaceApiParams,
   type WorkspaceProjection,
 } from "../api/runtime";
 import { type WorkspaceContext } from "../workspaceRouting";
+import { CognitiveSnapshotPanel } from "./CognitiveSnapshotPanel";
 
 const AUTHORITY_LABELS: Record<string, string> = {
   canonical: "Canonical",
@@ -406,7 +409,15 @@ function FieldSurface({
   );
 }
 
-function TimelineEntryRow({ entry }: { entry: ReplayTimelineEntry }) {
+function TimelineEntryRow({
+  entry,
+  isSelected,
+  onClick,
+}: {
+  entry: ReplayTimelineEntry;
+  isSelected?: boolean;
+  onClick?: (timestamp: string) => void;
+}) {
   const kindLabel = KIND_LABELS[entry.kind] ?? entry.kind;
   const ts = new Date(entry.timestamp).toLocaleString(undefined, {
     dateStyle: "short",
@@ -427,9 +438,13 @@ function TimelineEntryRow({ entry }: { entry: ReplayTimelineEntry }) {
 
   return (
     <li
-      className="timeline-entry"
+      className={`timeline-entry${isSelected ? " timeline-entry-selected" : ""}${onClick ? " timeline-entry-clickable" : ""}`}
       data-kind={entry.kind}
       aria-label={`${kindLabel}: ${entry.event_type}`}
+      onClick={onClick ? () => onClick(entry.timestamp) : undefined}
+      role={onClick ? "button" : undefined}
+      tabIndex={onClick ? 0 : undefined}
+      onKeyDown={onClick ? (e) => { if (e.key === "Enter" || e.key === " ") onClick(entry.timestamp); } : undefined}
     >
       <div className="timeline-entry-header">
         <span className={`timeline-kind-badge kind-${entry.kind}`}>
@@ -465,6 +480,8 @@ type ReplayWorkspaceProps = {
 export function ReplayWorkspace({ context }: ReplayWorkspaceProps) {
   const [projection, setProjection] = useState<WorkspaceProjection | null>(null);
   const [timeline, setTimeline] = useState<ReplayTimeline | null>(null);
+  const [cognitiveSnapshot, setCognitiveSnapshot] = useState<CognitiveSnapshot | null>(null);
+  const [selectedEntryTimestamp, setSelectedEntryTimestamp] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
 
   const params: WorkspaceApiParams = {
@@ -494,6 +511,14 @@ export function ReplayWorkspace({ context }: ReplayWorkspaceProps) {
         );
       });
 
+    if (context.decision_id) {
+      fetchCognitiveSnapshot(context.decision_id, undefined, controller.signal)
+        .then(setCognitiveSnapshot)
+        .catch((err: unknown) => {
+          if (err instanceof DOMException && err.name === "AbortError") return;
+        });
+    }
+
     return () => controller.abort();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
@@ -503,6 +528,26 @@ export function ReplayWorkspace({ context }: ReplayWorkspaceProps) {
     context.selected_workflow_id,
     context.decision_id,
   ]);
+
+  const handleEntryClick = useCallback(
+    (timestamp: string) => {
+      if (!context.decision_id) return;
+      setSelectedEntryTimestamp(timestamp);
+      fetchCognitiveSnapshot(context.decision_id, timestamp)
+        .then(setCognitiveSnapshot)
+        .catch(() => {});
+    },
+    [context.decision_id],
+  );
+
+  const handleClearSelection = useCallback(() => {
+    setSelectedEntryTimestamp(null);
+    if (context.decision_id) {
+      fetchCognitiveSnapshot(context.decision_id)
+        .then(setCognitiveSnapshot)
+        .catch(() => {});
+    }
+  }, [context.decision_id]);
 
   const fieldOrder = [
     "event_timeline_references",
@@ -574,12 +619,27 @@ export function ReplayWorkspace({ context }: ReplayWorkspaceProps) {
             </p>
           ) : (
             <>
-              <CognitiveSnapshotSummary entries={timeline.entries} />
+              {cognitiveSnapshot && context.decision_id ? (
+                <CognitiveSnapshotPanel
+                  onClearSelection={handleClearSelection}
+                  selectedTimestamp={selectedEntryTimestamp}
+                  snapshot={cognitiveSnapshot}
+                />
+              ) : (
+                <CognitiveSnapshotSummary entries={timeline.entries} />
+              )}
+              <p className="cognitive-snapshot-authority">
+                {context.decision_id
+                  ? "Click a timeline entry to reconstruct cognitive state at that moment."
+                  : null}
+              </p>
               <ol className="timeline-entries" aria-label="Replay timeline">
                 {timeline.entries.map((entry) => (
                   <TimelineEntryRow
                     entry={entry}
+                    isSelected={selectedEntryTimestamp === entry.timestamp}
                     key={`${entry.source_sequence}-${entry.event_type}`}
+                    onClick={context.decision_id ? handleEntryClick : undefined}
                   />
                 ))}
               </ol>

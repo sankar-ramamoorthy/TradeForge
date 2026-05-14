@@ -689,6 +689,67 @@ export async function fetchScenarioBranches(
   return response.json() as Promise<ScenarioBranchList>;
 }
 
+export type CognitiveSnapshotThesis = {
+  narrative: string;
+  catalysts: string[];
+  assumptions: string[];
+  invalidation_conditions: string[];
+  confidence_level: number;
+  regime_alignment: string;
+  event_type: string;
+  event_timestamp: string;
+};
+
+export type CognitiveSnapshotPlan = {
+  entry_rationale: string;
+  stop_rationale: string;
+  target_rationale: string;
+  sizing_rationale: string;
+  execution_assumptions: string[];
+  playbook_alignment: string;
+  event_timestamp: string;
+};
+
+export type CognitiveSnapshotBranch = {
+  branch_type: string;
+  condition: string;
+  implication: string;
+  confidence: number;
+  notes: string;
+  event_timestamp: string;
+};
+
+export type CognitiveSnapshot = {
+  decision_id: string;
+  snapshot_at: string;
+  event_count_at_snapshot: number;
+  current_stage: string | null;
+  thesis: CognitiveSnapshotThesis | null;
+  plan: CognitiveSnapshotPlan | null;
+  scenario_branches: CognitiveSnapshotBranch[];
+  authority: "derived";
+};
+
+export async function fetchCognitiveSnapshot(
+  decisionId: string,
+  at?: string,
+  signal?: AbortSignal,
+): Promise<CognitiveSnapshot> {
+  const urlParams = new URLSearchParams();
+  if (at) urlParams.set("at", at);
+  const query = urlParams.toString();
+  const response = await fetch(
+    `/lifecycle/decisions/${encodeURIComponent(decisionId)}/cognitive-snapshot${query ? `?${query}` : ""}`,
+    { signal },
+  );
+
+  if (!response.ok) {
+    throw new Error(`Cognitive snapshot request failed: ${response.status}`);
+  }
+
+  return response.json() as Promise<CognitiveSnapshot>;
+}
+
 export async function fetchOperatingAttentionQueue(
   params: WorkspaceApiParams,
   signal?: AbortSignal,

@@ -113,7 +113,7 @@ Explicit roadmap checkpoint completed M9 Updated*Done*.
 | M10AIS07 | Done | M10A | Implement trade plan authoring workspace | `feature/tf-0064-operational-attention-continuity` |
 | M10AIS08 | Done | M10A | Implement plan validation preview layer | `feature/tf-0064-operational-attention-continuity` |
 | M10AIS09 | Done | M10A | Implement replay cognitive artifact timeline | `feature/tf-0064-operational-attention-continuity` |
-| M10AIS10 | Planned | M10A | Implement cognitive snapshot reconstruction | — |
+| M10AIS10 | Done | M10A | Implement cognitive snapshot reconstruction | `feature/tf-0064-operational-attention-continuity` |
 | M10AIS11 | Done | M10A | Implement structured review reflection model | `feature/tf-0064-operational-attention-continuity` |
 | M10AIS12 | Done | M10A | Implement review reflection workspace | `feature/tf-0064-operational-attention-continuity` |
 | M10AIS13 | Planned | M10A | Implement replay annotation system | — |
@@ -121,7 +121,7 @@ Explicit roadmap checkpoint completed M9 Updated*Done*.
 | M10AIS15 | Planned | M10A | Implement cross-workspace cognitive continuity | — |
 
 Explicit roadmap checkpoint completed M9 Updated*Done*.
-M10A started 2026-05-14. M10AIS01-09, M10AIS11-12 complete (12 of 15 issues).
+M10A started 2026-05-14. M10AIS01-12 complete (13 of 15 issues). Remaining: M10AIS13-15.
 Post-MVP Roadmap v2 implementation begins with M9 market-context infrastructure and provider-boundary work. 
 M9 remains constrained to read-only advisory context and must not introduce broker execution authority, autonomous AI decision systems, or non-replayable runtime behavior.
 
@@ -2797,6 +2797,34 @@ M9 remains constrained to read-only advisory context and must not introduce brok
 - `uv run pytest` — 621 passed (no new backend tests)
 - `npm.cmd run typecheck` — clean
 - `npm.cmd run build` — clean (317.91 kB JS, 30.79 kB CSS)
+
+---
+
+## M10AIS10: Implement Cognitive Snapshot Reconstruction
+
+**Status:** Done
+
+**Milestone:** M10A
+
+**Branch:** `feature/tf-0064-operational-attention-continuity`
+
+**Affected Layer:** api, frontend
+
+**Linked ADRs:** ADR-0035
+
+**Impacted Invariants:** Replayability Is Foundational, Derived State Must Remain Distinguishable
+
+**Implementation Summary:** Added `GET /lifecycle/decisions/{decision_id}/cognitive-snapshot?at=<ISO-timestamp>` endpoint. The `at` parameter is optional — when omitted, returns current full state; when provided, reconstructs cognitive state strictly before that timestamp (`ts >= at` boundary excludes events at or after the snapshot moment, applied only when `at` is explicitly provided to avoid Windows clock resolution issues). Scans decision events, tracking latest lifecycle stage, latest thesis (thesis_created or thesis_revised), latest plan (plan_created), and all scenario branches visible before T. Returns `CognitiveSnapshotResponse` with decision_id, snapshot_at, event_count_at_snapshot, current_stage, thesis, plan, scenario_branches (compact nested models, not reusing the full artifact responses), and authority="derived". 8 new tests (629 total) with deterministic time boundaries using event_timestamp from previous API responses + 1 microsecond delta (not raw datetime.now() captures). Created `CognitiveSnapshotPanel.tsx` with nested `BranchSummary` subcomponent, showing lifecycle stage tag, thesis narrative excerpt with conviction badge and counts, plan entry/stop rationale excerpts, scenario branch type badges and first 2 branches. Added fetchCognitiveSnapshot() and CognitiveSnapshot type family to runtime.ts. Updated `ReplayWorkspace.tsx`: added `cognitiveSnapshot` and `selectedEntryTimestamp` states; fetchCognitiveSnapshot on load; `handleEntryClick` callback fetches snapshot at clicked entry's timestamp; `handleClearSelection` returns to current state; `TimelineEntryRow` gains `isSelected`/`onClick` props and clickable styling; `CognitiveSnapshotPanel` replaces `CognitiveSnapshotSummary` when a decision is active; hint text "Click a timeline entry to reconstruct cognitive state at that moment."
+
+**Acceptance Criteria:**
+
+- Historical reasoning becomes reconstructable.
+
+**Completed Verification:**
+
+- `uv run pytest` — 629 passed (8 new tests)
+- `npm.cmd run typecheck` — clean
+- `npm.cmd run build` — clean (323.38 kB JS, 30.79 kB CSS)
 
 ---
 
