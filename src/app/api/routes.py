@@ -19,6 +19,7 @@ from src.domain.personas import (
     PersonaVersion,
 )
 from src.domain.replay import ProjectionAuthority, ReplayTimelineEntryKind
+from src.domain.cognition import ThesisArtifact, ThesisArtifactValidationError
 from src.services.lifecycle import (
     LifecycleOrchestrationService,
     LifecycleTransitionRequest,
@@ -125,6 +126,25 @@ class NewTradeIdeaPayload(BaseModel):
 class NewTradeIdeaResponse(BaseModel):
     decision_id: str
     symbol: str
+    event_type: str
+    timestamp: datetime
+
+
+class DevelopThesisPayload(BaseModel):
+    decision_id: str = Field(min_length=1)
+    symbol: str = Field(min_length=1, max_length=10)
+    narrative: str = Field(min_length=10, max_length=5000)
+    catalysts: list[str] = Field(min_length=1)
+    assumptions: list[str] = Field(min_length=1)
+    invalidation_conditions: list[str] = Field(min_length=1)
+    confidence_level: int = Field(ge=1, le=5)
+    regime_alignment: str = Field(default="", max_length=500)
+    persona_id: str = Field(min_length=1)
+    workspace_id: str = Field(min_length=1)
+
+
+class DevelopThesisResponse(BaseModel):
+    decision_id: str
     event_type: str
     timestamp: datetime
 
@@ -359,6 +379,13 @@ class ProvenanceQueryResponse(BaseModel):
     providers_seen: list[str]
     symbols_seen: list[str]
     records: list[ProviderFetchRecordResponse]
+
+
+def _event_store_from(request: Request) -> Any:
+    store = getattr(request.app.state, "event_store", None)
+    if store is None:
+        raise RuntimeError("event store is not configured")
+    return store
 
 
 def _lifecycle_service_from(request: Request) -> LifecycleOrchestrationService:
@@ -802,6 +829,139 @@ def init_new_trade_idea(
         symbol=symbol,
         event_type=result.appended_event.event_type,
         timestamp=result.appended_event.timestamp,
+    )
+
+
+@lifecycle_router.post(
+    "/decisions/develop-thesis",
+    response_model=DevelopThesisResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+def develop_thesis(
+    request: Request,
+    payload: DevelopThesisPayload,
+) -> DevelopThesisResponse:
+    """Develop a structured thesis for an existing trade idea.
+
+    Validates required thesis artifact fields and creates the decision.thesis_created
+    lifecycle event with structured cognitive content embedded in the payload.
+    The lifecycle service validates the Idea→Thesis transition before appending.
+    """
+    try:
+        artifact = ThesisArtifact.create(
+            narrative=payload.narrative,
+            catalysts=payload.catalysts,
+            assumptions=payload.assumptions,
+            invalidation_conditions=payload.invalidation_conditions,
+            confidence_level=payload.confidence_level,
+            regime_alignment=payload.regime_alignment,
+        )
+    except ThesisArtifactValidationError as error:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={"message": str(error)},
+        ) from error
+
+    service = _lifecycle_service_from(request)
+    symbol = payload.symbol.strip().upper()
+    now = datetime.now(tz=UTC)
+
+    event_payload: dict[str, object] = {
+        "symbol": symbol,
+        **artifact.to_payload(),
+    }
+
+    result = service.transition(
+        LifecycleTransitionRequest(
+            requested_stage=LifecycleStage.THESIS,
+            timestamp=now,
+            persona_id=payload.persona_id,
+            workspace_id=payload.workspace_id,
+            entity_references=(
+                EntityReference(entity_type="decision", entity_id=payload.decision_id),
+                EntityReference(entity_type="ticker", entity_id=symbol),
+            ),
+            payload=event_payload,
+            provenance={"actor": "human", "source": "thesis-development-workflow"},
+        )
+    )
+
+    if not result.appended or result.appended_event is None:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail={"message": "lifecycle transition to Thesis rejected — current stage may not be Idea"},
+        )
+
+    return DevelopThesisResponse(
+        decision_id=payload.decision_id,
+        event_type=result.appended_event.event_type,
+        timestamp=result.appended_event.timestamp,
+    )
+
+
+class ThesisArtifactResponse(BaseModel):
+    decision_id: str
+    narrative: str
+    catalysts: list[str]
+    assumptions: list[str]
+    invalidation_conditions: list[str]
+    confidence_level: int
+    regime_alignment: str
+    source_event_type: str
+    event_timestamp: datetime
+
+
+@lifecycle_router.get(
+    "/decisions/{decision_id}/thesis",
+    response_model=ThesisArtifactResponse,
+)
+def get_thesis_artifact(
+    request: Request,
+    decision_id: str,
+) -> ThesisArtifactResponse:
+    """Return the structured thesis artifact for a decision.
+
+    Reads the decision.thesis_created event payload for the given decision_id.
+    Returns 404 if no structured thesis exists (legacy empty-payload events
+    or Idea-stage decisions that have not yet developed a thesis).
+    """
+    events = _event_store_from(request).read_events()
+
+    thesis_event = None
+    for event in reversed(events):
+        if event.event_type != "decision.thesis_created":
+            continue
+        references = event.entity_references
+        if any(
+            ref.entity_type == "decision" and ref.entity_id == decision_id
+            for ref in references
+        ):
+            thesis_event = event
+            break
+
+    if thesis_event is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"message": f"no thesis found for decision {decision_id}"},
+        )
+
+    artifact = ThesisArtifact.from_payload(dict(thesis_event.payload))
+    if artifact is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"message": f"decision {decision_id} has a thesis event but no structured thesis content"},
+        )
+
+    return ThesisArtifactResponse(
+        decision_id=decision_id,
+        narrative=artifact.narrative,
+        catalysts=list(artifact.catalysts),
+        assumptions=list(artifact.assumptions),
+        invalidation_conditions=list(artifact.invalidation_conditions),
+        confidence_level=artifact.confidence_level,
+        regime_alignment=artifact.regime_alignment,
+        source_event_type=thesis_event.event_type,
+        event_timestamp=thesis_event.timestamp,
     )
 
 

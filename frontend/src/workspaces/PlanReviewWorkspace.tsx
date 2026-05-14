@@ -4,7 +4,9 @@ import { type MouseEvent, useCallback, useEffect, useRef, useState } from "react
 
 import {
   fetchWorkspaceProjection,
+  fetchThesisArtifact,
   postLifecycleTransition,
+  type ThesisArtifact,
   type WorkspaceApiParams,
   type WorkspaceProjection,
 } from "../api/runtime";
@@ -81,8 +83,43 @@ type PlanReviewWorkspaceProps = {
   onStageLoaded?: (stage: string | null) => void;
 };
 
+function ThesisContextPanel({ thesis }: { thesis: ThesisArtifact }) {
+  const CONFIDENCE_LABELS: Record<number, string> = {
+    1: "Speculative", 2: "Low", 3: "Moderate", 4: "High", 5: "Conviction",
+  };
+  return (
+    <div className="thesis-context-panel" aria-label="Thesis foundation">
+      <p className="eyebrow">Thesis Foundation</p>
+      <p className="thesis-context-narrative">{thesis.narrative}</p>
+      {thesis.regime_alignment ? (
+        <p className="thesis-context-regime">
+          <span className="thesis-context-label">Regime:</span> {thesis.regime_alignment}
+        </p>
+      ) : null}
+      <p className="thesis-context-conviction">
+        Conviction: {CONFIDENCE_LABELS[thesis.confidence_level] ?? thesis.confidence_level} ({thesis.confidence_level}/5)
+      </p>
+      <div className="thesis-context-lists">
+        <div className="thesis-context-list-group">
+          <p className="thesis-context-label">Catalysts</p>
+          <ul className="thesis-context-list">
+            {thesis.catalysts.map((c) => <li key={c}>{c}</li>)}
+          </ul>
+        </div>
+        <div className="thesis-context-list-group">
+          <p className="thesis-context-label">Invalidation Conditions</p>
+          <ul className="thesis-context-list">
+            {thesis.invalidation_conditions.map((i) => <li key={i}>{i}</li>)}
+          </ul>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function PlanReviewWorkspace({ context, onNavigateProgrammatic, onStageLoaded }: PlanReviewWorkspaceProps) {
   const [projection, setProjection] = useState<WorkspaceProjection | null>(null);
+  const [thesis, setThesis] = useState<ThesisArtifact | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [transitionState, setTransitionState] = useState<TransitionState>("idle");
   const [transitionError, setTransitionError] = useState<string | null>(null);
@@ -110,6 +147,14 @@ export function PlanReviewWorkspace({ context, onNavigateProgrammatic, onStageLo
             err instanceof Error ? err.message : "Failed to load plan review workspace",
           );
         });
+
+      if (context.decision_id) {
+        fetchThesisArtifact(context.decision_id, signal)
+          .then((artifact) => setThesis(artifact))
+          .catch((err: unknown) => {
+            if (err instanceof DOMException && err.name === "AbortError") return;
+          });
+      }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [
@@ -178,7 +223,7 @@ export function PlanReviewWorkspace({ context, onNavigateProgrammatic, onStageLo
         : ""),
   );
 
-  const fieldOrder = ["plan_references", "risk_review", "rule_evaluation"];
+  const fieldOrder = ["thesis_content", "plan_references", "risk_review", "rule_evaluation"];
 
   return (
     <section
@@ -219,6 +264,8 @@ export function PlanReviewWorkspace({ context, onNavigateProgrammatic, onStageLo
               );
             })}
           </div>
+
+          {thesis ? <ThesisContextPanel thesis={thesis} /> : null}
 
           {canCreatePlan ? (
             <div className="lifecycle-action-surface">

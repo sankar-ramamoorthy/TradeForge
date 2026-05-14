@@ -4,14 +4,14 @@ import { type MouseEvent, useCallback, useEffect, useRef, useState } from "react
 
 import {
   fetchWorkspaceProjection,
-  postLifecycleTransition,
   type WorkspaceApiParams,
   type WorkspaceProjection,
 } from "../api/runtime";
 import { type WorkspaceContext } from "../workspaceRouting";
 import { MarketContextPanel } from "./MarketContextPanel";
+import { ThesisDevelopmentModal } from "./ThesisDevelopmentModal";
 
-type TransitionState = "idle" | "transitioning" | "error";
+type TransitionState = "idle" | "open-thesis-modal" | "error";
 
 const AUTHORITY_LABELS: Record<string, string> = {
   canonical: "Canonical",
@@ -84,7 +84,6 @@ export function OpportunityWorkspace({ context, onNavigateProgrammatic, onStageL
   const [projection, setProjection] = useState<WorkspaceProjection | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [transitionState, setTransitionState] = useState<TransitionState>("idle");
-  const [transitionError, setTransitionError] = useState<string | null>(null);
   const fetchControllerRef = useRef<AbortController | null>(null);
 
   const params: WorkspaceApiParams = {
@@ -130,37 +129,18 @@ export function OpportunityWorkspace({ context, onNavigateProgrammatic, onStageL
   const lifecycleStage = projection?.lifecycle_state?.current_stage ?? null;
   const canDevelopThesis = lifecycleStage === "Idea";
 
-  function handleDevelopThesis() {
-    setTransitionState("transitioning");
-    setTransitionError(null);
-
-    postLifecycleTransition({
-      requested_stage: "Thesis",
-      timestamp: new Date().toISOString(),
-      persona_id: context.persona_id,
-      workspace_id: context.workspace_id,
-      entity_references: context.decision_id
-        ? [{ entity_type: "decision", entity_id: context.decision_id }]
-        : [],
-      payload: {},
-      provenance: { actor: "human", source: "opportunity-workspace" },
-    })
-      .then(() => {
-        setTransitionState("idle");
-        const href =
-          "/workspaces/plan-review" +
-          (context.decision_id
-            ? `?decision_id=${encodeURIComponent(context.decision_id)}`
-            : "");
-        onNavigateProgrammatic?.(href);
-      })
-      .catch((err: unknown) => {
-        setTransitionState("error");
-        setTransitionError(
-          err instanceof Error ? err.message : "Lifecycle transition failed",
-        );
-      });
+  function handleThesisSuccess(_decisionId: string) {
+    setTransitionState("idle");
+    const href =
+      "/workspaces/plan-review" +
+      (context.decision_id
+        ? `?decision_id=${encodeURIComponent(context.decision_id)}`
+        : "");
+    onNavigateProgrammatic?.(href);
   }
+
+  const symbolFromProjection =
+    projection?.fields["scenario_references"]?.source_event_types?.[0] ?? "–";
 
   const fieldOrder = [
     "scenario_references",
@@ -209,26 +189,29 @@ export function OpportunityWorkspace({ context, onNavigateProgrammatic, onStageL
             })}
           </div>
 
+          {transitionState === "open-thesis-modal" && context.decision_id ? (
+            <ThesisDevelopmentModal
+              context={context}
+              onCancel={() => setTransitionState("idle")}
+              onSuccess={handleThesisSuccess}
+              symbol={symbolFromProjection}
+            />
+          ) : null}
+
           {canDevelopThesis ? (
             <div className="lifecycle-action-surface">
               <p className="eyebrow">Available Lifecycle Action</p>
               <p className="lifecycle-action-note">
-                This idea is ready to progress. Developing a thesis routes through
-                the lifecycle service — the domain validates the transition before
-                appending an event.
+                This idea is ready to progress. Define your structured thesis —
+                the domain validates the transition and persists your reasoning
+                as a replayable cognitive artifact.
               </p>
-              {transitionError ? (
-                <div className="runtime-error">{transitionError}</div>
-              ) : null}
               <button
                 className="lifecycle-action-btn"
-                disabled={transitionState === "transitioning"}
-                onClick={handleDevelopThesis}
+                onClick={() => setTransitionState("open-thesis-modal")}
                 type="button"
               >
-                {transitionState === "transitioning"
-                  ? "Requesting transition…"
-                  : "Develop Thesis"}
+                Develop Thesis
               </button>
             </div>
           ) : null}

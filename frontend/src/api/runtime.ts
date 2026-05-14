@@ -347,6 +347,84 @@ export async function initNewTradeIdea(
   return response.json() as Promise<NewTradeIdeaResponse>;
 }
 
+export type DevelopThesisRequest = {
+  decision_id: string;
+  symbol: string;
+  narrative: string;
+  catalysts: string[];
+  assumptions: string[];
+  invalidation_conditions: string[];
+  confidence_level: number;
+  regime_alignment?: string;
+  persona_id: string;
+  workspace_id: string;
+};
+
+export type DevelopThesisResponse = {
+  decision_id: string;
+  event_type: string;
+  timestamp: string;
+};
+
+export async function postDevelopThesis(
+  request: DevelopThesisRequest,
+  signal?: AbortSignal,
+): Promise<DevelopThesisResponse> {
+  const response = await fetch("/lifecycle/decisions/develop-thesis", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(request),
+    signal,
+  });
+
+  if (!response.ok) {
+    const detail = await response.json().catch(() => null);
+    const message =
+      typeof detail === "object" &&
+      detail !== null &&
+      "detail" in detail
+        ? typeof (detail as Record<string, unknown>).detail === "object"
+          ? ((detail as Record<string, { message?: string }>).detail?.message ??
+            `Thesis development failed: ${response.status}`)
+          : typeof (detail as Record<string, unknown>).detail === "string"
+          ? String((detail as Record<string, unknown>).detail)
+          : `Thesis development failed: ${response.status}`
+        : `Thesis development failed: ${response.status}`;
+    throw new Error(message);
+  }
+
+  return response.json() as Promise<DevelopThesisResponse>;
+}
+
+export type ThesisArtifact = {
+  decision_id: string;
+  narrative: string;
+  catalysts: string[];
+  assumptions: string[];
+  invalidation_conditions: string[];
+  confidence_level: number;
+  regime_alignment: string;
+  source_event_type: string;
+  event_timestamp: string;
+};
+
+export async function fetchThesisArtifact(
+  decisionId: string,
+  signal?: AbortSignal,
+): Promise<ThesisArtifact | null> {
+  const response = await fetch(`/lifecycle/decisions/${encodeURIComponent(decisionId)}/thesis`, { signal });
+
+  if (response.status === 404) {
+    return null;
+  }
+
+  if (!response.ok) {
+    throw new Error(`Thesis artifact request failed: ${response.status}`);
+  }
+
+  return response.json() as Promise<ThesisArtifact>;
+}
+
 export async function fetchOperatingAttentionQueue(
   params: WorkspaceApiParams,
   signal?: AbortSignal,

@@ -1015,6 +1015,710 @@ Introduce:
 * The system transitions from architecture demonstration toward usable operational product experience.
 
 ---
+# M10A — Structured Decision Authoring And Cognitive Capture
+
+**Status:** Planned
+
+---
+
+# Semantic Intent
+
+Transform lifecycle progression from event-only workflow continuity into durable replayable operator cognition.
+
+---
+
+# Architectural Significance
+
+TradeForge currently preserves:
+
+* lifecycle continuity
+* replayable workflow state
+* canonical event authority
+* operational workspace cohesion
+
+However, lifecycle stages presently contain limited structured operator reasoning.
+
+M10A introduces:
+
+```text
+durable cognitive artifacts
+```
+
+that preserve:
+
+* why decisions existed
+* what assumptions mattered
+* what scenarios were considered
+* how risk was framed
+* what invalidated the idea
+* how the operator reasoned through uncertainty
+
+TradeForge therefore evolves from:
+
+```text
+workflow replay
+```
+
+toward:
+
+```text
+replayable discretionary cognition
+```
+
+---
+
+# Core Principle
+
+Lifecycle stages must preserve:
+
+```text
+operator reasoning
+```
+
+not merely:
+
+```text
+workflow transition existence
+```
+
+Replay should eventually reconstruct:
+
+* environmental context
+* thesis evolution
+* decision assumptions
+* scenario branching
+* plan intent
+* discipline quality
+* review reflection
+
+without collapsing cognition into unstructured journaling.
+
+---
+
+# Canonical Concepts
+
+* [[Decision Artifact]]
+* [[Structured Thesis]]
+* [[Trade Narrative]]
+* [[Scenario Branch]]
+* [[Decision Assumption]]
+* [[Decision Invalidation]]
+* [[Execution Intent]]
+* [[Playbook Alignment]]
+* [[Review Reflection]]
+* [[Cognitive Evidence]]
+* [[Replay Annotation]]
+* [[Cognitive Snapshot]]
+
+---
+
+# Architectural Themes
+
+M10A establishes:
+
+```text
+structured cognition persistence
+```
+
+before introducing:
+
+* AI advisory systems
+* behavioral intelligence
+* simulation intelligence
+* RL experimentation
+
+This milestone therefore becomes foundational for:
+
+* M11
+* M12
+* M13
+* M14
+
+---
+
+# Scope
+
+M10A introduces:
+
+* structured thesis authoring
+* structured trade plan authoring
+* review reflection capture
+* scenario branch modeling
+* cognitive evidence capture
+* replay-attached reasoning artifacts
+* thesis invalidation tracking
+* decision rationale persistence
+* playbook alignment surfaces
+* cognition-aware replay enrichment
+
+M10A explicitly excludes:
+
+* AI-generated thesis mutation
+* autonomous trade planning
+* broker execution
+* strategy automation
+* RL systems
+* autonomous approval systems
+
+---
+
+# ADR Requirements
+
+M10A likely requires new ADRs because this milestone changes:
+
+* canonical cognition persistence
+* event semantics
+* replay reconstruction depth
+* projection interpretation
+* operator artifact modeling
+
+These are architectural decisions, not merely UI additions.
+
+---
+
+# Required ADRs
+
+---
+
+## ADR-00X — Structured Cognitive Artifact Model
+
+### Purpose
+
+Define canonical modeling strategy for durable operator cognition artifacts.
+
+### Decision Areas
+
+* artifact boundaries
+* structured vs freeform cognition
+* replay persistence strategy
+* attachment to lifecycle stages
+* mutation/editing rules
+* historical versioning
+* event ownership
+
+### Why Required
+
+This changes canonical semantic persistence.
+
+---
+
+## ADR-00Y — Thesis And Plan Authoring Architecture
+
+### Purpose
+
+Define separation between:
+
+* TradeIdea
+* TradeThesis
+* TradePlan
+* ScenarioBranch
+* ReviewReflection
+
+### Decision Areas
+
+* ownership boundaries
+* projection responsibilities
+* validation model
+* replay reconstruction semantics
+* plan/thesis lifecycle relationship
+
+### Why Required
+
+This stabilizes workflow cognition semantics.
+
+---
+
+## ADR-00Z — Replay Cognitive Reconstruction Strategy
+
+### Purpose
+
+Define how replay reconstructs operator reasoning over time.
+
+### Decision Areas
+
+* temporal cognition snapshots
+* annotation reconstruction
+* evidence replay
+* thesis drift representation
+* scenario evolution
+* derived vs canonical replay views
+
+### Why Required
+
+Replay semantics fundamentally deepen here.
+
+---
+
+# Linked KB Issues
+
+---
+
+## KB-M10A-001 — Define Structured Thesis Semantics
+
+### Purpose
+
+Define canonical structure for replayable trade thesis artifacts.
+
+### Scope
+
+Define:
+
+* thesis narrative
+* catalysts
+* assumptions
+* invalidation conditions
+* regime alignment
+* supporting evidence
+* confidence semantics
+
+---
+
+## KB-M10A-002 — Define Structured Trade Plan Semantics
+
+### Purpose
+
+Define canonical structure for executable discretionary intent.
+
+### Scope
+
+Define:
+
+* entry rationale
+* stop rationale
+* target rationale
+* sizing rationale
+* execution assumptions
+* risk framing
+* playbook alignment
+
+---
+
+## KB-M10A-003 — Define Scenario Branch Semantics
+
+### Purpose
+
+Formalize conditional reasoning pathways.
+
+### Scope
+
+Define:
+
+* primary scenario
+* alternative scenarios
+* invalidation branches
+* regime transitions
+* branching replay semantics
+
+---
+
+## KB-M10A-004 — Define Review Reflection Semantics
+
+### Purpose
+
+Formalize durable post-decision learning artifacts.
+
+### Scope
+
+Define:
+
+* thesis vs outcome comparison
+* execution quality
+* discipline analysis
+* emotional reflection
+* lessons learned
+* behavioral observations
+
+---
+
+## KB-M10A-005 — Define Cognitive Replay Semantics
+
+### Purpose
+
+Define how cognition reconstructs during replay.
+
+### Scope
+
+Define:
+
+* replay annotations
+* cognition timelines
+* reasoning snapshots
+* thesis evolution
+* replay visibility boundaries
+
+---
+
+# Linked Runtime Issues
+
+---
+
+# Structured Thesis Authoring
+
+---
+
+## M10AIS01 — Implement Structured Thesis Domain Model
+
+### Purpose
+
+Introduce canonical thesis artifact persistence.
+
+### Scope
+
+Implement:
+
+* thesis entity model
+* structured thesis schema
+* lifecycle linkage
+* persistence contracts
+
+### Acceptance Criteria
+
+* Thesis artifacts persist independently from lifecycle markers.
+* Thesis becomes replayable cognition rather than stage metadata.
+
+---
+
+## M10AIS02 — Implement Thesis Authoring Workspace
+
+### Purpose
+
+Provide operator-facing structured thesis composition.
+
+### Scope
+
+Add thesis editing support for:
+
+* narrative
+* catalysts
+* assumptions
+* invalidation
+* regime alignment
+* confidence
+* supporting evidence
+
+### Acceptance Criteria
+
+* Traders can compose durable structured thesis artifacts.
+* Thesis authoring becomes operationally usable.
+
+---
+
+## M10AIS03 — Implement Thesis Revision History
+
+### Purpose
+
+Preserve thesis evolution over time.
+
+### Scope
+
+Introduce:
+
+* thesis revisions
+* immutable revision snapshots
+* revision timestamps
+* replay visibility
+
+### Acceptance Criteria
+
+* Replay can reconstruct thesis evolution chronologically.
+
+---
+
+# Scenario Modeling
+
+---
+
+## M10AIS04 — Implement Scenario Branch Modeling
+
+### Purpose
+
+Capture conditional reasoning structures.
+
+### Scope
+
+Support:
+
+* primary scenario
+* alternative scenario
+* invalidation pathway
+* regime transition branch
+
+### Acceptance Criteria
+
+* Trade cognition can branch conditionally.
+
+---
+
+## M10AIS05 — Implement Scenario Visualization Projection
+
+### Purpose
+
+Expose scenario structures operationally.
+
+### Scope
+
+Add:
+
+* scenario summaries
+* branch indicators
+* replay-linked scenario projections
+
+### Acceptance Criteria
+
+* Operators can understand scenario relationships visually.
+
+---
+
+# Structured Trade Planning
+
+---
+
+## M10AIS06 — Implement Structured Trade Plan Domain Model
+
+### Purpose
+
+Persist structured execution intent.
+
+### Scope
+
+Implement:
+
+* entry conditions
+* stop rationale
+* target rationale
+* sizing rationale
+* execution assumptions
+* playbook alignment
+
+### Acceptance Criteria
+
+* Trade plans become durable cognitive artifacts.
+
+---
+
+## M10AIS07 — Implement Trade Plan Authoring Workspace
+
+### Purpose
+
+Provide operational trade planning surface.
+
+### Scope
+
+Support:
+
+* structured plan composition
+* risk framing
+* execution reasoning
+* discretionary notes
+* scenario linkage
+
+### Acceptance Criteria
+
+* Plans become operationally authorable.
+
+---
+
+## M10AIS08 — Implement Plan Validation Preview Layer
+
+### Purpose
+
+Surface lifecycle and rule implications before approval.
+
+### Scope
+
+Show:
+
+* lifecycle readiness
+* missing cognition fields
+* rule previews
+* risk consistency indicators
+
+### Acceptance Criteria
+
+* Operators receive cognition-aware planning guidance.
+
+---
+
+# Replay Enrichment
+
+---
+
+## M10AIS09 — Implement Replay Cognitive Artifact Timeline
+
+### Purpose
+
+Integrate cognition artifacts into replay.
+
+### Scope
+
+Replay displays:
+
+* thesis snapshots
+* plan revisions
+* scenario evolution
+* review annotations
+
+### Acceptance Criteria
+
+* Replay reconstructs reasoning, not merely events.
+
+---
+
+## M10AIS10 — Implement Cognitive Snapshot Reconstruction
+
+### Purpose
+
+Reconstruct operator cognition at historical timestamps.
+
+### Scope
+
+Support:
+
+* point-in-time thesis state
+* scenario visibility
+* assumption state
+* contextual evidence snapshots
+
+### Acceptance Criteria
+
+* Historical reasoning becomes reconstructable.
+
+---
+
+# Review Enrichment
+
+---
+
+## M10AIS11 — Implement Structured Review Reflection Model
+
+### Purpose
+
+Persist semantically meaningful review artifacts.
+
+### Scope
+
+Support:
+
+* thesis vs outcome
+* discipline quality
+* execution quality
+* emotional reflection
+* lessons learned
+
+### Acceptance Criteria
+
+* Reviews become durable learning artifacts.
+
+---
+
+## M10AIS12 — Implement Review Reflection Workspace
+
+### Purpose
+
+Provide replay-aware review composition environment.
+
+### Scope
+
+Support:
+
+* structured reflection entry
+* replay-linked observations
+* behavioral commentary
+* lesson capture
+
+### Acceptance Criteria
+
+* Review becomes operationally meaningful.
+
+---
+
+# Replay Annotation Infrastructure
+
+---
+
+## M10AIS13 — Implement Replay Annotation System
+
+### Purpose
+
+Allow replay-attached operator annotations.
+
+### Scope
+
+Support:
+
+* replay notes
+* timeline annotations
+* contextual observations
+* postmortem tagging
+
+### Acceptance Criteria
+
+* Replay becomes cognitively interactive.
+
+---
+
+# Playbook Alignment
+
+---
+
+## M10AIS14 — Implement Playbook Alignment Projection Layer
+
+### Purpose
+
+Associate trades with discretionary operational playbooks.
+
+### Scope
+
+Support:
+
+* playbook tagging
+* alignment summaries
+* replay filtering
+* behavioral grouping
+
+### Acceptance Criteria
+
+* Decisions become operationally classifiable.
+
+---
+
+# Workspace Cohesion
+
+---
+
+## M10AIS15 — Implement Cross-Workspace Cognitive Continuity
+
+### Purpose
+
+Preserve authored cognition across workspace transitions.
+
+### Scope
+
+Ensure:
+
+* thesis visibility
+* plan continuity
+* scenario continuity
+* review continuity
+
+### Acceptance Criteria
+
+* Cognition persists naturally across operational movement.
+
+---
+
+# Acceptance Meaning
+
+* Replay reconstructs operator reasoning rather than only workflow state.
+* Thesis and plan become durable cognitive artifacts.
+* Structured cognition becomes canonical operational truth.
+* Review becomes semantically meaningful.
+* AI advisory systems gain rich historical cognition context.
+* Behavioral intelligence gains replayable reasoning input.
+* Simulation infrastructure gains structured semantic inputs.
+* TradeForge evolves from workflow replay toward true discretionary cognition reconstruction.
+
+---
 
 ## M11 — AI Advisory Boundary
 Status: Planned

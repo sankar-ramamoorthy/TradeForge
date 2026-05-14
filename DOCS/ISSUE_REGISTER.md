@@ -104,8 +104,24 @@ Explicit roadmap checkpoint completed M9 Updated*Done*.
 | TF-0062 | Done | M10 | Implement cross-workspace context persistence | `feature/tf-0062-cross-workspace-context-persistence` |
 | TF-0063 | Done | M10 | Stabilize workspace transition ergonomics | `feature/tf-0063-workspace-transition-ergonomics` |
 | TF-0064 | Done | M10 | Implement operational attention continuity | `feature/tf-0064-operational-attention-continuity` |
+| M10AIS01 | Done | M10A | Implement structured thesis domain model | `feature/tf-0064-operational-attention-continuity` |
+| M10AIS02 | Done | M10A | Implement thesis authoring workspace | `feature/tf-0064-operational-attention-continuity` |
+| M10AIS03 | Planned | M10A | Implement thesis revision history | — |
+| M10AIS04 | Planned | M10A | Implement scenario branch modeling | — |
+| M10AIS05 | Planned | M10A | Implement scenario visualization projection | — |
+| M10AIS06 | Planned | M10A | Implement structured trade plan domain model | — |
+| M10AIS07 | Planned | M10A | Implement trade plan authoring workspace | — |
+| M10AIS08 | Planned | M10A | Implement plan validation preview layer | — |
+| M10AIS09 | Planned | M10A | Implement replay cognitive artifact timeline | — |
+| M10AIS10 | Planned | M10A | Implement cognitive snapshot reconstruction | — |
+| M10AIS11 | Planned | M10A | Implement structured review reflection model | — |
+| M10AIS12 | Planned | M10A | Implement review reflection workspace | — |
+| M10AIS13 | Planned | M10A | Implement replay annotation system | — |
+| M10AIS14 | Planned | M10A | Implement playbook alignment projection layer | — |
+| M10AIS15 | Planned | M10A | Implement cross-workspace cognitive continuity | — |
 
 Explicit roadmap checkpoint completed M9 Updated*Done*.
+M10A started 2026-05-14. M10AIS01 and M10AIS02 complete.
 Post-MVP Roadmap v2 implementation begins with M9 market-context infrastructure and provider-boundary work. 
 M9 remains constrained to read-only advisory context and must not introduce broker execution authority, autonomous AI decision systems, or non-replayable runtime behavior.
 
@@ -2446,6 +2462,76 @@ M9 remains constrained to read-only advisory context and must not introduce brok
 - `npm.cmd run typecheck` — clean
 - `npm.cmd run lint` — clean
 - `npm.cmd run build` — clean (269.92 kB JS, 30.79 kB CSS)
+
+---
+
+## M10AIS01: Implement Structured Thesis Domain Model
+
+**Status:** Done
+
+**Milestone:** M10A
+
+**Branch:** `feature/tf-0064-operational-attention-continuity`
+
+**Affected Layer:** domain, api, services
+
+**Linked ADRs:** ADR-0033, ADR-0034
+
+**Impacted Invariants:** Event Ledger Canonical Truth, Events Are Immutable, Replayability Is Foundational, Lifecycle Authority
+
+**Implementation Summary:** Introduced `src/domain/cognition/thesis.py` with `ThesisArtifact` — a frozen dataclass with `create()` factory (validates narrative, catalysts, assumptions, invalidation_conditions, confidence_level) and `to_payload()`/`from_payload()` for event serialization. Added `POST /lifecycle/decisions/develop-thesis` endpoint that validates structured thesis fields and creates `decision.thesis_created` event with structured payload embedded. Added `GET /lifecycle/decisions/{decision_id}/thesis` endpoint that reads the event store and extracts thesis content from the event payload. Exposed `app.state.event_store` for direct event query access. Updated plan-review `WorkspaceStateContract` with `thesis_content` field sourced from `decision.thesis_created`.
+
+**Acceptance Criteria:**
+
+- Thesis artifacts persist independently from lifecycle markers.
+- Thesis becomes replayable cognition rather than stage metadata.
+
+**Out Of Scope:**
+
+- Thesis revision history (M10AIS03).
+- Plan artifact model (M10AIS06).
+
+**Completed Verification:**
+
+- `uv run pytest` — 534 passed (21 new tests: 13 unit + 8 integration)
+- `npm.cmd run typecheck` — clean
+- `npm.cmd run lint` — clean
+- `npm.cmd run build` — clean (276.72 kB JS, 30.79 kB CSS)
+
+---
+
+## M10AIS02: Implement Thesis Authoring Workspace
+
+**Status:** Done
+
+**Milestone:** M10A
+
+**Branch:** `feature/tf-0064-operational-attention-continuity`
+
+**Affected Layer:** frontend
+
+**Linked ADRs:** ADR-0034
+
+**Impacted Invariants:** UX Is Architectural, Human Decision Sovereignty, Workflow-Centric Architecture
+
+**Implementation Summary:** Created `ThesisDevelopmentModal.tsx` — a modal form capturing narrative (textarea), catalysts/assumptions/invalidation_conditions (dynamic list inputs), confidence_level (range slider 1-5), and regime_alignment (optional text). Client-side validation before submission. Submits to `POST /lifecycle/decisions/develop-thesis` via new `postDevelopThesis()` API function. On success navigates to `/workspaces/plan-review`. Updated `OpportunityWorkspace.tsx` to open the modal instead of firing an immediate empty lifecycle transition; `TransitionState` now uses `"open-thesis-modal"` instead of `"transitioning"`. Added `ThesisContextPanel` component in `PlanReviewWorkspace.tsx` that fetches and displays thesis content (narrative, regime, conviction, catalysts, invalidation conditions) when the decision has a structured thesis. Added `fetchThesisArtifact()` and `ThesisArtifact` type to `frontend/src/api/runtime.ts`.
+
+**Acceptance Criteria:**
+
+- Traders can compose durable structured thesis artifacts.
+- Thesis authoring becomes operationally usable.
+
+**Out Of Scope:**
+
+- Thesis revision after initial creation.
+- Scenario branch visualization.
+
+**Completed Verification:**
+
+- `uv run pytest` — 534 passed (no new tests beyond M10AIS01)
+- `npm.cmd run typecheck` — clean
+- `npm.cmd run lint` — clean
+- `npm.cmd run build` — clean (276.72 kB JS, 30.79 kB CSS)
 
 ---
 
