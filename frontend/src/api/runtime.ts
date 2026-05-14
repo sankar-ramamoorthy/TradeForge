@@ -347,6 +347,510 @@ export async function initNewTradeIdea(
   return response.json() as Promise<NewTradeIdeaResponse>;
 }
 
+export type DevelopThesisRequest = {
+  decision_id: string;
+  symbol: string;
+  narrative: string;
+  catalysts: string[];
+  assumptions: string[];
+  invalidation_conditions: string[];
+  confidence_level: number;
+  regime_alignment?: string;
+  persona_id: string;
+  workspace_id: string;
+};
+
+export type DevelopThesisResponse = {
+  decision_id: string;
+  event_type: string;
+  timestamp: string;
+};
+
+export async function postDevelopThesis(
+  request: DevelopThesisRequest,
+  signal?: AbortSignal,
+): Promise<DevelopThesisResponse> {
+  const response = await fetch("/lifecycle/decisions/develop-thesis", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(request),
+    signal,
+  });
+
+  if (!response.ok) {
+    const detail = await response.json().catch(() => null);
+    const message =
+      typeof detail === "object" &&
+      detail !== null &&
+      "detail" in detail
+        ? typeof (detail as Record<string, unknown>).detail === "object"
+          ? ((detail as Record<string, { message?: string }>).detail?.message ??
+            `Thesis development failed: ${response.status}`)
+          : typeof (detail as Record<string, unknown>).detail === "string"
+          ? String((detail as Record<string, unknown>).detail)
+          : `Thesis development failed: ${response.status}`
+        : `Thesis development failed: ${response.status}`;
+    throw new Error(message);
+  }
+
+  return response.json() as Promise<DevelopThesisResponse>;
+}
+
+export type ThesisArtifact = {
+  decision_id: string;
+  symbol: string;
+  narrative: string;
+  catalysts: string[];
+  assumptions: string[];
+  invalidation_conditions: string[];
+  confidence_level: number;
+  regime_alignment: string;
+  source_event_type: string;
+  event_timestamp: string;
+};
+
+export async function fetchThesisArtifact(
+  decisionId: string,
+  signal?: AbortSignal,
+): Promise<ThesisArtifact | null> {
+  const response = await fetch(`/lifecycle/decisions/${encodeURIComponent(decisionId)}/thesis`, { signal });
+
+  if (response.status === 404) {
+    return null;
+  }
+
+  if (!response.ok) {
+    throw new Error(`Thesis artifact request failed: ${response.status}`);
+  }
+
+  return response.json() as Promise<ThesisArtifact>;
+}
+
+export type CreatePlanRequest = {
+  decision_id: string;
+  symbol: string;
+  entry_rationale: string;
+  stop_rationale: string;
+  target_rationale: string;
+  sizing_rationale: string;
+  execution_assumptions: string[];
+  playbook_alignment?: string;
+  persona_id: string;
+  workspace_id: string;
+};
+
+export type CreatePlanResponse = {
+  decision_id: string;
+  event_type: string;
+  timestamp: string;
+};
+
+export type TradePlanArtifact = {
+  decision_id: string;
+  symbol: string;
+  entry_rationale: string;
+  stop_rationale: string;
+  target_rationale: string;
+  sizing_rationale: string;
+  execution_assumptions: string[];
+  playbook_alignment: string;
+  source_event_type: string;
+  event_timestamp: string;
+};
+
+export async function postCreatePlan(
+  request: CreatePlanRequest,
+  signal?: AbortSignal,
+): Promise<CreatePlanResponse> {
+  const response = await fetch("/lifecycle/decisions/create-plan", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(request),
+    signal,
+  });
+
+  if (!response.ok) {
+    const detail = await response.json().catch(() => null);
+    const message =
+      typeof detail === "object" && detail !== null && "detail" in detail
+        ? typeof (detail as Record<string, unknown>).detail === "object"
+          ? ((detail as Record<string, { message?: string }>).detail?.message ??
+            `Plan creation failed: ${response.status}`)
+          : `Plan creation failed: ${response.status}`
+        : `Plan creation failed: ${response.status}`;
+    throw new Error(message);
+  }
+
+  return response.json() as Promise<CreatePlanResponse>;
+}
+
+export async function fetchPlanArtifact(
+  decisionId: string,
+  signal?: AbortSignal,
+): Promise<TradePlanArtifact | null> {
+  const response = await fetch(
+    `/lifecycle/decisions/${encodeURIComponent(decisionId)}/plan`,
+    { signal },
+  );
+
+  if (response.status === 404) {
+    return null;
+  }
+
+  if (!response.ok) {
+    throw new Error(`Plan artifact request failed: ${response.status}`);
+  }
+
+  return response.json() as Promise<TradePlanArtifact>;
+}
+
+export type ReadinessCheck = {
+  check_id: string;
+  label: string;
+  passed: boolean;
+  advisory: boolean;
+  message: string;
+};
+
+export type PlanReadiness = {
+  decision_id: string;
+  current_stage: string | null;
+  next_allowed_transition: string | null;
+  has_structured_thesis: boolean;
+  has_structured_plan: boolean;
+  can_proceed_to_approval: boolean;
+  checks: ReadinessCheck[];
+  authority: "derived";
+};
+
+export async function fetchPlanReadiness(
+  decisionId: string,
+  signal?: AbortSignal,
+): Promise<PlanReadiness> {
+  const response = await fetch(
+    `/lifecycle/decisions/${encodeURIComponent(decisionId)}/plan-readiness`,
+    { signal },
+  );
+
+  if (!response.ok) {
+    throw new Error(`Plan readiness request failed: ${response.status}`);
+  }
+
+  return response.json() as Promise<PlanReadiness>;
+}
+
+export type CompleteReviewRequest = {
+  decision_id: string;
+  symbol: string;
+  thesis_vs_outcome: string;
+  decision_quality: number;
+  execution_quality: number;
+  discipline_observations: string;
+  lessons_learned: string[];
+  behavioral_observations?: string;
+  persona_id: string;
+  workspace_id: string;
+};
+
+export type CompleteReviewResponse = {
+  decision_id: string;
+  event_type: string;
+  timestamp: string;
+};
+
+export type ReviewReflectionArtifact = {
+  decision_id: string;
+  symbol: string;
+  thesis_vs_outcome: string;
+  decision_quality: number;
+  execution_quality: number;
+  discipline_observations: string;
+  lessons_learned: string[];
+  behavioral_observations: string;
+  source_event_type: string;
+  event_timestamp: string;
+};
+
+export async function postCompleteReview(
+  request: CompleteReviewRequest,
+  signal?: AbortSignal,
+): Promise<CompleteReviewResponse> {
+  const response = await fetch("/lifecycle/decisions/complete-review", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(request),
+    signal,
+  });
+
+  if (!response.ok) {
+    const detail = await response.json().catch(() => null);
+    const message =
+      typeof detail === "object" && detail !== null && "detail" in detail
+        ? typeof (detail as Record<string, unknown>).detail === "object"
+          ? ((detail as Record<string, { message?: string }>).detail?.message ??
+            `Review completion failed: ${response.status}`)
+          : `Review completion failed: ${response.status}`
+        : `Review completion failed: ${response.status}`;
+    throw new Error(message);
+  }
+
+  return response.json() as Promise<CompleteReviewResponse>;
+}
+
+export async function fetchReviewReflection(
+  decisionId: string,
+  signal?: AbortSignal,
+): Promise<ReviewReflectionArtifact | null> {
+  const response = await fetch(
+    `/lifecycle/decisions/${encodeURIComponent(decisionId)}/review`,
+    { signal },
+  );
+
+  if (response.status === 404) return null;
+
+  if (!response.ok) {
+    throw new Error(`Review reflection request failed: ${response.status}`);
+  }
+
+  return response.json() as Promise<ReviewReflectionArtifact>;
+}
+
+export type ScenarioBranchType =
+  | "primary"
+  | "alternative"
+  | "invalidation"
+  | "regime_transition";
+
+export type CreateScenarioBranchRequest = {
+  decision_id: string;
+  branch_type: ScenarioBranchType;
+  condition: string;
+  implication: string;
+  confidence: number;
+  notes?: string;
+  persona_id: string;
+  workspace_id: string;
+};
+
+export type ScenarioBranch = {
+  branch_type: ScenarioBranchType;
+  condition: string;
+  implication: string;
+  confidence: number;
+  notes: string;
+  event_timestamp: string;
+};
+
+export type ScenarioBranchList = {
+  decision_id: string;
+  total_branches: number;
+  branches: ScenarioBranch[];
+};
+
+export async function postCreateScenarioBranch(
+  request: CreateScenarioBranchRequest,
+  signal?: AbortSignal,
+): Promise<{ decision_id: string; branch_type: string; event_type: string; timestamp: string }> {
+  const response = await fetch("/lifecycle/decisions/create-scenario-branch", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(request),
+    signal,
+  });
+
+  if (!response.ok) {
+    const detail = await response.json().catch(() => null);
+    const message =
+      typeof detail === "object" && detail !== null && "detail" in detail
+        ? typeof (detail as Record<string, unknown>).detail === "object"
+          ? ((detail as Record<string, { message?: string }>).detail?.message ??
+            `Scenario branch creation failed: ${response.status}`)
+          : `Scenario branch creation failed: ${response.status}`
+        : `Scenario branch creation failed: ${response.status}`;
+    throw new Error(message);
+  }
+
+  return response.json() as Promise<{ decision_id: string; branch_type: string; event_type: string; timestamp: string }>;
+}
+
+export async function fetchScenarioBranches(
+  decisionId: string,
+  signal?: AbortSignal,
+): Promise<ScenarioBranchList> {
+  const response = await fetch(
+    `/lifecycle/decisions/${encodeURIComponent(decisionId)}/scenario-branches`,
+    { signal },
+  );
+
+  if (!response.ok) {
+    throw new Error(`Scenario branches request failed: ${response.status}`);
+  }
+
+  return response.json() as Promise<ScenarioBranchList>;
+}
+
+export type CognitiveSnapshotThesis = {
+  narrative: string;
+  catalysts: string[];
+  assumptions: string[];
+  invalidation_conditions: string[];
+  confidence_level: number;
+  regime_alignment: string;
+  event_type: string;
+  event_timestamp: string;
+};
+
+export type CognitiveSnapshotPlan = {
+  entry_rationale: string;
+  stop_rationale: string;
+  target_rationale: string;
+  sizing_rationale: string;
+  execution_assumptions: string[];
+  playbook_alignment: string;
+  event_timestamp: string;
+};
+
+export type CognitiveSnapshotBranch = {
+  branch_type: string;
+  condition: string;
+  implication: string;
+  confidence: number;
+  notes: string;
+  event_timestamp: string;
+};
+
+export type CognitiveSnapshot = {
+  decision_id: string;
+  snapshot_at: string;
+  event_count_at_snapshot: number;
+  current_stage: string | null;
+  thesis: CognitiveSnapshotThesis | null;
+  plan: CognitiveSnapshotPlan | null;
+  scenario_branches: CognitiveSnapshotBranch[];
+  authority: "derived";
+};
+
+export async function fetchCognitiveSnapshot(
+  decisionId: string,
+  at?: string,
+  signal?: AbortSignal,
+): Promise<CognitiveSnapshot> {
+  const urlParams = new URLSearchParams();
+  if (at) urlParams.set("at", at);
+  const query = urlParams.toString();
+  const response = await fetch(
+    `/lifecycle/decisions/${encodeURIComponent(decisionId)}/cognitive-snapshot${query ? `?${query}` : ""}`,
+    { signal },
+  );
+
+  if (!response.ok) {
+    throw new Error(`Cognitive snapshot request failed: ${response.status}`);
+  }
+
+  return response.json() as Promise<CognitiveSnapshot>;
+}
+
+export type AnnotationType =
+  | "observation"
+  | "question"
+  | "insight"
+  | "postmortem";
+
+export type Annotation = {
+  sequence: number;
+  annotated_event_type: string;
+  note: string;
+  annotation_type: AnnotationType;
+  created_at: string;
+};
+
+export type AnnotationList = {
+  decision_id: string;
+  total_annotations: number;
+  annotations: Annotation[];
+};
+
+export async function postCreateAnnotation(
+  request: {
+    decision_id: string;
+    sequence: number;
+    annotated_event_type: string;
+    note: string;
+    annotation_type: AnnotationType;
+    persona_id: string;
+    workspace_id: string;
+  },
+  signal?: AbortSignal,
+): Promise<{ decision_id: string; sequence: number; event_type: string; timestamp: string }> {
+  const response = await fetch("/lifecycle/decisions/create-annotation", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(request),
+    signal,
+  });
+
+  if (!response.ok) {
+    const detail = await response.json().catch(() => null);
+    const message =
+      typeof detail === "object" && detail !== null && "detail" in detail
+        ? typeof (detail as Record<string, unknown>).detail === "object"
+          ? ((detail as Record<string, { message?: string }>).detail?.message ??
+            `Annotation creation failed: ${response.status}`)
+          : `Annotation creation failed: ${response.status}`
+        : `Annotation creation failed: ${response.status}`;
+    throw new Error(message);
+  }
+
+  return response.json() as Promise<{ decision_id: string; sequence: number; event_type: string; timestamp: string }>;
+}
+
+export async function fetchAnnotations(
+  decisionId: string,
+  signal?: AbortSignal,
+): Promise<AnnotationList> {
+  const response = await fetch(
+    `/lifecycle/decisions/${encodeURIComponent(decisionId)}/annotations`,
+    { signal },
+  );
+
+  if (!response.ok) {
+    throw new Error(`Annotations request failed: ${response.status}`);
+  }
+
+  return response.json() as Promise<AnnotationList>;
+}
+
+export type PlaybookAlignedDecision = {
+  decision_id: string;
+  symbol: string;
+  current_stage: string | null;
+};
+
+export type PlaybookGroup = {
+  playbook_name: string;
+  decision_count: number;
+  decisions: PlaybookAlignedDecision[];
+};
+
+export type PlaybookSummary = {
+  playbooks: PlaybookGroup[];
+  unaligned_decision_count: number;
+  total_decisions_with_plan: number;
+  authority: "derived";
+};
+
+export async function fetchPlaybookSummary(
+  signal?: AbortSignal,
+): Promise<PlaybookSummary> {
+  const response = await fetch("/workspaces/playbook-summary", { signal });
+
+  if (!response.ok) {
+    throw new Error(`Playbook summary request failed: ${response.status}`);
+  }
+
+  return response.json() as Promise<PlaybookSummary>;
+}
+
 export async function fetchOperatingAttentionQueue(
   params: WorkspaceApiParams,
   signal?: AbortSignal,

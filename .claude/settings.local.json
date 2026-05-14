@@ -28,7 +28,8 @@
       "Bash(git -C \"C:\\\\Users\\\\bosto\\\\dockerstuff\\\\knowledge-base\\\\TradeForge\" remote get-url origin)",
       "Bash(git -C \"C:\\\\Users\\\\bosto\\\\dockerstuff\\\\TradeForge\" remote get-url origin)",
       "Bash(git -C \"C:\\\\Users\\\\bosto\\\\dockerstuff\\\\knowledge-base\\\\TradeForge\" add README.md)",
-      "Bash(git -C \"C:\\\\Users\\\\bosto\\\\dockerstuff\\\\knowledge-base\\\\TradeForge\" commit -m \"Update README for public repo — remove private paths, add context for public visitors, link runtime repo\")"
+      "Bash(git -C \"C:\\\\Users\\\\bosto\\\\dockerstuff\\\\knowledge-base\\\\TradeForge\" commit -m \"Update README for public repo — remove private paths, add context for public visitors, link runtime repo\")",
+      "PowerShell(New-Item *)"
     ]
   }
 }

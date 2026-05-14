@@ -52,6 +52,7 @@ def create_app(
         version=APP_VERSION,
         description="HTTP boundary for the TradeForge runtime.",
     )
+    app.state.event_store = shared_event_store
     app.state.lifecycle_service = (
         lifecycle_service
         if lifecycle_service is not None

@@ -7,8 +7,10 @@ from typing import Any, Literal
 from fastapi import APIRouter, HTTPException, Query, Request, status
 from pydantic import BaseModel, Field
 from src.app.session import SessionProvider
-from src.domain.events import EntityReference
+from src.domain.events import EntityReference, EventEnvelope
 from src.domain.lifecycle import LifecycleStage
+from src.domain.lifecycle.state import LIFECYCLE_EVENT_STAGE_MAP
+from src.domain.lifecycle.transitions import ALLOWED_LIFECYCLE_TRANSITIONS
 from src.domain.personas import (
     PersonaContext,
     PersonaDecisionVelocity,
@@ -19,6 +21,20 @@ from src.domain.personas import (
     PersonaVersion,
 )
 from src.domain.replay import ProjectionAuthority, ReplayTimelineEntryKind
+from src.domain.cognition import (
+    ANNOTATION_TYPES,
+    ReplayAnnotationArtifact,
+    ReplayAnnotationArtifactValidationError,
+    ReviewReflectionArtifact,
+    ReviewReflectionArtifactValidationError,
+    ScenarioBranchArtifact,
+    ScenarioBranchArtifactValidationError,
+    SCENARIO_BRANCH_TYPES,
+    ThesisArtifact,
+    ThesisArtifactValidationError,
+    TradePlanArtifact,
+    TradePlanArtifactValidationError,
+)
 from src.services.lifecycle import (
     LifecycleOrchestrationService,
     LifecycleTransitionRequest,
@@ -127,6 +143,270 @@ class NewTradeIdeaResponse(BaseModel):
     symbol: str
     event_type: str
     timestamp: datetime
+
+
+class DevelopThesisPayload(BaseModel):
+    decision_id: str = Field(min_length=1)
+    symbol: str = Field(min_length=1, max_length=10)
+    narrative: str = Field(min_length=10, max_length=5000)
+    catalysts: list[str] = Field(min_length=1)
+    assumptions: list[str] = Field(min_length=1)
+    invalidation_conditions: list[str] = Field(min_length=1)
+    confidence_level: int = Field(ge=1, le=5)
+    regime_alignment: str = Field(default="", max_length=500)
+    persona_id: str = Field(min_length=1)
+    workspace_id: str = Field(min_length=1)
+
+
+class DevelopThesisResponse(BaseModel):
+    decision_id: str
+    event_type: str
+    timestamp: datetime
+
+
+class ReviseThesisPayload(BaseModel):
+    decision_id: str = Field(min_length=1)
+    symbol: str = Field(min_length=1, max_length=10)
+    narrative: str = Field(min_length=10, max_length=5000)
+    catalysts: list[str] = Field(min_length=1)
+    assumptions: list[str] = Field(min_length=1)
+    invalidation_conditions: list[str] = Field(min_length=1)
+    confidence_level: int = Field(ge=1, le=5)
+    regime_alignment: str = Field(default="", max_length=500)
+    persona_id: str = Field(min_length=1)
+    workspace_id: str = Field(min_length=1)
+
+
+class ReviseThesisResponse(BaseModel):
+    decision_id: str
+    event_type: str
+    timestamp: datetime
+    revision_number: int
+
+
+class ThesisSnapshotResponse(BaseModel):
+    narrative: str
+    catalysts: list[str]
+    assumptions: list[str]
+    invalidation_conditions: list[str]
+    confidence_level: int
+    regime_alignment: str
+    event_type: str
+    event_timestamp: datetime
+    revision_number: int
+
+
+class ThesisHistoryResponse(BaseModel):
+    decision_id: str
+    total_revisions: int
+    snapshots: list[ThesisSnapshotResponse]
+
+
+class CreatePlanPayload(BaseModel):
+    decision_id: str = Field(min_length=1)
+    symbol: str = Field(min_length=1, max_length=10)
+    entry_rationale: str = Field(min_length=10, max_length=5000)
+    stop_rationale: str = Field(min_length=10, max_length=5000)
+    target_rationale: str = Field(min_length=10, max_length=5000)
+    sizing_rationale: str = Field(min_length=10, max_length=5000)
+    execution_assumptions: list[str] = Field(min_length=1)
+    playbook_alignment: str = Field(default="", max_length=500)
+    persona_id: str = Field(min_length=1)
+    workspace_id: str = Field(min_length=1)
+
+
+class CreatePlanResponse(BaseModel):
+    decision_id: str
+    event_type: str
+    timestamp: datetime
+
+
+class TradePlanArtifactResponse(BaseModel):
+    decision_id: str
+    symbol: str
+    entry_rationale: str
+    stop_rationale: str
+    target_rationale: str
+    sizing_rationale: str
+    execution_assumptions: list[str]
+    playbook_alignment: str
+    source_event_type: str
+    event_timestamp: datetime
+
+
+class ReadinessCheckResponse(BaseModel):
+    check_id: str
+    label: str
+    passed: bool
+    advisory: bool
+    message: str
+
+
+class PlanReadinessResponse(BaseModel):
+    decision_id: str
+    current_stage: LifecycleStage | None
+    next_allowed_transition: LifecycleStage | None
+    has_structured_thesis: bool
+    has_structured_plan: bool
+    can_proceed_to_approval: bool
+    checks: list[ReadinessCheckResponse]
+    authority: Literal["derived"]
+
+
+class CompleteReviewPayload(BaseModel):
+    decision_id: str = Field(min_length=1)
+    symbol: str = Field(min_length=1, max_length=10)
+    thesis_vs_outcome: str = Field(min_length=10, max_length=5000)
+    decision_quality: int = Field(ge=1, le=5)
+    execution_quality: int = Field(ge=1, le=5)
+    discipline_observations: str = Field(min_length=10, max_length=5000)
+    lessons_learned: list[str] = Field(min_length=1)
+    behavioral_observations: str = Field(default="", max_length=3000)
+    persona_id: str = Field(min_length=1)
+    workspace_id: str = Field(min_length=1)
+
+
+class CompleteReviewResponse(BaseModel):
+    decision_id: str
+    event_type: str
+    timestamp: datetime
+
+
+class ReviewReflectionArtifactResponse(BaseModel):
+    decision_id: str
+    symbol: str
+    thesis_vs_outcome: str
+    decision_quality: int
+    execution_quality: int
+    discipline_observations: str
+    lessons_learned: list[str]
+    behavioral_observations: str
+    source_event_type: str
+    event_timestamp: datetime
+
+
+class CreateScenarioBranchPayload(BaseModel):
+    decision_id: str = Field(min_length=1)
+    branch_type: str = Field(min_length=1)
+    condition: str = Field(min_length=5, max_length=3000)
+    implication: str = Field(min_length=5, max_length=3000)
+    confidence: int = Field(ge=1, le=5)
+    notes: str = Field(default="", max_length=2000)
+    persona_id: str = Field(min_length=1)
+    workspace_id: str = Field(min_length=1)
+
+
+class CreateScenarioBranchResponse(BaseModel):
+    decision_id: str
+    branch_type: str
+    event_type: str
+    timestamp: datetime
+
+
+class ScenarioBranchResponse(BaseModel):
+    branch_type: str
+    condition: str
+    implication: str
+    confidence: int
+    notes: str
+    event_timestamp: datetime
+
+
+class ScenarioBranchListResponse(BaseModel):
+    decision_id: str
+    total_branches: int
+    branches: list[ScenarioBranchResponse]
+
+
+class CognitiveSnapshotThesisData(BaseModel):
+    narrative: str
+    catalysts: list[str]
+    assumptions: list[str]
+    invalidation_conditions: list[str]
+    confidence_level: int
+    regime_alignment: str
+    event_type: str
+    event_timestamp: datetime
+
+
+class CognitiveSnapshotPlanData(BaseModel):
+    entry_rationale: str
+    stop_rationale: str
+    target_rationale: str
+    sizing_rationale: str
+    execution_assumptions: list[str]
+    playbook_alignment: str
+    event_timestamp: datetime
+
+
+class CognitiveSnapshotBranchData(BaseModel):
+    branch_type: str
+    condition: str
+    implication: str
+    confidence: int
+    notes: str
+    event_timestamp: datetime
+
+
+class CognitiveSnapshotResponse(BaseModel):
+    decision_id: str
+    snapshot_at: datetime
+    event_count_at_snapshot: int
+    current_stage: LifecycleStage | None
+    thesis: CognitiveSnapshotThesisData | None
+    plan: CognitiveSnapshotPlanData | None
+    scenario_branches: list[CognitiveSnapshotBranchData]
+    authority: Literal["derived"]
+
+
+class CreateAnnotationPayload(BaseModel):
+    decision_id: str = Field(min_length=1)
+    sequence: int = Field(ge=0)
+    annotated_event_type: str = Field(min_length=1, max_length=200)
+    note: str = Field(min_length=1, max_length=5000)
+    annotation_type: str = Field(min_length=1)
+    persona_id: str = Field(min_length=1)
+    workspace_id: str = Field(min_length=1)
+
+
+class CreateAnnotationResponse(BaseModel):
+    decision_id: str
+    sequence: int
+    event_type: str
+    timestamp: datetime
+
+
+class AnnotationResponse(BaseModel):
+    sequence: int
+    annotated_event_type: str
+    note: str
+    annotation_type: str
+    created_at: datetime
+
+
+class AnnotationListResponse(BaseModel):
+    decision_id: str
+    total_annotations: int
+    annotations: list[AnnotationResponse]
+
+
+class PlaybookAlignedDecision(BaseModel):
+    decision_id: str
+    symbol: str
+    current_stage: LifecycleStage | None
+
+
+class PlaybookGroupResponse(BaseModel):
+    playbook_name: str
+    decision_count: int
+    decisions: list[PlaybookAlignedDecision]
+
+
+class PlaybookSummaryResponse(BaseModel):
+    playbooks: list[PlaybookGroupResponse]
+    unaligned_decision_count: int
+    total_decisions_with_plan: int
+    authority: Literal["derived"]
 
 
 class ReplayProjectionLifecycleStateResponse(BaseModel):
@@ -359,6 +639,13 @@ class ProvenanceQueryResponse(BaseModel):
     providers_seen: list[str]
     symbols_seen: list[str]
     records: list[ProviderFetchRecordResponse]
+
+
+def _event_store_from(request: Request) -> Any:
+    store = getattr(request.app.state, "event_store", None)
+    if store is None:
+        raise RuntimeError("event store is not configured")
+    return store
 
 
 def _lifecycle_service_from(request: Request) -> LifecycleOrchestrationService:
@@ -805,6 +1092,1067 @@ def init_new_trade_idea(
     )
 
 
+@lifecycle_router.post(
+    "/decisions/develop-thesis",
+    response_model=DevelopThesisResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+def develop_thesis(
+    request: Request,
+    payload: DevelopThesisPayload,
+) -> DevelopThesisResponse:
+    """Develop a structured thesis for an existing trade idea.
+
+    Validates required thesis artifact fields and creates the decision.thesis_created
+    lifecycle event with structured cognitive content embedded in the payload.
+    The lifecycle service validates the Idea→Thesis transition before appending.
+    """
+    try:
+        artifact = ThesisArtifact.create(
+            narrative=payload.narrative,
+            catalysts=payload.catalysts,
+            assumptions=payload.assumptions,
+            invalidation_conditions=payload.invalidation_conditions,
+            confidence_level=payload.confidence_level,
+            regime_alignment=payload.regime_alignment,
+        )
+    except ThesisArtifactValidationError as error:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={"message": str(error)},
+        ) from error
+
+    service = _lifecycle_service_from(request)
+    symbol = payload.symbol.strip().upper()
+    now = datetime.now(tz=UTC)
+
+    event_payload: dict[str, object] = {
+        "symbol": symbol,
+        **artifact.to_payload(),
+    }
+
+    result = service.transition(
+        LifecycleTransitionRequest(
+            requested_stage=LifecycleStage.THESIS,
+            timestamp=now,
+            persona_id=payload.persona_id,
+            workspace_id=payload.workspace_id,
+            entity_references=(
+                EntityReference(entity_type="decision", entity_id=payload.decision_id),
+                EntityReference(entity_type="ticker", entity_id=symbol),
+            ),
+            payload=event_payload,
+            provenance={"actor": "human", "source": "thesis-development-workflow"},
+        )
+    )
+
+    if not result.appended or result.appended_event is None:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail={"message": "lifecycle transition to Thesis rejected — current stage may not be Idea"},
+        )
+
+    return DevelopThesisResponse(
+        decision_id=payload.decision_id,
+        event_type=result.appended_event.event_type,
+        timestamp=result.appended_event.timestamp,
+    )
+
+
+class ThesisArtifactResponse(BaseModel):
+    decision_id: str
+    symbol: str
+    narrative: str
+    catalysts: list[str]
+    assumptions: list[str]
+    invalidation_conditions: list[str]
+    confidence_level: int
+    regime_alignment: str
+    source_event_type: str
+    event_timestamp: datetime
+
+
+@lifecycle_router.get(
+    "/decisions/{decision_id}/thesis",
+    response_model=ThesisArtifactResponse,
+)
+def get_thesis_artifact(
+    request: Request,
+    decision_id: str,
+) -> ThesisArtifactResponse:
+    """Return the most recent structured thesis artifact for a decision.
+
+    Scans decision.thesis_created and decision.thesis_revised events.
+    Returns the most recent structured thesis (latest revision wins).
+    Returns 404 if no structured thesis exists.
+    """
+    events = _event_store_from(request).read_events()
+    thesis_event_types = frozenset(
+        ("decision.thesis_created", "decision.thesis_revised")
+    )
+
+    thesis_event = None
+    for event in reversed(events):
+        if event.event_type not in thesis_event_types:
+            continue
+        if any(
+            ref.entity_type == "decision" and ref.entity_id == decision_id
+            for ref in event.entity_references
+        ):
+            thesis_event = event
+            break
+
+    if thesis_event is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"message": f"no thesis found for decision {decision_id}"},
+        )
+
+    artifact = ThesisArtifact.from_payload(dict(thesis_event.payload))
+    if artifact is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"message": f"decision {decision_id} has a thesis event but no structured thesis content"},
+        )
+
+    symbol = str(thesis_event.payload.get("symbol", ""))
+
+    return ThesisArtifactResponse(
+        decision_id=decision_id,
+        symbol=symbol,
+        narrative=artifact.narrative,
+        catalysts=list(artifact.catalysts),
+        assumptions=list(artifact.assumptions),
+        invalidation_conditions=list(artifact.invalidation_conditions),
+        confidence_level=artifact.confidence_level,
+        regime_alignment=artifact.regime_alignment,
+        source_event_type=thesis_event.event_type,
+        event_timestamp=thesis_event.timestamp,
+    )
+
+
+@lifecycle_router.get(
+    "/decisions/{decision_id}/thesis/history",
+    response_model=ThesisHistoryResponse,
+)
+def get_thesis_history(
+    request: Request,
+    decision_id: str,
+) -> ThesisHistoryResponse:
+    """Return all thesis snapshots for a decision in chronological order.
+
+    Includes both the initial thesis_created event and any thesis_revised events,
+    enabling replay reconstruction of thesis evolution over time.
+    """
+    events = _event_store_from(request).read_events()
+    thesis_event_types = frozenset(
+        ("decision.thesis_created", "decision.thesis_revised")
+    )
+
+    snapshots: list[ThesisSnapshotResponse] = []
+    for event in events:
+        if event.event_type not in thesis_event_types:
+            continue
+        if not any(
+            ref.entity_type == "decision" and ref.entity_id == decision_id
+            for ref in event.entity_references
+        ):
+            continue
+        artifact = ThesisArtifact.from_payload(dict(event.payload))
+        if artifact is None:
+            continue
+        snapshots.append(
+            ThesisSnapshotResponse(
+                narrative=artifact.narrative,
+                catalysts=list(artifact.catalysts),
+                assumptions=list(artifact.assumptions),
+                invalidation_conditions=list(artifact.invalidation_conditions),
+                confidence_level=artifact.confidence_level,
+                regime_alignment=artifact.regime_alignment,
+                event_type=event.event_type,
+                event_timestamp=event.timestamp,
+                revision_number=len(snapshots) + 1,
+            )
+        )
+
+    return ThesisHistoryResponse(
+        decision_id=decision_id,
+        total_revisions=len(snapshots),
+        snapshots=snapshots,
+    )
+
+
+@lifecycle_router.post(
+    "/decisions/revise-thesis",
+    response_model=ReviseThesisResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+def revise_thesis(
+    request: Request,
+    payload: ReviseThesisPayload,
+) -> ReviseThesisResponse:
+    """Revise the structured thesis for a decision in the Thesis lifecycle stage.
+
+    Creates an immutable decision.thesis_revised event with updated thesis content.
+    This is not a lifecycle transition — the stage remains Thesis.
+    Revision is only valid when the current lifecycle stage is Thesis.
+    """
+    try:
+        artifact = ThesisArtifact.create(
+            narrative=payload.narrative,
+            catalysts=payload.catalysts,
+            assumptions=payload.assumptions,
+            invalidation_conditions=payload.invalidation_conditions,
+            confidence_level=payload.confidence_level,
+            regime_alignment=payload.regime_alignment,
+        )
+    except ThesisArtifactValidationError as error:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={"message": str(error)},
+        ) from error
+
+    event_store = _event_store_from(request)
+    events = event_store.read_events()
+
+    current_state = None
+    for event in events:
+        stage = LIFECYCLE_EVENT_STAGE_MAP.get(event.event_type)
+        if stage is not None and any(
+            ref.entity_type == "decision" and ref.entity_id == payload.decision_id
+            for ref in event.entity_references
+        ):
+            current_state = stage
+
+    if current_state != LifecycleStage.THESIS:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail={"message": "thesis revision is only valid when the decision is in Thesis stage"},
+        )
+
+    thesis_event_types = frozenset(
+        ("decision.thesis_created", "decision.thesis_revised")
+    )
+    revision_count = sum(
+        1
+        for event in events
+        if event.event_type in thesis_event_types
+        and any(
+            ref.entity_type == "decision" and ref.entity_id == payload.decision_id
+            for ref in event.entity_references
+        )
+    )
+
+    symbol = payload.symbol.strip().upper()
+    now = datetime.now(tz=UTC)
+    event_payload: dict[str, object] = {
+        "symbol": symbol,
+        "revision_number": revision_count + 1,
+        **artifact.to_payload(),
+    }
+
+    revision_event = EventEnvelope(
+        event_type="decision.thesis_revised",
+        timestamp=now,
+        persona_id=payload.persona_id,
+        workspace_id=payload.workspace_id,
+        entity_references=(
+            EntityReference(entity_type="decision", entity_id=payload.decision_id),
+            EntityReference(entity_type="ticker", entity_id=symbol),
+        ),
+        payload=event_payload,
+        provenance={"actor": "human", "source": "thesis-revision-workflow"},
+    )
+    event_store.append(revision_event)
+
+    return ReviseThesisResponse(
+        decision_id=payload.decision_id,
+        event_type="decision.thesis_revised",
+        timestamp=now,
+        revision_number=revision_count + 1,
+    )
+
+
+@lifecycle_router.post(
+    "/decisions/create-plan",
+    response_model=CreatePlanResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+def create_plan(
+    request: Request,
+    payload: CreatePlanPayload,
+) -> CreatePlanResponse:
+    """Create a structured trade plan for a decision in the Thesis lifecycle stage.
+
+    Validates required plan artifact fields and creates the decision.plan_created
+    lifecycle event with structured cognitive content embedded in the payload.
+    The lifecycle service validates the Thesis→Plan transition before appending.
+    """
+    try:
+        artifact = TradePlanArtifact.create(
+            entry_rationale=payload.entry_rationale,
+            stop_rationale=payload.stop_rationale,
+            target_rationale=payload.target_rationale,
+            sizing_rationale=payload.sizing_rationale,
+            execution_assumptions=payload.execution_assumptions,
+            playbook_alignment=payload.playbook_alignment,
+        )
+    except TradePlanArtifactValidationError as error:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={"message": str(error)},
+        ) from error
+
+    service = _lifecycle_service_from(request)
+    symbol = payload.symbol.strip().upper()
+    now = datetime.now(tz=UTC)
+
+    event_payload: dict[str, object] = {
+        "symbol": symbol,
+        **artifact.to_payload(),
+    }
+
+    result = service.transition(
+        LifecycleTransitionRequest(
+            requested_stage=LifecycleStage.PLAN,
+            timestamp=now,
+            persona_id=payload.persona_id,
+            workspace_id=payload.workspace_id,
+            entity_references=(
+                EntityReference(entity_type="decision", entity_id=payload.decision_id),
+                EntityReference(entity_type="ticker", entity_id=symbol),
+            ),
+            payload=event_payload,
+            provenance={"actor": "human", "source": "plan-creation-workflow"},
+        )
+    )
+
+    if not result.appended or result.appended_event is None:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail={"message": "lifecycle transition to Plan rejected — current stage may not be Thesis"},
+        )
+
+    return CreatePlanResponse(
+        decision_id=payload.decision_id,
+        event_type=result.appended_event.event_type,
+        timestamp=result.appended_event.timestamp,
+    )
+
+
+@lifecycle_router.get(
+    "/decisions/{decision_id}/plan",
+    response_model=TradePlanArtifactResponse,
+)
+def get_plan_artifact(
+    request: Request,
+    decision_id: str,
+) -> TradePlanArtifactResponse:
+    """Return the structured trade plan artifact for a decision.
+
+    Reads the decision.plan_created event payload for the given decision_id.
+    Returns 404 if no structured plan exists (legacy empty-payload events
+    or decisions that have not yet created a plan).
+    """
+    events = _event_store_from(request).read_events()
+
+    plan_event = None
+    for event in reversed(events):
+        if event.event_type != "decision.plan_created":
+            continue
+        if any(
+            ref.entity_type == "decision" and ref.entity_id == decision_id
+            for ref in event.entity_references
+        ):
+            plan_event = event
+            break
+
+    if plan_event is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"message": f"no plan found for decision {decision_id}"},
+        )
+
+    artifact = TradePlanArtifact.from_payload(dict(plan_event.payload))
+    if artifact is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"message": f"decision {decision_id} has a plan event but no structured plan content"},
+        )
+
+    symbol = str(plan_event.payload.get("symbol", ""))
+
+    return TradePlanArtifactResponse(
+        decision_id=decision_id,
+        symbol=symbol,
+        entry_rationale=artifact.entry_rationale,
+        stop_rationale=artifact.stop_rationale,
+        target_rationale=artifact.target_rationale,
+        sizing_rationale=artifact.sizing_rationale,
+        execution_assumptions=list(artifact.execution_assumptions),
+        playbook_alignment=artifact.playbook_alignment,
+        source_event_type=plan_event.event_type,
+        event_timestamp=plan_event.timestamp,
+    )
+
+
+@lifecycle_router.get(
+    "/decisions/{decision_id}/plan-readiness",
+    response_model=PlanReadinessResponse,
+)
+def get_plan_readiness(
+    request: Request,
+    decision_id: str,
+) -> PlanReadinessResponse:
+    """Return cognition readiness and lifecycle rule preview for plan authorization.
+
+    Derives readiness from event history — checks whether structured thesis
+    and plan artifacts are present, surfaces conviction and completeness indicators,
+    and reports lifecycle stage and next allowed transition.
+    All outputs are derived and advisory — this endpoint does not authorize transitions.
+    """
+    events = _event_store_from(request).read_events()
+    thesis_event_types = frozenset(
+        ("decision.thesis_created", "decision.thesis_revised")
+    )
+
+    current_stage: LifecycleStage | None = None
+    latest_thesis_payload: dict[str, object] | None = None
+    latest_plan_payload: dict[str, object] | None = None
+
+    for event in events:
+        if not any(
+            ref.entity_type == "decision" and ref.entity_id == decision_id
+            for ref in event.entity_references
+        ):
+            continue
+
+        stage = LIFECYCLE_EVENT_STAGE_MAP.get(event.event_type)
+        if stage is not None:
+            current_stage = stage
+
+        if event.event_type in thesis_event_types:
+            latest_thesis_payload = dict(event.payload)
+
+        if event.event_type == "decision.plan_created":
+            latest_plan_payload = dict(event.payload)
+
+    thesis_artifact = (
+        ThesisArtifact.from_payload(latest_thesis_payload)
+        if latest_thesis_payload is not None
+        else None
+    )
+    plan_artifact = (
+        TradePlanArtifact.from_payload(latest_plan_payload)
+        if latest_plan_payload is not None
+        else None
+    )
+
+    has_structured_thesis = thesis_artifact is not None
+    has_structured_plan = plan_artifact is not None
+
+    next_transition = ALLOWED_LIFECYCLE_TRANSITIONS.get(current_stage)
+
+    checks: list[ReadinessCheckResponse] = []
+
+    checks.append(
+        ReadinessCheckResponse(
+            check_id="has_structured_thesis",
+            label="Structured Thesis",
+            passed=has_structured_thesis,
+            advisory=False,
+            message=(
+                "Structured thesis present — narrative and catalysts captured."
+                if has_structured_thesis
+                else "No structured thesis found. Develop a thesis before creating a plan."
+            ),
+        )
+    )
+
+    checks.append(
+        ReadinessCheckResponse(
+            check_id="has_structured_plan",
+            label="Structured Plan",
+            passed=has_structured_plan,
+            advisory=False,
+            message=(
+                "Structured plan present — entry, stop, and target rationale captured."
+                if has_structured_plan
+                else "No structured plan found. Create a plan before seeking approval."
+            ),
+        )
+    )
+
+    if thesis_artifact is not None:
+        conviction_ok = thesis_artifact.confidence_level >= 3
+        conviction_labels = {
+            1: "Speculative", 2: "Low", 3: "Moderate", 4: "High", 5: "Conviction"
+        }
+        conviction_label = conviction_labels.get(
+            thesis_artifact.confidence_level, str(thesis_artifact.confidence_level)
+        )
+        checks.append(
+            ReadinessCheckResponse(
+                check_id="conviction_level",
+                label="Thesis Conviction",
+                passed=conviction_ok,
+                advisory=True,
+                message=(
+                    f"Conviction: {conviction_label} ({thesis_artifact.confidence_level}/5)."
+                    if conviction_ok
+                    else f"Low conviction: {conviction_label} ({thesis_artifact.confidence_level}/5). "
+                    "Consider whether the plan reflects this uncertainty."
+                ),
+            )
+        )
+
+        invalidation_count = len(thesis_artifact.invalidation_conditions)
+        checks.append(
+            ReadinessCheckResponse(
+                check_id="invalidation_conditions",
+                label="Invalidation Conditions",
+                passed=invalidation_count >= 2,
+                advisory=True,
+                message=(
+                    f"{invalidation_count} invalidation condition{'s' if invalidation_count != 1 else ''} defined."
+                    if invalidation_count >= 2
+                    else f"Only {invalidation_count} invalidation condition defined. "
+                    "Consider adding more conditions for clarity."
+                ),
+            )
+        )
+
+    if plan_artifact is not None:
+        assumption_count = len(plan_artifact.execution_assumptions)
+        checks.append(
+            ReadinessCheckResponse(
+                check_id="execution_assumptions",
+                label="Execution Assumptions",
+                passed=assumption_count >= 2,
+                advisory=True,
+                message=(
+                    f"{assumption_count} execution assumption{'s' if assumption_count != 1 else ''} defined."
+                    if assumption_count >= 2
+                    else f"Only {assumption_count} execution assumption defined. "
+                    "Consider reviewing execution risks."
+                ),
+            )
+        )
+
+        checks.append(
+            ReadinessCheckResponse(
+                check_id="playbook_alignment",
+                label="Playbook Alignment",
+                passed=bool(plan_artifact.playbook_alignment),
+                advisory=True,
+                message=(
+                    f"Aligned with playbook: {plan_artifact.playbook_alignment}."
+                    if plan_artifact.playbook_alignment
+                    else "No playbook alignment specified. Consider tagging for behavioral review."
+                ),
+            )
+        )
+
+    all_required_pass = all(not c.advisory and c.passed for c in checks if not c.advisory)
+    can_proceed = (
+        current_stage == LifecycleStage.PLAN
+        and all_required_pass
+    )
+
+    return PlanReadinessResponse(
+        decision_id=decision_id,
+        current_stage=current_stage,
+        next_allowed_transition=next_transition,
+        has_structured_thesis=has_structured_thesis,
+        has_structured_plan=has_structured_plan,
+        can_proceed_to_approval=can_proceed,
+        checks=checks,
+        authority="derived",
+    )
+
+
+@lifecycle_router.post(
+    "/decisions/complete-review",
+    response_model=CompleteReviewResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+def complete_review(
+    request: Request,
+    payload: CompleteReviewPayload,
+) -> CompleteReviewResponse:
+    """Complete the review stage with a structured reflection artifact.
+
+    Validates required reflection fields and creates the review.review_completed
+    lifecycle event with structured cognitive content embedded in the payload.
+    The lifecycle service validates the Position→Review transition before appending.
+    """
+    try:
+        artifact = ReviewReflectionArtifact.create(
+            thesis_vs_outcome=payload.thesis_vs_outcome,
+            decision_quality=payload.decision_quality,
+            execution_quality=payload.execution_quality,
+            discipline_observations=payload.discipline_observations,
+            lessons_learned=payload.lessons_learned,
+            behavioral_observations=payload.behavioral_observations,
+        )
+    except ReviewReflectionArtifactValidationError as error:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={"message": str(error)},
+        ) from error
+
+    service = _lifecycle_service_from(request)
+    symbol = payload.symbol.strip().upper()
+    now = datetime.now(tz=UTC)
+
+    event_payload: dict[str, object] = {
+        "symbol": symbol,
+        **artifact.to_payload(),
+    }
+
+    result = service.transition(
+        LifecycleTransitionRequest(
+            requested_stage=LifecycleStage.REVIEW,
+            timestamp=now,
+            persona_id=payload.persona_id,
+            workspace_id=payload.workspace_id,
+            entity_references=(
+                EntityReference(entity_type="decision", entity_id=payload.decision_id),
+                EntityReference(entity_type="ticker", entity_id=symbol),
+            ),
+            payload=event_payload,
+            provenance={"actor": "human", "source": "review-reflection-workflow"},
+        )
+    )
+
+    if not result.appended or result.appended_event is None:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail={"message": "lifecycle transition to Review rejected — current stage may not be Position"},
+        )
+
+    return CompleteReviewResponse(
+        decision_id=payload.decision_id,
+        event_type=result.appended_event.event_type,
+        timestamp=result.appended_event.timestamp,
+    )
+
+
+@lifecycle_router.get(
+    "/decisions/{decision_id}/review",
+    response_model=ReviewReflectionArtifactResponse,
+)
+def get_review_reflection(
+    request: Request,
+    decision_id: str,
+) -> ReviewReflectionArtifactResponse:
+    """Return the structured review reflection artifact for a decision.
+
+    Reads the review.review_completed event payload for the given decision_id.
+    Returns 404 if no structured review exists.
+    """
+    events = _event_store_from(request).read_events()
+
+    review_event = None
+    for event in reversed(events):
+        if event.event_type != "review.review_completed":
+            continue
+        if any(
+            ref.entity_type == "decision" and ref.entity_id == decision_id
+            for ref in event.entity_references
+        ):
+            review_event = event
+            break
+
+    if review_event is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"message": f"no review found for decision {decision_id}"},
+        )
+
+    artifact = ReviewReflectionArtifact.from_payload(dict(review_event.payload))
+    if artifact is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"message": f"decision {decision_id} has a review event but no structured reflection content"},
+        )
+
+    symbol = str(review_event.payload.get("symbol", ""))
+
+    return ReviewReflectionArtifactResponse(
+        decision_id=decision_id,
+        symbol=symbol,
+        thesis_vs_outcome=artifact.thesis_vs_outcome,
+        decision_quality=artifact.decision_quality,
+        execution_quality=artifact.execution_quality,
+        discipline_observations=artifact.discipline_observations,
+        lessons_learned=list(artifact.lessons_learned),
+        behavioral_observations=artifact.behavioral_observations,
+        source_event_type=review_event.event_type,
+        event_timestamp=review_event.timestamp,
+    )
+
+
+@lifecycle_router.post(
+    "/decisions/create-scenario-branch",
+    response_model=CreateScenarioBranchResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+def create_scenario_branch(
+    request: Request,
+    payload: CreateScenarioBranchPayload,
+) -> CreateScenarioBranchResponse:
+    """Create a scenario branch for an active decision.
+
+    Scenario branches capture conditional reasoning — they are enrichment events,
+    not lifecycle transitions. Multiple branches accumulate as immutable events.
+    Valid at any active stage (Idea through Position); rejected after Review.
+    """
+    if payload.branch_type not in SCENARIO_BRANCH_TYPES:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={"message": f"branch_type must be one of: {', '.join(sorted(SCENARIO_BRANCH_TYPES))}"},
+        )
+
+    try:
+        artifact = ScenarioBranchArtifact.create(
+            branch_type=payload.branch_type,
+            condition=payload.condition,
+            implication=payload.implication,
+            confidence=payload.confidence,
+            notes=payload.notes,
+        )
+    except ScenarioBranchArtifactValidationError as error:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={"message": str(error)},
+        ) from error
+
+    event_store = _event_store_from(request)
+    events = event_store.read_events()
+
+    current_stage: LifecycleStage | None = None
+    decision_exists = False
+    for event in events:
+        if any(
+            ref.entity_type == "decision" and ref.entity_id == payload.decision_id
+            for ref in event.entity_references
+        ):
+            decision_exists = True
+            stage = LIFECYCLE_EVENT_STAGE_MAP.get(event.event_type)
+            if stage is not None:
+                current_stage = stage
+
+    if not decision_exists:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"message": f"decision {payload.decision_id} not found"},
+        )
+
+    if current_stage == LifecycleStage.REVIEW:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail={"message": "scenario branches cannot be added to a completed (Review) decision"},
+        )
+
+    now = datetime.now(tz=UTC)
+    branch_event = EventEnvelope(
+        event_type="decision.scenario_branch_created",
+        timestamp=now,
+        persona_id=payload.persona_id,
+        workspace_id=payload.workspace_id,
+        entity_references=(
+            EntityReference(entity_type="decision", entity_id=payload.decision_id),
+        ),
+        payload=artifact.to_payload(),
+        provenance={"actor": "human", "source": "scenario-branch-workflow"},
+    )
+    event_store.append(branch_event)
+
+    return CreateScenarioBranchResponse(
+        decision_id=payload.decision_id,
+        branch_type=artifact.branch_type.value,
+        event_type="decision.scenario_branch_created",
+        timestamp=now,
+    )
+
+
+@lifecycle_router.get(
+    "/decisions/{decision_id}/scenario-branches",
+    response_model=ScenarioBranchListResponse,
+)
+def get_scenario_branches(
+    request: Request,
+    decision_id: str,
+) -> ScenarioBranchListResponse:
+    """Return all scenario branches for a decision in chronological order."""
+    events = _event_store_from(request).read_events()
+
+    branches: list[ScenarioBranchResponse] = []
+    for event in events:
+        if event.event_type != "decision.scenario_branch_created":
+            continue
+        if not any(
+            ref.entity_type == "decision" and ref.entity_id == decision_id
+            for ref in event.entity_references
+        ):
+            continue
+        artifact = ScenarioBranchArtifact.from_payload(dict(event.payload))
+        if artifact is None:
+            continue
+        branches.append(
+            ScenarioBranchResponse(
+                branch_type=artifact.branch_type.value,
+                condition=artifact.condition,
+                implication=artifact.implication,
+                confidence=artifact.confidence,
+                notes=artifact.notes,
+                event_timestamp=event.timestamp,
+            )
+        )
+
+    return ScenarioBranchListResponse(
+        decision_id=decision_id,
+        total_branches=len(branches),
+        branches=branches,
+    )
+
+
+@lifecycle_router.get(
+    "/decisions/{decision_id}/cognitive-snapshot",
+    response_model=CognitiveSnapshotResponse,
+)
+def get_cognitive_snapshot(
+    request: Request,
+    decision_id: str,
+    at: datetime | None = Query(default=None),
+) -> CognitiveSnapshotResponse:
+    """Reconstruct operator cognition at a historical timestamp.
+
+    Given an optional timestamp T (defaults to now), scans all decision events
+    before T and reconstructs: lifecycle stage, most recent thesis, most recent plan,
+    and all scenario branches visible at that moment.
+
+    Reconstruction is deterministic and fully replayable from immutable events.
+    All outputs are derived — not canonical truth.
+    """
+    snapshot_at = at if at is not None else datetime.now(tz=UTC)
+
+    thesis_event_types = frozenset(("decision.thesis_created", "decision.thesis_revised"))
+    events = _event_store_from(request).read_events()
+
+    current_stage: LifecycleStage | None = None
+    latest_thesis_event = None
+    latest_plan_event = None
+    scenario_branch_events: list[Any] = []
+    event_count = 0
+
+    for event in events:
+        if not any(
+            ref.entity_type == "decision" and ref.entity_id == decision_id
+            for ref in event.entity_references
+        ):
+            continue
+
+        if at is not None:
+            ts = event.timestamp
+            if ts.tzinfo is None:
+                from datetime import timezone
+                ts = ts.replace(tzinfo=timezone.utc)
+
+            snap_ts = snapshot_at
+            if snap_ts.tzinfo is None:
+                from datetime import timezone
+                snap_ts = snap_ts.replace(tzinfo=timezone.utc)
+
+            if ts >= snap_ts:
+                continue
+
+        event_count += 1
+
+        stage = LIFECYCLE_EVENT_STAGE_MAP.get(event.event_type)
+        if stage is not None:
+            current_stage = stage
+
+        if event.event_type in thesis_event_types:
+            latest_thesis_event = event
+
+        if event.event_type == "decision.plan_created":
+            latest_plan_event = event
+
+        if event.event_type == "decision.scenario_branch_created":
+            scenario_branch_events.append(event)
+
+    thesis: CognitiveSnapshotThesisData | None = None
+    if latest_thesis_event is not None:
+        artifact = ThesisArtifact.from_payload(dict(latest_thesis_event.payload))
+        if artifact is not None:
+            thesis = CognitiveSnapshotThesisData(
+                narrative=artifact.narrative,
+                catalysts=list(artifact.catalysts),
+                assumptions=list(artifact.assumptions),
+                invalidation_conditions=list(artifact.invalidation_conditions),
+                confidence_level=artifact.confidence_level,
+                regime_alignment=artifact.regime_alignment,
+                event_type=latest_thesis_event.event_type,
+                event_timestamp=latest_thesis_event.timestamp,
+            )
+
+    plan: CognitiveSnapshotPlanData | None = None
+    if latest_plan_event is not None:
+        plan_artifact = TradePlanArtifact.from_payload(dict(latest_plan_event.payload))
+        if plan_artifact is not None:
+            plan = CognitiveSnapshotPlanData(
+                entry_rationale=plan_artifact.entry_rationale,
+                stop_rationale=plan_artifact.stop_rationale,
+                target_rationale=plan_artifact.target_rationale,
+                sizing_rationale=plan_artifact.sizing_rationale,
+                execution_assumptions=list(plan_artifact.execution_assumptions),
+                playbook_alignment=plan_artifact.playbook_alignment,
+                event_timestamp=latest_plan_event.timestamp,
+            )
+
+    branches: list[CognitiveSnapshotBranchData] = []
+    for branch_event in scenario_branch_events:
+        branch_artifact = ScenarioBranchArtifact.from_payload(
+            dict(branch_event.payload)
+        )
+        if branch_artifact is not None:
+            branches.append(
+                CognitiveSnapshotBranchData(
+                    branch_type=branch_artifact.branch_type.value,
+                    condition=branch_artifact.condition,
+                    implication=branch_artifact.implication,
+                    confidence=branch_artifact.confidence,
+                    notes=branch_artifact.notes,
+                    event_timestamp=branch_event.timestamp,
+                )
+            )
+
+    return CognitiveSnapshotResponse(
+        decision_id=decision_id,
+        snapshot_at=snapshot_at,
+        event_count_at_snapshot=event_count,
+        current_stage=current_stage,
+        thesis=thesis,
+        plan=plan,
+        scenario_branches=branches,
+        authority="derived",
+    )
+
+
+@lifecycle_router.post(
+    "/decisions/create-annotation",
+    response_model=CreateAnnotationResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+def create_annotation(
+    request: Request,
+    payload: CreateAnnotationPayload,
+) -> CreateAnnotationResponse:
+    """Add a replay annotation to a specific timeline event.
+
+    Annotations are enrichment events — not lifecycle transitions.
+    They make replay cognitively interactive: operators record observations,
+    questions, insights, and postmortem notes on any annotated event.
+    """
+    if payload.annotation_type not in ANNOTATION_TYPES:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={"message": f"annotation_type must be one of: {', '.join(sorted(ANNOTATION_TYPES))}"},
+        )
+
+    try:
+        artifact = ReplayAnnotationArtifact.create(
+            sequence=payload.sequence,
+            annotated_event_type=payload.annotated_event_type,
+            note=payload.note,
+            annotation_type=payload.annotation_type,
+        )
+    except ReplayAnnotationArtifactValidationError as error:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={"message": str(error)},
+        ) from error
+
+    event_store = _event_store_from(request)
+    events = event_store.read_events()
+
+    decision_exists = any(
+        any(
+            ref.entity_type == "decision" and ref.entity_id == payload.decision_id
+            for ref in event.entity_references
+        )
+        for event in events
+    )
+    if not decision_exists:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"message": f"decision {payload.decision_id} not found"},
+        )
+
+    now = datetime.now(tz=UTC)
+    annotation_event = EventEnvelope(
+        event_type="decision.replay_annotation_created",
+        timestamp=now,
+        persona_id=payload.persona_id,
+        workspace_id=payload.workspace_id,
+        entity_references=(
+            EntityReference(entity_type="decision", entity_id=payload.decision_id),
+        ),
+        payload=artifact.to_payload(),
+        provenance={"actor": "human", "source": "replay-annotation-workflow"},
+    )
+    event_store.append(annotation_event)
+
+    return CreateAnnotationResponse(
+        decision_id=payload.decision_id,
+        sequence=artifact.sequence,
+        event_type="decision.replay_annotation_created",
+        timestamp=now,
+    )
+
+
+@lifecycle_router.get(
+    "/decisions/{decision_id}/annotations",
+    response_model=AnnotationListResponse,
+)
+def get_annotations(
+    request: Request,
+    decision_id: str,
+) -> AnnotationListResponse:
+    """Return all replay annotations for a decision in chronological order."""
+    events = _event_store_from(request).read_events()
+
+    annotations: list[AnnotationResponse] = []
+    for event in events:
+        if event.event_type != "decision.replay_annotation_created":
+            continue
+        if not any(
+            ref.entity_type == "decision" and ref.entity_id == decision_id
+            for ref in event.entity_references
+        ):
+            continue
+        artifact = ReplayAnnotationArtifact.from_payload(dict(event.payload))
+        if artifact is None:
+            continue
+        annotations.append(
+            AnnotationResponse(
+                sequence=artifact.sequence,
+                annotated_event_type=artifact.annotated_event_type,
+                note=artifact.note,
+                annotation_type=artifact.annotation_type.value,
+                created_at=event.timestamp,
+            )
+        )
+
+    return AnnotationListResponse(
+        decision_id=decision_id,
+        total_annotations=len(annotations),
+        annotations=annotations,
+    )
+
+
 @replay_router.get("", response_model=HistoricalReconstructionResponse)
 def get_replay_reconstruction(
     request: Request,
@@ -860,6 +2208,79 @@ def get_replay_reconstruction(
 def get_replay_timeline(request: Request) -> ReplayTimelineResponse:
     return _replay_timeline_response(
         _replay_timeline_service_from(request).build()
+    )
+
+
+@workspace_router.get("/playbook-summary", response_model=PlaybookSummaryResponse)
+def get_playbook_summary(
+    request: Request,
+) -> PlaybookSummaryResponse:
+    """Return a derived cross-decision summary grouped by playbook alignment.
+
+    Scans all plan_created events in the event store and groups decisions by
+    their playbook_alignment field. Decisions with empty playbook_alignment
+    are counted as unaligned.
+
+    All outputs are derived — not canonical truth.
+    """
+    events = _event_store_from(request).read_events()
+
+    # Pass 1: track current lifecycle stage per decision
+    decision_stages: dict[str, LifecycleStage] = {}
+    decision_symbols: dict[str, str] = {}
+    plan_data: dict[str, str] = {}  # decision_id -> playbook_alignment
+
+    for event in events:
+        decision_id = next(
+            (ref.entity_id for ref in event.entity_references
+             if ref.entity_type == "decision"),
+            None,
+        )
+        if decision_id is None:
+            continue
+
+        stage = LIFECYCLE_EVENT_STAGE_MAP.get(event.event_type)
+        if stage is not None:
+            decision_stages[decision_id] = stage
+
+        symbol = event.payload.get("symbol", "")
+        if isinstance(symbol, str) and symbol:
+            decision_symbols[decision_id] = symbol
+
+        if event.event_type == "decision.plan_created":
+            plan_artifact = TradePlanArtifact.from_payload(dict(event.payload))
+            plan_data[decision_id] = (
+                plan_artifact.playbook_alignment if plan_artifact else ""
+            )
+
+    playbook_groups: dict[str, list[PlaybookAlignedDecision]] = {}
+    unaligned_count = 0
+
+    for dec_id, playbook in plan_data.items():
+        entry = PlaybookAlignedDecision(
+            decision_id=dec_id,
+            symbol=decision_symbols.get(dec_id, ""),
+            current_stage=decision_stages.get(dec_id),
+        )
+        if playbook:
+            playbook_groups.setdefault(playbook, []).append(entry)
+        else:
+            unaligned_count += 1
+
+    playbooks = [
+        PlaybookGroupResponse(
+            playbook_name=name,
+            decision_count=len(decisions),
+            decisions=decisions,
+        )
+        for name, decisions in sorted(playbook_groups.items())
+    ]
+
+    return PlaybookSummaryResponse(
+        playbooks=playbooks,
+        unaligned_decision_count=unaligned_count,
+        total_decisions_with_plan=len(plan_data),
+        authority="derived",
     )
 
 

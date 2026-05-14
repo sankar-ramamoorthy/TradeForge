@@ -189,6 +189,12 @@ DEFAULT_WORKSPACE_STATE_CONTRACTS: Mapping[
             ].operational_question,
             state_fields=(
                 WorkspaceStateField(
+                    name="thesis_content",
+                    authority=WorkspaceStateAuthority.CANONICAL,
+                    description="Structured thesis artifact from the thesis development workflow.",
+                    source_inputs=("decision.thesis_created",),
+                ),
+                WorkspaceStateField(
                     name="plan_references",
                     authority=WorkspaceStateAuthority.CANONICAL,
                     description="References to event-backed thesis and plan facts.",

@@ -104,8 +104,24 @@ Explicit roadmap checkpoint completed M9 Updated*Done*.
 | TF-0062 | Done | M10 | Implement cross-workspace context persistence | `feature/tf-0062-cross-workspace-context-persistence` |
 | TF-0063 | Done | M10 | Stabilize workspace transition ergonomics | `feature/tf-0063-workspace-transition-ergonomics` |
 | TF-0064 | Done | M10 | Implement operational attention continuity | `feature/tf-0064-operational-attention-continuity` |
+| M10AIS01 | Done | M10A | Implement structured thesis domain model | `feature/tf-0064-operational-attention-continuity` |
+| M10AIS02 | Done | M10A | Implement thesis authoring workspace | `feature/tf-0064-operational-attention-continuity` |
+| M10AIS03 | Done | M10A | Implement thesis revision history | `feature/tf-0064-operational-attention-continuity` |
+| M10AIS04 | Done | M10A | Implement scenario branch modeling | `feature/tf-0064-operational-attention-continuity` |
+| M10AIS05 | Done | M10A | Implement scenario visualization projection | `feature/tf-0064-operational-attention-continuity` |
+| M10AIS06 | Done | M10A | Implement structured trade plan domain model | `feature/tf-0064-operational-attention-continuity` |
+| M10AIS07 | Done | M10A | Implement trade plan authoring workspace | `feature/tf-0064-operational-attention-continuity` |
+| M10AIS08 | Done | M10A | Implement plan validation preview layer | `feature/tf-0064-operational-attention-continuity` |
+| M10AIS09 | Done | M10A | Implement replay cognitive artifact timeline | `feature/tf-0064-operational-attention-continuity` |
+| M10AIS10 | Done | M10A | Implement cognitive snapshot reconstruction | `feature/tf-0064-operational-attention-continuity` |
+| M10AIS11 | Done | M10A | Implement structured review reflection model | `feature/tf-0064-operational-attention-continuity` |
+| M10AIS12 | Done | M10A | Implement review reflection workspace | `feature/tf-0064-operational-attention-continuity` |
+| M10AIS13 | Done | M10A | Implement replay annotation system | `feature/tf-0064-operational-attention-continuity` |
+| M10AIS14 | Done | M10A | Implement playbook alignment projection layer | `feature/tf-0064-operational-attention-continuity` |
+| M10AIS15 | Done | M10A | Implement cross-workspace cognitive continuity | `feature/tf-0064-operational-attention-continuity` |
 
 Explicit roadmap checkpoint completed M9 Updated*Done*.
+M10A COMPLETE 2026-05-14. All 15 issues done: M10AIS01-15.
 Post-MVP Roadmap v2 implementation begins with M9 market-context infrastructure and provider-boundary work. 
 M9 remains constrained to read-only advisory context and must not introduce broker execution authority, autonomous AI decision systems, or non-replayable runtime behavior.
 
@@ -2446,6 +2462,397 @@ M9 remains constrained to read-only advisory context and must not introduce brok
 - `npm.cmd run typecheck` — clean
 - `npm.cmd run lint` — clean
 - `npm.cmd run build` — clean (269.92 kB JS, 30.79 kB CSS)
+
+---
+
+## M10AIS01: Implement Structured Thesis Domain Model
+
+**Status:** Done
+
+**Milestone:** M10A
+
+**Branch:** `feature/tf-0064-operational-attention-continuity`
+
+**Affected Layer:** domain, api, services
+
+**Linked ADRs:** ADR-0033, ADR-0034
+
+**Impacted Invariants:** Event Ledger Canonical Truth, Events Are Immutable, Replayability Is Foundational, Lifecycle Authority
+
+**Implementation Summary:** Introduced `src/domain/cognition/thesis.py` with `ThesisArtifact` — a frozen dataclass with `create()` factory (validates narrative, catalysts, assumptions, invalidation_conditions, confidence_level) and `to_payload()`/`from_payload()` for event serialization. Added `POST /lifecycle/decisions/develop-thesis` endpoint that validates structured thesis fields and creates `decision.thesis_created` event with structured payload embedded. Added `GET /lifecycle/decisions/{decision_id}/thesis` endpoint that reads the event store and extracts thesis content from the event payload. Exposed `app.state.event_store` for direct event query access. Updated plan-review `WorkspaceStateContract` with `thesis_content` field sourced from `decision.thesis_created`.
+
+**Acceptance Criteria:**
+
+- Thesis artifacts persist independently from lifecycle markers.
+- Thesis becomes replayable cognition rather than stage metadata.
+
+**Out Of Scope:**
+
+- Thesis revision history (M10AIS03).
+- Plan artifact model (M10AIS06).
+
+**Completed Verification:**
+
+- `uv run pytest` — 534 passed (21 new tests: 13 unit + 8 integration)
+- `npm.cmd run typecheck` — clean
+- `npm.cmd run lint` — clean
+- `npm.cmd run build` — clean (276.72 kB JS, 30.79 kB CSS)
+
+---
+
+## M10AIS02: Implement Thesis Authoring Workspace
+
+**Status:** Done
+
+**Milestone:** M10A
+
+**Branch:** `feature/tf-0064-operational-attention-continuity`
+
+**Affected Layer:** frontend
+
+**Linked ADRs:** ADR-0034
+
+**Impacted Invariants:** UX Is Architectural, Human Decision Sovereignty, Workflow-Centric Architecture
+
+**Implementation Summary:** Created `ThesisDevelopmentModal.tsx` — a modal form capturing narrative (textarea), catalysts/assumptions/invalidation_conditions (dynamic list inputs), confidence_level (range slider 1-5), and regime_alignment (optional text). Client-side validation before submission. Submits to `POST /lifecycle/decisions/develop-thesis` via new `postDevelopThesis()` API function. On success navigates to `/workspaces/plan-review`. Updated `OpportunityWorkspace.tsx` to open the modal instead of firing an immediate empty lifecycle transition; `TransitionState` now uses `"open-thesis-modal"` instead of `"transitioning"`. Added `ThesisContextPanel` component in `PlanReviewWorkspace.tsx` that fetches and displays thesis content (narrative, regime, conviction, catalysts, invalidation conditions) when the decision has a structured thesis. Added `fetchThesisArtifact()` and `ThesisArtifact` type to `frontend/src/api/runtime.ts`.
+
+**Acceptance Criteria:**
+
+- Traders can compose durable structured thesis artifacts.
+- Thesis authoring becomes operationally usable.
+
+**Out Of Scope:**
+
+- Thesis revision after initial creation.
+- Scenario branch visualization.
+
+**Completed Verification:**
+
+- `uv run pytest` — 534 passed (no new tests beyond M10AIS01)
+- `npm.cmd run typecheck` — clean
+- `npm.cmd run lint` — clean
+- `npm.cmd run build` — clean (276.72 kB JS, 30.79 kB CSS)
+
+---
+
+## M10AIS03: Implement Thesis Revision History
+
+**Status:** Done
+
+**Milestone:** M10A
+
+**Branch:** `feature/tf-0064-operational-attention-continuity`
+
+**Affected Layer:** domain, api, frontend
+
+**Linked ADRs:** ADR-0033, ADR-0035
+
+**Impacted Invariants:** Events Are Immutable, Replayability Is Foundational, Lifecycle Authority
+
+**Implementation Summary:** Added `decision.thesis_revised` event type — not a lifecycle stage transition; appended directly to event_store. Added `POST /lifecycle/decisions/revise-thesis` endpoint (validates thesis fields, checks stage is Thesis, sets revision_number, appends revision event). Updated `GET /lifecycle/decisions/{id}/thesis` to scan both thesis_created and thesis_revised event types returning the most recent. Added `GET /lifecycle/decisions/{id}/thesis/history` returning all thesis snapshots chronologically (ThesisHistoryResponse with total_revisions + ordered snapshots including revision_number). Added top-level imports for LIFECYCLE_EVENT_STAGE_MAP and EventEnvelope. Created `ThesisRevisionModal.tsx` (pre-populated with current thesis values, same form structure as ThesisDevelopmentModal). Updated `ThesisContextPanel` with `canRevise`/`onRevise` props (shows "Revise Thesis" button at Thesis stage, shows "— Revised" badge for revised events). Updated `PlanReviewWorkspace.tsx` with showRevisionModal state and ThesisRevisionModal integration.
+
+**Acceptance Criteria:**
+
+- Replay can reconstruct thesis evolution chronologically.
+
+**Out Of Scope:**
+
+- Thesis revision after Plan stage is entered.
+- Diffing between revisions.
+
+**Completed Verification:**
+
+- `uv run pytest` — 541 passed (7 new tests)
+- `npm.cmd run typecheck` — clean
+- `npm.cmd run lint` — clean
+- `npm.cmd run build` — clean (282.66 kB JS, 30.79 kB CSS)
+
+---
+
+## M10AIS06: Implement Structured Trade Plan Domain Model
+
+**Status:** Done
+
+**Milestone:** M10A
+
+**Branch:** `feature/tf-0064-operational-attention-continuity`
+
+**Affected Layer:** domain, api
+
+**Linked ADRs:** ADR-0033, ADR-0034
+
+**Impacted Invariants:** Event Ledger Canonical Truth, Events Are Immutable, Replayability Is Foundational, Lifecycle Authority
+
+**Implementation Summary:** Introduced `src/domain/cognition/plan.py` with `TradePlanArtifact` — frozen dataclass with `create()` factory validating entry_rationale, stop_rationale, target_rationale, sizing_rationale (all required, min 10 chars), execution_assumptions (list, min 1), and optional playbook_alignment. `to_payload()`/`from_payload()` for event serialization with graceful legacy degradation. Added `POST /lifecycle/decisions/create-plan` endpoint that validates plan fields and creates `decision.plan_created` lifecycle transition (Thesis→Plan) via LifecycleOrchestrationService with structured payload `{plan: {...}}`. Added `GET /lifecycle/decisions/{id}/plan` endpoint that reads decision.plan_created event payload and returns TradePlanArtifactResponse. Added `symbol` field to ThesisArtifactResponse and TradePlanArtifactResponse (populated from event payload). Updated cognition module `__init__.py` to export TradePlanArtifact. 22 new tests (563 total).
+
+**Acceptance Criteria:**
+
+- Trade plans become durable cognitive artifacts.
+
+**Completed Verification:**
+
+- `uv run pytest` — 563 passed (22 new tests: 12 unit + 10 integration)
+- `npm.cmd run typecheck` — clean
+- `npm.cmd run lint` — clean
+- `npm.cmd run build` — clean (290.12 kB JS, 30.79 kB CSS)
+
+---
+
+## M10AIS07: Implement Trade Plan Authoring Workspace
+
+**Status:** Done
+
+**Milestone:** M10A
+
+**Branch:** `feature/tf-0064-operational-attention-continuity`
+
+**Affected Layer:** frontend
+
+**Linked ADRs:** ADR-0034
+
+**Impacted Invariants:** UX Is Architectural, Human Decision Sovereignty, Workflow-Centric Architecture
+
+**Implementation Summary:** Created `PlanDevelopmentModal.tsx` — modal form with `RationaleField` components for entry/stop/target/sizing rationale (textarea, required) and a dynamic list for execution_assumptions. Playbook alignment input (optional). Client-side validation before submission. Submits to `POST /lifecycle/decisions/create-plan`. On success: reloads projection (stays in plan-review at Plan stage) and re-fetches plan artifact. Added `CreatePlanRequest`, `CreatePlanResponse`, `TradePlanArtifact` types and `postCreatePlan()`, `fetchPlanArtifact()` API functions to `runtime.ts`. Updated `PlanReviewWorkspace.tsx`: `handleCreatePlan` opens `PlanDevelopmentModal` instead of empty transition, added `plan` state and `showPlanModal` state, added `PlanContextPanel` showing plan content (entry/stop/target/sizing rationale, execution assumptions, playbook) below thesis panel when plan exists, fetch plan artifact in loadProjection alongside thesis.
+
+**Acceptance Criteria:**
+
+- Plans become operationally authorable.
+
+**Completed Verification:**
+
+- `uv run pytest` — 563 passed (no additional backend tests)
+- `npm.cmd run typecheck` — clean
+- `npm.cmd run lint` — clean
+- `npm.cmd run build` — clean (290.12 kB JS, 30.79 kB CSS)
+
+---
+
+## M10AIS08: Implement Plan Validation Preview Layer
+
+**Status:** Done
+
+**Milestone:** M10A
+
+**Branch:** `feature/tf-0064-operational-attention-continuity`
+
+**Affected Layer:** api, frontend
+
+**Linked ADRs:** ADR-0033, ADR-0004
+
+**Impacted Invariants:** UX Is Architectural, Derived State Must Remain Distinguishable, Human Decision Sovereignty
+
+**Implementation Summary:** Added `GET /lifecycle/decisions/{decision_id}/plan-readiness` endpoint returning `PlanReadinessResponse` with: `current_stage`, `next_allowed_transition`, `has_structured_thesis`, `has_structured_plan`, `can_proceed_to_approval`, and a `checks` list of `ReadinessCheckResponse`. Hard-gate checks (advisory=False): has_structured_thesis, has_structured_plan. Advisory checks: conviction_level (warn < 3), invalidation_conditions (warn < 2), execution_assumptions (warn < 2), playbook_alignment (warn when absent). `can_proceed_to_approval` is True only when stage = Plan AND all hard gates pass. Added ALLOWED_LIFECYCLE_TRANSITIONS to top-level imports. Created `PlanReadinessPanel.tsx` with `CheckRow` subcomponent rendering pass/advisory/fail icons, summary status line, and authority boundary note. Added `PlanReadiness`, `ReadinessCheck` types and `fetchPlanReadiness()` to runtime.ts. Updated `PlanReviewWorkspace.tsx`: `readiness` state, fetch in `loadProjection`, render `PlanReadinessPanel` above "Authorize Plan" button in a React fragment. 12 new backend tests (575 total).
+
+**Acceptance Criteria:**
+
+- Operators receive cognition-aware planning guidance.
+
+**Out Of Scope:**
+
+- NLP-based consistency checking between thesis and plan rationale.
+- Blocking the Authorize button based on advisory failures.
+- Persistent rule engine (M12 scope).
+
+**Completed Verification:**
+
+- `uv run pytest` — 575 passed (12 new tests)
+- `npm.cmd run typecheck` — clean
+- `npm.cmd run lint` — clean
+- `npm.cmd run build` — clean (292.47 kB JS, 30.79 kB CSS)
+
+---
+
+## M10AIS09: Implement Replay Cognitive Artifact Timeline
+
+**Status:** Done
+
+**Milestone:** M10A
+
+**Branch:** `feature/tf-0064-operational-attention-continuity`
+
+**Affected Layer:** frontend
+
+**Linked ADRs:** ADR-0035
+
+**Impacted Invariants:** Replayability Is Foundational, Derived State Must Remain Distinguishable
+
+**Implementation Summary:** Extended `ReplayWorkspace.tsx` with cognitive artifact rendering — no backend changes (ADR-0035 confirmed timeline already carries full payloads). Added `extractThesisPayload()` and `extractPlanPayload()` type-guarded helpers that safely read structured artifact data from event payload dicts, returning null for legacy empty-payload events. Added `ThesisPayloadPreview` inline component — shows narrative (truncated to 160 chars), conviction badge, catalyst/invalidation/assumption counts, and regime alignment for `decision.thesis_created` and `decision.thesis_revised` entries. Added `PlanPayloadPreview` inline component — shows entry rationale (truncated), playbook badge, and execution assumption count for `decision.plan_created` entries. Added `CognitiveSnapshotSummary` panel rendered above the timeline `<ol>` — derives latest thesis and plan state by scanning all entries, shows narrative excerpt, conviction, regime, and plan entry excerpt with "N versions" indicator when thesis was revised. All artifact content labeled "Derived from event payloads" to distinguish from canonical truth. Graceful degradation: entries without structured payload show no artifact section.
+
+**Acceptance Criteria:**
+
+- Replay reconstructs reasoning, not merely events.
+
+**Out Of Scope:**
+
+- Point-in-time cognitive snapshot at a user-selected timestamp (M10AIS10).
+- Diff/comparison between thesis versions (M10AIS03 follow-on).
+
+**Completed Verification:**
+
+- `uv run pytest` — 575 passed (no backend changes)
+- `npm.cmd run typecheck` — clean
+- `npm.cmd run lint` — clean
+- `npm.cmd run build` — clean (298.13 kB JS, 30.79 kB CSS)
+
+---
+
+## M10AIS11: Implement Structured Review Reflection Model
+
+**Status:** Done
+
+**Milestone:** M10A
+
+**Branch:** `feature/tf-0064-operational-attention-continuity`
+
+**Affected Layer:** domain, api
+
+**Linked ADRs:** ADR-0033, ADR-0002
+
+**Impacted Invariants:** Event Ledger Canonical Truth, Replayability Is Foundational, Reflection And Review Are First-Class
+
+**Implementation Summary:** Created `src/domain/cognition/review.py` with `ReviewReflectionArtifact` — frozen dataclass with `create()` validating: `thesis_vs_outcome` (required), `decision_quality` (1-5), `execution_quality` (1-5), `discipline_observations` (required), `lessons_learned` (list, min 1), `behavioral_observations` (optional). `to_payload()`/`from_payload()` for event serialization with graceful legacy degradation. Added `POST /lifecycle/decisions/complete-review` endpoint that validates reflection fields and creates the `review.review_completed` lifecycle transition (Position→Review) via `LifecycleOrchestrationService` with structured payload `{review: {...}}`. Added `GET /lifecycle/decisions/{id}/review` that reads `review.review_completed` event payload and returns `ReviewReflectionArtifactResponse`. Updated `cognition/__init__.py` to export `ReviewReflectionArtifact`. 23 new tests (598 total).
+
+**Acceptance Criteria:**
+
+- Reviews become durable learning artifacts.
+
+**Completed Verification:**
+
+- `uv run pytest` — 598 passed (23 new tests: 13 unit + 10 integration)
+- `npm.cmd run typecheck` — clean
+- `npm.cmd run build` — clean (307.69 kB JS, 30.79 kB CSS)
+
+---
+
+## M10AIS12: Implement Review Reflection Workspace
+
+**Status:** Done
+
+**Milestone:** M10A
+
+**Branch:** `feature/tf-0064-operational-attention-continuity`
+
+**Affected Layer:** frontend
+
+**Linked ADRs:** ADR-0034
+
+**Impacted Invariants:** UX Is Architectural, Reflection And Review Are First-Class, Human Decision Sovereignty
+
+**Implementation Summary:** Created `ReviewReflectionModal.tsx` — form with `thesis_vs_outcome` textarea, `QualitySlider` subcomponent for `decision_quality` and `execution_quality` (1-5, Poor–Excellent labels), `discipline_observations` textarea, `lessons_learned` dynamic list, and optional `behavioral_observations` textarea. Submits to `POST /lifecycle/decisions/complete-review`. On success: reloads projection (stays in review workspace). Rewrote `ReviewWorkspace.tsx` entirely: imports `fetchThesisArtifact`, `fetchPlanArtifact`, `fetchReviewReflection` and respective types; fetches all three alongside workspace projection on load; added `ReviewFoundationPanel` showing original thesis narrative and plan entry rationale for cognitive comparison context before writing reflection; added `ReviewReflectionPanel` displaying completed review content (thesis vs outcome, quality scores, discipline observations, lessons, behavioral observations); `handleCompleteReview` button opens `ReviewReflectionModal` via `showReviewModal` state; "Review Recorded" complete surface shown at Review stage. Added `CompleteReviewRequest`, `CompleteReviewResponse`, `ReviewReflectionArtifact` types and `postCompleteReview()`, `fetchReviewReflection()` to `runtime.ts`.
+
+**Acceptance Criteria:**
+
+- Review becomes operationally meaningful.
+
+**Completed Verification:**
+
+- `uv run pytest` — 598 passed (no additional backend tests)
+- `npm.cmd run typecheck` — clean
+- `npm.cmd run build` — clean (307.69 kB JS, 30.79 kB CSS)
+
+---
+
+## M10AIS04: Implement Scenario Branch Modeling
+
+**Status:** Done
+
+**Milestone:** M10A
+
+**Branch:** `feature/tf-0064-operational-attention-continuity`
+
+**Affected Layer:** domain, api
+
+**Linked ADRs:** ADR-0033
+
+**Impacted Invariants:** Events Are Immutable, Replayability Is Foundational
+
+**Implementation Summary:** Created `src/domain/cognition/scenario.py` with `ScenarioBranchArtifact` (frozen dataclass) and `ScenarioBranchType` StrEnum (`primary`, `alternative`, `invalidation`, `regime_transition`). `create()` validates branch_type (enum check), condition (required), implication (required), and confidence (1-5). `to_payload()`/`from_payload()` for event serialization. Added `POST /lifecycle/decisions/create-scenario-branch` endpoint — validates fields, checks decision exists and is not in Review stage, appends `decision.scenario_branch_created` event directly to event store (not a lifecycle transition). Added `GET /lifecycle/decisions/{decision_id}/scenario-branches` returning all branches chronologically. Extended `ReplayTimelineBuilder._kind_for_event()` to include `COGNITION = "cognition"` kind for non-lifecycle `EventDomain.DECISION` events — ensures `decision.scenario_branch_created` and `decision.thesis_revised` appear in replay timeline. 23 new tests (621 total).
+
+**Completed Verification:**
+
+- `uv run pytest` — 621 passed (23 new: 13 unit + 10 integration)
+- `npm.cmd run typecheck` — clean
+- `npm.cmd run build` — clean (317.91 kB JS, 30.79 kB CSS)
+
+---
+
+## M10AIS05: Implement Scenario Visualization Projection
+
+**Status:** Done
+
+**Milestone:** M10A
+
+**Branch:** `feature/tf-0064-operational-attention-continuity`
+
+**Affected Layer:** frontend
+
+**Linked ADRs:** ADR-0035
+
+**Impacted Invariants:** Replayability Is Foundational, UX Is Architectural
+
+**Implementation Summary:** Extended `ReplayWorkspace.tsx` with scenario branch rendering. Added `extractScenarioBranchPayload()` type guard, `ScenarioBranchPreview` component (branch type badge, likelihood badge, condition/implication excerpts), `BRANCH_TYPE_LABELS` and `COGNITION` kind label. Updated `TimelineEntryRow` to render `ScenarioBranchPreview` for `decision.scenario_branch_created` entries. Updated `CognitiveSnapshotSummary` to count scenario branches and show "N scenario branches defined". Created `ScenarioBranchPanel.tsx` with `BranchCard` subcomponent, ordered by type (primary → alternative → invalidation → regime_transition), "Add Scenario" button opening `ScenarioBranchModal`. Created `ScenarioBranchModal.tsx` with branch_type select, condition/implication textareas, likelihood slider, optional notes. Updated `OpportunityWorkspace.tsx` to fetch branches on load, show `ScenarioBranchPanel` below field surfaces, re-fetch after branch added. Added `ScenarioBranchType`, `ScenarioBranch`, `ScenarioBranchList`, `postCreateScenarioBranch()`, `fetchScenarioBranches()` to `runtime.ts`.
+
+**Completed Verification:**
+
+- `uv run pytest` — 621 passed (no new backend tests)
+- `npm.cmd run typecheck` — clean
+- `npm.cmd run build` — clean (317.91 kB JS, 30.79 kB CSS)
+
+---
+
+## M10AIS10: Implement Cognitive Snapshot Reconstruction
+
+**Status:** Done
+
+**Milestone:** M10A
+
+**Branch:** `feature/tf-0064-operational-attention-continuity`
+
+**Affected Layer:** api, frontend
+
+**Linked ADRs:** ADR-0035
+
+**Impacted Invariants:** Replayability Is Foundational, Derived State Must Remain Distinguishable
+
+**Implementation Summary:** Added `GET /lifecycle/decisions/{decision_id}/cognitive-snapshot?at=<ISO-timestamp>` endpoint. The `at` parameter is optional — when omitted, returns current full state; when provided, reconstructs cognitive state strictly before that timestamp (`ts >= at` boundary excludes events at or after the snapshot moment, applied only when `at` is explicitly provided to avoid Windows clock resolution issues). Scans decision events, tracking latest lifecycle stage, latest thesis (thesis_created or thesis_revised), latest plan (plan_created), and all scenario branches visible before T. Returns `CognitiveSnapshotResponse` with decision_id, snapshot_at, event_count_at_snapshot, current_stage, thesis, plan, scenario_branches (compact nested models, not reusing the full artifact responses), and authority="derived". 8 new tests (629 total) with deterministic time boundaries using event_timestamp from previous API responses + 1 microsecond delta (not raw datetime.now() captures). Created `CognitiveSnapshotPanel.tsx` with nested `BranchSummary` subcomponent, showing lifecycle stage tag, thesis narrative excerpt with conviction badge and counts, plan entry/stop rationale excerpts, scenario branch type badges and first 2 branches. Added fetchCognitiveSnapshot() and CognitiveSnapshot type family to runtime.ts. Updated `ReplayWorkspace.tsx`: added `cognitiveSnapshot` and `selectedEntryTimestamp` states; fetchCognitiveSnapshot on load; `handleEntryClick` callback fetches snapshot at clicked entry's timestamp; `handleClearSelection` returns to current state; `TimelineEntryRow` gains `isSelected`/`onClick` props and clickable styling; `CognitiveSnapshotPanel` replaces `CognitiveSnapshotSummary` when a decision is active; hint text "Click a timeline entry to reconstruct cognitive state at that moment."
+
+**Acceptance Criteria:**
+
+- Historical reasoning becomes reconstructable.
+
+**Completed Verification:**
+
+- `uv run pytest` — 629 passed (8 new tests)
+- `npm.cmd run typecheck` — clean
+- `npm.cmd run build` — clean (323.38 kB JS, 30.79 kB CSS)
+
+---
+
+## M10AIS13: Implement Replay Annotation System
+
+**Status:** Done
+
+**Milestone:** M10A
+
+**Branch:** `feature/tf-0064-operational-attention-continuity`
+
+**Affected Layer:** domain, api, frontend
+
+**Linked ADRs:** ADR-0033, ADR-0035
+
+**Impacted Invariants:** Replayability Is Foundational, Events Are Immutable, Reflection And Review Are First-Class
+
+**Implementation Summary:** Created `src/domain/cognition/annotation.py` with `ReplayAnnotationArtifact` and `AnnotationType` StrEnum (`observation`, `question`, `insight`, `postmortem`). Validates sequence >= 0, annotated_event_type, note (required), and annotation_type (enum check). `decision.replay_annotation_created` events are appended directly (not lifecycle transitions); they appear in the replay timeline as `COGNITION` kind (covered by the EventDomain.DECISION → COGNITION mapping from M10AIS04). Added `POST /lifecycle/decisions/create-annotation` (validates fields, checks decision exists, appends annotation event) and `GET /lifecycle/decisions/{id}/annotations` (all annotations chronologically, filterable by sequence on frontend). 18 new tests (647 total). Created `AnnotationModal.tsx` with annotation_type select (Observation/Question/Insight/Postmortem with descriptions), note textarea, and `postCreateAnnotation()` call. Updated `ReplayWorkspace.tsx`: `annotationList` state fetched alongside cognitive snapshot on load; `annotatingEntry` state tracks which entry's modal is open; `AnnotationBadge` subcomponent shows type tag and note text beneath annotated entries; `TimelineEntryRow` gains `annotations` and `onAnnotate` props — "+ Note" button appears on every entry (stopPropagation prevents triggering the cognitive snapshot click); `AnnotationModal` rendered when `annotatingEntry` is set; re-fetches annotations after successful creation. Added `AnnotationType`, `Annotation`, `AnnotationList`, `postCreateAnnotation()`, `fetchAnnotations()` to runtime.ts.
+
+**Acceptance Criteria:**
+
+- Replay becomes cognitively interactive.
+
+**Completed Verification:**
+
+- `uv run pytest` — 647 passed (18 new tests: 9 unit + 9 integration)
+- `npm.cmd run typecheck` — clean
+- `npm.cmd run build` — clean (328.37 kB JS, 30.79 kB CSS)
 
 ---
 

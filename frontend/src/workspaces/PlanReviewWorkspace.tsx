@@ -4,11 +4,20 @@ import { type MouseEvent, useCallback, useEffect, useRef, useState } from "react
 
 import {
   fetchWorkspaceProjection,
+  fetchThesisArtifact,
+  fetchPlanArtifact,
+  fetchPlanReadiness,
   postLifecycleTransition,
+  type PlanReadiness,
+  type ThesisArtifact,
+  type TradePlanArtifact,
   type WorkspaceApiParams,
   type WorkspaceProjection,
 } from "../api/runtime";
 import { type WorkspaceContext } from "../workspaceRouting";
+import { ThesisRevisionModal } from "./ThesisRevisionModal";
+import { PlanDevelopmentModal } from "./PlanDevelopmentModal";
+import { PlanReadinessPanel } from "./PlanReadinessPanel";
 
 type TransitionState = "idle" | "transitioning" | "error";
 
@@ -81,8 +90,110 @@ type PlanReviewWorkspaceProps = {
   onStageLoaded?: (stage: string | null) => void;
 };
 
+function ThesisContextPanel({
+  thesis,
+  onRevise,
+  canRevise,
+}: {
+  thesis: ThesisArtifact;
+  onRevise?: () => void;
+  canRevise?: boolean;
+}) {
+  const CONFIDENCE_LABELS: Record<number, string> = {
+    1: "Speculative", 2: "Low", 3: "Moderate", 4: "High", 5: "Conviction",
+  };
+  const isRevised = thesis.source_event_type === "decision.thesis_revised";
+  return (
+    <div className="thesis-context-panel" aria-label="Thesis foundation">
+      <div className="thesis-context-header">
+        <p className="eyebrow">
+          Thesis Foundation
+          {isRevised ? <span className="thesis-revision-badge"> — Revised</span> : null}
+        </p>
+        {canRevise && onRevise ? (
+          <button
+            className="thesis-revise-btn"
+            onClick={onRevise}
+            type="button"
+          >
+            Revise Thesis
+          </button>
+        ) : null}
+      </div>
+      <p className="thesis-context-narrative">{thesis.narrative}</p>
+      {thesis.regime_alignment ? (
+        <p className="thesis-context-regime">
+          <span className="thesis-context-label">Regime:</span> {thesis.regime_alignment}
+        </p>
+      ) : null}
+      <p className="thesis-context-conviction">
+        Conviction: {CONFIDENCE_LABELS[thesis.confidence_level] ?? thesis.confidence_level} ({thesis.confidence_level}/5)
+      </p>
+      <div className="thesis-context-lists">
+        <div className="thesis-context-list-group">
+          <p className="thesis-context-label">Catalysts</p>
+          <ul className="thesis-context-list">
+            {thesis.catalysts.map((c) => <li key={c}>{c}</li>)}
+          </ul>
+        </div>
+        <div className="thesis-context-list-group">
+          <p className="thesis-context-label">Invalidation Conditions</p>
+          <ul className="thesis-context-list">
+            {thesis.invalidation_conditions.map((i) => <li key={i}>{i}</li>)}
+          </ul>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function PlanContextPanel({ plan }: { plan: TradePlanArtifact }) {
+  return (
+    <div className="thesis-context-panel" aria-label="Trade plan">
+      <p className="eyebrow">Trade Plan</p>
+      <div className="plan-rationale-grid">
+        <div className="plan-rationale-item">
+          <p className="thesis-context-label">Entry</p>
+          <p className="plan-rationale-text">{plan.entry_rationale}</p>
+        </div>
+        <div className="plan-rationale-item">
+          <p className="thesis-context-label">Stop</p>
+          <p className="plan-rationale-text">{plan.stop_rationale}</p>
+        </div>
+        <div className="plan-rationale-item">
+          <p className="thesis-context-label">Target</p>
+          <p className="plan-rationale-text">{plan.target_rationale}</p>
+        </div>
+        <div className="plan-rationale-item">
+          <p className="thesis-context-label">Sizing</p>
+          <p className="plan-rationale-text">{plan.sizing_rationale}</p>
+        </div>
+      </div>
+      {plan.execution_assumptions.length > 0 ? (
+        <div className="thesis-context-list-group">
+          <p className="thesis-context-label">Execution Assumptions</p>
+          <ul className="thesis-context-list">
+            {plan.execution_assumptions.map((a) => <li key={a}>{a}</li>)}
+          </ul>
+        </div>
+      ) : null}
+      {plan.playbook_alignment ? (
+        <p className="thesis-context-regime">
+          <span className="thesis-context-label">Playbook:</span>{" "}
+          {plan.playbook_alignment}
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
 export function PlanReviewWorkspace({ context, onNavigateProgrammatic, onStageLoaded }: PlanReviewWorkspaceProps) {
   const [projection, setProjection] = useState<WorkspaceProjection | null>(null);
+  const [thesis, setThesis] = useState<ThesisArtifact | null>(null);
+  const [plan, setPlan] = useState<TradePlanArtifact | null>(null);
+  const [readiness, setReadiness] = useState<PlanReadiness | null>(null);
+  const [showRevisionModal, setShowRevisionModal] = useState(false);
+  const [showPlanModal, setShowPlanModal] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [transitionState, setTransitionState] = useState<TransitionState>("idle");
   const [transitionError, setTransitionError] = useState<string | null>(null);
@@ -110,6 +221,24 @@ export function PlanReviewWorkspace({ context, onNavigateProgrammatic, onStageLo
             err instanceof Error ? err.message : "Failed to load plan review workspace",
           );
         });
+
+      if (context.decision_id) {
+        fetchThesisArtifact(context.decision_id, signal)
+          .then((artifact) => setThesis(artifact))
+          .catch((err: unknown) => {
+            if (err instanceof DOMException && err.name === "AbortError") return;
+          });
+        fetchPlanArtifact(context.decision_id, signal)
+          .then((artifact) => setPlan(artifact))
+          .catch((err: unknown) => {
+            if (err instanceof DOMException && err.name === "AbortError") return;
+          });
+        fetchPlanReadiness(context.decision_id, signal)
+          .then((r) => setReadiness(r))
+          .catch((err: unknown) => {
+            if (err instanceof DOMException && err.name === "AbortError") return;
+          });
+      }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [
@@ -168,7 +297,7 @@ export function PlanReviewWorkspace({ context, onNavigateProgrammatic, onStageLo
     };
   }
 
-  const handleCreatePlan = makeTransitionHandler("Plan");
+  const handleCreatePlan = () => setShowPlanModal(true);
   const handleAuthorizePlan = makeTransitionHandler("Approval");
   const handleRecordExecution = makeTransitionHandler(
     "Execution",
@@ -178,7 +307,7 @@ export function PlanReviewWorkspace({ context, onNavigateProgrammatic, onStageLo
         : ""),
   );
 
-  const fieldOrder = ["plan_references", "risk_review", "rule_evaluation"];
+  const fieldOrder = ["thesis_content", "plan_references", "risk_review", "rule_evaluation"];
 
   return (
     <section
@@ -220,50 +349,88 @@ export function PlanReviewWorkspace({ context, onNavigateProgrammatic, onStageLo
             })}
           </div>
 
+          {thesis && showRevisionModal ? (
+            <ThesisRevisionModal
+              context={context}
+              currentThesis={thesis}
+              onCancel={() => setShowRevisionModal(false)}
+              onSuccess={() => {
+                setShowRevisionModal(false);
+                if (context.decision_id) {
+                  fetchThesisArtifact(context.decision_id).then(setThesis).catch(() => {});
+                }
+              }}
+              symbol={thesis.symbol}
+            />
+          ) : null}
+
+          {thesis ? (
+            <ThesisContextPanel
+              canRevise={lifecycleStage === "Thesis"}
+              onRevise={() => setShowRevisionModal(true)}
+              thesis={thesis}
+            />
+          ) : null}
+
+          {plan ? <PlanContextPanel plan={plan} /> : null}
+
+          {showPlanModal && context.decision_id ? (
+            <PlanDevelopmentModal
+              context={context}
+              onCancel={() => setShowPlanModal(false)}
+              onSuccess={() => {
+                setShowPlanModal(false);
+                const controller = new AbortController();
+                fetchControllerRef.current = controller;
+                loadProjection(controller.signal);
+                if (context.decision_id) {
+                  fetchPlanArtifact(context.decision_id).then(setPlan).catch(() => {});
+                }
+              }}
+              symbol={thesis?.symbol ?? plan?.symbol ?? ""}
+            />
+          ) : null}
+
           {canCreatePlan ? (
             <div className="lifecycle-action-surface">
               <p className="eyebrow">Available Lifecycle Action</p>
               <p className="lifecycle-action-note">
-                The thesis is ready for a plan. Creating a plan records the
-                structured intent before approval. The lifecycle service validates
-                the transition before appending an event.
+                The thesis is ready for a plan. Define your structured execution intent —
+                entry, stop, target, and sizing rationale become replayable cognitive artifacts.
               </p>
-              {transitionError ? (
-                <div className="runtime-error">{transitionError}</div>
-              ) : null}
               <button
                 className="lifecycle-action-btn"
-                disabled={transitionState === "transitioning"}
                 onClick={handleCreatePlan}
                 type="button"
               >
-                {transitionState === "transitioning"
-                  ? "Requesting transition…"
-                  : "Create Plan"}
+                Create Plan
               </button>
             </div>
           ) : canAuthorizePlan ? (
-            <div className="lifecycle-action-surface">
-              <p className="eyebrow">Available Lifecycle Action</p>
-              <p className="lifecycle-action-note">
-                Authorizing a plan confirms deliberate risk acceptance. The lifecycle
-                service validates the transition before appending an event — this is
-                not trade execution.
-              </p>
-              {transitionError ? (
-                <div className="runtime-error">{transitionError}</div>
-              ) : null}
-              <button
-                className="lifecycle-action-btn"
-                disabled={transitionState === "transitioning"}
-                onClick={handleAuthorizePlan}
-                type="button"
-              >
-                {transitionState === "transitioning"
-                  ? "Requesting transition…"
-                  : "Authorize Plan"}
-              </button>
-            </div>
+            <>
+              {readiness ? <PlanReadinessPanel readiness={readiness} /> : null}
+              <div className="lifecycle-action-surface">
+                <p className="eyebrow">Available Lifecycle Action</p>
+                <p className="lifecycle-action-note">
+                  Authorizing a plan confirms deliberate risk acceptance. The lifecycle
+                  service validates the transition before appending an event — this is
+                  not trade execution.
+                </p>
+                {transitionError ? (
+                  <div className="runtime-error">{transitionError}</div>
+                ) : null}
+                <button
+                  className="lifecycle-action-btn"
+                  disabled={transitionState === "transitioning"}
+                  onClick={handleAuthorizePlan}
+                  type="button"
+                >
+                  {transitionState === "transitioning"
+                    ? "Requesting transition…"
+                    : "Authorize Plan"}
+                </button>
+              </div>
+            </>
           ) : canRecordExecution ? (
             <div className="lifecycle-action-surface">
               <p className="eyebrow">Available Lifecycle Action</p>

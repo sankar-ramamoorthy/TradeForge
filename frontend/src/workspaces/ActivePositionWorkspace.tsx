@@ -10,6 +10,7 @@ import {
 } from "../api/runtime";
 import { type WorkspaceContext } from "../workspaceRouting";
 import { MarketContextPanel } from "./MarketContextPanel";
+import { CognitiveContinuityPanel } from "./CognitiveContinuityPanel";
 
 type TransitionState = "idle" | "transitioning" | "error";
 
@@ -218,6 +219,13 @@ export function ActivePositionWorkspace({ context, onNavigateProgrammatic, onSta
               );
             })}
           </div>
+
+          {context.decision_id ? (
+            <CognitiveContinuityPanel
+              decisionId={context.decision_id}
+              label="Thesis and Plan Reference"
+            />
+          ) : null}
 
           <MarketContextPanel />
 
