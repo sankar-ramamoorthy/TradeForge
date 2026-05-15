@@ -234,6 +234,27 @@ class TradePlanArtifactResponse(BaseModel):
     event_timestamp: datetime
 
 
+class ArmPlanPayload(BaseModel):
+    decision_id: str = Field(min_length=1)
+    symbol: str = Field(min_length=1, max_length=10)
+    trigger_conditions: list[str] = Field(min_length=1)
+    persona_id: str = Field(min_length=1)
+    workspace_id: str = Field(min_length=1)
+
+
+class ArmPlanResponse(BaseModel):
+    decision_id: str
+    event_type: str
+    timestamp: datetime
+
+
+class ArmPlanArtifactResponse(BaseModel):
+    decision_id: str
+    symbol: str
+    trigger_conditions: list[str]
+    event_timestamp: datetime
+
+
 class RevisePlanPayload(BaseModel):
     decision_id: str = Field(min_length=1)
     symbol: str = Field(min_length=1, max_length=10)
@@ -1580,6 +1601,98 @@ def get_plan_history(
         decision_id=decision_id,
         total_revisions=len(snapshots),
         snapshots=snapshots,
+    )
+
+
+@lifecycle_router.post(
+    "/decisions/arm-plan",
+    response_model=ArmPlanResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+def arm_plan(
+    request: Request,
+    payload: ArmPlanPayload,
+) -> ArmPlanResponse:
+    """Arm a plan by declaring trigger conditions, transitioning to Armed stage.
+
+    Creates a decision.plan_armed lifecycle event with declared trigger conditions.
+    Only valid when the current lifecycle stage is Approval.
+    """
+    clean_conditions = [c.strip() for c in payload.trigger_conditions if c.strip()]
+    if not clean_conditions:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={"message": "at least one non-empty trigger condition is required"},
+        )
+
+    symbol = payload.symbol.strip().upper()
+    now = datetime.now(tz=UTC)
+    service = LifecycleOrchestrationService(_event_store_from(request))
+
+    result = service.transition(
+        LifecycleTransitionRequest(
+            requested_stage=LifecycleStage.ARMED,
+            timestamp=now,
+            persona_id=payload.persona_id,
+            workspace_id=payload.workspace_id,
+            entity_references=(
+                EntityReference(entity_type="decision", entity_id=payload.decision_id),
+                EntityReference(entity_type="ticker", entity_id=symbol),
+            ),
+            payload={
+                "symbol": symbol,
+                "trigger_conditions": clean_conditions,
+            },
+            provenance={"actor": "human", "source": "arm-plan-workflow"},
+        )
+    )
+
+    if not result.appended:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail={"message": result.validation.reason or "arm plan transition rejected"},
+        )
+
+    return ArmPlanResponse(
+        decision_id=payload.decision_id,
+        event_type="decision.plan_armed",
+        timestamp=now,
+    )
+
+
+@lifecycle_router.get(
+    "/decisions/{decision_id}/arm",
+    response_model=ArmPlanArtifactResponse,
+)
+def get_arm_artifact(
+    request: Request,
+    decision_id: str,
+) -> ArmPlanArtifactResponse:
+    """Return the declared trigger conditions from the decision.plan_armed event."""
+    events = _event_store_from(request).read_events()
+
+    arm_event = None
+    for event in reversed(events):
+        if event.event_type != "decision.plan_armed":
+            continue
+        if any(
+            ref.entity_type == "decision" and ref.entity_id == decision_id
+            for ref in event.entity_references
+        ):
+            arm_event = event
+            break
+
+    if arm_event is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"message": f"no arm event found for decision {decision_id}"},
+        )
+
+    return ArmPlanArtifactResponse(
+        decision_id=decision_id,
+        symbol=str(arm_event.payload.get("symbol", "")),
+        trigger_conditions=list(arm_event.payload.get("trigger_conditions", [])),
+        event_timestamp=arm_event.timestamp,
     )
 
 

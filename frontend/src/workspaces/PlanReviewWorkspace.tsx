@@ -18,6 +18,7 @@ import { type WorkspaceContext } from "../workspaceRouting";
 import { ThesisRevisionModal } from "./ThesisRevisionModal";
 import { PlanRevisionModal } from "./PlanRevisionModal";
 import { PlanDevelopmentModal } from "./PlanDevelopmentModal";
+import { ArmPlanModal } from "./ArmPlanModal";
 import { PlanReadinessPanel } from "./PlanReadinessPanel";
 
 type TransitionState = "idle" | "transitioning" | "error";
@@ -219,6 +220,7 @@ export function PlanReviewWorkspace({ context, onNavigateProgrammatic, onStageLo
   const [showRevisionModal, setShowRevisionModal] = useState(false);
   const [showPlanRevisionModal, setShowPlanRevisionModal] = useState(false);
   const [showPlanModal, setShowPlanModal] = useState(false);
+  const [showArmPlanModal, setShowArmPlanModal] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [transitionState, setTransitionState] = useState<TransitionState>("idle");
   const [transitionError, setTransitionError] = useState<string | null>(null);
@@ -285,7 +287,7 @@ export function PlanReviewWorkspace({ context, onNavigateProgrammatic, onStageLo
   const lifecycleStage = projection?.lifecycle_state?.current_stage ?? null;
   const canCreatePlan = lifecycleStage === "Thesis";
   const canAuthorizePlan = lifecycleStage === "Plan";
-  const canRecordExecution = lifecycleStage === "Approval";
+  const canArmPlan = lifecycleStage === "Approval";
 
   function makeTransitionHandler(requestedStage: string, nextHref?: string) {
     return function () {
@@ -324,13 +326,11 @@ export function PlanReviewWorkspace({ context, onNavigateProgrammatic, onStageLo
 
   const handleCreatePlan = () => setShowPlanModal(true);
   const handleAuthorizePlan = makeTransitionHandler("Approval");
-  const handleRecordExecution = makeTransitionHandler(
-    "Execution",
+  const armPlanSuccessHref =
     "/workspaces/active-position" +
-      (context.decision_id
-        ? `?decision_id=${encodeURIComponent(context.decision_id)}`
-        : ""),
-  );
+    (context.decision_id
+      ? `?decision_id=${encodeURIComponent(context.decision_id)}`
+      : "");
 
   const fieldOrder = ["thesis_content", "plan_references", "risk_review", "rule_evaluation"];
 
@@ -477,28 +477,35 @@ export function PlanReviewWorkspace({ context, onNavigateProgrammatic, onStageLo
                 </button>
               </div>
             </>
-          ) : canRecordExecution ? (
-            <div className="lifecycle-action-surface">
-              <p className="eyebrow">Available Lifecycle Action</p>
-              <p className="lifecycle-action-note">
-                The plan is approved. Recording execution acknowledges that the
-                order workflow has been initiated. This is a manual record for
-                MVP — live broker sync is out of scope.
-              </p>
-              {transitionError ? (
-                <div className="runtime-error">{transitionError}</div>
+          ) : canArmPlan ? (
+            <>
+              {showArmPlanModal && context.decision_id ? (
+                <ArmPlanModal
+                  context={context}
+                  onCancel={() => setShowArmPlanModal(false)}
+                  onSuccess={() => {
+                    setShowArmPlanModal(false);
+                    onNavigateProgrammatic?.(armPlanSuccessHref);
+                  }}
+                  symbol={plan?.symbol ?? thesis?.symbol ?? ""}
+                />
               ) : null}
-              <button
-                className="lifecycle-action-btn"
-                disabled={transitionState === "transitioning"}
-                onClick={handleRecordExecution}
-                type="button"
-              >
-                {transitionState === "transitioning"
-                  ? "Requesting transition…"
-                  : "Record Execution"}
-              </button>
-            </div>
+              <div className="lifecycle-action-surface">
+                <p className="eyebrow">Available Lifecycle Action</p>
+                <p className="lifecycle-action-note">
+                  The plan is authorized. Declare the trigger conditions that must
+                  be met before the order is placed — this arms the plan and moves
+                  it into active supervision.
+                </p>
+                <button
+                  className="lifecycle-action-btn"
+                  onClick={() => setShowArmPlanModal(true)}
+                  type="button"
+                >
+                  Arm Plan
+                </button>
+              </div>
+            </>
           ) : null}
 
           <div

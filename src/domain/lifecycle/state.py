@@ -13,6 +13,7 @@ class LifecycleStage(StrEnum):
     THESIS = "Thesis"
     PLAN = "Plan"
     APPROVAL = "Approval"
+    ARMED = "Armed"
     EXECUTION = "Execution"
     POSITION = "Position"
     REVIEW = "Review"
@@ -23,6 +24,7 @@ CANONICAL_LIFECYCLE_STAGES: tuple[LifecycleStage, ...] = (
     LifecycleStage.THESIS,
     LifecycleStage.PLAN,
     LifecycleStage.APPROVAL,
+    LifecycleStage.ARMED,
     LifecycleStage.EXECUTION,
     LifecycleStage.POSITION,
     LifecycleStage.REVIEW,
@@ -35,6 +37,7 @@ LIFECYCLE_EVENT_STAGE_MAP: Mapping[str, LifecycleStage] = MappingProxyType(
         "decision.thesis_created": LifecycleStage.THESIS,
         "decision.plan_created": LifecycleStage.PLAN,
         "decision.plan_approved": LifecycleStage.APPROVAL,
+        "decision.plan_armed": LifecycleStage.ARMED,
         "execution.order_submitted": LifecycleStage.EXECUTION,
         "execution.position_opened": LifecycleStage.POSITION,
         "review.review_completed": LifecycleStage.REVIEW,

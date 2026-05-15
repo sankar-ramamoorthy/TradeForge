@@ -39,6 +39,7 @@ STAGES = [
     ("Thesis", "decision.thesis_created"),
     ("Plan", "decision.plan_created"),
     ("Approval", "decision.plan_approved"),
+    ("Armed", "decision.plan_armed"),
     ("Execution", "execution.order_submitted"),
     ("Position", "execution.position_opened"),
     ("Review", "review.review_completed"),

@@ -2439,3 +2439,16 @@ p {
   margin: 0;
   line-height: 1.5;
 }
+
+/* ─── Armed state: trigger conditions panel ──────────────────────────────── */
+
+.armed-trigger-conditions {
+  background: var(--color-attention-surface);
+  border: 1px solid #c99a42;
+  border-radius: 8px;
+  padding: 14px 16px;
+  margin-bottom: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}

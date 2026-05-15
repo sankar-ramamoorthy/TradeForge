@@ -8,6 +8,19 @@ import {
   type WorkspaceApiParams,
   type WorkspaceProjection,
 } from "../api/runtime";
+
+type ArmArtifact = {
+  decision_id: string;
+  symbol: string;
+  trigger_conditions: string[];
+  event_timestamp: string;
+};
+
+async function fetchArmArtifact(decisionId: string, signal?: AbortSignal): Promise<ArmArtifact> {
+  const response = await fetch(`/lifecycle/decisions/${encodeURIComponent(decisionId)}/arm`, { signal });
+  if (!response.ok) throw new Error("no arm artifact");
+  return response.json() as Promise<ArmArtifact>;
+}
 import { type WorkspaceContext } from "../workspaceRouting";
 import { MarketContextPanel } from "./MarketContextPanel";
 import { CognitiveContinuityPanel } from "./CognitiveContinuityPanel";
@@ -88,6 +101,7 @@ export function ActivePositionWorkspace({ context, onNavigateProgrammatic, onSta
   const [loadError, setLoadError] = useState<string | null>(null);
   const [transitionState, setTransitionState] = useState<TransitionState>("idle");
   const [transitionError, setTransitionError] = useState<string | null>(null);
+  const [armArtifact, setArmArtifact] = useState<ArmArtifact | null>(null);
   const fetchControllerRef = useRef<AbortController | null>(null);
 
   const params: WorkspaceApiParams = {
@@ -105,6 +119,14 @@ export function ActivePositionWorkspace({ context, onNavigateProgrammatic, onSta
           setProjection(data);
           setLoadError(null);
           onStageLoaded?.(data.lifecycle_state?.current_stage ?? null);
+          if (
+            data.lifecycle_state?.current_stage === "Armed" &&
+            context.decision_id
+          ) {
+            fetchArmArtifact(context.decision_id, signal)
+              .then(setArmArtifact)
+              .catch(() => {});
+          }
         })
         .catch((err: unknown) => {
           if (err instanceof DOMException && err.name === "AbortError") return;
@@ -131,6 +153,7 @@ export function ActivePositionWorkspace({ context, onNavigateProgrammatic, onSta
   }, [loadProjection]);
 
   const lifecycleStage = projection?.lifecycle_state?.current_stage ?? null;
+  const canConfirmExecution = lifecycleStage === "Armed";
   const canRecordPosition = lifecycleStage === "Execution";
   const canBeginReview = lifecycleStage === "Position";
 
@@ -169,6 +192,7 @@ export function ActivePositionWorkspace({ context, onNavigateProgrammatic, onSta
     };
   }
 
+  const handleConfirmExecution = makeTransitionHandler("Execution");
   const handleRecordPosition = makeTransitionHandler("Position");
   const handleBeginReview = makeTransitionHandler(
     "Review",
@@ -236,6 +260,39 @@ export function ActivePositionWorkspace({ context, onNavigateProgrammatic, onSta
               </p>
             ))}
           </div>
+
+          {canConfirmExecution ? (
+            <div className="lifecycle-action-surface">
+              <p className="eyebrow">Armed — Awaiting Trigger</p>
+              {armArtifact && armArtifact.trigger_conditions.length > 0 ? (
+                <div className="armed-trigger-conditions">
+                  <p className="thesis-context-label">Declared Trigger Conditions</p>
+                  <ul className="thesis-context-list">
+                    {armArtifact.trigger_conditions.map((condition) => (
+                      <li key={condition}>{condition}</li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
+              <p className="lifecycle-action-note">
+                Confirm execution only when the declared trigger conditions are
+                satisfied. This records the moment the entry was taken.
+              </p>
+              {transitionError ? (
+                <div className="runtime-error">{transitionError}</div>
+              ) : null}
+              <button
+                className="lifecycle-action-btn"
+                disabled={transitionState === "transitioning"}
+                onClick={handleConfirmExecution}
+                type="button"
+              >
+                {transitionState === "transitioning"
+                  ? "Recording…"
+                  : "Confirm Trigger Met — Record Execution"}
+              </button>
+            </div>
+          ) : null}
 
           {canRecordPosition ? (
             <div className="lifecycle-action-surface">

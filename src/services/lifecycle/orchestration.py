@@ -21,6 +21,7 @@ LIFECYCLE_STAGE_EVENT_TYPE_MAP: Mapping[LifecycleStage, str] = MappingProxyType(
         LifecycleStage.THESIS: "decision.thesis_created",
         LifecycleStage.PLAN: "decision.plan_created",
         LifecycleStage.APPROVAL: "decision.plan_approved",
+        LifecycleStage.ARMED: "decision.plan_armed",
         LifecycleStage.EXECUTION: "execution.order_submitted",
         LifecycleStage.POSITION: "execution.position_opened",
         LifecycleStage.REVIEW: "review.review_completed",

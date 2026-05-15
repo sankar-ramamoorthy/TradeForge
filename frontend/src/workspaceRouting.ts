@@ -110,6 +110,7 @@ export const STAGE_TO_WORKSPACE: Partial<Record<string, WorkspaceRouteId>> = {
   Thesis: "plan-review",
   Plan: "plan-review",
   Approval: "plan-review",
+  Armed: "active-position",
   Execution: "active-position",
   Position: "active-position",
   Review: "review",

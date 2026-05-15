@@ -131,7 +131,7 @@ Explicit roadmap checkpoint completed M9 Updated*Done*.
 | M10AIS14 | Done | M10A | Implement playbook alignment projection layer | `feature/tf-0064-operational-attention-continuity` |
 | M10AIS15 | Done | M10A | Implement cross-workspace cognitive continuity | `feature/tf-0064-operational-attention-continuity` |
 | TF-F001 | Done | TBD | Add iterative revision workflow for thesis, plan, and assumptions | `feature/tf-f001-iterative-revision-workflow` |
-| TF-F002 | Planned | TBD | Introduce conditional execution state between Approval and Execution | `feature/tf-f002-awaiting-trigger-lifecycle-state` |
+| TF-F002 | Done | TBD | Introduce conditional execution state between Approval and Execution | `feature/tf-f002-awaiting-trigger-lifecycle-state` |
 | TF-F003 | Done | TBD | Expand cognition input areas from CRUD-form style to thinking-space UX | `feature/tf-f003-cognition-ux-ergonomics` |
 
 Explicit roadmap checkpoint completed M9 Updated*Done*.
@@ -2905,7 +2905,7 @@ During the SMH walkthrough, the advisory system surfaced items requiring reconsi
 
 ## TF-F002: Introduce Conditional Execution State Between Approval And Execution
 
-**Status:** Planned
+**Status:** Done
 
 **Classification:** architectural
 

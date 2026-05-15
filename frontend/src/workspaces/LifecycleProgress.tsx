@@ -3,6 +3,7 @@ export const LIFECYCLE_STAGES = [
   "Thesis",
   "Plan",
   "Approval",
+  "Armed",
   "Execution",
   "Position",
   "Review",
@@ -32,9 +33,14 @@ const STAGE_GUIDANCE: Record<LifecycleStage, StageGuidance> = {
       "Review the plan carefully and authorize it only if the conditions and risk are intentionally accepted.",
   },
   Approval: {
-    meaning: "The plan is authorized and awaiting execution.",
+    meaning: "The plan is authorized. Declare trigger conditions before arming.",
     guidance:
-      "Record the order submission once the execution workflow has been initiated.",
+      "Specify the market conditions that must be met before the order is placed.",
+  },
+  Armed: {
+    meaning: "The plan is armed — watching for declared trigger conditions.",
+    guidance:
+      "Confirm execution only when the declared trigger conditions are satisfied.",
   },
   Execution: {
     meaning: "Execution submitted — awaiting position confirmation.",

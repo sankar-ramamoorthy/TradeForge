@@ -28,6 +28,7 @@ def test_lifecycle_stage_order_is_canonical() -> None:
         LifecycleStage.THESIS,
         LifecycleStage.PLAN,
         LifecycleStage.APPROVAL,
+        LifecycleStage.ARMED,
         LifecycleStage.EXECUTION,
         LifecycleStage.POSITION,
         LifecycleStage.REVIEW,
@@ -37,6 +38,7 @@ def test_lifecycle_stage_order_is_canonical() -> None:
         "Thesis",
         "Plan",
         "Approval",
+        "Armed",
         "Execution",
         "Position",
         "Review",
@@ -44,8 +46,8 @@ def test_lifecycle_stage_order_is_canonical() -> None:
 
 
 def test_lifecycle_model_does_not_merge_or_add_stages() -> None:
-    assert len(CANONICAL_LIFECYCLE_STAGES) == 7
-    assert len(LifecycleStage) == 7
+    assert len(CANONICAL_LIFECYCLE_STAGES) == 8
+    assert len(LifecycleStage) == 8
     assert set(CANONICAL_LIFECYCLE_STAGES) == set(LifecycleStage)
 
 
@@ -56,6 +58,7 @@ def test_lifecycle_model_does_not_merge_or_add_stages() -> None:
         ("decision.thesis_created", LifecycleStage.THESIS),
         ("decision.plan_created", LifecycleStage.PLAN),
         ("decision.plan_approved", LifecycleStage.APPROVAL),
+        ("decision.plan_armed", LifecycleStage.ARMED),
         ("execution.order_submitted", LifecycleStage.EXECUTION),
         ("execution.position_opened", LifecycleStage.POSITION),
         ("review.review_completed", LifecycleStage.REVIEW),
@@ -125,6 +128,7 @@ def test_lifecycle_event_stage_map_is_explicit_and_canonical() -> None:
         "decision.thesis_created": LifecycleStage.THESIS,
         "decision.plan_created": LifecycleStage.PLAN,
         "decision.plan_approved": LifecycleStage.APPROVAL,
+        "decision.plan_armed": LifecycleStage.ARMED,
         "execution.order_submitted": LifecycleStage.EXECUTION,
         "execution.position_opened": LifecycleStage.POSITION,
         "review.review_completed": LifecycleStage.REVIEW,
