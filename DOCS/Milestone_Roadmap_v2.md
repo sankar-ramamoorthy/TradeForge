@@ -1720,6 +1720,72 @@ Ensure:
 
 ---
 
+## M10B — Operational Credential Boundary
+
+**Status:** Planned
+
+## Semantic Intent
+
+Establish a secure, auditable credential management layer for all external provider
+integrations before AI advisory work (M11) introduces LLM provider keys.
+
+## Architectural Significance
+
+As TradeForge connects to an expanding set of external data providers — Polygon, Alpaca,
+Alpha Vantage, FinancialModelingPrep, Finqual, and LLM providers — the current pattern
+of raw constructor-parameter key injection becomes unmanageable and architecturally
+incorrect. Provider credentials are operational capabilities with lifecycle (creation,
+rotation, revocation, expiry), not configuration trivia.
+
+This milestone introduces `src/security/` as a top-level architectural boundary,
+governing how all external provider secrets are stored, decrypted, and delivered to
+adapters. The composition root (`create_app()`) is the sole caller of the credential
+store. No provider adapter imports from `src/security/`.
+
+The `Credential` domain model is also designed with replay safety in mind: credential
+status at historical points (expired, revoked, entitlement change) is operationally
+meaningful context for future replay reconstruction.
+
+M10B is prerequisite to M11 — AI advisory work will introduce LLM provider credentials
+that must be managed through the same boundary from day one.
+
+## Canonical Concepts
+
+- [[Operational Credential Boundary]]
+- [[Replayability Is Foundational]]
+- [[Layer Separation]]
+- [[Architectural Simplicity]]
+
+## Provider Coverage
+
+| Provider | Credential Shape | Purpose |
+|---|---|---|
+| yFinance | none | Free market data, default provider |
+| Polygon.io | `api_key` | Real-time and historical data |
+| Alpaca | `api_key` + `secret_key` | Market data + future execution |
+| Alpha Vantage | `api_key` | Fundamental + technical data |
+| FinancialModelingPrep | `api_key` | Financial statements + ratios |
+| Finqual | `api_key` | Quantitative financial data |
+| LLM providers (M11+) | `api_key` | Advisory AI boundary |
+
+## Linked Runtime Issues
+
+- TF-F004: Define operational credential boundary — ADR and Credential domain model
+- TF-F005: Implement KeyManager and encrypted local credential store
+- TF-F006: Wire all provider adapters through CredentialStore at composition root
+- TF-F007: Credential setup guide, rotation documentation, keys-out-of-Git enforcement
+
+## Acceptance Meaning
+
+- `TRADEFORGE_MASTER_KEY` is the sole entry point for all provider secret access.
+- No provider API key appears in logs, Git history, or `.env` files.
+- Rotating a credential requires one command and no code change.
+- All current and planned provider adapters are registered through `CredentialStore`.
+- M11 (AI Advisory) can assume a proper credential boundary exists.
+- Replay-aware credential status fields are present in the domain model for future use.
+
+---
+
 ## M11 — AI Advisory Boundary
 Status: Planned
 ## Semantic Intent

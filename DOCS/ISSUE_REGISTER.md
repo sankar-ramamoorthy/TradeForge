@@ -133,6 +133,10 @@ Explicit roadmap checkpoint completed M9 Updated*Done*.
 | TF-F001 | Done | TBD | Add iterative revision workflow for thesis, plan, and assumptions | `feature/tf-f001-iterative-revision-workflow` |
 | TF-F002 | Done | TBD | Introduce conditional execution state between Approval and Execution | `feature/tf-f002-awaiting-trigger-lifecycle-state` |
 | TF-F003 | Done | TBD | Expand cognition input areas from CRUD-form style to thinking-space UX | `feature/tf-f003-cognition-ux-ergonomics` |
+| TF-F004 | Planned | M10B | Define operational credential boundary — ADR and Credential domain model | `feature/tf-f004-credential-boundary-design` |
+| TF-F005 | Planned | M10B | Implement KeyManager and encrypted local credential store | `feature/tf-f005-credential-store-implementation` |
+| TF-F006 | Planned | M10B | Wire all provider adapters through CredentialStore at composition root | `feature/tf-f006-provider-credential-wiring` |
+| TF-F007 | Planned | M10B | Credential setup guide, rotation documentation, keys-out-of-Git enforcement | `feature/tf-f007-credential-setup-documentation` |
 
 Explicit roadmap checkpoint completed M9 Updated*Done*.
 M10A COMPLETE 2026-05-14. All 15 issues done: M10AIS01-15.
@@ -2969,6 +2973,133 @@ The current plan authoring form uses small textarea-style inputs that feel like 
 - Thesis narrative has a full-panel or expandable composing area.
 - Visual treatment signals "compose and think" rather than "fill in a form."
 - Changes are consistent with the structured cognition authoring philosophy and do not regress workflow functionality.
+
+---
+
+## TF-F004: Define Operational Credential Boundary — ADR And Credential Domain Model
+
+**Status:** Planned
+
+**Classification:** architectural
+
+**Milestone:** M10B
+
+**Branch:** `feature/tf-f004-credential-boundary-design`
+
+**Affected Layer:** security, domain, docs
+
+**Linked ADRs:** ADR-0037
+
+**Impacted Invariants:** Replayability Is Foundational, Architectural Simplicity, Historical Integrity
+
+**Source:** Field-observed gap — no encrypted credential management exists for external provider API keys (Polygon, Alpaca, and planned: Alpha Vantage, FinancialModelingPrep, Finqual, LLM providers).
+
+**Problem:**
+Provider adapter API keys are currently accepted as constructor parameters with no secure storage, rotation, revocation, or barrier preventing keys from appearing in logs or version control. As provider count grows this becomes unmanageable. The gap also affects replay fidelity — credential status at historical points is operationally meaningful context.
+
+**Acceptance Criteria:**
+
+- ADR-0037 exists and is accepted.
+- `Credential` domain model exists in `src/security/credential.py` with fields: `provider_id`, `credential_type`, `encrypted_payload`, `created_at`, `rotated_at`, `last_validated_at`, `status`, `provenance`.
+- `CredentialStatus` enum defined: `active`, `revoked`, `expired`, `unknown`.
+- Module boundary rule documented: no provider adapter imports from `src/security/`.
+
+---
+
+## TF-F005: Implement KeyManager And Encrypted Local Credential Store
+
+**Status:** Planned
+
+**Classification:** enhancement
+
+**Milestone:** M10B
+
+**Branch:** `feature/tf-f005-credential-store-implementation`
+
+**Affected Layer:** security, infrastructure
+
+**Linked ADRs:** ADR-0037
+
+**Impacted Invariants:** Architectural Simplicity, Historical Integrity
+
+**Problem:**
+No encrypted storage exists for provider credentials. Keys live as raw strings in environment or constructor calls. No Fernet encryption, no `.keys.enc` file, no `TRADEFORGE_MASTER_KEY` enforcement.
+
+**Acceptance Criteria:**
+
+- `TRADEFORGE_MASTER_KEY` loaded from OS environment only — not `.env`, not Git.
+- `KeyManager` in `src/security/key_manager.py`: encrypt/decrypt using Fernet, master key loading with clear error if unset.
+- `CredentialStore` in `src/security/credential_store.py`: read/write encrypted credentials to `.keys.enc`.
+- `.keys.enc` added to `.gitignore`.
+- CLI command or script to generate `TRADEFORGE_MASTER_KEY` and register initial credentials.
+- Provider credentials: Polygon (`api_key`), Alpaca (`api_key` + `secret_key`), Alpha Vantage (`api_key`), FinancialModelingPrep (`api_key`), Finqual (`api_key`).
+- Encrypted values never appear in logs, environment dumps, or error messages.
+- Unit tests for KeyManager: encrypt → decrypt round-trip, wrong master key raises error.
+- Unit tests for CredentialStore: write credential, read it back, status filtering.
+
+---
+
+## TF-F006: Wire All Provider Adapters Through CredentialStore At Composition Root
+
+**Status:** Planned
+
+**Classification:** refactor
+
+**Milestone:** M10B
+
+**Branch:** `feature/tf-f006-provider-credential-wiring`
+
+**Affected Layer:** app, infrastructure, security
+
+**Linked ADRs:** ADR-0037
+
+**Impacted Invariants:** Architectural Simplicity, Layer Separation
+
+**Problem:**
+`create_app()` in `src/app/api/application.py` currently wires `YFinanceProvider()` directly with no credential management. Polygon and Alpaca adapters exist but would need raw constructor injection. Alpha Vantage, FMP, Finqual adapters (planned) would follow the same unsafe pattern.
+
+**Acceptance Criteria:**
+
+- `create_app()` accepts an optional `credential_store: CredentialStore | None` parameter.
+- When `credential_store` is provided (or initialized from `.keys.enc`), provider adapters receive decrypted credentials from the store — not from raw env vars or constructor parameters.
+- `YFinanceProvider` remains keyless (no change).
+- Polygon, Alpaca, and all future providers (Alpha Vantage, FMP, Finqual) are wired through `CredentialStore`.
+- Provider adapters themselves have zero imports from `src/security/` — boundary enforced.
+- Integration test: `create_app()` with injected `CredentialStore` serves market data correctly.
+- All existing tests continue to pass (adapters still accept constructor injection for tests).
+
+---
+
+## TF-F007: Credential Setup Guide, Rotation Documentation, And Keys-Out-Of-Git Enforcement
+
+**Status:** Planned
+
+**Classification:** operational
+
+**Milestone:** M10B
+
+**Branch:** `feature/tf-f007-credential-setup-documentation`
+
+**Affected Layer:** docs, operational
+
+**Linked ADRs:** ADR-0037
+
+**Problem:**
+No setup guide exists for credential initialization. No rotation procedure is documented. No `.gitignore` enforcement prevents accidental key commits.
+
+**Provider coverage:**
+- Polygon.io: `api_key` — https://polygon.io
+- Alpaca: `api_key` + `secret_key` — https://alpaca.markets
+- Alpha Vantage: `api_key` — https://www.alphavantage.co
+- FinancialModelingPrep: `api_key` — https://financialmodelingprep.com
+- Finqual: `api_key` — https://finqual.com
+
+**Acceptance Criteria:**
+
+- `HOW-TO-SETUP-KEYS.md` exists at project root covering: master key generation, credential registration for each provider, rotation procedure, revocation.
+- `.gitignore` includes: `.keys.enc`, `TRADEFORGE_MASTER_KEY` (if ever written to file).
+- `README.md` references the setup guide.
+- Operator can set up all credentials in under 5 minutes following the guide.
 
 ---
 
