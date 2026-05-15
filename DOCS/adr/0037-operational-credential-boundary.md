@@ -2,7 +2,7 @@
 title: ADR-0037 — Operational Credential Boundary and API Key Management
 status: accepted
 date: 2026-05-15
-milestone: M10B
+milestone: M10C
 deciders: [TradeForge architecture]
 ---
 
@@ -172,3 +172,4 @@ for local-first operation.
   are registered through `CredentialStore` — not through raw env var lookups.
 - Provider adapter tests continue to use constructor injection with mock values —
   no change to existing test patterns.
+- M10B (Postgres persistence + multi-decision navigation) precedes this milestone.

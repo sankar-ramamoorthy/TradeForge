@@ -133,10 +133,12 @@ Explicit roadmap checkpoint completed M9 Updated*Done*.
 | TF-F001 | Done | TBD | Add iterative revision workflow for thesis, plan, and assumptions | `feature/tf-f001-iterative-revision-workflow` |
 | TF-F002 | Done | TBD | Introduce conditional execution state between Approval and Execution | `feature/tf-f002-awaiting-trigger-lifecycle-state` |
 | TF-F003 | Done | TBD | Expand cognition input areas from CRUD-form style to thinking-space UX | `feature/tf-f003-cognition-ux-ergonomics` |
-| TF-F004 | Planned | M10B | Define operational credential boundary — ADR and Credential domain model | `feature/tf-f004-credential-boundary-design` |
-| TF-F005 | Planned | M10B | Implement KeyManager and encrypted local credential store | `feature/tf-f005-credential-store-implementation` |
-| TF-F006 | Planned | M10B | Wire all provider adapters through CredentialStore at composition root | `feature/tf-f006-provider-credential-wiring` |
-| TF-F007 | Planned | M10B | Credential setup guide, rotation documentation, keys-out-of-Git enforcement | `feature/tf-f007-credential-setup-documentation` |
+| TF-F004 | Planned | M10C | Define operational credential boundary — ADR and Credential domain model | `feature/tf-f004-credential-boundary-design` |
+| TF-F005 | Planned | M10C | Implement KeyManager and encrypted local credential store | `feature/tf-f005-credential-store-implementation` |
+| TF-F006 | Planned | M10C | Wire all provider adapters through CredentialStore at composition root | `feature/tf-f006-provider-credential-wiring` |
+| TF-F007 | Planned | M10C | Credential setup guide, rotation documentation, keys-out-of-Git enforcement | `feature/tf-f007-credential-setup-documentation` |
+| TF-F008 | Planned | M10B | Wire PostgresEventStore as default runtime persistence via TRADEFORGE_DATABASE_URL | `feature/tf-f008-postgres-default-persistence` |
+| TF-F009 | Planned | M10B | Implement all-decisions projection and multi-decision navigation in Operating Workspace | `feature/tf-f009-multi-decision-navigation` |
 
 Explicit roadmap checkpoint completed M9 Updated*Done*.
 M10A COMPLETE 2026-05-14. All 15 issues done: M10AIS01-15.
@@ -2982,7 +2984,7 @@ The current plan authoring form uses small textarea-style inputs that feel like 
 
 **Classification:** architectural
 
-**Milestone:** M10B
+**Milestone:** M10C
 
 **Branch:** `feature/tf-f004-credential-boundary-design`
 
@@ -3012,7 +3014,7 @@ Provider adapter API keys are currently accepted as constructor parameters with 
 
 **Classification:** enhancement
 
-**Milestone:** M10B
+**Milestone:** M10C
 
 **Branch:** `feature/tf-f005-credential-store-implementation`
 
@@ -3045,7 +3047,7 @@ No encrypted storage exists for provider credentials. Keys live as raw strings i
 
 **Classification:** refactor
 
-**Milestone:** M10B
+**Milestone:** M10C
 
 **Branch:** `feature/tf-f006-provider-credential-wiring`
 
@@ -3076,7 +3078,7 @@ No encrypted storage exists for provider credentials. Keys live as raw strings i
 
 **Classification:** operational
 
-**Milestone:** M10B
+**Milestone:** M10C
 
 **Branch:** `feature/tf-f007-credential-setup-documentation`
 
@@ -3100,6 +3102,105 @@ No setup guide exists for credential initialization. No rotation procedure is do
 - `.gitignore` includes: `.keys.enc`, `TRADEFORGE_MASTER_KEY` (if ever written to file).
 - `README.md` references the setup guide.
 - Operator can set up all credentials in under 5 minutes following the guide.
+
+---
+
+## TF-F008: Wire PostgresEventStore As Default Runtime Persistence Via TRADEFORGE_DATABASE_URL
+
+**Status:** Planned
+
+**Classification:** architectural
+
+**Milestone:** M10B
+
+**Branch:** `feature/tf-f008-postgres-default-persistence`
+
+**Affected Layer:** app, infrastructure
+
+**Linked ADRs:** ADR-0018 (Postgres event store persistence), ADR-0019 (projection persistence)
+
+**Impacted Invariants:** Event Ledger Canonical Truth, Events Are Immutable, Replayability Is Foundational
+
+**Source:** Second operational testing session — 2026-05-15. All decision data lost on server restart. `knowledge/raw/20260515-second-testing-session-persistence-observation.md`
+
+**Problem:**
+`create_app()` defaults to `InMemoryEventStore()`. All decision data is lost on server restart, container restart, or between testing sessions. Operators cannot resume prior decisions or accumulate a real decision history. `PostgresEventStore` already exists in `src/infrastructure/event_store/postgres.py` and reads from `TRADEFORGE_DATABASE_URL` via `PostgresConnectionSettings.from_environment()`. Wiring is the only gap.
+
+**Acceptance Criteria:**
+
+- `create_app()` checks for `TRADEFORGE_DATABASE_URL` in the environment at startup.
+- If set: uses `PostgresEventStore()` as the default event store.
+- If not set: falls back to `InMemoryEventStore()` (preserves demo and test behavior).
+- Alembic migrations run on startup (or documented as a pre-start step) when Postgres is active.
+- Server restart with `TRADEFORGE_DATABASE_URL` set preserves all prior decision events.
+- All existing tests continue to pass (they inject `InMemoryEventStore` directly — unaffected).
+- A decision created in one server session is retrievable after server restart.
+
+**Out Of Scope:**
+
+- Multi-user or remote database configuration.
+- Postgres for market snapshot persistence (may follow separately).
+- Connection pooling or production hardening.
+
+---
+
+## TF-F009: Implement All-Decisions Projection And Multi-Decision Navigation In Operating Workspace
+
+**Status:** Planned
+
+**Classification:** enhancement
+
+**Milestone:** M10B
+
+**Branch:** `feature/tf-f009-multi-decision-navigation`
+
+**Affected Layer:** backend (api, services), frontend (Operating Workspace)
+
+**Linked ADRs:** ADR-0002 (Decision Lifecycle Engine), ADR-0004 (Workspace Projection Model)
+
+**Impacted Invariants:** Workflow-Centric Architecture, Decision Lifecycle, Human Decision Sovereignty
+
+**Source:** Second operational testing session — 2026-05-15. No way to navigate between concurrent decisions or see all active decisions in one surface.
+
+**Problem:**
+When an operator has decisions across multiple securities (SMH at Armed stage, NVDA at Thesis stage), there is no surface to see all active decisions and navigate between them. The Operating Workspace shows an attention queue for the current context but has no decision list. With Postgres persistence enabled (TF-F008), decisions accumulate — but there is no UI to surface them.
+
+**Backend — new endpoint:**
+
+`GET /lifecycle/decisions` — returns all decisions derived from the event store.
+
+Each decision record:
+```
+{
+  decision_id: str,
+  symbol: str,
+  current_stage: str,          # Idea, Thesis, Plan, Approval, Armed, Execution, Position, Review
+  created_at: datetime,        # timestamp of trade_idea_created event
+  last_updated_at: datetime,   # timestamp of most recent lifecycle event
+  stage_updated_at: datetime   # timestamp of current stage entry
+}
+```
+
+Derived by scanning all `trade_idea_created` events, grouping by decision_id,
+and deriving current lifecycle stage from the event history per decision.
+
+**Frontend — Operating Workspace:**
+
+- Decision list panel showing all decisions: symbol, current stage badge, age
+- Clicking any decision navigates to the appropriate workspace for that stage
+  (using `STAGE_TO_WORKSPACE` routing already in `workspaceRouting.ts`)
+- Stage badge colored by lifecycle position (idea/thesis = neutral, plan/approval/armed = attention, execution/position = active, review = complete)
+- Empty state when no decisions exist
+
+**Acceptance Criteria:**
+
+- `GET /lifecycle/decisions` returns all decisions across all securities.
+- Operating Workspace displays a decision list when decisions exist.
+- Clicking a decision with stage "Armed" navigates to Active Position Workspace with that decision's context.
+- Clicking a decision with stage "Plan" navigates to Plan Review Workspace.
+- Decision list updates after creating a new trade idea.
+- Empty state shown cleanly when no decisions exist.
+- Works with both InMemory (ephemeral list) and Postgres (persistent list) event stores.
 
 ---
 

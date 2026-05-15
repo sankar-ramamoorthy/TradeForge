@@ -1720,7 +1720,59 @@ Ensure:
 
 ---
 
-## M10B — Operational Credential Boundary
+## M10B — Postgres Persistence And Multi-Decision Operational Surface
+
+**Status:** Planned
+
+## Semantic Intent
+
+Wire durable event persistence and introduce a multi-decision navigation surface so
+operators can work across multiple securities, log out, and return to prior decisions
+without data loss. This unblocks meaningful real-world operational testing and is a
+prerequisite for the Operating Workspace becoming a genuine decision management surface.
+
+## Architectural Significance
+
+TradeForge's event-sourced architecture was designed for durability from the start.
+`PostgresEventStore` is already implemented (TF-0024 through TF-0026). The missing piece
+is wiring it as the default runtime persistence layer and surfacing all persisted decisions
+through the Operating Workspace.
+
+Without persistence:
+- Every server restart wipes all decisions
+- Testing is limited to single-session demos
+- The Operating Workspace attention queue is ephemeral
+- Multiple concurrent decisions (SMH at Armed + NVDA at Thesis) cannot survive a restart
+
+With persistence:
+- Decisions survive server restarts, deployments, and logout/login cycles
+- The Operating Workspace becomes a true decision management surface
+- Multi-security workflows are fully supported
+- The full lifecycle — from Idea through Review — is durable and replayable
+
+## Canonical Concepts
+
+- [[Replayability Is Foundational]]
+- [[Event Ledger Canonical Truth]]
+- [[Events Are Immutable]]
+- [[Workflow-Centric Architecture]]
+
+## Linked Runtime Issues
+
+- TF-F008: Wire PostgresEventStore as default runtime persistence via TRADEFORGE_DATABASE_URL
+- TF-F009: Implement all-decisions projection and multi-decision navigation in Operating Workspace
+
+## Acceptance Meaning
+
+- Server restart does not lose any decision data.
+- Operator can work on SMH, NVDA, and any other stock simultaneously and return to each.
+- Operating Workspace lists all active decisions by ticker, stage, and date.
+- Operator can navigate directly from the decision list to any workspace for any decision.
+- InMemory store remains available for test environments and demo mode.
+
+---
+
+## M10C — Operational Credential Boundary
 
 **Status:** Planned
 
@@ -1778,6 +1830,7 @@ that must be managed through the same boundary from day one.
 ## Acceptance Meaning
 
 - `TRADEFORGE_MASTER_KEY` is the sole entry point for all provider secret access.
+- M11 (AI Advisory) can assume a proper credential boundary exists.
 - No provider API key appears in logs, Git history, or `.env` files.
 - Rotating a credential requires one command and no code change.
 - All current and planned provider adapters are registered through `CredentialStore`.
