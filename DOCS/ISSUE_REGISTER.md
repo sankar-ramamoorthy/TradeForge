@@ -26,6 +26,17 @@ Explicit roadmap checkpoint completed M9 Updated*Done*.
 
 ---
 
+## Issue Series
+
+| Series | Pattern | Purpose |
+|---|---|---|
+| Roadmap issues | `TF-####` | Planned milestone implementation work — sequential, roadmap-tied |
+| Feedback issues | `TF-F###` | Field-observed bugs, enhancements, and architectural gaps discovered during testing or operation |
+
+`TF-F###` issues are not pre-planned. They originate from operational walkthroughs, testing sessions, or runtime observations. They are assigned to a milestone only when scheduled for implementation.
+
+---
+
 ## Status Values
 
 - `Planned`: not started
@@ -119,9 +130,13 @@ Explicit roadmap checkpoint completed M9 Updated*Done*.
 | M10AIS13 | Done | M10A | Implement replay annotation system | `feature/tf-0064-operational-attention-continuity` |
 | M10AIS14 | Done | M10A | Implement playbook alignment projection layer | `feature/tf-0064-operational-attention-continuity` |
 | M10AIS15 | Done | M10A | Implement cross-workspace cognitive continuity | `feature/tf-0064-operational-attention-continuity` |
+| TF-F001 | Planned | TBD | Add iterative revision workflow for thesis, plan, and assumptions | `feature/tf-f001-iterative-revision-workflow` |
+| TF-F002 | Planned | TBD | Introduce conditional execution state between Approval and Execution | `feature/tf-f002-awaiting-trigger-lifecycle-state` |
+| TF-F003 | Planned | TBD | Expand cognition input areas from CRUD-form style to thinking-space UX | `feature/tf-f003-cognition-ux-ergonomics` |
 
 Explicit roadmap checkpoint completed M9 Updated*Done*.
 M10A COMPLETE 2026-05-14. All 15 issues done: M10AIS01-15.
+TF-F001, TF-F002, TF-F003 — Post-M10A feedback issues from first operational walkthrough (2026-05-14). TF-F#### series = field-observed / feedback-originated issues, distinct from roadmap TF-#### series. Milestone TBD.
 Post-MVP Roadmap v2 implementation begins with M9 market-context infrastructure and provider-boundary work. 
 M9 remains constrained to read-only advisory context and must not introduce broker execution authority, autonomous AI decision systems, or non-replayable runtime behavior.
 
@@ -2853,6 +2868,107 @@ M9 remains constrained to read-only advisory context and must not introduce brok
 - `uv run pytest` — 647 passed (18 new tests: 9 unit + 9 integration)
 - `npm.cmd run typecheck` — clean
 - `npm.cmd run build` — clean (328.37 kB JS, 30.79 kB CSS)
+
+---
+
+## TF-F001: Add Iterative Revision Workflow For Thesis, Plan, And Assumptions
+
+**Status:** Planned
+
+**Classification:** enhancement
+
+**Milestone:** TBD
+
+**Branch:** `feature/tf-f001-iterative-revision-workflow`
+
+**Affected Layer:** domain, api, frontend
+
+**Linked ADRs:** TBD
+
+**Impacted Invariants:** Decision Lifecycle, Replayability Is Foundational, Human Decision Sovereignty
+
+**Source:** First operational walkthrough — M10A, 2026-05-14. `knowledge/raw/first testing feedback 20260514.md` — Operational Gaps #1.
+
+**Problem:**
+The current workflow supports forward progression only. Once a thesis or plan is authored, there is no operational mechanism to revise thesis narrative or conviction, revise assumptions, revise invalidation conditions, revise plan rationale (entry, stop, target, sizing), or return to a prior cognitive stage after advisory review.
+
+During the SMH walkthrough, the advisory system surfaced items requiring reconsideration (only 1 invalidation condition, only 1 execution assumption), but there was no revision path — only "proceed anyway" or abandon.
+
+**Acceptance Criteria:**
+
+- Operator can re-enter thesis authoring from the plan stage.
+- Operator can re-enter plan authoring from the review stage.
+- Revision history is preserved as replayable events — not silent overwrites.
+- Advisory items link directly to the revision entry point.
+
+---
+
+## TF-F002: Introduce Conditional Execution State Between Approval And Execution
+
+**Status:** Planned
+
+**Classification:** architectural
+
+**Milestone:** TBD
+
+**Branch:** `feature/tf-f002-awaiting-trigger-lifecycle-state`
+
+**Affected Layer:** domain, api, frontend
+
+**Linked ADRs:** TBD
+
+**Impacted Invariants:** Decision Lifecycle, Lifecycle Authority, Replayability Is Foundational
+
+**Source:** First operational walkthrough — M10A, 2026-05-14. `knowledge/raw/first testing feedback 20260514.md` — Operational Gaps #2.
+
+**Problem:**
+In real discretionary swing trading, approval often means "if conditions occur, I am prepared to execute" — not "I have already entered the trade." The SMH plan explicitly required a daily close above 585, rising volume, and continued semiconductor breadth participation before entry. The current lifecycle collapses Approval → Execution → Position too aggressively for condition-dependent entries.
+
+**Missing Lifecycle Concept:**
+Candidate names: Awaiting Trigger, Authorized Watch State, Conditional Execution State, Armed Opportunity.
+
+Proposed canonical lifecycle extension:
+```
+Idea → Thesis → Plan → Approval → [Awaiting Trigger] → Execution → Position → Review
+```
+
+**Acceptance Criteria:**
+
+- A lifecycle state exists between Approval and Execution representing conditional authorization.
+- Operator can declare trigger conditions when entering the armed state.
+- The system holds the plan in the armed state until the operator confirms conditions are met.
+- The trigger confirmation is a replayable lifecycle event.
+- The armed state is visible in the workspace with its declared trigger conditions.
+
+---
+
+## TF-F003: Expand Cognition Input Areas From CRUD-Form Style To Thinking-Space UX
+
+**Status:** Planned
+
+**Classification:** enhancement
+
+**Milestone:** TBD
+
+**Branch:** `feature/tf-f003-cognition-ux-ergonomics`
+
+**Affected Layer:** frontend
+
+**Linked ADRs:** TBD
+
+**Impacted Invariants:** UX Is Architectural, Human Decision Sovereignty
+
+**Source:** First operational walkthrough — M10A, 2026-05-14. `knowledge/raw/first testing feedback 20260514.md` — Operational Gaps #3. Screenshot: `feedback Screenshot 2026-05-14 230304.png`.
+
+**Problem:**
+The current plan authoring form uses small textarea-style inputs that feel like CRUD forms and configuration panels rather than operational cognition environments. Entry Rationale, Stop Rationale, Target Rationale, Sizing Rationale, and Execution Assumptions fields are psychologically compressed for the level of discretionary reasoning being captured.
+
+**Acceptance Criteria:**
+
+- Rationale input fields have a significantly larger default height.
+- Thesis narrative has a full-panel or expandable composing area.
+- Visual treatment signals "compose and think" rather than "fill in a form."
+- Changes are consistent with the structured cognition authoring philosophy and do not regress workflow functionality.
 
 ---
 
