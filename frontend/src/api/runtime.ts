@@ -38,12 +38,19 @@ export type WorkspaceApiParams = {
   decision_id?: string;
 };
 
+export type WorkspaceSourceEventReference = {
+  event_type: string;
+  timestamp_iso: string;
+  entity_references: EntityReferencePayload[];
+};
+
 export type WorkspaceProjectionField = {
   name: string;
   authority: string;
   source_inputs: string[];
   source_event_count: number;
   source_event_types: string[];
+  source_events: WorkspaceSourceEventReference[];
 };
 
 export type WorkspaceProjection = {

@@ -151,8 +151,14 @@ export function OpportunityWorkspace({ context, onNavigateProgrammatic, onStageL
     onNavigateProgrammatic?.(href);
   }
 
-  const symbolFromProjection =
-    projection?.fields["scenario_references"]?.source_event_types?.[0] ?? "–";
+  const symbolFromProjection = (() => {
+    const sourceEvents = projection?.fields["scenario_references"]?.source_events ?? [];
+    for (const event of sourceEvents) {
+      const ticker = event.entity_references.find((r) => r.entity_type === "ticker");
+      if (ticker) return ticker.entity_id;
+    }
+    return "–";
+  })();
 
   const fieldOrder = [
     "scenario_references",
