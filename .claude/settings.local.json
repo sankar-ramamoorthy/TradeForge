@@ -29,7 +29,12 @@
       "Bash(git -C \"C:\\\\Users\\\\bosto\\\\dockerstuff\\\\TradeForge\" remote get-url origin)",
       "Bash(git -C \"C:\\\\Users\\\\bosto\\\\dockerstuff\\\\knowledge-base\\\\TradeForge\" add README.md)",
       "Bash(git -C \"C:\\\\Users\\\\bosto\\\\dockerstuff\\\\knowledge-base\\\\TradeForge\" commit -m \"Update README for public repo — remove private paths, add context for public visitors, link runtime repo\")",
-      "PowerShell(New-Item *)"
+      "PowerShell(New-Item *)",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\bosto\\\\dockerstuff\\\\knowledge-base\\\\TradeForge\\\\knowledge\\\\raw\" -Recurse -File)",
+      "Bash(Sort-Object -Property LastWriteTime -Descending)",
+      "Bash(Select-Object -First 20 FullName, LastWriteTime)",
+      "PowerShell(Test-Path \"C:\\\\Users\\\\bosto\\\\dockerstuff\\\\knowledge-base\\\\TradeForge\\\\knowledge\\\\raw\"; Get-ChildItem \"C:\\\\Users\\\\bosto\\\\dockerstuff\\\\knowledge-base\\\\TradeForge\\\\knowledge\\\\raw\" -ErrorAction SilentlyContinue | ForEach-Object { $_.FullName })",
+      "PowerShell(Get-ChildItem \"C:\\\\Users\\\\bosto\\\\dockerstuff\\\\knowledge-base\\\\TradeForge\\\\knowledge\\\\raw\\\\archived\" -File -ErrorAction SilentlyContinue | ForEach-Object { $_.FullName })"
     ]
   }
 }
