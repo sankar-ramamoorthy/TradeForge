@@ -132,7 +132,7 @@ Explicit roadmap checkpoint completed M9 Updated*Done*.
 | M10AIS15 | Done | M10A | Implement cross-workspace cognitive continuity | `feature/tf-0064-operational-attention-continuity` |
 | TF-F001 | Done | TBD | Add iterative revision workflow for thesis, plan, and assumptions | `feature/tf-f001-iterative-revision-workflow` |
 | TF-F002 | Planned | TBD | Introduce conditional execution state between Approval and Execution | `feature/tf-f002-awaiting-trigger-lifecycle-state` |
-| TF-F003 | Planned | TBD | Expand cognition input areas from CRUD-form style to thinking-space UX | `feature/tf-f003-cognition-ux-ergonomics` |
+| TF-F003 | Done | TBD | Expand cognition input areas from CRUD-form style to thinking-space UX | `feature/tf-f003-cognition-ux-ergonomics` |
 
 Explicit roadmap checkpoint completed M9 Updated*Done*.
 M10A COMPLETE 2026-05-14. All 15 issues done: M10AIS01-15.
@@ -2944,7 +2944,7 @@ Idea → Thesis → Plan → Approval → [Awaiting Trigger] → Execution → P
 
 ## TF-F003: Expand Cognition Input Areas From CRUD-Form Style To Thinking-Space UX
 
-**Status:** Planned
+**Status:** Done
 
 **Classification:** enhancement
 
