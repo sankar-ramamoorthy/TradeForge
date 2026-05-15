@@ -186,7 +186,7 @@ export function ThesisDevelopmentModal({ context, symbol, onSuccess, onCancel }:
               onChange={(e) => setNarrative(e.target.value)}
               placeholder="e.g. AAPL is testing the 200-day MA with strong institutional accumulation visible in the tape..."
               required
-              rows={4}
+              rows={6}
               value={narrative}
             />
           </div>

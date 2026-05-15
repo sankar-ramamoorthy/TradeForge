@@ -96,7 +96,7 @@ function RationaleField({
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         required
-        rows={3}
+        rows={5}
         value={value}
       />
     </div>
