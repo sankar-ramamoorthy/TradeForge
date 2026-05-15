@@ -2440,6 +2440,111 @@ p {
   line-height: 1.5;
 }
 
+/* ─── Decision list panel (Operating Workspace) ─────────────────────────── */
+
+.decision-list-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: var(--space-stack);
+}
+
+.decision-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.decision-list-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  transition: border-color 0.15s;
+}
+
+.decision-list-item:hover {
+  border-color: var(--color-border-active);
+}
+
+.decision-list-item-main {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+}
+
+.decision-list-symbol {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--color-text);
+  flex-shrink: 0;
+}
+
+.decision-stage-badge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 2px 7px;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+.stage-group-early {
+  background: var(--color-canvas);
+  color: var(--color-text-subtle);
+  border: 1px solid var(--color-border);
+}
+
+.stage-group-active {
+  background: var(--color-attention-surface);
+  color: var(--color-attention);
+  border: 1px solid #c99a42;
+}
+
+.stage-group-armed {
+  background: #fdf0e0;
+  color: #7a4f1a;
+  border: 1px solid #d4891a;
+}
+
+.stage-group-position {
+  background: var(--color-accent-surface);
+  color: var(--color-accent);
+  border: 1px solid var(--color-border-active);
+}
+
+.stage-group-done {
+  background: var(--color-surface-muted);
+  color: var(--color-text-subtle);
+  border: 1px solid var(--color-border);
+}
+
+.decision-list-navigate {
+  background: none;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  padding: 5px 12px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-accent);
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.decision-list-navigate:hover {
+  background: var(--color-accent-surface);
+  border-color: var(--color-border-active);
+}
+
 /* ─── Armed state: trigger conditions panel ──────────────────────────────── */
 
 .armed-trigger-conditions {

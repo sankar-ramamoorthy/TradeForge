@@ -1,10 +1,13 @@
 from __future__ import annotations
 
+import os
+
 from fastapi import FastAPI
 from src.app.api.routes import runtime_router
 from src.app.session import LocalSessionProvider, SessionProvider
 from src.domain.events import EventStore
 from src.infrastructure.event_store.in_memory import InMemoryEventStore
+from src.infrastructure.event_store.postgres import PostgresEventStore
 from src.infrastructure.market.in_memory_provenance_store import InMemoryProvenanceStore
 from src.infrastructure.market.in_memory_snapshot_store import (
     InMemoryMarketSnapshotStore,
@@ -29,6 +32,13 @@ APP_TITLE = "TradeForge Runtime"
 APP_VERSION = "0.1.0"
 
 
+def _default_event_store() -> EventStore:
+    """Use PostgresEventStore when TRADEFORGE_DATABASE_URL is set, else InMemory."""
+    if os.environ.get("TRADEFORGE_DATABASE_URL") or os.environ.get("TRADEFORGE_POSTGRES_HOST"):
+        return PostgresEventStore()
+    return InMemoryEventStore()
+
+
 def create_app(
     event_store: EventStore | None = None,
     lifecycle_service: LifecycleOrchestrationService | None = None,
@@ -46,7 +56,7 @@ def create_app(
     provenance_query_service: ProvenanceQueryService | None = None,
     market_snapshot_query_service: MarketSnapshotQueryService | None = None,
 ) -> FastAPI:
-    shared_event_store = event_store or InMemoryEventStore()
+    shared_event_store = event_store or _default_event_store()
     app = FastAPI(
         title=APP_TITLE,
         version=APP_VERSION,

@@ -3,10 +3,12 @@ import { LifecycleProgressStrip, WorkflowGuidanceNote } from "./LifecycleProgres
 import { type MouseEvent, useEffect, useState } from "react";
 
 import {
+  fetchDecisionList,
   fetchOperatingAttentionQueue,
   fetchPlaybookSummary,
   fetchWorkspaceProjection,
   type AttentionItem,
+  type DecisionSummary,
   type OperatingAttentionQueue,
   type PlaybookSummary,
   type WorkspaceApiParams,
@@ -15,6 +17,7 @@ import {
 import {
   buildWorkspaceHref,
   findWorkspaceRoute,
+  getRecommendedWorkspace,
   type WorkspaceContext,
 } from "../workspaceRouting";
 import { type ActiveDecisionRecord } from "../activeDecision";
@@ -89,6 +92,66 @@ function AttentionItemCard({
   );
 }
 
+const STAGE_GROUP: Record<string, "early" | "active" | "armed" | "position" | "done"> = {
+  Idea: "early", Thesis: "early",
+  Plan: "active", Approval: "active",
+  Armed: "armed",
+  Execution: "position", Position: "position",
+  Review: "done",
+};
+
+function DecisionListPanel({
+  decisions,
+  onNavigate,
+}: {
+  decisions: DecisionSummary[];
+  onNavigate: (href: string) => void;
+}) {
+  if (decisions.length === 0) return null;
+
+  return (
+    <div className="decision-list-panel" aria-label="All active decisions">
+      <p className="eyebrow">Active Decisions</p>
+      <div className="decision-list" role="list">
+        {decisions.map((d) => {
+          const workspaceId = d.current_stage
+            ? getRecommendedWorkspace(d.current_stage)
+            : "operating";
+          const href = workspaceId
+            ? `/workspaces/${workspaceId}?decision_id=${encodeURIComponent(d.decision_id)}`
+            : null;
+          const group = d.current_stage ? (STAGE_GROUP[d.current_stage] ?? "early") : "early";
+
+          return (
+            <div className="decision-list-item" key={d.decision_id} role="listitem">
+              <div className="decision-list-item-main">
+                <span className="decision-list-symbol">{d.symbol}</span>
+                {d.current_stage ? (
+                  <span
+                    className={`decision-stage-badge stage-group-${group}`}
+                  >
+                    {d.current_stage}
+                  </span>
+                ) : null}
+              </div>
+              {href ? (
+                <button
+                  className="decision-list-navigate"
+                  onClick={() => onNavigate(href)}
+                  type="button"
+                  aria-label={`Go to ${d.symbol} — ${d.current_stage ?? "unknown"} stage`}
+                >
+                  Continue →
+                </button>
+              ) : null}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 type OperatingWorkspaceProps = {
   context: Required<WorkspaceContext>;
   onNavigate: (event: MouseEvent<HTMLAnchorElement>, href: string) => void;
@@ -112,6 +175,7 @@ export function OperatingWorkspace({
   const [queue, setQueue] = useState<OperatingAttentionQueue | null>(null);
   const [playbookSummary, setPlaybookSummary] = useState<PlaybookSummary | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [decisions, setDecisions] = useState<DecisionSummary[]>([]);
   const [showNewIdeaModal, setShowNewIdeaModal] = useState(false);
   const [demoLoading, setDemoLoading] = useState(false);
   const [activeScenarioId, setActiveScenarioId] = useState<string | null>(null);
@@ -126,6 +190,12 @@ export function OperatingWorkspace({
 
     fetchPlaybookSummary(controller.signal)
       .then(setPlaybookSummary)
+      .catch((err: unknown) => {
+        if (err instanceof DOMException && err.name === "AbortError") return;
+      });
+
+    fetchDecisionList(controller.signal)
+      .then((data) => setDecisions(data.decisions))
       .catch((err: unknown) => {
         if (err instanceof DOMException && err.name === "AbortError") return;
       });
@@ -163,6 +233,7 @@ export function OperatingWorkspace({
 
   function handleIdeaCreated(decisionId: string, symbol: string) {
     setShowNewIdeaModal(false);
+    fetchDecisionList().then((data) => setDecisions(data.decisions)).catch(() => {});
     const opportunityRoute = findWorkspaceRoute("/workspaces/opportunity");
     const href = buildWorkspaceHref(opportunityRoute, {
       ...context,
@@ -359,6 +430,11 @@ export function OperatingWorkspace({
           </div>
         ) : null}
       </div>
+
+      <DecisionListPanel
+        decisions={decisions}
+        onNavigate={onNavigateProgrammatic}
+      />
 
       <ContextualBriefingPanel params={params} />
 

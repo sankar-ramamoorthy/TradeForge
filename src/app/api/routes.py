@@ -9,7 +9,7 @@ from pydantic import BaseModel, Field
 from src.app.session import SessionProvider
 from src.domain.events import EntityReference, EventEnvelope
 from src.domain.lifecycle import LifecycleStage
-from src.domain.lifecycle.state import LIFECYCLE_EVENT_STAGE_MAP
+from src.domain.lifecycle.state import LIFECYCLE_EVENT_STAGE_MAP, derive_lifecycle_state
 from src.domain.lifecycle.transitions import ALLOWED_LIFECYCLE_TRANSITIONS
 from src.domain.personas import (
     PersonaContext,
@@ -143,6 +143,19 @@ class NewTradeIdeaResponse(BaseModel):
     symbol: str
     event_type: str
     timestamp: datetime
+
+
+class DecisionSummaryResponse(BaseModel):
+    decision_id: str
+    symbol: str
+    current_stage: str | None
+    created_at: datetime
+    last_updated_at: datetime
+
+
+class DecisionListResponse(BaseModel):
+    decisions: list[DecisionSummaryResponse]
+    total: int
 
 
 class DevelopThesisPayload(BaseModel):
@@ -1149,6 +1162,56 @@ def init_new_trade_idea(
         event_type=result.appended_event.event_type,
         timestamp=result.appended_event.timestamp,
     )
+
+
+@lifecycle_router.get(
+    "/decisions",
+    response_model=DecisionListResponse,
+)
+def list_decisions(
+    request: Request,
+) -> DecisionListResponse:
+    """Return a summary of all decisions derived from the event ledger.
+
+    Scans all events, groups by decision_id, derives current lifecycle stage
+    and timestamps for each decision. Sorted by most recently active first.
+    """
+    events = _event_store_from(request).read_events()
+
+    decision_events: dict[str, list[EventEnvelope]] = {}
+    for event in events:
+        for ref in event.entity_references:
+            if ref.entity_type == "decision":
+                decision_events.setdefault(ref.entity_id, []).append(event)
+
+    summaries: list[DecisionSummaryResponse] = []
+    for decision_id, dec_events in decision_events.items():
+        idea_event = next(
+            (e for e in dec_events if e.event_type == "decision.trade_idea_created"),
+            None,
+        )
+        if idea_event is None:
+            continue
+
+        symbol = str(idea_event.payload.get("symbol", ""))
+        created_at = idea_event.timestamp
+        last_updated_at = max(e.timestamp for e in dec_events)
+        lifecycle_state = derive_lifecycle_state(dec_events)
+        current_stage = lifecycle_state.current_stage.value if lifecycle_state else None
+
+        summaries.append(
+            DecisionSummaryResponse(
+                decision_id=decision_id,
+                symbol=symbol,
+                current_stage=current_stage,
+                created_at=created_at,
+                last_updated_at=last_updated_at,
+            )
+        )
+
+    summaries.sort(key=lambda s: s.last_updated_at, reverse=True)
+
+    return DecisionListResponse(decisions=summaries, total=len(summaries))
 
 
 @lifecycle_router.post(
