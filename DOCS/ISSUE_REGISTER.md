@@ -130,7 +130,7 @@ Explicit roadmap checkpoint completed M9 Updated*Done*.
 | M10AIS13 | Done | M10A | Implement replay annotation system | `feature/tf-0064-operational-attention-continuity` |
 | M10AIS14 | Done | M10A | Implement playbook alignment projection layer | `feature/tf-0064-operational-attention-continuity` |
 | M10AIS15 | Done | M10A | Implement cross-workspace cognitive continuity | `feature/tf-0064-operational-attention-continuity` |
-| TF-F001 | Planned | TBD | Add iterative revision workflow for thesis, plan, and assumptions | `feature/tf-f001-iterative-revision-workflow` |
+| TF-F001 | Done | TBD | Add iterative revision workflow for thesis, plan, and assumptions | `feature/tf-f001-iterative-revision-workflow` |
 | TF-F002 | Planned | TBD | Introduce conditional execution state between Approval and Execution | `feature/tf-f002-awaiting-trigger-lifecycle-state` |
 | TF-F003 | Planned | TBD | Expand cognition input areas from CRUD-form style to thinking-space UX | `feature/tf-f003-cognition-ux-ergonomics` |
 
@@ -2873,7 +2873,7 @@ M9 remains constrained to read-only advisory context and must not introduce brok
 
 ## TF-F001: Add Iterative Revision Workflow For Thesis, Plan, And Assumptions
 
-**Status:** Planned
+**Status:** Done
 
 **Classification:** enhancement
 
