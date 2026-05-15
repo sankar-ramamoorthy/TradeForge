@@ -16,6 +16,7 @@ import {
 } from "../api/runtime";
 import { type WorkspaceContext } from "../workspaceRouting";
 import { ThesisRevisionModal } from "./ThesisRevisionModal";
+import { PlanRevisionModal } from "./PlanRevisionModal";
 import { PlanDevelopmentModal } from "./PlanDevelopmentModal";
 import { PlanReadinessPanel } from "./PlanReadinessPanel";
 
@@ -147,10 +148,33 @@ function ThesisContextPanel({
   );
 }
 
-function PlanContextPanel({ plan }: { plan: TradePlanArtifact }) {
+function PlanContextPanel({
+  plan,
+  canRevise,
+  onRevise,
+}: {
+  plan: TradePlanArtifact;
+  canRevise?: boolean;
+  onRevise?: () => void;
+}) {
+  const isRevised = plan.source_event_type === "decision.plan_revised";
   return (
     <div className="thesis-context-panel" aria-label="Trade plan">
-      <p className="eyebrow">Trade Plan</p>
+      <div className="thesis-context-header">
+        <p className="eyebrow">
+          Trade Plan
+          {isRevised ? <span className="thesis-revision-badge"> — Revised</span> : null}
+        </p>
+        {canRevise && onRevise ? (
+          <button
+            className="thesis-revise-btn"
+            onClick={onRevise}
+            type="button"
+          >
+            Revise Plan
+          </button>
+        ) : null}
+      </div>
       <div className="plan-rationale-grid">
         <div className="plan-rationale-item">
           <p className="thesis-context-label">Entry</p>
@@ -193,6 +217,7 @@ export function PlanReviewWorkspace({ context, onNavigateProgrammatic, onStageLo
   const [plan, setPlan] = useState<TradePlanArtifact | null>(null);
   const [readiness, setReadiness] = useState<PlanReadiness | null>(null);
   const [showRevisionModal, setShowRevisionModal] = useState(false);
+  const [showPlanRevisionModal, setShowPlanRevisionModal] = useState(false);
   const [showPlanModal, setShowPlanModal] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [transitionState, setTransitionState] = useState<TransitionState>("idle");
@@ -366,13 +391,34 @@ export function PlanReviewWorkspace({ context, onNavigateProgrammatic, onStageLo
 
           {thesis ? (
             <ThesisContextPanel
-              canRevise={lifecycleStage === "Thesis"}
+              canRevise={lifecycleStage === "Thesis" || lifecycleStage === "Plan"}
               onRevise={() => setShowRevisionModal(true)}
               thesis={thesis}
             />
           ) : null}
 
-          {plan ? <PlanContextPanel plan={plan} /> : null}
+          {plan && showPlanRevisionModal ? (
+            <PlanRevisionModal
+              context={context}
+              currentPlan={plan}
+              onCancel={() => setShowPlanRevisionModal(false)}
+              onSuccess={() => {
+                setShowPlanRevisionModal(false);
+                if (context.decision_id) {
+                  fetchPlanArtifact(context.decision_id).then(setPlan).catch(() => {});
+                }
+              }}
+              symbol={plan.symbol}
+            />
+          ) : null}
+
+          {plan ? (
+            <PlanContextPanel
+              canRevise={lifecycleStage === "Plan"}
+              onRevise={() => setShowPlanRevisionModal(true)}
+              plan={plan}
+            />
+          ) : null}
 
           {showPlanModal && context.decision_id ? (
             <PlanDevelopmentModal

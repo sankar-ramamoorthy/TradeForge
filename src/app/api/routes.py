@@ -234,6 +234,44 @@ class TradePlanArtifactResponse(BaseModel):
     event_timestamp: datetime
 
 
+class RevisePlanPayload(BaseModel):
+    decision_id: str = Field(min_length=1)
+    symbol: str = Field(min_length=1, max_length=10)
+    entry_rationale: str = Field(min_length=10, max_length=5000)
+    stop_rationale: str = Field(min_length=10, max_length=5000)
+    target_rationale: str = Field(min_length=10, max_length=5000)
+    sizing_rationale: str = Field(min_length=10, max_length=5000)
+    execution_assumptions: list[str] = Field(min_length=1)
+    playbook_alignment: str = Field(default="", max_length=500)
+    persona_id: str = Field(min_length=1)
+    workspace_id: str = Field(min_length=1)
+
+
+class RevisePlanResponse(BaseModel):
+    decision_id: str
+    event_type: str
+    timestamp: datetime
+    revision_number: int
+
+
+class PlanSnapshotResponse(BaseModel):
+    entry_rationale: str
+    stop_rationale: str
+    target_rationale: str
+    sizing_rationale: str
+    execution_assumptions: list[str]
+    playbook_alignment: str
+    event_type: str
+    event_timestamp: datetime
+    revision_number: int
+
+
+class PlanHistoryResponse(BaseModel):
+    decision_id: str
+    total_revisions: int
+    snapshots: list[PlanSnapshotResponse]
+
+
 class ReadinessCheckResponse(BaseModel):
     check_id: str
     label: str
@@ -1324,10 +1362,10 @@ def revise_thesis(
         ):
             current_state = stage
 
-    if current_state != LifecycleStage.THESIS:
+    if current_state not in (LifecycleStage.THESIS, LifecycleStage.PLAN):
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail={"message": "thesis revision is only valid when the decision is in Thesis stage"},
+            detail={"message": "thesis revision is only valid when the decision is in Thesis or Plan stage"},
         )
 
     thesis_event_types = frozenset(
@@ -1450,15 +1488,15 @@ def get_plan_artifact(
 ) -> TradePlanArtifactResponse:
     """Return the structured trade plan artifact for a decision.
 
-    Reads the decision.plan_created event payload for the given decision_id.
-    Returns 404 if no structured plan exists (legacy empty-payload events
-    or decisions that have not yet created a plan).
+    Scans both decision.plan_created and decision.plan_revised events,
+    returning the most recent. Returns 404 if no structured plan exists.
     """
     events = _event_store_from(request).read_events()
+    plan_event_types = frozenset(("decision.plan_created", "decision.plan_revised"))
 
     plan_event = None
     for event in reversed(events):
-        if event.event_type != "decision.plan_created":
+        if event.event_type not in plan_event_types:
             continue
         if any(
             ref.entity_type == "decision" and ref.entity_id == decision_id
@@ -1493,6 +1531,144 @@ def get_plan_artifact(
         playbook_alignment=artifact.playbook_alignment,
         source_event_type=plan_event.event_type,
         event_timestamp=plan_event.timestamp,
+    )
+
+
+@lifecycle_router.get(
+    "/decisions/{decision_id}/plan/history",
+    response_model=PlanHistoryResponse,
+)
+def get_plan_history(
+    request: Request,
+    decision_id: str,
+) -> PlanHistoryResponse:
+    """Return all plan snapshots for a decision in chronological order.
+
+    Includes both the initial plan_created event and any plan_revised events,
+    enabling replay reconstruction of plan evolution over time.
+    """
+    events = _event_store_from(request).read_events()
+    plan_event_types = frozenset(("decision.plan_created", "decision.plan_revised"))
+
+    snapshots: list[PlanSnapshotResponse] = []
+    for event in events:
+        if event.event_type not in plan_event_types:
+            continue
+        if not any(
+            ref.entity_type == "decision" and ref.entity_id == decision_id
+            for ref in event.entity_references
+        ):
+            continue
+        artifact = TradePlanArtifact.from_payload(dict(event.payload))
+        if artifact is None:
+            continue
+        snapshots.append(
+            PlanSnapshotResponse(
+                entry_rationale=artifact.entry_rationale,
+                stop_rationale=artifact.stop_rationale,
+                target_rationale=artifact.target_rationale,
+                sizing_rationale=artifact.sizing_rationale,
+                execution_assumptions=list(artifact.execution_assumptions),
+                playbook_alignment=artifact.playbook_alignment,
+                event_type=event.event_type,
+                event_timestamp=event.timestamp,
+                revision_number=len(snapshots) + 1,
+            )
+        )
+
+    return PlanHistoryResponse(
+        decision_id=decision_id,
+        total_revisions=len(snapshots),
+        snapshots=snapshots,
+    )
+
+
+@lifecycle_router.post(
+    "/decisions/revise-plan",
+    response_model=RevisePlanResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+def revise_plan(
+    request: Request,
+    payload: RevisePlanPayload,
+) -> RevisePlanResponse:
+    """Revise the structured trade plan for a decision in the Plan lifecycle stage.
+
+    Creates an immutable decision.plan_revised event with updated plan content.
+    This is not a lifecycle transition — the stage remains Plan.
+    Revision is only valid when the current lifecycle stage is Plan.
+    """
+    try:
+        artifact = TradePlanArtifact.create(
+            entry_rationale=payload.entry_rationale,
+            stop_rationale=payload.stop_rationale,
+            target_rationale=payload.target_rationale,
+            sizing_rationale=payload.sizing_rationale,
+            execution_assumptions=payload.execution_assumptions,
+            playbook_alignment=payload.playbook_alignment,
+        )
+    except TradePlanArtifactValidationError as error:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={"message": str(error)},
+        ) from error
+
+    event_store = _event_store_from(request)
+    events = event_store.read_events()
+
+    current_state = None
+    for event in events:
+        stage = LIFECYCLE_EVENT_STAGE_MAP.get(event.event_type)
+        if stage is not None and any(
+            ref.entity_type == "decision" and ref.entity_id == payload.decision_id
+            for ref in event.entity_references
+        ):
+            current_state = stage
+
+    if current_state != LifecycleStage.PLAN:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail={"message": "plan revision is only valid when the decision is in Plan stage"},
+        )
+
+    plan_event_types = frozenset(("decision.plan_created", "decision.plan_revised"))
+    revision_count = sum(
+        1
+        for event in events
+        if event.event_type in plan_event_types
+        and any(
+            ref.entity_type == "decision" and ref.entity_id == payload.decision_id
+            for ref in event.entity_references
+        )
+    )
+
+    symbol = payload.symbol.strip().upper()
+    now = datetime.now(tz=UTC)
+    event_payload: dict[str, object] = {
+        "symbol": symbol,
+        "revision_number": revision_count + 1,
+        **artifact.to_payload(),
+    }
+
+    revision_event = EventEnvelope(
+        event_type="decision.plan_revised",
+        timestamp=now,
+        persona_id=payload.persona_id,
+        workspace_id=payload.workspace_id,
+        entity_references=(
+            EntityReference(entity_type="decision", entity_id=payload.decision_id),
+            EntityReference(entity_type="ticker", entity_id=symbol),
+        ),
+        payload=event_payload,
+        provenance={"actor": "human", "source": "plan-revision-workflow"},
+    )
+    event_store.append(revision_event)
+
+    return RevisePlanResponse(
+        decision_id=payload.decision_id,
+        event_type="decision.plan_revised",
+        timestamp=now,
+        revision_number=revision_count + 1,
     )
 
 
