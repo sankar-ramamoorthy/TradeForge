@@ -137,8 +137,8 @@ Explicit roadmap checkpoint completed M9 Updated*Done*.
 | TF-F005 | Planned | M10C | Implement KeyManager and encrypted local credential store | `feature/tf-f005-credential-store-implementation` |
 | TF-F006 | Planned | M10C | Wire all provider adapters through CredentialStore at composition root | `feature/tf-f006-provider-credential-wiring` |
 | TF-F007 | Planned | M10C | Credential setup guide, rotation documentation, keys-out-of-Git enforcement | `feature/tf-f007-credential-setup-documentation` |
-| TF-F008 | Planned | M10B | Wire PostgresEventStore as default runtime persistence via TRADEFORGE_DATABASE_URL | `feature/tf-f008-postgres-default-persistence` |
-| TF-F009 | Planned | M10B | Implement all-decisions projection and multi-decision navigation in Operating Workspace | `feature/tf-f009-multi-decision-navigation` |
+| TF-F008 | Done | M10B | Wire PostgresEventStore as default runtime persistence via TRADEFORGE_DATABASE_URL | `feature/tf-f008-postgres-default-persistence` |
+| TF-F009 | Done | M10B | Implement all-decisions projection and multi-decision navigation in Operating Workspace | `feature/tf-f009-multi-decision-navigation` |
 
 Explicit roadmap checkpoint completed M9 Updated*Done*.
 M10A COMPLETE 2026-05-14. All 15 issues done: M10AIS01-15.
