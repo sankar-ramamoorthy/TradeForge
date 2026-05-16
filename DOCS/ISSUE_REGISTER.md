@@ -135,7 +135,7 @@ Explicit roadmap checkpoint completed M9 Updated*Done*.
 | TF-F003 | Done | TBD | Expand cognition input areas from CRUD-form style to thinking-space UX | `feature/tf-f003-cognition-ux-ergonomics` |
 | TF-F004 | Done | M10C | Define operational credential boundary — ADR and Credential domain model | `feature/tf-f004-credential-boundary-design` |
 | TF-F005 | Done | M10C | Implement KeyManager and encrypted local credential store | `feature/tf-f005-credential-store-implementation` |
-| TF-F006 | Planned | M10C | Wire all provider adapters through CredentialStore at composition root | `feature/tf-f006-provider-credential-wiring` |
+| TF-F006 | Done | M10C | Wire all provider adapters through CredentialStore at composition root | `feature/tf-f006-provider-credential-wiring` |
 | TF-F007 | Planned | M10C | Credential setup guide, rotation documentation, keys-out-of-Git enforcement | `feature/tf-f007-credential-setup-documentation` |
 | TF-F008 | Done | M10B | Wire PostgresEventStore as default runtime persistence via TRADEFORGE_DATABASE_URL | `feature/tf-f008-postgres-default-persistence` |
 | TF-F009 | Done | M10B | Implement all-decisions projection and multi-decision navigation in Operating Workspace | `feature/tf-f009-multi-decision-navigation` |
@@ -3187,7 +3187,7 @@ Implemented Fernet-backed credential encryption through `KeyManager`, added a JS
 
 ## TF-F006: Wire All Provider Adapters Through CredentialStore At Composition Root
 
-**Status:** Planned
+**Status:** Done
 
 **Classification:** refactor
 
@@ -3213,6 +3213,15 @@ Implemented Fernet-backed credential encryption through `KeyManager`, added a JS
 - Provider adapters themselves have zero imports from `src/security/` — boundary enforced.
 - Integration test: `create_app()` with injected `CredentialStore` serves market data correctly.
 - All existing tests continue to pass (adapters still accept constructor injection for tests).
+
+**Resolution Summary:**
+Centralized default market-provider construction in `create_app()`, added optional `credential_store` injection, kept `yfinance` as the keyless default, and routed `polygon` and `alpaca` construction through decrypted `CredentialStore` payloads selected by `TRADEFORGE_MARKET_PROVIDER`. Provider adapters remain security-agnostic and continue to support constructor injection in their own tests.
+
+**Completed Verification:**
+
+- `uv run pytest tests\test_provider_credential_wiring.py tests\test_market_context_overlay.py`
+- `uv run ruff check src\app\api\application.py tests\test_provider_credential_wiring.py`
+- `uv run mypy --follow-imports=skip src\app\api\application.py tests\test_provider_credential_wiring.py`
 
 ---
 

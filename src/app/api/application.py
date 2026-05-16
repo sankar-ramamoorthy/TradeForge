@@ -1,18 +1,23 @@
 from __future__ import annotations
 
 import os
+from pathlib import Path
 
 from fastapi import FastAPI
 from src.app.api.routes import runtime_router
 from src.app.session import LocalSessionProvider, SessionProvider
 from src.domain.events import EventStore
+from src.domain.market.provider import MarketDataProvider
 from src.infrastructure.event_store.in_memory import InMemoryEventStore
 from src.infrastructure.event_store.postgres import PostgresEventStore
+from src.infrastructure.market.alpaca_adapter import AlpacaProvider
 from src.infrastructure.market.in_memory_provenance_store import InMemoryProvenanceStore
 from src.infrastructure.market.in_memory_snapshot_store import (
     InMemoryMarketSnapshotStore,
 )
+from src.infrastructure.market.polygon_adapter import PolygonProvider
 from src.infrastructure.market.yfinance_adapter import YFinanceProvider
+from src.security import CredentialStore, KeyManager
 from src.services.lifecycle import LifecycleOrchestrationService
 from src.services.market.contextual_summary import ContextualSummaryService
 from src.services.market.provenance_query import ProvenanceQueryService
@@ -34,9 +39,52 @@ APP_VERSION = "0.1.0"
 
 def _default_event_store() -> EventStore:
     """Use PostgresEventStore when TRADEFORGE_DATABASE_URL is set, else InMemory."""
-    if os.environ.get("TRADEFORGE_DATABASE_URL") or os.environ.get("TRADEFORGE_POSTGRES_HOST"):
+    if os.environ.get("TRADEFORGE_DATABASE_URL") or os.environ.get(
+        "TRADEFORGE_POSTGRES_HOST"
+    ):
         return PostgresEventStore()
     return InMemoryEventStore()
+
+
+def _default_credential_store() -> CredentialStore | None:
+    store_path = Path(".keys.enc")
+    if store_path.exists():
+        return CredentialStore(store_path)
+    return None
+
+
+def _default_market_provider(
+    credential_store: CredentialStore | None,
+) -> MarketDataProvider:
+    provider_id = os.environ.get("TRADEFORGE_MARKET_PROVIDER", "yfinance").lower()
+
+    if provider_id == "yfinance":
+        return YFinanceProvider()
+
+    if credential_store is None:
+        raise RuntimeError(
+            f"credential store is required for market provider '{provider_id}'"
+        )
+
+    credential = credential_store.get(provider_id)
+    if credential is None:
+        raise RuntimeError(
+            f"credential for market provider '{provider_id}' is not configured"
+        )
+
+    payload = KeyManager.from_environment().decrypt_payload(
+        credential.encrypted_payload
+    )
+
+    if provider_id == "polygon":
+        return PolygonProvider(api_key=payload["api_key"])
+    if provider_id == "alpaca":
+        return AlpacaProvider(
+            api_key=payload["api_key"],
+            secret_key=payload["secret_key"],
+        )
+
+    raise RuntimeError(f"unsupported market provider '{provider_id}'")
 
 
 def create_app(
@@ -55,6 +103,7 @@ def create_app(
     contextual_summary_service: ContextualSummaryService | None = None,
     provenance_query_service: ProvenanceQueryService | None = None,
     market_snapshot_query_service: MarketSnapshotQueryService | None = None,
+    credential_store: CredentialStore | None = None,
 ) -> FastAPI:
     shared_event_store = event_store or _default_event_store()
     app = FastAPI(
@@ -95,11 +144,16 @@ def create_app(
     )
     _provenance_store = InMemoryProvenanceStore()
     _snapshot_store = InMemoryMarketSnapshotStore()
+    _credential_store = (
+        credential_store
+        if credential_store is not None
+        else _default_credential_store()
+    )
     _market_svc = (
         market_snapshot_service
         if market_snapshot_service is not None
         else MarketSnapshotService(
-            YFinanceProvider(),
+            _default_market_provider(_credential_store),
             SingleBarRegimeInterpreter(),
             provenance_store=_provenance_store,
             snapshot_persistence_store=_snapshot_store,
