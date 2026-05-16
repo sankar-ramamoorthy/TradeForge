@@ -3234,7 +3234,7 @@ No setup guide exists for credential initialization. No rotation procedure is do
 
 ## TF-F008: Wire PostgresEventStore As Default Runtime Persistence Via TRADEFORGE_DATABASE_URL
 
-**Status:** Planned
+**Status:** Done
 
 **Classification:** architectural
 
@@ -3273,7 +3273,7 @@ No setup guide exists for credential initialization. No rotation procedure is do
 
 ## TF-F009: Implement All-Decisions Projection And Multi-Decision Navigation In Operating Workspace
 
-**Status:** Planned
+**Status:** Done
 
 **Classification:** enhancement
 

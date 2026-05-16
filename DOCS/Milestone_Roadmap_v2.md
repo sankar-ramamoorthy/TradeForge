@@ -1017,7 +1017,7 @@ Introduce:
 ---
 # M10A — Structured Decision Authoring And Cognitive Capture
 
-**Status:** Planned
+**Status:** Done
 
 ---
 
@@ -1722,7 +1722,7 @@ Ensure:
 
 ## M10B — Postgres Persistence And Multi-Decision Operational Surface
 
-**Status:** Planned
+**Status:** Done
 
 ## Semantic Intent
 
@@ -1759,8 +1759,9 @@ With persistence:
 
 ## Linked Runtime Issues
 
-- TF-F008: Wire PostgresEventStore as default runtime persistence via TRADEFORGE_DATABASE_URL
-- TF-F009: Implement all-decisions projection and multi-decision navigation in Operating Workspace
+- TF-F008: Wire PostgresEventStore as default runtime persistence via TRADEFORGE_DATABASE_URL (**Done**)
+- TF-F009: Implement all-decisions projection and multi-decision navigation in Operating Workspace (**Done**)
+- TF-F010: Fix thesis narrative minimum-length validation gap in ThesisDevelopmentModal (**Done**)
 
 ## Acceptance Meaning
 
@@ -1769,6 +1770,7 @@ With persistence:
 - Operating Workspace lists all active decisions by ticker, stage, and date.
 - Operator can navigate directly from the decision list to any workspace for any decision.
 - InMemory store remains available for test environments and demo mode.
+- Frontend thesis authoring validation prevents avoidable backend 422 responses during operational use.
 
 ---
 
