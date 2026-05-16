@@ -7,13 +7,22 @@ services:
     working_dir: /app
     environment:
       TRADEFORGE_DATABASE_URL: postgresql://tradeforge:tradeforge@postgres:5432/tradeforge
+    ports:
+      - "8000:8000"
     volumes:
       - .:/app
       - tradeforge-venv:/app/.venv
     depends_on:
       postgres:
         condition: service_healthy
-    command: ["uv", "run", "python", "--version"]
+    restart: unless-stopped
+    command:
+      [
+        "uv", "run", "uvicorn",
+        "src.app.api.application:app",
+        "--host", "0.0.0.0",
+        "--port", "8000"
+      ]
 
   postgres:
     image: postgres:16-bookworm
@@ -30,6 +39,7 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+    restart: unless-stopped
 
 volumes:
   tradeforge-venv:

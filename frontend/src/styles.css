@@ -20,8 +20,9 @@
   --space-panel: 24px;
   --space-stack: 16px;
   --space-compact: 10px;
-  --layout-shell-max: 1220px;
+  --layout-shell-max: none;
   --layout-sidebar: 280px;
+  --layout-context-rail: 320px;
 
   color: var(--color-text);
   background: var(--color-canvas);
@@ -54,7 +55,7 @@ a {
 }
 
 .app-shell {
-  width: min(var(--layout-shell-max), calc(100vw - var(--space-page-inline)));
+  width: calc(100vw - var(--space-page-inline));
   margin: 0 auto;
   padding: 28px 0;
 }
@@ -155,9 +156,16 @@ p {
 
 .workspace-layout {
   display: grid;
-  grid-template-columns: var(--layout-sidebar) minmax(0, 1fr);
+  grid-template-columns: minmax(220px, var(--layout-sidebar)) minmax(520px, 1fr);
   gap: var(--space-stack);
   margin: var(--space-stack) 0;
+}
+
+.workspace-layout-with-rail {
+  grid-template-columns:
+    minmax(220px, var(--layout-sidebar))
+    minmax(520px, 1fr)
+    minmax(280px, var(--layout-context-rail));
 }
 
 .workspace-sidebar {
@@ -248,6 +256,14 @@ p {
 .workspace-main {
   display: grid;
   gap: var(--space-stack);
+  min-width: 0;
+}
+
+.workspace-context-rail {
+  display: grid;
+  gap: var(--space-stack);
+  align-content: start;
+  min-width: 0;
 }
 
 .workspace-surface {
@@ -1002,6 +1018,10 @@ p {
     grid-template-columns: 1fr;
   }
 
+  .operating-panel-grid {
+    grid-template-columns: 1fr;
+  }
+
   .workspace-briefing,
   .workspace-surface,
   .runtime-panel {
@@ -1015,7 +1035,7 @@ p {
 
 @media (max-width: 560px) {
   .app-shell {
-    width: min(100vw - 20px, var(--layout-shell-max));
+    width: calc(100vw - 20px);
     padding: 10px 0;
   }
 
@@ -2066,4 +2086,501 @@ p {
 .btn-secondary:disabled {
   opacity: 0.45;
   cursor: not-allowed;
+}
+
+/* ─── Cognition Authoring Surface ────────────────────────────────────────── */
+/* Thesis development, plan authoring, revision, and review modals.           */
+/* Designed to feel like thinking space, not CRUD forms.                      */
+
+.thesis-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(18, 28, 26, 0.6);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  z-index: 300;
+  padding: 32px 16px 48px;
+  overflow-y: auto;
+}
+
+.thesis-modal-surface {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  box-shadow: 0 16px 48px rgba(18, 28, 26, 0.22);
+  width: min(680px, 100%);
+  display: flex;
+  flex-direction: column;
+}
+
+.thesis-modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 28px 32px 20px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.thesis-modal-header h2 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin: 0 0 6px;
+  color: var(--color-text);
+}
+
+.thesis-modal-description {
+  font-size: 0.875rem;
+  color: var(--color-text-muted);
+  margin: 0;
+  line-height: 1.55;
+}
+
+.thesis-modal-close {
+  background: none;
+  border: none;
+  font-size: 1.4rem;
+  line-height: 1;
+  color: var(--color-text-subtle);
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+  flex-shrink: 0;
+  margin-top: 2px;
+  transition: color 0.15s, background 0.15s;
+}
+
+.thesis-modal-close:hover {
+  color: var(--color-text);
+  background: var(--color-canvas);
+}
+
+.thesis-modal-form {
+  padding: 28px 32px 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.thesis-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding-top: 8px;
+  border-top: 1px solid var(--color-border);
+  margin-top: 4px;
+}
+
+/* ─── Field groups ───────────────────────────────────────────────────────── */
+
+.thesis-field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.thesis-field-label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-text);
+  display: block;
+}
+
+.thesis-field-required {
+  color: var(--color-danger);
+}
+
+.thesis-field-optional {
+  font-weight: 400;
+  color: var(--color-text-subtle);
+  font-size: 0.8rem;
+}
+
+.thesis-field-hint {
+  font-size: 0.8rem;
+  color: var(--color-text-subtle);
+  margin: 0;
+  line-height: 1.45;
+}
+
+/* ─── Thinking-space textarea ────────────────────────────────────────────── */
+
+.thesis-narrative-input {
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 130px;
+  padding: 14px 16px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-surface-warm);
+  color: var(--color-text);
+  font-family: inherit;
+  font-size: 0.95rem;
+  line-height: 1.65;
+  resize: vertical;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.thesis-narrative-input:focus {
+  outline: none;
+  border-color: var(--color-border-active);
+  box-shadow: 0 0 0 3px rgba(47, 118, 105, 0.12);
+  background: var(--color-surface);
+}
+
+.thesis-narrative-input::placeholder {
+  color: var(--color-text-subtle);
+  font-style: italic;
+}
+
+/* ─── Regime / single-line inputs ────────────────────────────────────────── */
+
+.thesis-regime-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 14px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-family: inherit;
+  font-size: 0.9rem;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.thesis-regime-input:focus {
+  outline: none;
+  border-color: var(--color-border-active);
+  box-shadow: 0 0 0 3px rgba(47, 118, 105, 0.12);
+}
+
+/* ─── List inputs (catalysts, assumptions, invalidation, execution assumptions) */
+
+.thesis-list-input {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.thesis-list-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.thesis-list-item-input {
+  flex: 1;
+  padding: 9px 13px;
+  border: 1px solid var(--color-border);
+  border-radius: 7px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-family: inherit;
+  font-size: 0.9rem;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.thesis-list-item-input:focus {
+  outline: none;
+  border-color: var(--color-border-active);
+  box-shadow: 0 0 0 3px rgba(47, 118, 105, 0.12);
+}
+
+.thesis-list-remove-btn {
+  background: none;
+  border: 1px solid var(--color-border);
+  border-radius: 5px;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  color: var(--color-text-subtle);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+}
+
+.thesis-list-remove-btn:hover {
+  color: var(--color-danger);
+  border-color: var(--color-danger);
+  background: var(--color-danger-surface);
+}
+
+.thesis-list-add-btn {
+  align-self: flex-start;
+  background: none;
+  border: 1px dashed var(--color-border);
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--color-accent);
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.thesis-list-add-btn:hover {
+  border-color: var(--color-accent);
+  background: var(--color-accent-surface);
+}
+
+/* ─── Conviction slider ──────────────────────────────────────────────────── */
+
+.thesis-confidence-slider {
+  width: 100%;
+  accent-color: var(--color-accent);
+  cursor: pointer;
+}
+
+.thesis-confidence-scale {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.75rem;
+  color: var(--color-text-subtle);
+  margin-top: 2px;
+}
+
+/* ─── Thesis context panel (Plan Review Workspace) ───────────────────────── */
+
+.thesis-context-panel {
+  background: var(--color-surface-muted);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.thesis-context-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.thesis-context-narrative {
+  font-size: 0.95rem;
+  line-height: 1.65;
+  color: var(--color-text);
+  margin: 0;
+}
+
+.thesis-context-regime {
+  font-size: 0.875rem;
+  color: var(--color-text-muted);
+  margin: 0;
+}
+
+.thesis-context-conviction {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  margin: 0;
+}
+
+.thesis-context-label {
+  font-size: 0.76rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-subtle);
+  margin: 0 0 5px;
+}
+
+.thesis-context-lists {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.thesis-context-list-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.thesis-context-list {
+  margin: 0;
+  padding: 0 0 0 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.thesis-context-list li {
+  font-size: 0.875rem;
+  color: var(--color-text-muted);
+  line-height: 1.45;
+}
+
+.thesis-revision-badge {
+  color: var(--color-accent);
+  font-weight: 700;
+}
+
+.thesis-revise-btn {
+  padding: 5px 12px;
+  background: none;
+  border: 1px solid var(--color-border-active);
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-accent);
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: background 0.15s;
+}
+
+.thesis-revise-btn:hover {
+  background: var(--color-accent-surface);
+}
+
+/* ─── Plan rationale grid (Plan Review context panel) ────────────────────── */
+
+.plan-rationale-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.plan-rationale-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.plan-rationale-text {
+  font-size: 0.875rem;
+  color: var(--color-text-muted);
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* ─── Decision list panel (Operating Workspace) ─────────────────────────── */
+
+.decision-list-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: var(--space-stack);
+}
+
+.operating-panel-grid {
+  display: grid;
+  grid-template-columns: minmax(280px, 1fr) minmax(280px, 1fr);
+  gap: var(--space-stack);
+  align-items: start;
+}
+
+.decision-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.decision-list-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  transition: border-color 0.15s;
+}
+
+.decision-list-item:hover {
+  border-color: var(--color-border-active);
+}
+
+.decision-list-item-main {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+}
+
+.decision-list-symbol {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--color-text);
+  flex-shrink: 0;
+}
+
+.decision-stage-badge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 2px 7px;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+.stage-group-early {
+  background: var(--color-canvas);
+  color: var(--color-text-subtle);
+  border: 1px solid var(--color-border);
+}
+
+.stage-group-active {
+  background: var(--color-attention-surface);
+  color: var(--color-attention);
+  border: 1px solid #c99a42;
+}
+
+.stage-group-armed {
+  background: #fdf0e0;
+  color: #7a4f1a;
+  border: 1px solid #d4891a;
+}
+
+.stage-group-position {
+  background: var(--color-accent-surface);
+  color: var(--color-accent);
+  border: 1px solid var(--color-border-active);
+}
+
+.stage-group-done {
+  background: var(--color-surface-muted);
+  color: var(--color-text-subtle);
+  border: 1px solid var(--color-border);
+}
+
+.decision-list-navigate {
+  background: none;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  padding: 5px 12px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-accent);
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.decision-list-navigate:hover {
+  background: var(--color-accent-surface);
+  border-color: var(--color-border-active);
+}
+
+/* ─── Armed state: trigger conditions panel ──────────────────────────────── */
+
+.armed-trigger-conditions {
+  background: var(--color-attention-surface);
+  border: 1px solid #c99a42;
+  border-radius: 8px;
+  padding: 14px 16px;
+  margin-bottom: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }

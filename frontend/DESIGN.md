@@ -37,8 +37,9 @@ tokens:
     letter_spacing: "0"
     body_line_height: "1.6"
 layout:
-  shell_max_width: "1220px"
+  shell_max_width: "none"
   sidebar_width: "280px"
+  context_rail_width: "320px"
   breakpoint_stack: "860px"
   breakpoint_compact: "560px"
 ---
@@ -79,15 +80,25 @@ The frontend layout is organized around a persona-scoped operational workspace:
 
 - workspace briefing: orientation and authority boundary;
 - workspace navigation: route entrypoints, not workspace truth;
-- context panel: persona, workflow, and decision continuity;
+- contextual awareness rail: advisory and environmental context, not canonical authority;
 - workspace surface: the active derived presentation surface;
 - operational cards: scoped context/action/review regions;
 - runtime boundary panel: explicit API/ledger authority reminder.
+
+Desktop operational workspaces use a workstation-oriented composition model:
+
+```text
+navigation zone + primary operational surface + contextual awareness rail
+```
+
+Centered document shells may still be appropriate for non-operational surfaces, but
+they are not the default model for desktop workspaces.
 
 ## Visual Principles
 
 - Context before action.
 - Dense but readable operational surfaces.
+- Use available desktop width as an operational resource.
 - Routes and panels should preserve decision continuity.
 - Cards are for individual operational surfaces only.
 - Page sections remain unframed layout structure.

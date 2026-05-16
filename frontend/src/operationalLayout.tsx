@@ -58,15 +58,26 @@ export function AuthorityCue({
 
 export function WorkspaceLayout({
   sidebar,
+  contextRail,
   children,
 }: {
   sidebar: ReactNode;
+  contextRail?: ReactNode;
   children: ReactNode;
 }) {
+  const className = contextRail
+    ? "workspace-layout workspace-layout-with-rail"
+    : "workspace-layout";
+
   return (
-    <div className="workspace-layout">
+    <div className={className}>
       <div className="workspace-sidebar">{sidebar}</div>
       <div className="workspace-main">{children}</div>
+      {contextRail ? (
+        <aside className="workspace-context-rail" aria-label="Contextual awareness">
+          {contextRail}
+        </aside>
+      ) : null}
     </div>
   );
 }

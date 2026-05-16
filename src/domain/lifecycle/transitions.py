@@ -13,7 +13,8 @@ ALLOWED_LIFECYCLE_TRANSITIONS: Mapping[LifecycleStage | None, LifecycleStage] = 
             LifecycleStage.IDEA: LifecycleStage.THESIS,
             LifecycleStage.THESIS: LifecycleStage.PLAN,
             LifecycleStage.PLAN: LifecycleStage.APPROVAL,
-            LifecycleStage.APPROVAL: LifecycleStage.EXECUTION,
+            LifecycleStage.APPROVAL: LifecycleStage.ARMED,
+            LifecycleStage.ARMED: LifecycleStage.EXECUTION,
             LifecycleStage.EXECUTION: LifecycleStage.POSITION,
             LifecycleStage.POSITION: LifecycleStage.REVIEW,
         }

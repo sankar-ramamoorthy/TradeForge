@@ -858,6 +858,29 @@ export async function fetchPlaybookSummary(
   return response.json() as Promise<PlaybookSummary>;
 }
 
+export type DecisionSummary = {
+  decision_id: string;
+  symbol: string;
+  current_stage: string | null;
+  created_at: string;
+  last_updated_at: string;
+};
+
+export type DecisionListResponse = {
+  decisions: DecisionSummary[];
+  total: number;
+};
+
+export async function fetchDecisionList(
+  signal?: AbortSignal,
+): Promise<DecisionListResponse> {
+  const response = await fetch("/lifecycle/decisions", { signal });
+  if (!response.ok) {
+    throw new Error(`Decision list request failed: ${response.status}`);
+  }
+  return response.json() as Promise<DecisionListResponse>;
+}
+
 export async function fetchOperatingAttentionQueue(
   params: WorkspaceApiParams,
   signal?: AbortSignal,

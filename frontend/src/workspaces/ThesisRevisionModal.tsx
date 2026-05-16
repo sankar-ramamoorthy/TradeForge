@@ -244,7 +244,7 @@ export function ThesisRevisionModal({
               onChange={(e) => setNarrative(e.target.value)}
               placeholder="Revised thesis narrative…"
               required
-              rows={4}
+              rows={6}
               value={narrative}
             />
           </div>

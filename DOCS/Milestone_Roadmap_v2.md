@@ -1017,7 +1017,7 @@ Introduce:
 ---
 # M10A — Structured Decision Authoring And Cognitive Capture
 
-**Status:** Planned
+**Status:** Done
 
 ---
 
@@ -1717,6 +1717,127 @@ Ensure:
 * Behavioral intelligence gains replayable reasoning input.
 * Simulation infrastructure gains structured semantic inputs.
 * TradeForge evolves from workflow replay toward true discretionary cognition reconstruction.
+
+---
+
+## M10B — Postgres Persistence And Multi-Decision Operational Surface
+
+**Status:** Done
+
+## Semantic Intent
+
+Wire durable event persistence and introduce a multi-decision navigation surface so
+operators can work across multiple securities, log out, and return to prior decisions
+without data loss. This unblocks meaningful real-world operational testing and is a
+prerequisite for the Operating Workspace becoming a genuine decision management surface.
+
+## Architectural Significance
+
+TradeForge's event-sourced architecture was designed for durability from the start.
+`PostgresEventStore` is already implemented (TF-0024 through TF-0026). The missing piece
+is wiring it as the default runtime persistence layer and surfacing all persisted decisions
+through the Operating Workspace.
+
+Without persistence:
+- Every server restart wipes all decisions
+- Testing is limited to single-session demos
+- The Operating Workspace attention queue is ephemeral
+- Multiple concurrent decisions (SMH at Armed + NVDA at Thesis) cannot survive a restart
+
+With persistence:
+- Decisions survive server restarts, deployments, and logout/login cycles
+- The Operating Workspace becomes a true decision management surface
+- Multi-security workflows are fully supported
+- The full lifecycle — from Idea through Review — is durable and replayable
+
+## Canonical Concepts
+
+- [[Replayability Is Foundational]]
+- [[Event Ledger Canonical Truth]]
+- [[Events Are Immutable]]
+- [[Workflow-Centric Architecture]]
+
+## Linked Runtime Issues
+
+- TF-F008: Wire PostgresEventStore as default runtime persistence via TRADEFORGE_DATABASE_URL (**Done**)
+- TF-F009: Implement all-decisions projection and multi-decision navigation in Operating Workspace (**Done**)
+- TF-F010: Fix thesis narrative minimum-length validation gap in ThesisDevelopmentModal (**Done**)
+
+## Acceptance Meaning
+
+- Server restart does not lose any decision data.
+- Operator can work on SMH, NVDA, and any other stock simultaneously and return to each.
+- Operating Workspace lists all active decisions by ticker, stage, and date.
+- Operator can navigate directly from the decision list to any workspace for any decision.
+- InMemory store remains available for test environments and demo mode.
+- Frontend thesis authoring validation prevents avoidable backend 422 responses during operational use.
+
+---
+
+## M10C — Operational Credential Boundary
+
+**Status:** Planned
+
+## Semantic Intent
+
+Establish a secure, auditable credential management layer for all external provider
+integrations before AI advisory work (M11) introduces LLM provider keys.
+
+## Architectural Significance
+
+As TradeForge connects to an expanding set of external data providers — Polygon, Alpaca,
+Alpha Vantage, FinancialModelingPrep, Finqual, and LLM providers — the current pattern
+of raw constructor-parameter key injection becomes unmanageable and architecturally
+incorrect. Provider credentials are operational capabilities with lifecycle (creation,
+rotation, revocation, expiry), not configuration trivia.
+
+This milestone introduces `src/security/` as a top-level architectural boundary,
+governing how all external provider secrets are stored, decrypted, and delivered to
+adapters. The composition root (`create_app()`) is the sole caller of the credential
+store. No provider adapter imports from `src/security/`.
+
+The `Credential` domain model is also designed with replay safety in mind: credential
+status at historical points (expired, revoked, entitlement change) is operationally
+meaningful context for future replay reconstruction.
+
+M10B is prerequisite to M11 — AI advisory work will introduce LLM provider credentials
+that must be managed through the same boundary from day one.
+
+## Canonical Concepts
+
+- [[Operational Credential Boundary]]
+- [[Replayability Is Foundational]]
+- [[Layer Separation]]
+- [[Architectural Simplicity]]
+
+## Provider Coverage
+
+| Provider | Credential Shape | Purpose |
+|---|---|---|
+| yFinance | none | Free market data, default provider |
+| Polygon.io | `api_key` | Real-time and historical data |
+| Alpaca | `api_key` + `secret_key` | Market data + future execution |
+| Alpha Vantage | `api_key` | Fundamental + technical data |
+| FinancialModelingPrep | `api_key` | Financial statements + ratios |
+| Finqual | `api_key` | Quantitative financial data |
+| LLM providers (M11+) | `api_key` | Advisory AI boundary |
+
+## Linked Runtime Issues
+
+- TF-F004: Define operational credential boundary — ADR and Credential domain model (**Done**)
+- TF-F005: Implement KeyManager and encrypted local credential store (**Done**)
+- TF-F006: Wire all provider adapters through CredentialStore at composition root (**Done**)
+- TF-F007: Credential setup guide, rotation documentation, keys-out-of-Git enforcement (**Done**)
+
+## Acceptance Meaning
+
+- `TRADEFORGE_MASTER_KEY` is the sole entry point for all provider secret access.
+- M11 (AI Advisory) can assume a proper credential boundary exists.
+- No provider API key appears in logs, Git history, or `.env` files.
+- Rotating a credential requires one command and no code change.
+- All current and planned provider adapters are registered through `CredentialStore`.
+- M11 (AI Advisory) can assume a proper credential boundary exists.
+- Replay-aware credential status fields are present in the domain model for future use.
 
 ---
 

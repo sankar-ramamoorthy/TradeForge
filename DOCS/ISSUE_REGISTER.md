@@ -26,6 +26,17 @@ Explicit roadmap checkpoint completed M9 Updated*Done*.
 
 ---
 
+## Issue Series
+
+| Series | Pattern | Purpose |
+|---|---|---|
+| Roadmap issues | `TF-####` | Planned milestone implementation work — sequential, roadmap-tied |
+| Feedback issues | `TF-F###` | Field-observed bugs, enhancements, and architectural gaps discovered during testing or operation |
+
+`TF-F###` issues are not pre-planned. They originate from operational walkthroughs, testing sessions, or runtime observations. They are assigned to a milestone only when scheduled for implementation.
+
+---
+
 ## Status Values
 
 - `Planned`: not started
@@ -119,9 +130,182 @@ Explicit roadmap checkpoint completed M9 Updated*Done*.
 | M10AIS13 | Done | M10A | Implement replay annotation system | `feature/tf-0064-operational-attention-continuity` |
 | M10AIS14 | Done | M10A | Implement playbook alignment projection layer | `feature/tf-0064-operational-attention-continuity` |
 | M10AIS15 | Done | M10A | Implement cross-workspace cognitive continuity | `feature/tf-0064-operational-attention-continuity` |
+| TF-F001 | Done | TBD | Add iterative revision workflow for thesis, plan, and assumptions | `feature/tf-f001-iterative-revision-workflow` |
+| TF-F002 | Done | TBD | Introduce conditional execution state between Approval and Execution | `feature/tf-f002-awaiting-trigger-lifecycle-state` |
+| TF-F003 | Done | TBD | Expand cognition input areas from CRUD-form style to thinking-space UX | `feature/tf-f003-cognition-ux-ergonomics` |
+| TF-F004 | Done | M10C | Define operational credential boundary — ADR and Credential domain model | `feature/tf-f004-credential-boundary-design` |
+| TF-F005 | Done | M10C | Implement KeyManager and encrypted local credential store | `feature/tf-f005-credential-store-implementation` |
+| TF-F006 | Done | M10C | Wire all provider adapters through CredentialStore at composition root | `feature/tf-f006-provider-credential-wiring` |
+| TF-F007 | Done | M10C | Credential setup guide, rotation documentation, keys-out-of-Git enforcement | `feature/tf-f007-credential-setup-documentation` |
+| TF-F008 | Done | M10B | Wire PostgresEventStore as default runtime persistence via TRADEFORGE_DATABASE_URL | `feature/tf-f008-postgres-default-persistence` |
+| TF-F009 | Done | M10B | Implement all-decisions projection and multi-decision navigation in Operating Workspace | `feature/tf-f009-multi-decision-navigation` |
+| TF-F010 | Done | M10B | Fix thesis narrative minimum-length validation gap in ThesisDevelopmentModal | `feature/tf-0064-operational-attention-continuity` |
+| TF-F012 | Done | TBD | Replace centered workspace shell with workstation-oriented operational layout model | `feature/tf-f012-workstation-layout-model` |
+| TF-F013 | Done | TBD | Formalize three-layer design architecture between doctrine, workspace composition, and frontend translation | `docs/tf-f013-three-layer-design-architecture` |
+| TF-F014 | Done | TBD | Extend workstation zoning to remaining market-context workspaces | `feature/tf-f014-remaining-workspace-zoning` |
+| TF-F015 | Planned | TBD | Fix missing return path in operational attention decision spec | `fix/tf-f015-operational-attention-mypy-return` |
+
+## TF-F012: Replace Centered Workspace Shell With Workstation-Oriented Operational Layout Model
+
+**Status:** Done
+
+**Classification:** enhancement
+
+**Milestone:** TBD
+
+**Branch:** `feature/tf-f012-workstation-layout-model`
+
+**Affected Layer:** frontend
+
+**Linked ADRs:** none currently required
+
+**Impacted Invariants:** UX Is Architectural, Workspaces Are Operational Environments, Human Decision Sovereignty
+
+**Source:** Screen real-estate feedback, 2026-05-16. `knowledge/raw/2026-05-16 feed back on screen real estate and design.md`; screenshot: `knowledge/raw/feedback on screen realestate Screenshot 2026-05-16 120442.png`.
+
+**Problem:**
+The current desktop workspace experience still behaves like a centered application shell rather than a workstation-oriented operational surface. The UI underuses available horizontal space, compresses active operational state into vertically stacked sections, and lacks a persistent contextual awareness region despite TradeForge doctrine favoring parallel cognition, continuity of context, and workspace-specific operational surfaces.
+
+**Acceptance Criteria:**
+
+- Operational desktop workspaces are no longer constrained by a centered document-style shell by default.
+- A desktop three-zone composition model exists for operational workspaces: navigation, primary operational surface, contextual awareness rail.
+- The Operating Workspace is converted first as the reference implementation.
+- Canonical operational state remains visually distinct from advisory/contextual state.
+- Narrow viewport behavior degrades safely without redefining the desktop workstation model.
+
+**Out Of Scope:**
+
+- Resizable panels.
+- Detachable panels.
+- Multi-monitor support.
+- Full redesign of every workspace in one bounded change.
+
+**Resolution Summary:**
+Updated the frontend operational shell to use available desktop width, introduced an optional contextual awareness rail in the shared workspace layout primitive, and converted the Operating Workspace into the first three-zone workstation reference surface.
+
+**Completed Verification:**
+
+- `npm.cmd run typecheck`
+- `npm.cmd run build`
+
+---
+
+## TF-F013: Formalize Three-Layer Design Architecture Between Doctrine, Workspace Composition, And Frontend Translation
+
+**Status:** Done
+
+**Classification:** doctrine
+
+**Milestone:** TBD
+
+**Branch:** `docs/tf-f013-three-layer-design-architecture`
+
+**Affected Layer:** docs, design-doctrine
+
+**Linked ADRs:** none currently required
+
+**Impacted Invariants:** UX Is Architectural, Terminology Stability, Architectural Simplicity
+
+**Source:** Design-boundary clarification notes, 2026-05-15 to 2026-05-16. `knowledge/raw/20260515-frontend-design-md-role-and-usage.md`; `knowledge/raw/recomnended section addition to 20260515-frontend-design-md-role-and-usage.md`; related drafts under `design/`.
+
+**Problem:**
+TradeForge now has an emergent three-layer design model, but the documentation boundary has not yet been normalized around it. The existing explanatory material still partially describes only design doctrine and frontend implementation translation, leaving the operational workspace architecture layer under-specified and creating room for future frontend drift.
+
+**Acceptance Criteria:**
+
+- The design documentation explicitly distinguishes cognitive doctrine, operational workspace architecture, and frontend implementation translation.
+- Frontend translation is explicitly documented as non-authoritative over workspace meaning and operational composition doctrine.
+- The relationship among `design/DESIGN_ARCHITECTURE.md`, the workspace-layout draft documents, and `frontend/DESIGN.md` is made explicit.
+- The issue resolves the documentation gap without prematurely canonicalizing draft design artifacts.
+
+**Out Of Scope:**
+
+- Runtime frontend code changes.
+- Immediate canonical promotion of all draft design documents.
+- Broad rewrite of UX doctrine.
+
+**Resolution Summary:**
+Updated the frontend design-role note to document the three-layer design model explicitly and clarify that frontend implementation translates operational workspace architecture rather than owning it.
+
+---
+
+## TF-F014: Extend Workstation Zoning To Remaining Market-Context Workspaces
+
+**Status:** Done
+
+**Classification:** enhancement
+
+**Milestone:** TBD
+
+**Branch:** `feature/tf-f014-remaining-workspace-zoning`
+
+**Affected Layer:** frontend
+
+**Linked ADRs:** none currently required
+
+**Impacted Invariants:** UX Is Architectural, Workspaces Are Operational Environments
+
+**Source:** Post-`TF-F012` reassessment, 2026-05-16. `knowledge/processed/20260516-tf-f012-synthesis.md`; `knowledge/raw/20260516-tf-f014-diagnosis.md`.
+
+**Problem:**
+After the Operating Workspace became the first three-zone reference implementation, the remaining market-context workspaces still keep contextual panels inline with primary workflow content. `OpportunityWorkspace` and `ActivePositionWorkspace` now require a separate bounded follow-on pass to adopt workstation zoning without widening the completed `TF-F012` issue.
+
+**Acceptance Criteria:**
+
+- Remaining workspaces with persistent contextual market content are evaluated explicitly for right-rail adoption.
+- Appropriate contextual panels move out of the primary workflow flow where that improves operational continuity.
+- Workspace-specific composition differences are preserved instead of forcing identical layouts.
+- The change remains bounded to layout composition, not lifecycle or event semantics.
+
+**Resolution Summary:**
+Moved persistent market context for the Opportunity and Active Position workspaces into the shared shell-level contextual rail while preserving their distinct primary workflow surfaces.
+
+**Completed Verification:**
+
+- `npm.cmd run typecheck`
+- `npm.cmd run build`
+
+---
+
+## TF-F015: Fix Missing Return Path In Operational Attention Decision Spec
+
+**Status:** Done
+
+**Classification:** bug
+
+**Milestone:** TBD
+
+**Branch:** `fix/tf-f015-operational-attention-mypy-return`
+
+**Affected Layer:** services
+
+**Linked ADRs:** none currently required
+
+**Impacted Invariants:** Deterministic Rule Evaluation, Architectural Simplicity
+
+**Source:** Focused type-check verification during TF-F006 on 2026-05-16. `uv run mypy src\services\workspace_engine\attention.py` reports `src\services\workspace_engine\attention.py:291: error: Missing return statement [return]`.
+
+**Problem:**
+`_decision_item_spec()` in `src/services/workspace_engine/attention.py` declares a return type of `tuple[...] | None`, but the current `match` statement does not make the fallback return path explicit. The code currently fails strict mypy verification even though runtime behavior may be operationally unchanged for known lifecycle stages.
+
+**Acceptance Criteria:**
+
+- `_decision_item_spec()` has an explicit fallback return path that satisfies its declared `tuple[...] | None` contract.
+- `uv run mypy src\services\workspace_engine\attention.py` passes.
+- Existing operational attention queue behavior remains unchanged for all currently supported lifecycle stages.
+- Focused regression coverage is added or updated if the implementation changes an observable code path.
+
+**Out Of Scope:**
+
+- Broader refactoring of the operational attention queue.
+- Changes to lifecycle semantics, workspace routing, or attention prioritization.
+
+---
 
 Explicit roadmap checkpoint completed M9 Updated*Done*.
 M10A COMPLETE 2026-05-14. All 15 issues done: M10AIS01-15.
+TF-F001, TF-F002, TF-F003 — Post-M10A feedback issues from first operational walkthrough (2026-05-14). TF-F#### series = field-observed / feedback-originated issues, distinct from roadmap TF-#### series. Milestone TBD.
 Post-MVP Roadmap v2 implementation begins with M9 market-context infrastructure and provider-boundary work. 
 M9 remains constrained to read-only advisory context and must not introduce broker execution authority, autonomous AI decision systems, or non-replayable runtime behavior.
 
@@ -2856,4 +3040,444 @@ M9 remains constrained to read-only advisory context and must not introduce brok
 
 ---
 
+## TF-F001: Add Iterative Revision Workflow For Thesis, Plan, And Assumptions
+
+**Status:** Done
+
+**Classification:** enhancement
+
+**Milestone:** TBD
+
+**Branch:** `feature/tf-f001-iterative-revision-workflow`
+
+**Affected Layer:** domain, api, frontend
+
+**Linked ADRs:** TBD
+
+**Impacted Invariants:** Decision Lifecycle, Replayability Is Foundational, Human Decision Sovereignty
+
+**Source:** First operational walkthrough — M10A, 2026-05-14. `knowledge/raw/first testing feedback 20260514.md` — Operational Gaps #1.
+
+**Problem:**
+The current workflow supports forward progression only. Once a thesis or plan is authored, there is no operational mechanism to revise thesis narrative or conviction, revise assumptions, revise invalidation conditions, revise plan rationale (entry, stop, target, sizing), or return to a prior cognitive stage after advisory review.
+
+During the SMH walkthrough, the advisory system surfaced items requiring reconsideration (only 1 invalidation condition, only 1 execution assumption), but there was no revision path — only "proceed anyway" or abandon.
+
+**Acceptance Criteria:**
+
+- Operator can re-enter thesis authoring from the plan stage.
+- Operator can re-enter plan authoring from the review stage.
+- Revision history is preserved as replayable events — not silent overwrites.
+- Advisory items link directly to the revision entry point.
+
+---
+
+## TF-F002: Introduce Conditional Execution State Between Approval And Execution
+
+**Status:** Done
+
+**Classification:** architectural
+
+**Milestone:** TBD
+
+**Branch:** `feature/tf-f002-awaiting-trigger-lifecycle-state`
+
+**Affected Layer:** domain, api, frontend
+
+**Linked ADRs:** TBD
+
+**Impacted Invariants:** Decision Lifecycle, Lifecycle Authority, Replayability Is Foundational
+
+**Source:** First operational walkthrough — M10A, 2026-05-14. `knowledge/raw/first testing feedback 20260514.md` — Operational Gaps #2.
+
+**Problem:**
+In real discretionary swing trading, approval often means "if conditions occur, I am prepared to execute" — not "I have already entered the trade." The SMH plan explicitly required a daily close above 585, rising volume, and continued semiconductor breadth participation before entry. The current lifecycle collapses Approval → Execution → Position too aggressively for condition-dependent entries.
+
+**Missing Lifecycle Concept:**
+Candidate names: Awaiting Trigger, Authorized Watch State, Conditional Execution State, Armed Opportunity.
+
+Proposed canonical lifecycle extension:
+```
+Idea → Thesis → Plan → Approval → [Awaiting Trigger] → Execution → Position → Review
+```
+
+**Acceptance Criteria:**
+
+- A lifecycle state exists between Approval and Execution representing conditional authorization.
+- Operator can declare trigger conditions when entering the armed state.
+- The system holds the plan in the armed state until the operator confirms conditions are met.
+- The trigger confirmation is a replayable lifecycle event.
+- The armed state is visible in the workspace with its declared trigger conditions.
+
+---
+
+## TF-F003: Expand Cognition Input Areas From CRUD-Form Style To Thinking-Space UX
+
+**Status:** Done
+
+**Classification:** enhancement
+
+**Milestone:** TBD
+
+**Branch:** `feature/tf-f003-cognition-ux-ergonomics`
+
+**Affected Layer:** frontend
+
+**Linked ADRs:** TBD
+
+**Impacted Invariants:** UX Is Architectural, Human Decision Sovereignty
+
+**Source:** First operational walkthrough — M10A, 2026-05-14. `knowledge/raw/first testing feedback 20260514.md` — Operational Gaps #3. Screenshot: `feedback Screenshot 2026-05-14 230304.png`.
+
+**Problem:**
+The current plan authoring form uses small textarea-style inputs that feel like CRUD forms and configuration panels rather than operational cognition environments. Entry Rationale, Stop Rationale, Target Rationale, Sizing Rationale, and Execution Assumptions fields are psychologically compressed for the level of discretionary reasoning being captured.
+
+**Acceptance Criteria:**
+
+- Rationale input fields have a significantly larger default height.
+- Thesis narrative has a full-panel or expandable composing area.
+- Visual treatment signals "compose and think" rather than "fill in a form."
+- Changes are consistent with the structured cognition authoring philosophy and do not regress workflow functionality.
+
+---
+
+## TF-F004: Define Operational Credential Boundary — ADR And Credential Domain Model
+
+**Status:** Done
+
+**Classification:** architectural
+
+**Milestone:** M10C
+
+**Branch:** `feature/tf-f004-credential-boundary-design`
+
+**Affected Layer:** security, domain, docs
+
+**Linked ADRs:** ADR-0037
+
+**Impacted Invariants:** Replayability Is Foundational, Architectural Simplicity, Historical Integrity
+
+**Source:** Field-observed gap — no encrypted credential management exists for external provider API keys (Polygon, Alpaca, and planned: Alpha Vantage, FinancialModelingPrep, Finqual, LLM providers).
+
+**Problem:**
+Provider adapter API keys are currently accepted as constructor parameters with no secure storage, rotation, revocation, or barrier preventing keys from appearing in logs or version control. As provider count grows this becomes unmanageable. The gap also affects replay fidelity — credential status at historical points is operationally meaningful context.
+
+**Acceptance Criteria:**
+
+- ADR-0037 exists and is accepted.
+- `Credential` domain model exists in `src/security/credential.py` with fields: `provider_id`, `credential_type`, `encrypted_payload`, `created_at`, `rotated_at`, `last_validated_at`, `status`, `provenance`.
+- `CredentialStatus` enum defined: `active`, `revoked`, `expired`, `unknown`.
+- Module boundary rule documented: no provider adapter imports from `src/security/`.
+
+**Resolution Summary:**
+Added the top-level `src/security/` boundary with immutable `Credential` and `CredentialStatus` domain types matching ADR-0037. The model includes replay-oriented credential metadata, validates required fields and temporal consistency, and leaves storage/decryption concerns for later M10C issues while preserving adapter independence from `src/security/`.
+
+**Completed Verification:**
+
+- `uv run pytest tests\test_credential.py`
+- `uv run ruff check src\security tests\test_credential.py`
+
+---
+
+## TF-F005: Implement KeyManager And Encrypted Local Credential Store
+
+**Status:** Done
+
+**Classification:** enhancement
+
+**Milestone:** M10C
+
+**Branch:** `feature/tf-f005-credential-store-implementation`
+
+**Affected Layer:** security, infrastructure
+
+**Linked ADRs:** ADR-0037
+
+**Impacted Invariants:** Architectural Simplicity, Historical Integrity
+
+**Problem:**
+No encrypted storage exists for provider credentials. Keys live as raw strings in environment or constructor calls. No Fernet encryption, no `.keys.enc` file, no `TRADEFORGE_MASTER_KEY` enforcement.
+
+**Acceptance Criteria:**
+
+- `TRADEFORGE_MASTER_KEY` loaded from OS environment only — not `.env`, not Git.
+- `KeyManager` in `src/security/key_manager.py`: encrypt/decrypt using Fernet, master key loading with clear error if unset.
+- `CredentialStore` in `src/security/credential_store.py`: read/write encrypted credentials to `.keys.enc`.
+- `.keys.enc` added to `.gitignore`.
+- CLI command or script to generate `TRADEFORGE_MASTER_KEY` and register initial credentials.
+- Provider credentials: Polygon (`api_key`), Alpaca (`api_key` + `secret_key`), Alpha Vantage (`api_key`), FinancialModelingPrep (`api_key`), Finqual (`api_key`).
+- Encrypted values never appear in logs, environment dumps, or error messages.
+- Unit tests for KeyManager: encrypt → decrypt round-trip, wrong master key raises error.
+- Unit tests for CredentialStore: write credential, read it back, status filtering.
+
+**Resolution Summary:**
+Implemented Fernet-backed credential encryption through `KeyManager`, added a JSON-backed local `CredentialStore` that persists encrypted payloads to `.keys.enc`, added a small `scripts/manage_credentials.py` command surface for master-key generation and initial provider registration, added `.keys.enc` to `.gitignore`, and declared the new `cryptography` runtime dependency.
+
+**Completed Verification:**
+
+- `uv run pytest tests\test_credential.py tests\test_key_manager.py tests\test_credential_store.py`
+- `uv run ruff check src\security scripts\manage_credentials.py tests\test_credential.py tests\test_key_manager.py tests\test_credential_store.py`
+- `uv run mypy src\security scripts\manage_credentials.py tests\test_credential.py tests\test_key_manager.py tests\test_credential_store.py`
+
+---
+
+## TF-F006: Wire All Provider Adapters Through CredentialStore At Composition Root
+
+**Status:** Done
+
+**Classification:** refactor
+
+**Milestone:** M10C
+
+**Branch:** `feature/tf-f006-provider-credential-wiring`
+
+**Affected Layer:** app, infrastructure, security
+
+**Linked ADRs:** ADR-0037
+
+**Impacted Invariants:** Architectural Simplicity, Layer Separation
+
+**Problem:**
+`create_app()` in `src/app/api/application.py` currently wires `YFinanceProvider()` directly with no credential management. Polygon and Alpaca adapters exist but would need raw constructor injection. Alpha Vantage, FMP, Finqual adapters (planned) would follow the same unsafe pattern.
+
+**Acceptance Criteria:**
+
+- `create_app()` accepts an optional `credential_store: CredentialStore | None` parameter.
+- When `credential_store` is provided (or initialized from `.keys.enc`), provider adapters receive decrypted credentials from the store — not from raw env vars or constructor parameters.
+- `YFinanceProvider` remains keyless (no change).
+- Polygon, Alpaca, and all future providers (Alpha Vantage, FMP, Finqual) are wired through `CredentialStore`.
+- Provider adapters themselves have zero imports from `src/security/` — boundary enforced.
+- Integration test: `create_app()` with injected `CredentialStore` serves market data correctly.
+- All existing tests continue to pass (adapters still accept constructor injection for tests).
+
+**Resolution Summary:**
+Centralized default market-provider construction in `create_app()`, added optional `credential_store` injection, kept `yfinance` as the keyless default, and routed `polygon` and `alpaca` construction through decrypted `CredentialStore` payloads selected by `TRADEFORGE_MARKET_PROVIDER`. Provider adapters remain security-agnostic and continue to support constructor injection in their own tests.
+
+**Completed Verification:**
+
+- `uv run pytest tests\test_provider_credential_wiring.py tests\test_market_context_overlay.py`
+- `uv run ruff check src\app\api\application.py tests\test_provider_credential_wiring.py`
+- `uv run mypy --follow-imports=skip src\app\api\application.py tests\test_provider_credential_wiring.py`
+
+---
+
+## TF-F007: Credential Setup Guide, Rotation Documentation, And Keys-Out-Of-Git Enforcement
+
+**Status:** Planned
+
+**Classification:** operational
+
+**Milestone:** M10C
+
+**Branch:** `feature/tf-f007-credential-setup-documentation`
+
+**Affected Layer:** docs, operational
+
+**Linked ADRs:** ADR-0037
+
+**Problem:**
+No setup guide exists for credential initialization. No rotation procedure is documented. No `.gitignore` enforcement prevents accidental key commits.
+
+**Provider coverage:**
+- Polygon.io: `api_key` — https://polygon.io
+- Alpaca: `api_key` + `secret_key` — https://alpaca.markets
+- Alpha Vantage: `api_key` — https://www.alphavantage.co
+- FinancialModelingPrep: `api_key` — https://financialmodelingprep.com
+- Finqual: `api_key` — https://finqual.com
+
+**Acceptance Criteria:**
+
+- `HOW-TO-SETUP-KEYS.md` exists at project root covering: master key generation, credential registration for each provider, rotation procedure, revocation.
+- `.gitignore` includes: `.keys.enc`, `TRADEFORGE_MASTER_KEY` (if ever written to file).
+- `README.md` references the setup guide.
+- Operator can set up all credentials in under 5 minutes following the guide.
+
+**Resolution Summary:**
+Added a root credential setup guide covering master-key generation, provider registration, provider selection, rotation, revocation, and secret-handling rules. Linked the guide from `README.md` and extended `.gitignore` with a defensive `TRADEFORGE_MASTER_KEY` guard in addition to `.keys.enc`.
+
+**Completed Verification:**
+
+- Manual review against `scripts\manage_credentials.py`
+- Confirmed `.gitignore` contains both `.keys.enc` and `TRADEFORGE_MASTER_KEY`
+- Confirmed `README.md` links to `HOW-TO-SETUP-KEYS.md`
+
+---
+
+## TF-F008: Wire PostgresEventStore As Default Runtime Persistence Via TRADEFORGE_DATABASE_URL
+
+**Status:** Done
+
+**Classification:** architectural
+
+**Milestone:** M10B
+
+**Branch:** `feature/tf-f008-postgres-default-persistence`
+
+**Affected Layer:** app, infrastructure
+
+**Linked ADRs:** ADR-0018 (Postgres event store persistence), ADR-0019 (projection persistence)
+
+**Impacted Invariants:** Event Ledger Canonical Truth, Events Are Immutable, Replayability Is Foundational
+
+**Source:** Second operational testing session — 2026-05-15. All decision data lost on server restart. `knowledge/raw/20260515-second-testing-session-persistence-observation.md`
+
+**Problem:**
+`create_app()` defaults to `InMemoryEventStore()`. All decision data is lost on server restart, container restart, or between testing sessions. Operators cannot resume prior decisions or accumulate a real decision history. `PostgresEventStore` already exists in `src/infrastructure/event_store/postgres.py` and reads from `TRADEFORGE_DATABASE_URL` via `PostgresConnectionSettings.from_environment()`. Wiring is the only gap.
+
+**Acceptance Criteria:**
+
+- `create_app()` checks for `TRADEFORGE_DATABASE_URL` in the environment at startup.
+- If set: uses `PostgresEventStore()` as the default event store.
+- If not set: falls back to `InMemoryEventStore()` (preserves demo and test behavior).
+- Alembic migrations run on startup (or documented as a pre-start step) when Postgres is active.
+- Server restart with `TRADEFORGE_DATABASE_URL` set preserves all prior decision events.
+- All existing tests continue to pass (they inject `InMemoryEventStore` directly — unaffected).
+- A decision created in one server session is retrievable after server restart.
+
+**Out Of Scope:**
+
+- Multi-user or remote database configuration.
+- Postgres for market snapshot persistence (may follow separately).
+- Connection pooling or production hardening.
+
+---
+
+## TF-F009: Implement All-Decisions Projection And Multi-Decision Navigation In Operating Workspace
+
+**Status:** Done
+
+**Classification:** enhancement
+
+**Milestone:** M10B
+
+**Branch:** `feature/tf-f009-multi-decision-navigation`
+
+**Affected Layer:** backend (api, services), frontend (Operating Workspace)
+
+**Linked ADRs:** ADR-0002 (Decision Lifecycle Engine), ADR-0004 (Workspace Projection Model)
+
+**Impacted Invariants:** Workflow-Centric Architecture, Decision Lifecycle, Human Decision Sovereignty
+
+**Source:** Second operational testing session — 2026-05-15. No way to navigate between concurrent decisions or see all active decisions in one surface.
+
+**Problem:**
+When an operator has decisions across multiple securities (SMH at Armed stage, NVDA at Thesis stage), there is no surface to see all active decisions and navigate between them. The Operating Workspace shows an attention queue for the current context but has no decision list. With Postgres persistence enabled (TF-F008), decisions accumulate — but there is no UI to surface them.
+
+**Backend — new endpoint:**
+
+`GET /lifecycle/decisions` — returns all decisions derived from the event store.
+
+Each decision record:
+```
+{
+  decision_id: str,
+  symbol: str,
+  current_stage: str,          # Idea, Thesis, Plan, Approval, Armed, Execution, Position, Review
+  created_at: datetime,        # timestamp of trade_idea_created event
+  last_updated_at: datetime,   # timestamp of most recent lifecycle event
+  stage_updated_at: datetime   # timestamp of current stage entry
+}
+```
+
+Derived by scanning all `trade_idea_created` events, grouping by decision_id,
+and deriving current lifecycle stage from the event history per decision.
+
+**Frontend — Operating Workspace:**
+
+- Decision list panel showing all decisions: symbol, current stage badge, age
+- Clicking any decision navigates to the appropriate workspace for that stage
+  (using `STAGE_TO_WORKSPACE` routing already in `workspaceRouting.ts`)
+- Stage badge colored by lifecycle position (idea/thesis = neutral, plan/approval/armed = attention, execution/position = active, review = complete)
+- Empty state when no decisions exist
+
+**Acceptance Criteria:**
+
+- `GET /lifecycle/decisions` returns all decisions across all securities.
+- Operating Workspace displays a decision list when decisions exist.
+- Clicking a decision with stage "Armed" navigates to Active Position Workspace with that decision's context.
+- Clicking a decision with stage "Plan" navigates to Plan Review Workspace.
+- Decision list updates after creating a new trade idea.
+- Empty state shown cleanly when no decisions exist.
+- Works with both InMemory (ephemeral list) and Postgres (persistent list) event stores.
+
+---
+
+## TF-F010: Fix Thesis Narrative Minimum-Length Validation Gap In ThesisDevelopmentModal
+
+**Status:** Done
+
+**Classification:** bug
+
+**Milestone:** M10B
+
+**Branch:** `feature/tf-0064-operational-attention-continuity`
+
+**Affected Layer:** frontend (ThesisDevelopmentModal)
+
+**Linked ADRs:** none
+
+**Impacted Invariants:** none
+
+**Source:** Operational testing session — 2026-05-15. `POST /lifecycle/decisions/develop-thesis` returned 422 when narrative was shorter than 10 characters.
+
+**Problem:**
+The backend `DevelopThesisPayload` declares `narrative: str = Field(min_length=10)`. The frontend `ThesisDevelopmentModal` validated only that the narrative was non-empty (`!narrative.trim()`), with no minimum-length check. A narrative of 1–9 characters passed frontend validation and reached the backend, which returned 422 Unprocessable Entity with no user-visible explanation.
+
+**Fix:**
+Added a `narrative.trim().length < 10` guard in `handleSubmit` with a descriptive error message: *"Thesis narrative is too short — write at least a sentence explaining the core argument."*
+
+**Acceptance Criteria:**
+
+- Submitting a narrative shorter than 10 characters displays the descriptive message without reaching the backend.
+- Valid narratives (10+ characters) submit successfully.
+- No backend 422 is returned for this validation path.
+
+---
+
+## TF-F011: Fix Docker Compose Command To Start Uvicorn And Restore Operational Persistence
+
+**Status:** Done
+
+**Classification:** operational
+
+**Milestone:** M10B
+
+**Branch:** `feature/tf-0064-operational-attention-continuity`
+
+**Affected Layer:** infrastructure (docker-compose.yml)
+
+**Linked ADRs:** none
+
+**Impacted Invariants:** Replayability Is Foundational
+
+**Source:** Operational testing session — 2026-05-15. Container `tradeforge-tradeforge-1` was found stopped; server was running manually outside Docker without `TRADEFORGE_DATABASE_URL`, causing in-memory fallback and silent event loss.
+
+**Problem:**
+`command` in `docker-compose.yml` was a placeholder: `["uv", "run", "python", "--version"]`. Python prints the version and exits — the container stops immediately and the uvicorn server never starts. Because the server ran outside Docker, `TRADEFORGE_DATABASE_URL` (correctly defined in compose) never reached the app. `create_event_store()` resolved to `InMemoryEventStore`. Events created in the session were not written to Postgres `event_ledger` and were lost on process exit.
+
+**Fix:**
+- Replaced placeholder `command` with the uvicorn startup command: `["uv", "run", "uvicorn", "src.app.api.application:app", "--host", "0.0.0.0", "--port", "8000"]`
+- Added `ports: - "8000:8000"` to the tradeforge service (was absent — only postgres had port mapping)
+- Added `restart: unless-stopped` to both the tradeforge and postgres services
+
+**Acceptance Criteria:**
+
+- `docker compose up -d` starts the tradeforge container and it remains running.
+- The API is accessible at `http://localhost:8000`.
+- Events written via the API appear in the Postgres `event_ledger` table.
+- Container survives host reboot without manual restart.
+
+**Out Of Scope:**
+
+- `.env` file support
+- Named bridge network
+
+**Completed Verification:**
+
+- `docker compose config` — compose file is valid
+- `docker compose up -d` — container starts and stays running
+- `curl http://localhost:8000/health` — API responds
+- `docker exec tradeforge-postgres-1 psql -U tradeforge -d tradeforge -c "SELECT count(*) FROM event_ledger;"` — confirms events reach Postgres
+
+---
 
