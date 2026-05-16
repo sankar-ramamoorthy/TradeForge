@@ -96,6 +96,11 @@ export function ThesisDevelopmentModal({ context, symbol, onSuccess, onCancel }:
       setSubmitState("error");
       return;
     }
+    if (narrative.trim().length < 10) {
+      setSubmitError("Thesis narrative is too short — write at least a sentence explaining the core argument.");
+      setSubmitState("error");
+      return;
+    }
     if (cleanCatalysts.length === 0) {
       setSubmitError("At least one catalyst is required.");
       setSubmitState("error");

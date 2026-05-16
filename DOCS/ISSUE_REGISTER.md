@@ -139,6 +139,7 @@ Explicit roadmap checkpoint completed M9 Updated*Done*.
 | TF-F007 | Planned | M10C | Credential setup guide, rotation documentation, keys-out-of-Git enforcement | `feature/tf-f007-credential-setup-documentation` |
 | TF-F008 | Done | M10B | Wire PostgresEventStore as default runtime persistence via TRADEFORGE_DATABASE_URL | `feature/tf-f008-postgres-default-persistence` |
 | TF-F009 | Done | M10B | Implement all-decisions projection and multi-decision navigation in Operating Workspace | `feature/tf-f009-multi-decision-navigation` |
+| TF-F010 | Done | M10B | Fix thesis narrative minimum-length validation gap in ThesisDevelopmentModal | `feature/tf-0064-operational-attention-continuity` |
 
 Explicit roadmap checkpoint completed M9 Updated*Done*.
 M10A COMPLETE 2026-05-14. All 15 issues done: M10AIS01-15.
@@ -3204,4 +3205,35 @@ and deriving current lifecycle stage from the event history per decision.
 
 ---
 
+## TF-F010: Fix Thesis Narrative Minimum-Length Validation Gap In ThesisDevelopmentModal
+
+**Status:** Done
+
+**Classification:** bug
+
+**Milestone:** M10B
+
+**Branch:** `feature/tf-0064-operational-attention-continuity`
+
+**Affected Layer:** frontend (ThesisDevelopmentModal)
+
+**Linked ADRs:** none
+
+**Impacted Invariants:** none
+
+**Source:** Operational testing session — 2026-05-15. `POST /lifecycle/decisions/develop-thesis` returned 422 when narrative was shorter than 10 characters.
+
+**Problem:**
+The backend `DevelopThesisPayload` declares `narrative: str = Field(min_length=10)`. The frontend `ThesisDevelopmentModal` validated only that the narrative was non-empty (`!narrative.trim()`), with no minimum-length check. A narrative of 1–9 characters passed frontend validation and reached the backend, which returned 422 Unprocessable Entity with no user-visible explanation.
+
+**Fix:**
+Added a `narrative.trim().length < 10` guard in `handleSubmit` with a descriptive error message: *"Thesis narrative is too short — write at least a sentence explaining the core argument."*
+
+**Acceptance Criteria:**
+
+- Submitting a narrative shorter than 10 characters displays the descriptive message without reaching the backend.
+- Valid narratives (10+ characters) submit successfully.
+- No backend 422 is returned for this validation path.
+
+---
 
