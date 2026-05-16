@@ -134,7 +134,7 @@ Explicit roadmap checkpoint completed M9 Updated*Done*.
 | TF-F002 | Done | TBD | Introduce conditional execution state between Approval and Execution | `feature/tf-f002-awaiting-trigger-lifecycle-state` |
 | TF-F003 | Done | TBD | Expand cognition input areas from CRUD-form style to thinking-space UX | `feature/tf-f003-cognition-ux-ergonomics` |
 | TF-F004 | Done | M10C | Define operational credential boundary — ADR and Credential domain model | `feature/tf-f004-credential-boundary-design` |
-| TF-F005 | Planned | M10C | Implement KeyManager and encrypted local credential store | `feature/tf-f005-credential-store-implementation` |
+| TF-F005 | Done | M10C | Implement KeyManager and encrypted local credential store | `feature/tf-f005-credential-store-implementation` |
 | TF-F006 | Planned | M10C | Wire all provider adapters through CredentialStore at composition root | `feature/tf-f006-provider-credential-wiring` |
 | TF-F007 | Planned | M10C | Credential setup guide, rotation documentation, keys-out-of-Git enforcement | `feature/tf-f007-credential-setup-documentation` |
 | TF-F008 | Done | M10B | Wire PostgresEventStore as default runtime persistence via TRADEFORGE_DATABASE_URL | `feature/tf-f008-postgres-default-persistence` |
@@ -3145,7 +3145,7 @@ Added the top-level `src/security/` boundary with immutable `Credential` and `Cr
 
 ## TF-F005: Implement KeyManager And Encrypted Local Credential Store
 
-**Status:** Planned
+**Status:** Done
 
 **Classification:** enhancement
 
@@ -3173,6 +3173,15 @@ No encrypted storage exists for provider credentials. Keys live as raw strings i
 - Encrypted values never appear in logs, environment dumps, or error messages.
 - Unit tests for KeyManager: encrypt → decrypt round-trip, wrong master key raises error.
 - Unit tests for CredentialStore: write credential, read it back, status filtering.
+
+**Resolution Summary:**
+Implemented Fernet-backed credential encryption through `KeyManager`, added a JSON-backed local `CredentialStore` that persists encrypted payloads to `.keys.enc`, added a small `scripts/manage_credentials.py` command surface for master-key generation and initial provider registration, added `.keys.enc` to `.gitignore`, and declared the new `cryptography` runtime dependency.
+
+**Completed Verification:**
+
+- `uv run pytest tests\test_credential.py tests\test_key_manager.py tests\test_credential_store.py`
+- `uv run ruff check src\security scripts\manage_credentials.py tests\test_credential.py tests\test_key_manager.py tests\test_credential_store.py`
+- `uv run mypy src\security scripts\manage_credentials.py tests\test_credential.py tests\test_key_manager.py tests\test_credential_store.py`
 
 ---
 

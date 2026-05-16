@@ -8,6 +8,7 @@ license = { file = "LICENSE" }
 dependencies = [
     "alembic>=1.17",
     "alpaca-py>=0.30",
+    "cryptography>=45.0",
     "fastapi[standard]>=0.124",
     "polygon-api-client>=1.0",
     "psycopg[binary]>=3.2",
