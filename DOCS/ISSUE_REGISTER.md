@@ -3237,3 +3237,50 @@ Added a `narrative.trim().length < 10` guard in `handleSubmit` with a descriptiv
 
 ---
 
+## TF-F011: Fix Docker Compose Command To Start Uvicorn And Restore Operational Persistence
+
+**Status:** Done
+
+**Classification:** operational
+
+**Milestone:** M10B
+
+**Branch:** `feature/tf-0064-operational-attention-continuity`
+
+**Affected Layer:** infrastructure (docker-compose.yml)
+
+**Linked ADRs:** none
+
+**Impacted Invariants:** Replayability Is Foundational
+
+**Source:** Operational testing session — 2026-05-15. Container `tradeforge-tradeforge-1` was found stopped; server was running manually outside Docker without `TRADEFORGE_DATABASE_URL`, causing in-memory fallback and silent event loss.
+
+**Problem:**
+`command` in `docker-compose.yml` was a placeholder: `["uv", "run", "python", "--version"]`. Python prints the version and exits — the container stops immediately and the uvicorn server never starts. Because the server ran outside Docker, `TRADEFORGE_DATABASE_URL` (correctly defined in compose) never reached the app. `create_event_store()` resolved to `InMemoryEventStore`. Events created in the session were not written to Postgres `event_ledger` and were lost on process exit.
+
+**Fix:**
+- Replaced placeholder `command` with the uvicorn startup command: `["uv", "run", "uvicorn", "src.app.api.application:app", "--host", "0.0.0.0", "--port", "8000"]`
+- Added `ports: - "8000:8000"` to the tradeforge service (was absent — only postgres had port mapping)
+- Added `restart: unless-stopped` to both the tradeforge and postgres services
+
+**Acceptance Criteria:**
+
+- `docker compose up -d` starts the tradeforge container and it remains running.
+- The API is accessible at `http://localhost:8000`.
+- Events written via the API appear in the Postgres `event_ledger` table.
+- Container survives host reboot without manual restart.
+
+**Out Of Scope:**
+
+- `.env` file support
+- Named bridge network
+
+**Completed Verification:**
+
+- `docker compose config` — compose file is valid
+- `docker compose up -d` — container starts and stays running
+- `curl http://localhost:8000/health` — API responds
+- `docker exec tradeforge-postgres-1 psql -U tradeforge -d tradeforge -c "SELECT count(*) FROM event_ledger;"` — confirms events reach Postgres
+
+---
+
