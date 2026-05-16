@@ -143,6 +143,7 @@ Explicit roadmap checkpoint completed M9 Updated*Done*.
 | TF-F012 | Done | TBD | Replace centered workspace shell with workstation-oriented operational layout model | `feature/tf-f012-workstation-layout-model` |
 | TF-F013 | Done | TBD | Formalize three-layer design architecture between doctrine, workspace composition, and frontend translation | `docs/tf-f013-three-layer-design-architecture` |
 | TF-F014 | Done | TBD | Extend workstation zoning to remaining market-context workspaces | `feature/tf-f014-remaining-workspace-zoning` |
+| TF-F015 | Planned | TBD | Fix missing return path in operational attention decision spec | `fix/tf-f015-operational-attention-mypy-return` |
 
 ## TF-F012: Replace Centered Workspace Shell With Workstation-Oriented Operational Layout Model
 
@@ -264,6 +265,41 @@ Moved persistent market context for the Opportunity and Active Position workspac
 
 - `npm.cmd run typecheck`
 - `npm.cmd run build`
+
+---
+
+## TF-F015: Fix Missing Return Path In Operational Attention Decision Spec
+
+**Status:** Planned
+
+**Classification:** bug
+
+**Milestone:** TBD
+
+**Branch:** `fix/tf-f015-operational-attention-mypy-return`
+
+**Affected Layer:** services
+
+**Linked ADRs:** none currently required
+
+**Impacted Invariants:** Deterministic Rule Evaluation, Architectural Simplicity
+
+**Source:** Focused type-check verification during TF-F006 on 2026-05-16. `uv run mypy src\services\workspace_engine\attention.py` reports `src\services\workspace_engine\attention.py:291: error: Missing return statement [return]`.
+
+**Problem:**
+`_decision_item_spec()` in `src/services/workspace_engine/attention.py` declares a return type of `tuple[...] | None`, but the current `match` statement does not make the fallback return path explicit. The code currently fails strict mypy verification even though runtime behavior may be operationally unchanged for known lifecycle stages.
+
+**Acceptance Criteria:**
+
+- `_decision_item_spec()` has an explicit fallback return path that satisfies its declared `tuple[...] | None` contract.
+- `uv run mypy src\services\workspace_engine\attention.py` passes.
+- Existing operational attention queue behavior remains unchanged for all currently supported lifecycle stages.
+- Focused regression coverage is added or updated if the implementation changes an observable code path.
+
+**Out Of Scope:**
+
+- Broader refactoring of the operational attention queue.
+- Changes to lifecycle semantics, workspace routing, or attention prioritization.
 
 ---
 
