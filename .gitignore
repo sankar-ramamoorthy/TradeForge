@@ -180,6 +180,7 @@ frontend/dist/
 
 # Local encrypted credential registry
 .keys.enc
+TRADEFORGE_MASTER_KEY
 
 # Cursor  
 #  Cursor is an AI-powered code editor.`.cursorignore` specifies files/directories to 

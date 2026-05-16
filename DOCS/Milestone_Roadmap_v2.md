@@ -1827,7 +1827,7 @@ that must be managed through the same boundary from day one.
 - TF-F004: Define operational credential boundary — ADR and Credential domain model (**Done**)
 - TF-F005: Implement KeyManager and encrypted local credential store (**Done**)
 - TF-F006: Wire all provider adapters through CredentialStore at composition root (**Done**)
-- TF-F007: Credential setup guide, rotation documentation, keys-out-of-Git enforcement
+- TF-F007: Credential setup guide, rotation documentation, keys-out-of-Git enforcement (**Done**)
 
 ## Acceptance Meaning
 

@@ -136,7 +136,7 @@ Explicit roadmap checkpoint completed M9 Updated*Done*.
 | TF-F004 | Done | M10C | Define operational credential boundary — ADR and Credential domain model | `feature/tf-f004-credential-boundary-design` |
 | TF-F005 | Done | M10C | Implement KeyManager and encrypted local credential store | `feature/tf-f005-credential-store-implementation` |
 | TF-F006 | Done | M10C | Wire all provider adapters through CredentialStore at composition root | `feature/tf-f006-provider-credential-wiring` |
-| TF-F007 | Planned | M10C | Credential setup guide, rotation documentation, keys-out-of-Git enforcement | `feature/tf-f007-credential-setup-documentation` |
+| TF-F007 | Done | M10C | Credential setup guide, rotation documentation, keys-out-of-Git enforcement | `feature/tf-f007-credential-setup-documentation` |
 | TF-F008 | Done | M10B | Wire PostgresEventStore as default runtime persistence via TRADEFORGE_DATABASE_URL | `feature/tf-f008-postgres-default-persistence` |
 | TF-F009 | Done | M10B | Implement all-decisions projection and multi-decision navigation in Operating Workspace | `feature/tf-f009-multi-decision-navigation` |
 | TF-F010 | Done | M10B | Fix thesis narrative minimum-length validation gap in ThesisDevelopmentModal | `feature/tf-0064-operational-attention-continuity` |
@@ -270,7 +270,7 @@ Moved persistent market context for the Opportunity and Active Position workspac
 
 ## TF-F015: Fix Missing Return Path In Operational Attention Decision Spec
 
-**Status:** Planned
+**Status:** Done
 
 **Classification:** bug
 
@@ -3291,6 +3291,15 @@ No setup guide exists for credential initialization. No rotation procedure is do
 - `.gitignore` includes: `.keys.enc`, `TRADEFORGE_MASTER_KEY` (if ever written to file).
 - `README.md` references the setup guide.
 - Operator can set up all credentials in under 5 minutes following the guide.
+
+**Resolution Summary:**
+Added a root credential setup guide covering master-key generation, provider registration, provider selection, rotation, revocation, and secret-handling rules. Linked the guide from `README.md` and extended `.gitignore` with a defensive `TRADEFORGE_MASTER_KEY` guard in addition to `.keys.enc`.
+
+**Completed Verification:**
+
+- Manual review against `scripts\manage_credentials.py`
+- Confirmed `.gitignore` contains both `.keys.enc` and `TRADEFORGE_MASTER_KEY`
+- Confirmed `README.md` links to `HOW-TO-SETUP-KEYS.md`
 
 ---
 

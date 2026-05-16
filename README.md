@@ -130,6 +130,10 @@ uv run ruff check .        # lint
 uv run mypy src tests      # type check
 ```
 
+Provider keys are optional for the default `yfinance` workflow. For Polygon,
+Alpaca, or other credentialed providers, follow
+[`HOW-TO-SETUP-KEYS.md`](HOW-TO-SETUP-KEYS.md).
+
 ### Frontend
 
 ```bash
