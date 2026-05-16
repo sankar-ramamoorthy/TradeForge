@@ -42,6 +42,8 @@ import {
 } from "./operationalLayout";
 import { ActivePositionWorkspace } from "./workspaces/ActivePositionWorkspace";
 import { AttentionSummaryPanel } from "./workspaces/AttentionSummaryPanel";
+import { ContextualBriefingPanel } from "./workspaces/ContextualBriefingPanel";
+import { MarketContextPanel } from "./workspaces/MarketContextPanel";
 import { OperatingWorkspace } from "./workspaces/OperatingWorkspace";
 import { OpportunityWorkspace } from "./workspaces/OpportunityWorkspace";
 import { PlanReviewWorkspace } from "./workspaces/PlanReviewWorkspace";
@@ -308,6 +310,22 @@ export default function App() {
     syncLastKnownStage(stage);
   }, []);
 
+  const contextRail =
+    activeRoute.id === "operating" ? (
+      <ContextualBriefingPanel
+        params={{
+          persona_id: context.persona_id,
+          persona_version: context.persona_version,
+          workspace_id: context.workspace_id,
+          workflow_id: context.selected_workflow_id || undefined,
+          decision_id: context.decision_id || undefined,
+        }}
+      />
+    ) : activeRoute.id === "opportunity" ||
+      activeRoute.id === "active-position" ? (
+      <MarketContextPanel />
+    ) : undefined;
+
   return (
     <>
       {!onboardingDone ? (
@@ -352,6 +370,7 @@ export default function App() {
             ) : null}
           </>
         }
+        contextRail={contextRail}
       >
         {walkthroughSession?.active &&
         WALKTHROUGH_STEPS[walkthroughSession.current_step_index] ? (

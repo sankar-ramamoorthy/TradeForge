@@ -22,7 +22,6 @@ async function fetchArmArtifact(decisionId: string, signal?: AbortSignal): Promi
   return response.json() as Promise<ArmArtifact>;
 }
 import { type WorkspaceContext } from "../workspaceRouting";
-import { MarketContextPanel } from "./MarketContextPanel";
 import { CognitiveContinuityPanel } from "./CognitiveContinuityPanel";
 
 type TransitionState = "idle" | "transitioning" | "error";
@@ -250,8 +249,6 @@ export function ActivePositionWorkspace({ context, onNavigateProgrammatic, onSta
               label="Thesis and Plan Reference"
             />
           ) : null}
-
-          <MarketContextPanel />
 
           <div className="attention-authority-note" aria-label="Authority boundaries">
             {projection.authority_boundaries.map((boundary) => (

@@ -22,7 +22,6 @@ import {
 } from "../workspaceRouting";
 import { type ActiveDecisionRecord } from "../activeDecision";
 import { DEMO_SCENARIOS, runDemoFlow, type DemoScenario } from "../demo";
-import { ContextualBriefingPanel } from "./ContextualBriefingPanel";
 import { NewTradeIdeaModal } from "./NewTradeIdeaModal";
 import { PlaybookAlignmentPanel } from "./PlaybookAlignmentPanel";
 
@@ -431,16 +430,16 @@ export function OperatingWorkspace({
         ) : null}
       </div>
 
-      <DecisionListPanel
-        decisions={decisions}
-        onNavigate={onNavigateProgrammatic}
-      />
+      <div className="operating-panel-grid">
+        <DecisionListPanel
+          decisions={decisions}
+          onNavigate={onNavigateProgrammatic}
+        />
 
-      <ContextualBriefingPanel params={params} />
-
-      {playbookSummary ? (
-        <PlaybookAlignmentPanel summary={playbookSummary} />
-      ) : null}
+        {playbookSummary ? (
+          <PlaybookAlignmentPanel summary={playbookSummary} />
+        ) : null}
+      </div>
 
       {projection !== null ? (
         <div className="projection-metadata">

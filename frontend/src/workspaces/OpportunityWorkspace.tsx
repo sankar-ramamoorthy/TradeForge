@@ -10,7 +10,6 @@ import {
   type WorkspaceProjection,
 } from "../api/runtime";
 import { type WorkspaceContext } from "../workspaceRouting";
-import { MarketContextPanel } from "./MarketContextPanel";
 import { ThesisDevelopmentModal } from "./ThesisDevelopmentModal";
 import { ScenarioBranchPanel } from "./ScenarioBranchPanel";
 
@@ -246,8 +245,6 @@ export function OpportunityWorkspace({ context, onNavigateProgrammatic, onStageL
               </button>
             </div>
           ) : null}
-
-          <MarketContextPanel />
 
           <div className="chart-deferred-note" aria-label="Chart context">
             <span className="eyebrow">Chart Context</span>

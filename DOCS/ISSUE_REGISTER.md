@@ -140,6 +140,132 @@ Explicit roadmap checkpoint completed M9 Updated*Done*.
 | TF-F008 | Done | M10B | Wire PostgresEventStore as default runtime persistence via TRADEFORGE_DATABASE_URL | `feature/tf-f008-postgres-default-persistence` |
 | TF-F009 | Done | M10B | Implement all-decisions projection and multi-decision navigation in Operating Workspace | `feature/tf-f009-multi-decision-navigation` |
 | TF-F010 | Done | M10B | Fix thesis narrative minimum-length validation gap in ThesisDevelopmentModal | `feature/tf-0064-operational-attention-continuity` |
+| TF-F012 | Done | TBD | Replace centered workspace shell with workstation-oriented operational layout model | `feature/tf-f012-workstation-layout-model` |
+| TF-F013 | Done | TBD | Formalize three-layer design architecture between doctrine, workspace composition, and frontend translation | `docs/tf-f013-three-layer-design-architecture` |
+| TF-F014 | Done | TBD | Extend workstation zoning to remaining market-context workspaces | `feature/tf-f014-remaining-workspace-zoning` |
+
+## TF-F012: Replace Centered Workspace Shell With Workstation-Oriented Operational Layout Model
+
+**Status:** Done
+
+**Classification:** enhancement
+
+**Milestone:** TBD
+
+**Branch:** `feature/tf-f012-workstation-layout-model`
+
+**Affected Layer:** frontend
+
+**Linked ADRs:** none currently required
+
+**Impacted Invariants:** UX Is Architectural, Workspaces Are Operational Environments, Human Decision Sovereignty
+
+**Source:** Screen real-estate feedback, 2026-05-16. `knowledge/raw/2026-05-16 feed back on screen real estate and design.md`; screenshot: `knowledge/raw/feedback on screen realestate Screenshot 2026-05-16 120442.png`.
+
+**Problem:**
+The current desktop workspace experience still behaves like a centered application shell rather than a workstation-oriented operational surface. The UI underuses available horizontal space, compresses active operational state into vertically stacked sections, and lacks a persistent contextual awareness region despite TradeForge doctrine favoring parallel cognition, continuity of context, and workspace-specific operational surfaces.
+
+**Acceptance Criteria:**
+
+- Operational desktop workspaces are no longer constrained by a centered document-style shell by default.
+- A desktop three-zone composition model exists for operational workspaces: navigation, primary operational surface, contextual awareness rail.
+- The Operating Workspace is converted first as the reference implementation.
+- Canonical operational state remains visually distinct from advisory/contextual state.
+- Narrow viewport behavior degrades safely without redefining the desktop workstation model.
+
+**Out Of Scope:**
+
+- Resizable panels.
+- Detachable panels.
+- Multi-monitor support.
+- Full redesign of every workspace in one bounded change.
+
+**Resolution Summary:**
+Updated the frontend operational shell to use available desktop width, introduced an optional contextual awareness rail in the shared workspace layout primitive, and converted the Operating Workspace into the first three-zone workstation reference surface.
+
+**Completed Verification:**
+
+- `npm.cmd run typecheck`
+- `npm.cmd run build`
+
+---
+
+## TF-F013: Formalize Three-Layer Design Architecture Between Doctrine, Workspace Composition, And Frontend Translation
+
+**Status:** Done
+
+**Classification:** doctrine
+
+**Milestone:** TBD
+
+**Branch:** `docs/tf-f013-three-layer-design-architecture`
+
+**Affected Layer:** docs, design-doctrine
+
+**Linked ADRs:** none currently required
+
+**Impacted Invariants:** UX Is Architectural, Terminology Stability, Architectural Simplicity
+
+**Source:** Design-boundary clarification notes, 2026-05-15 to 2026-05-16. `knowledge/raw/20260515-frontend-design-md-role-and-usage.md`; `knowledge/raw/recomnended section addition to 20260515-frontend-design-md-role-and-usage.md`; related drafts under `design/`.
+
+**Problem:**
+TradeForge now has an emergent three-layer design model, but the documentation boundary has not yet been normalized around it. The existing explanatory material still partially describes only design doctrine and frontend implementation translation, leaving the operational workspace architecture layer under-specified and creating room for future frontend drift.
+
+**Acceptance Criteria:**
+
+- The design documentation explicitly distinguishes cognitive doctrine, operational workspace architecture, and frontend implementation translation.
+- Frontend translation is explicitly documented as non-authoritative over workspace meaning and operational composition doctrine.
+- The relationship among `design/DESIGN_ARCHITECTURE.md`, the workspace-layout draft documents, and `frontend/DESIGN.md` is made explicit.
+- The issue resolves the documentation gap without prematurely canonicalizing draft design artifacts.
+
+**Out Of Scope:**
+
+- Runtime frontend code changes.
+- Immediate canonical promotion of all draft design documents.
+- Broad rewrite of UX doctrine.
+
+**Resolution Summary:**
+Updated the frontend design-role note to document the three-layer design model explicitly and clarify that frontend implementation translates operational workspace architecture rather than owning it.
+
+---
+
+## TF-F014: Extend Workstation Zoning To Remaining Market-Context Workspaces
+
+**Status:** Done
+
+**Classification:** enhancement
+
+**Milestone:** TBD
+
+**Branch:** `feature/tf-f014-remaining-workspace-zoning`
+
+**Affected Layer:** frontend
+
+**Linked ADRs:** none currently required
+
+**Impacted Invariants:** UX Is Architectural, Workspaces Are Operational Environments
+
+**Source:** Post-`TF-F012` reassessment, 2026-05-16. `knowledge/processed/20260516-tf-f012-synthesis.md`; `knowledge/raw/20260516-tf-f014-diagnosis.md`.
+
+**Problem:**
+After the Operating Workspace became the first three-zone reference implementation, the remaining market-context workspaces still keep contextual panels inline with primary workflow content. `OpportunityWorkspace` and `ActivePositionWorkspace` now require a separate bounded follow-on pass to adopt workstation zoning without widening the completed `TF-F012` issue.
+
+**Acceptance Criteria:**
+
+- Remaining workspaces with persistent contextual market content are evaluated explicitly for right-rail adoption.
+- Appropriate contextual panels move out of the primary workflow flow where that improves operational continuity.
+- Workspace-specific composition differences are preserved instead of forcing identical layouts.
+- The change remains bounded to layout composition, not lifecycle or event semantics.
+
+**Resolution Summary:**
+Moved persistent market context for the Opportunity and Active Position workspaces into the shared shell-level contextual rail while preserving their distinct primary workflow surfaces.
+
+**Completed Verification:**
+
+- `npm.cmd run typecheck`
+- `npm.cmd run build`
+
+---
 
 Explicit roadmap checkpoint completed M9 Updated*Done*.
 M10A COMPLETE 2026-05-14. All 15 issues done: M10AIS01-15.

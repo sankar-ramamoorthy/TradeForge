@@ -20,8 +20,9 @@
   --space-panel: 24px;
   --space-stack: 16px;
   --space-compact: 10px;
-  --layout-shell-max: 1220px;
+  --layout-shell-max: none;
   --layout-sidebar: 280px;
+  --layout-context-rail: 320px;
 
   color: var(--color-text);
   background: var(--color-canvas);
@@ -54,7 +55,7 @@ a {
 }
 
 .app-shell {
-  width: min(var(--layout-shell-max), calc(100vw - var(--space-page-inline)));
+  width: calc(100vw - var(--space-page-inline));
   margin: 0 auto;
   padding: 28px 0;
 }
@@ -155,9 +156,16 @@ p {
 
 .workspace-layout {
   display: grid;
-  grid-template-columns: var(--layout-sidebar) minmax(0, 1fr);
+  grid-template-columns: minmax(220px, var(--layout-sidebar)) minmax(520px, 1fr);
   gap: var(--space-stack);
   margin: var(--space-stack) 0;
+}
+
+.workspace-layout-with-rail {
+  grid-template-columns:
+    minmax(220px, var(--layout-sidebar))
+    minmax(520px, 1fr)
+    minmax(280px, var(--layout-context-rail));
 }
 
 .workspace-sidebar {
@@ -248,6 +256,14 @@ p {
 .workspace-main {
   display: grid;
   gap: var(--space-stack);
+  min-width: 0;
+}
+
+.workspace-context-rail {
+  display: grid;
+  gap: var(--space-stack);
+  align-content: start;
+  min-width: 0;
 }
 
 .workspace-surface {
@@ -1002,6 +1018,10 @@ p {
     grid-template-columns: 1fr;
   }
 
+  .operating-panel-grid {
+    grid-template-columns: 1fr;
+  }
+
   .workspace-briefing,
   .workspace-surface,
   .runtime-panel {
@@ -1015,7 +1035,7 @@ p {
 
 @media (max-width: 560px) {
   .app-shell {
-    width: min(100vw - 20px, var(--layout-shell-max));
+    width: calc(100vw - 20px);
     padding: 10px 0;
   }
 
@@ -2447,6 +2467,13 @@ p {
   flex-direction: column;
   gap: 10px;
   margin-bottom: var(--space-stack);
+}
+
+.operating-panel-grid {
+  display: grid;
+  grid-template-columns: minmax(280px, 1fr) minmax(280px, 1fr);
+  gap: var(--space-stack);
+  align-items: start;
 }
 
 .decision-list {
