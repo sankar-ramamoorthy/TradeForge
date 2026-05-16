@@ -133,7 +133,7 @@ Explicit roadmap checkpoint completed M9 Updated*Done*.
 | TF-F001 | Done | TBD | Add iterative revision workflow for thesis, plan, and assumptions | `feature/tf-f001-iterative-revision-workflow` |
 | TF-F002 | Done | TBD | Introduce conditional execution state between Approval and Execution | `feature/tf-f002-awaiting-trigger-lifecycle-state` |
 | TF-F003 | Done | TBD | Expand cognition input areas from CRUD-form style to thinking-space UX | `feature/tf-f003-cognition-ux-ergonomics` |
-| TF-F004 | Planned | M10C | Define operational credential boundary — ADR and Credential domain model | `feature/tf-f004-credential-boundary-design` |
+| TF-F004 | Done | M10C | Define operational credential boundary — ADR and Credential domain model | `feature/tf-f004-credential-boundary-design` |
 | TF-F005 | Planned | M10C | Implement KeyManager and encrypted local credential store | `feature/tf-f005-credential-store-implementation` |
 | TF-F006 | Planned | M10C | Wire all provider adapters through CredentialStore at composition root | `feature/tf-f006-provider-credential-wiring` |
 | TF-F007 | Planned | M10C | Credential setup guide, rotation documentation, keys-out-of-Git enforcement | `feature/tf-f007-credential-setup-documentation` |
@@ -3107,7 +3107,7 @@ The current plan authoring form uses small textarea-style inputs that feel like 
 
 ## TF-F004: Define Operational Credential Boundary — ADR And Credential Domain Model
 
-**Status:** Planned
+**Status:** Done
 
 **Classification:** architectural
 
@@ -3132,6 +3132,14 @@ Provider adapter API keys are currently accepted as constructor parameters with 
 - `Credential` domain model exists in `src/security/credential.py` with fields: `provider_id`, `credential_type`, `encrypted_payload`, `created_at`, `rotated_at`, `last_validated_at`, `status`, `provenance`.
 - `CredentialStatus` enum defined: `active`, `revoked`, `expired`, `unknown`.
 - Module boundary rule documented: no provider adapter imports from `src/security/`.
+
+**Resolution Summary:**
+Added the top-level `src/security/` boundary with immutable `Credential` and `CredentialStatus` domain types matching ADR-0037. The model includes replay-oriented credential metadata, validates required fields and temporal consistency, and leaves storage/decryption concerns for later M10C issues while preserving adapter independence from `src/security/`.
+
+**Completed Verification:**
+
+- `uv run pytest tests\test_credential.py`
+- `uv run ruff check src\security tests\test_credential.py`
 
 ---
 
