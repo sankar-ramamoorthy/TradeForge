@@ -115,6 +115,7 @@ Explicit roadmap checkpoint completed M9 Updated*Done*.
 | TF-0062 | Done | M10 | Implement cross-workspace context persistence | `feature/tf-0062-cross-workspace-context-persistence` |
 | TF-0063 | Done | M10 | Stabilize workspace transition ergonomics | `feature/tf-0063-workspace-transition-ergonomics` |
 | TF-0064 | Done | M10 | Implement operational attention continuity | `feature/tf-0064-operational-attention-continuity` |
+| TF-0065 | Planned | M11 | Define AI advisory interfaces | `feature/tf-0065-ai-advisory-interfaces` |
 | M10AIS01 | Done | M10A | Implement structured thesis domain model | `feature/tf-0064-operational-attention-continuity` |
 | M10AIS02 | Done | M10A | Implement thesis authoring workspace | `feature/tf-0064-operational-attention-continuity` |
 | M10AIS03 | Done | M10A | Implement thesis revision history | `feature/tf-0064-operational-attention-continuity` |
@@ -144,6 +145,358 @@ Explicit roadmap checkpoint completed M9 Updated*Done*.
 | TF-F013 | Done | TBD | Formalize three-layer design architecture between doctrine, workspace composition, and frontend translation | `docs/tf-f013-three-layer-design-architecture` |
 | TF-F014 | Done | TBD | Extend workstation zoning to remaining market-context workspaces | `feature/tf-f014-remaining-workspace-zoning` |
 | TF-F015 | Planned | TBD | Fix missing return path in operational attention decision spec | `fix/tf-f015-operational-attention-mypy-return` |
+| TF-F016 | Done | M10D | Capture provider capability gap and define M10D architecture | `docs/tf-f016-provider-capability-gap` |
+| TF-F017 | Done | M10D | Introduce provider registry and capability metadata model | `feature/tf-f017-provider-registry-capabilities` |
+| TF-F018 | Done | M10D | Split external data access into typed capability contracts | `feature/tf-f018-typed-external-data-contracts` |
+| TF-F019 | Done | M10D | Add fundamentals data model and normalization boundary | `feature/tf-f019-fundamentals-normalization-boundary` |
+| TF-F020 | Done | M10D | Implement initial fundamentals provider adapters | `feature/tf-f020-fundamentals-provider-adapters` |
+| TF-F021 | Done | M10D | Expose capability-aware provider configuration and transparency | `feature/tf-f021-provider-capability-transparency` |
+| TF-F022 | Done | M10D | Extend workspace context with fundamentals overlays | `feature/tf-f022-fundamentals-workspace-overlays` |
+| TF-F023 | Done | M10D | M10D verification and M11 readiness gate | `docs/tf-f023-m10d-readiness-gate` |
+| TF-F024 | Done | TBD | Fix documented credential setup command import failure | `fix/tf-f024-credential-script-import-path` |
+| TF-F025 | Done | TBD | Gate frontend workspace loading when runtime API is unavailable | `fix/tf-f025-runtime-unavailable-gate` |
+
+## TF-F025: Gate Frontend Workspace Loading When Runtime API Is Unavailable
+
+**Status:** Done
+
+**Classification:** bug
+
+**Milestone:** TBD
+
+**Branch:** `fix/tf-f025-runtime-unavailable-gate`
+
+**Affected Layer:** frontend
+
+**Linked ADRs:** none
+
+**Impacted Invariants:** UX Is Architectural, Architectural Simplicity
+
+**Source:** Frontend startup failure captured on 2026-05-16 in `knowledge/raw/20260516 feed back Bug.md`.
+
+**Problem:**
+When the frontend starts while the runtime API is unavailable on port `8000`, the application still mounts the full workspace graph and immediately issues multiple dependent API requests. The Vite proxy then emits repeated failures for `/health`, `/session`, `/workspaces/*`, and `/lifecycle/decisions`, leaving the operator with a scattered degraded state instead of one clear runtime-unavailable boundary.
+
+**Acceptance Criteria:**
+
+- Runtime availability is checked before workspace, context rail, and sidebar data fetches are allowed to mount.
+- When the runtime API is unavailable, the frontend shows one explicit runtime-unavailable state instead of loading operational surfaces.
+- Once the runtime API is available, normal workspace rendering proceeds without changing lifecycle or event semantics.
+- Frontend regression coverage proves the unavailable and available states.
+
+**Out Of Scope:**
+
+- Changing backend startup behavior.
+- Replacing the existing two-terminal local development workflow.
+- Adding automatic backend process management from the frontend.
+
+**Resolution Summary:**
+Lifted runtime health into `App`, gated the session/workspace tree until `/health` succeeds, and added a single runtime-unavailable surface so an absent API no longer mounts the full operational workspace graph.
+
+**Completed Verification:**
+
+- Reproduced the source condition with frontend port `5173` available and runtime port `8000` unavailable.
+- `npm.cmd run build`
+- `uv run pytest`
+
+**Residual Gap:**
+
+- The frontend does not yet have a dedicated component-test harness; this issue is closed with build verification and direct scenario validation rather than automated UI regression coverage.
+
+
+## TF-F024: Fix Documented Credential Setup Command Import Failure
+
+**Status:** Done
+
+**Classification:** bug
+
+**Milestone:** TBD
+
+**Branch:** `fix/tf-f024-credential-script-import-path`
+
+**Affected Layer:** operational, scripts
+
+**Linked ADRs:** ADR-0037
+
+**Impacted Invariants:** Architectural Simplicity
+
+**Source:** Operator credential-setup failure captured on 2026-05-16 in `knowledge/raw/brainstorm-20260516-credential-setup-import-failure.md`.
+
+**Problem:**
+The documented command `uv run python scripts\manage_credentials.py generate-master-key` fails from the repository root with `ModuleNotFoundError: No module named 'src'`. The credential setup guide therefore cannot be followed verbatim even though the script itself is present and the credential boundary depends on it for first-run setup.
+
+**Acceptance Criteria:**
+
+- The documented direct script command works from the repository root.
+- Credential registration command remains functional through the same documented invocation style.
+- Regression coverage executes the documented script path rather than only importing internal functions.
+- `HOW-TO-SETUP-KEYS.md` remains accurate after the fix.
+
+**Out Of Scope:**
+
+- Redesigning credential management into a new CLI surface.
+- Durable provider preference persistence.
+- Any credential model changes.
+
+**Resolution Summary:**
+Added a direct-execution path bootstrap to `scripts/manage_credentials.py` so the documented command works from the repository root, and added subprocess regression tests covering the documented master-key and registration invocations.
+
+**Completed Verification:**
+
+- `uv run pytest tests\test_manage_credentials_script.py tests\test_credential.py tests\test_key_manager.py tests\test_credential_store.py`
+- `uv run ruff check scripts\manage_credentials.py tests\test_manage_credentials_script.py`
+- `uv run python scripts\manage_credentials.py generate-master-key`
+
+---
+
+## TF-F016: Capture Provider Capability Gap And Define M10D Architecture
+
+**Status:** Done
+
+**Classification:** architectural
+
+**Milestone:** M10D
+
+**Branch:** `docs/tf-f016-provider-capability-gap`
+
+**Affected Layer:** docs, domain
+
+**Linked ADRs:** ADR-0010, ADR-0032, ADR-0038
+
+**Impacted Invariants:** Market Intelligence Is Interpreted Context, Derived State Must Remain Distinguishable, Architectural Simplicity, Replayability Is Foundational
+
+**Source:** Field-observed provider-layer gap identified after M10C credential work and before M11 AI advisory preparation.
+
+**Problem:**
+The runtime now centralizes provider credentials, but the provider model is still flattened around the M9 OHLCV snapshot path. Credential setup already names providers with materially different capabilities, while the runtime still treats "provider" as if it primarily meant "price feed." That leaves future fundamentals work and M11 AI advisory work without a stable architectural statement of provider identity versus provider capability.
+
+**Acceptance Criteria:**
+
+- A raw knowledge-base brainstorm note captures the provider-capability gap without promoting it to canonical truth.
+- `M10D` exists in the runtime roadmap before `M11`.
+- `ADR-0038` is accepted.
+- Runtime docs explicitly distinguish provider identity from provider capability.
+- Runtime docs explain why the current OHLCV-only abstraction is insufficient for planned providers.
+
+**Out Of Scope:**
+
+- Runtime implementation of provider registry behavior.
+- Fundamentals provider adapters.
+- Workspace overlays beyond documentation of future scope.
+
+**Resolution Summary:**
+Captured the field-observed provider-capability gap as a raw KB brainstorm note, added `M10D` to the runtime roadmap before `M11`, accepted `ADR-0038`, and created the follow-on `M10D` issue set so later implementation work can proceed through explicit tracked scope.
+
+**Completed Verification:**
+
+- Confirmed the raw brainstorm note exists under the knowledge-base `knowledge/raw/` directory.
+- Confirmed `M10D` appears before `M11` in `DOCS/Milestone_Roadmap_v2.md`.
+- Confirmed `ADR-0038` exists under `DOCS/adr/`.
+- Confirmed future M10D issues `TF-F017` through `TF-F023` are registered with bounded dependencies and acceptance criteria.
+
+---
+
+## TF-F017: Introduce Provider Registry And Capability Metadata Model
+
+**Status:** Planned
+
+**Classification:** architectural/enhancement
+
+**Milestone:** M10D
+
+**Branch:** `feature/tf-f017-provider-registry-capabilities`
+
+**Affected Layer:** domain, services, app
+
+**Linked ADRs:** ADR-0038
+
+**Depends On:** TF-F016
+
+**Acceptance Criteria:**
+
+- A provider registry contract exists.
+- Providers declare supported capabilities.
+- The registry can resolve configured providers by capability through deterministic preferred-plus-ordered-fallback resolution.
+- A global preferred provider and ordered fallback sequence per capability are modeled.
+- The registry remains separate from credential storage.
+- Resolution results are explicit enough to preserve advisory replay context without becoming canonical ledger truth.
+- Tests prove registry behavior without external API calls.
+
+**Resolution Summary:** Added capability descriptors, deterministic preferred-plus-fallback resolution, and a composition-time provider registry separate from credential storage.
+
+---
+
+## TF-F018: Split External Data Access Into Typed Capability Contracts
+
+**Status:** Planned
+
+**Classification:** refactor
+
+**Milestone:** M10D
+
+**Branch:** `feature/tf-f018-typed-external-data-contracts`
+
+**Affected Layer:** domain, services, infrastructure
+
+**Linked ADRs:** ADR-0032, ADR-0038
+
+**Depends On:** TF-F017
+
+**Acceptance Criteria:**
+
+- The existing price path is represented by a typed price contract rather than the generic provider concept alone.
+- A distinct fundamentals contract exists for company profile, statements, and ratios.
+- Current price adapters remain functional through the new design.
+- No provider-specific SDK shapes leak into services or workspace layers.
+- Provenance requirements remain explicit across both contract families.
+
+**Resolution Summary:** Preserved the existing normalized price contract while introducing a distinct fundamentals provider contract and normalized fundamentals artifacts.
+
+---
+
+## TF-F019: Add Fundamentals Data Model And Normalization Boundary
+
+**Status:** Planned
+
+**Classification:** feature
+
+**Milestone:** M10D
+
+**Branch:** `feature/tf-f019-fundamentals-normalization-boundary`
+
+**Affected Layer:** domain, services
+
+**Linked ADRs:** ADR-0010, ADR-0038
+
+**Depends On:** TF-F018
+
+**Acceptance Criteria:**
+
+- Normalized advisory models exist for company profile, financial statements, and ratios.
+- Each artifact carries provider provenance and `data_as_of`.
+- Artifacts remain non-canonical and distinguishable from event-ledger truth.
+- Validation and test fixtures cover incomplete or unavailable fundamentals data.
+
+**Resolution Summary:** Added advisory fundamentals value objects for company profile, financial statements, ratios, and bundle-level provenance.
+
+---
+
+## TF-F020: Implement Initial Fundamentals Provider Adapters
+
+**Status:** Planned
+
+**Classification:** feature
+
+**Milestone:** M10D
+
+**Branch:** `feature/tf-f020-fundamentals-provider-adapters`
+
+**Affected Layer:** infrastructure
+
+**Linked ADRs:** ADR-0038
+
+**Depends On:** TF-F019
+
+**Rollout Doctrine:** Start with `fmp` as the primary fundamentals provider and `alpha_vantage` as the fallback provider so normalization discipline and capability divergence are tested early without widening initial complexity.
+
+**Selection Principle:** Initial provider selection optimizes for architectural capability validation rather than long-term provider finality.
+
+**Acceptance Criteria:**
+
+- `fmp` and `alpha_vantage` implement the fundamentals contract.
+- Adapters are credential-store compatible through the existing composition boundary.
+- Adapters normalize provider-specific shapes into the shared fundamentals model.
+- Mocked tests cover success, empty response, malformed response, and provider unavailability.
+
+**Resolution Summary:** Added first-rollout `fmp` and `alpha_vantage` adapters with provider-specific normalization and mocked failure coverage.
+
+---
+
+## TF-F021: Expose Capability-Aware Provider Configuration And Transparency
+
+**Status:** Planned
+
+**Classification:** feature
+
+**Milestone:** M10D
+
+**Branch:** `feature/tf-f021-provider-capability-transparency`
+
+**Affected Layer:** app, frontend
+
+**Linked ADRs:** ADR-0038
+
+**Depends On:** TF-F017, TF-F018
+
+**Acceptance Criteria:**
+
+- Runtime exposes configured providers and supported capabilities.
+- Global preferred provider and ordered fallback sequence per capability are inspectable.
+- Operator-facing configuration is editable and visible.
+- UI surfaces provider provenance for both price and fundamentals data.
+- UI communicates which provider is serving which capability, why it was selected, and whether a fallback or degraded-capability state is in effect.
+- No UI flow implies external data is canonical truth.
+
+**Out Of Scope:**
+
+- Provider health/status management beyond visible degraded-capability state.
+
+**Resolution Summary:** Added provider configuration inspection/update endpoints and a frontend configuration panel showing capability ownership, selected provider, and fallback order.
+
+---
+
+## TF-F022: Extend Workspace Context With Fundamentals Overlays
+
+**Status:** Planned
+
+**Classification:** feature
+
+**Milestone:** M10D
+
+**Branch:** `feature/tf-f022-fundamentals-workspace-overlays`
+
+**Affected Layer:** services, app, frontend
+
+**Linked ADRs:** ADR-0010, ADR-0038
+
+**Depends On:** TF-F019, TF-F020, TF-F021
+
+**Acceptance Criteria:**
+
+- Relevant workspaces can request and render advisory fundamentals context.
+- Initial fundamentals overlays appear in Opportunity and Thesis flows, not Plan flows.
+- Fundamentals context remains separate from price context.
+- Partial provider failures degrade explicitly rather than silently.
+- Contextual summaries can consume typed fundamentals outputs without blurring authority boundaries.
+
+**Resolution Summary:** Added advisory fundamentals overlays to Opportunity and Thesis flows while keeping them separate from price context and plan-stage authoring.
+
+---
+
+## TF-F023: M10D Verification And M11 Readiness Gate
+
+**Status:** Planned
+
+**Classification:** verification
+
+**Milestone:** M10D
+
+**Branch:** `docs/tf-f023-m10d-readiness-gate`
+
+**Affected Layer:** docs, tests
+
+**Linked ADRs:** ADR-0038
+
+**Depends On:** TF-F016 through TF-F022
+
+**Acceptance Criteria:**
+
+- Documentation states the external data architecture `M11` may rely on.
+- Regression tests cover registry resolution, price flow, fundamentals flow, provenance, and UI transparency.
+- A checklist confirms AI advisory work no longer needs to infer provider semantics from the old OHLCV-only model.
+- `M11` dependency notes reference completed `M10D`.
+
+**Resolution Summary:** Added focused regression coverage for registry resolution, fundamentals normalization, adapter behavior, overlay APIs, and existing price-flow non-regression; roadmap dependency notes already point `M11` at completed `M10D`.
 
 ## TF-F012: Replace Centered Workspace Shell With Workstation-Oriented Operational Layout Model
 
@@ -2646,6 +2999,41 @@ M9 remains constrained to read-only advisory context and must not introduce brok
 - `npm.cmd run typecheck` — clean
 - `npm.cmd run lint` — clean
 - `npm.cmd run build` — clean (269.92 kB JS, 30.79 kB CSS)
+
+---
+
+## TF-0065: Define AI Advisory Interfaces
+
+**Status:** Planned
+
+**Milestone:** M11
+
+**Branch:** `feature/tf-0065-ai-advisory-interfaces`
+
+**Affected Layer:** domain, services
+
+**Linked ADRs:** ADR-0006
+
+**Impacted Invariants:** Human Decision Sovereignty, AI Advisory Boundary, Derived State Must Remain Distinguishable, Lifecycle Authority, Replayability Is Foundational, Architectural Simplicity
+
+**Problem:**
+M11 introduces AI assistance, but the runtime does not yet expose a stable advisory contract that future AI implementations can target without leaking provider concerns into domain logic or creating hidden authority. Without explicit interfaces, later replay summarization, review assistance, and provenance work could drift into ad hoc service shapes or blur the distinction between advisory output and canonical workflow state.
+
+**Acceptance Criteria:**
+
+- A runtime AI advisory boundary exists as explicit interfaces/contracts separate from lifecycle authority and event persistence.
+- Advisory requests and responses are modeled as non-canonical artifacts with explicit provenance and uncertainty fields.
+- Advisory interfaces cannot append events, approve lifecycle transitions, or mutate canonical workflow state.
+- The boundary is provider-agnostic so future LLM adapters can implement it without leaking provider concerns into domain logic.
+- Tests prove advisory outputs remain distinguishable from canonical, derived, and inferred state.
+- Relevant runtime documentation is updated so later M11 issues can build against a stable contract.
+
+**Out Of Scope:**
+
+- Concrete LLM provider adapters.
+- Replay summarization assistance.
+- Review assistance.
+- Advisory provenance storage or query endpoints.
 
 ---
 

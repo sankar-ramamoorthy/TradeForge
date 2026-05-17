@@ -254,6 +254,81 @@ export async function fetchMarketContext(
   return response.json() as Promise<MarketContextOverlay>;
 }
 
+export type CapabilityResolution = {
+  capability: string;
+  preferred_provider_id: string;
+  fallback_provider_ids: string[];
+  configured_provider_ids: string[];
+  selected_provider_id: string | null;
+  used_fallback: boolean;
+  is_available: boolean;
+};
+
+export type ProviderConfiguration = {
+  authority: "advisory";
+  providers: { provider_id: string; capabilities: string[] }[];
+  resolutions: CapabilityResolution[];
+};
+
+export async function fetchProviderConfiguration(
+  signal?: AbortSignal,
+): Promise<ProviderConfiguration> {
+  const response = await fetch("/workspaces/provider-configuration", { signal });
+  if (!response.ok) {
+    throw new Error(`Provider configuration request failed: ${response.status}`);
+  }
+  return response.json() as Promise<ProviderConfiguration>;
+}
+
+export async function updateProviderPreference(
+  capability: string,
+  preferred_provider_id: string,
+  fallback_provider_ids: string[],
+  signal?: AbortSignal,
+): Promise<ProviderConfiguration> {
+  const response = await fetch(`/workspaces/provider-configuration/${capability}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ preferred_provider_id, fallback_provider_ids }),
+    signal,
+  });
+  if (!response.ok) {
+    throw new Error(`Provider preference update failed: ${response.status}`);
+  }
+  return response.json() as Promise<ProviderConfiguration>;
+}
+
+export type FundamentalsOverlay = {
+  authority: "advisory";
+  symbol: string;
+  selected_provider_id: string | null;
+  attempted_provider_ids: string[];
+  used_fallback: boolean;
+  is_available: boolean;
+  fetched_at: string;
+  errors: string[];
+  company_name: string | null;
+  sector: string | null;
+  industry: string | null;
+  revenue: string | null;
+  net_income: string | null;
+  price_earnings: string | null;
+  return_on_equity: string | null;
+  data_as_of: string | null;
+};
+
+export async function fetchFundamentalsContext(
+  symbol: string,
+  signal?: AbortSignal,
+): Promise<FundamentalsOverlay> {
+  const params = new URLSearchParams({ symbol });
+  const response = await fetch(`/workspaces/fundamentals-context?${params}`, { signal });
+  if (!response.ok) {
+    throw new Error(`Fundamentals context request failed: ${response.status}`);
+  }
+  return response.json() as Promise<FundamentalsOverlay>;
+}
+
 export type ContextualMarketNote = {
   symbol: string;
   close: string;

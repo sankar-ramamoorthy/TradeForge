@@ -1776,7 +1776,7 @@ With persistence:
 
 ## M10C — Operational Credential Boundary
 
-**Status:** Planned
+**Status:** Done
 
 ## Semantic Intent
 
@@ -1841,6 +1841,84 @@ that must be managed through the same boundary from day one.
 
 ---
 
+## M10D — Provider Capability Architecture And External Data Readiness
+
+**Status:** Done
+
+## Semantic Intent
+
+Prepare a capability-aware external data layer before AI advisory work begins.
+
+## Architectural Significance
+
+M10C centralized provider credentials, but provider meaning remains flattened into the M9 market-snapshot path. The current runtime can answer which provider supplies normalized OHLCV context, but it does not yet model that one provider identity may support multiple distinct capabilities while another may support only one.
+
+That gap matters before `M11`: provider credentials already cover providers with materially different data surfaces, and future AI advisory work must not infer provider semantics from an OHLCV-only abstraction.
+
+`M10D` extends the provider model without replacing `ADR-0032`. `ADR-0032` remains the accepted boundary for normalized market snapshots. `M10D` adds a capability-aware architecture above that boundary so provider identity is no longer treated as synonymous with price capability.
+
+## Canonical Concepts
+
+- [[Market Intelligence Is Interpreted Context]]
+- [[Derived State Must Remain Distinguishable]]
+- [[Provider Boundary]]
+- [[Provider Provenance]]
+- [[Architectural Simplicity]]
+- [[Replayability Is Foundational]]
+
+## Scope
+
+`M10D` introduces:
+
+- price capability support
+- fundamentals capability support
+- a provider registry
+- global preferred provider plus ordered fallback sequence per capability
+- visible provider provenance and configuration
+- typed external data contracts behind the registry
+
+## Explicit Exclusions
+
+`M10D` explicitly excludes:
+
+- news, macro, estimates, and transcripts
+- AI consumption of provider data
+- autonomous routing beyond defined defaults or fallbacks
+- broad external-data generalization beyond the first two capability families
+- provider health/status management beyond visible degraded-capability state
+
+## Initial Doctrine Decisions
+
+- Fundamentals rollout begins with `fmp` as the primary provider and `alpha_vantage` as the fallback provider.
+- Initial provider selection optimizes for architectural capability validation rather than long-term provider finality.
+- Capability resolution is deterministic preferred-plus-ordered-fallback selection.
+- Resolution choice, fallback use, missing capabilities, and degraded states must remain operator-visible and replay-preservable as advisory context.
+- Operator-facing provider configuration is editable and visible in `M10D`; richer provider health/status management is deferred.
+- Initial fundamentals overlays belong in Opportunity and Thesis flows, not Plan flows.
+
+## Linked Runtime Issues
+
+- TF-F016: Capture provider capability gap and define M10D architecture (**Done**)
+- TF-F017: Introduce provider registry and capability metadata model (**Done**)
+- TF-F018: Split external data access into typed capability contracts (**Done**)
+- TF-F019: Add fundamentals data model and normalization boundary (**Done**)
+- TF-F020: Implement initial fundamentals provider adapters (**Done**)
+- TF-F021: Expose capability-aware provider configuration and transparency (**Done**)
+- TF-F022: Extend workspace context with fundamentals overlays (**Done**)
+- TF-F023: M10D verification and M11 readiness gate (**Done**)
+
+## Acceptance Meaning
+
+- Provider capability is explicit rather than inferred from provider identity.
+- Price and fundamentals are represented by different typed contracts.
+- Configured providers can be inspected and selected per capability.
+- Provider resolution, fallback usage, and missing capabilities are visible to the operator.
+- Workspaces show provenance for consumed external data.
+- Fundamentals remain contextual external data, not canonical lifecycle truth.
+- `M11` can depend on a stable provider layer that is not price-blind.
+
+---
+
 ## M11 — AI Advisory Boundary
 Status: Planned
 ## Semantic Intent
@@ -1858,6 +1936,10 @@ AI remains advisory rather than authoritative.
 * TF-0066: Implement replay summarization assistance
 * TF-0067: Implement review assistance
 * TF-0068: Implement advisory provenance tracking
+
+## Dependency Notes
+
+* `M10D` must complete first so AI advisory work can consume explicit provider capabilities rather than infer provider semantics from the older OHLCV-only model.
 
 ## Acceptance Meaning
 
