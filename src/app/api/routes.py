@@ -44,6 +44,9 @@ from src.services.market.contextual_summary import ContextualSummaryService
 from src.services.market.provenance_query import ProvenanceQueryService
 from src.services.market.snapshot_query import MarketSnapshotQueryService
 from src.services.market.snapshot_service import MarketSnapshotService
+from src.services.market.fundamentals_service import FundamentalsService
+from src.domain.market.capability import ProviderCapability
+from src.domain.market.registry import ProviderRegistry
 from src.services.replay import (
     HistoricalReconstructionPipeline,
     ReconstructionStateAuthority,
@@ -648,6 +651,51 @@ class MarketContextOverlayResponse(BaseModel):
     is_empty: bool
 
 
+class ProviderCapabilityResponse(BaseModel):
+    provider_id: str
+    capabilities: list[str]
+
+
+class CapabilityResolutionResponse(BaseModel):
+    capability: str
+    preferred_provider_id: str
+    fallback_provider_ids: list[str]
+    configured_provider_ids: list[str]
+    selected_provider_id: str | None
+    used_fallback: bool
+    is_available: bool
+
+
+class ProviderConfigurationResponse(BaseModel):
+    authority: Literal["advisory"]
+    providers: list[ProviderCapabilityResponse]
+    resolutions: list[CapabilityResolutionResponse]
+
+
+class ProviderPreferenceRequest(BaseModel):
+    preferred_provider_id: str
+    fallback_provider_ids: list[str] = []
+
+
+class FundamentalsOverlayResponse(BaseModel):
+    authority: Literal["advisory"]
+    symbol: str
+    selected_provider_id: str | None
+    attempted_provider_ids: list[str]
+    used_fallback: bool
+    is_available: bool
+    fetched_at: datetime
+    errors: list[str]
+    company_name: str | None
+    sector: str | None
+    industry: str | None
+    revenue: str | None
+    net_income: str | None
+    price_earnings: str | None
+    return_on_equity: str | None
+    data_as_of: datetime | None
+
+
 class ContextualMarketNoteResponse(BaseModel):
     symbol: str
     close: str
@@ -785,6 +833,20 @@ def _contextual_summary_service_from(request: Request) -> ContextualSummaryServi
     service = getattr(request.app.state, "contextual_summary_service", None)
     if not isinstance(service, ContextualSummaryService):
         raise RuntimeError("contextual summary service is not configured")
+    return service
+
+
+def _provider_registry_from(request: Request) -> ProviderRegistry:
+    registry = getattr(request.app.state, "provider_registry", None)
+    if not isinstance(registry, ProviderRegistry):
+        raise RuntimeError("provider registry is not configured")
+    return registry
+
+
+def _fundamentals_service_from(request: Request) -> FundamentalsService:
+    service = getattr(request.app.state, "fundamentals_service", None)
+    if not isinstance(service, FundamentalsService):
+        raise RuntimeError("fundamentals service is not configured")
     return service
 
 
@@ -2786,6 +2848,96 @@ def get_market_context_overlay(
         is_partial=result.is_partial,
         is_empty=result.is_empty,
     )
+
+
+@workspace_router.get(
+    "/provider-configuration",
+    response_model=ProviderConfigurationResponse,
+)
+def get_provider_configuration(request: Request) -> ProviderConfigurationResponse:
+    registry = _provider_registry_from(request)
+    return ProviderConfigurationResponse(
+        authority="advisory",
+        providers=[
+            ProviderCapabilityResponse(
+                provider_id=provider.provider_id,
+                capabilities=[capability.value for capability in provider.capabilities],
+            )
+            for provider in registry.providers
+        ],
+        resolutions=[
+            CapabilityResolutionResponse(
+                capability=capability.value,
+                preferred_provider_id=resolution.preferred_provider_id,
+                fallback_provider_ids=list(resolution.fallback_provider_ids),
+                configured_provider_ids=list(resolution.configured_provider_ids),
+                selected_provider_id=resolution.selected_provider_id,
+                used_fallback=resolution.used_fallback,
+                is_available=resolution.is_available,
+            )
+            for capability in ProviderCapability
+            for resolution in (registry.resolve(capability),)
+        ],
+    )
+
+
+@workspace_router.put(
+    "/provider-configuration/{capability}",
+    response_model=ProviderConfigurationResponse,
+)
+def update_provider_configuration(
+    request: Request,
+    capability: ProviderCapability,
+    payload: ProviderPreferenceRequest,
+) -> ProviderConfigurationResponse:
+    registry = _provider_registry_from(request)
+    registry.set_preference(
+        capability,
+        payload.preferred_provider_id,
+        tuple(payload.fallback_provider_ids),
+    )
+    return get_provider_configuration(request)
+
+
+@workspace_router.get(
+    "/fundamentals-context",
+    response_model=FundamentalsOverlayResponse,
+)
+def get_fundamentals_context(
+    request: Request,
+    symbol: str = Query(min_length=1),
+) -> FundamentalsOverlayResponse:
+    result = _fundamentals_service_from(request).fetch(symbol)
+    bundle = result.bundle
+    profile = bundle.profile if bundle is not None else None
+    statement_values = (
+        dict(bundle.statements[0].values)
+        if bundle and bundle.statements
+        else {}
+    )
+    ratio_values = dict(bundle.ratios.values) if bundle and bundle.ratios else {}
+    return FundamentalsOverlayResponse(
+        authority="advisory",
+        symbol=result.symbol,
+        selected_provider_id=result.selected_provider_id,
+        attempted_provider_ids=list(result.attempted_provider_ids),
+        used_fallback=result.used_fallback,
+        is_available=result.is_available,
+        fetched_at=result.fetched_at,
+        errors=list(result.error_reasons),
+        company_name=profile.company_name if profile else None,
+        sector=profile.sector if profile else None,
+        industry=profile.industry if profile else None,
+        revenue=_string_or_none(statement_values.get("revenue")),
+        net_income=_string_or_none(statement_values.get("net_income")),
+        price_earnings=_string_or_none(ratio_values.get("price_earnings")),
+        return_on_equity=_string_or_none(ratio_values.get("return_on_equity")),
+        data_as_of=bundle.data_as_of if bundle is not None else None,
+    )
+
+
+def _string_or_none(value: object | None) -> str | None:
+    return None if value is None else str(value)
 
 
 @workspace_router.get("/{route_id}", response_model=WorkspaceProjectionResponse)

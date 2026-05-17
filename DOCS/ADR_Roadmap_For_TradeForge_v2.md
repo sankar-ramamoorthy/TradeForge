@@ -638,13 +638,36 @@ Define explainability and provenance requirements.
 
 # PHASE 6 â€” Adaptive Systems ADRs
 
+## ADR-0038 - Provider Capability Registry And Typed External Data Contracts
+
+### Purpose
+
+Define capability-aware provider composition above the existing normalized
+market snapshot boundary.
+
+### Must Define
+
+* provider identity versus provider capability
+* provider registry responsibilities
+* typed price and fundamentals contracts
+* per-capability provider selection
+* provenance requirements for all external data artifacts
+
+### Why It Matters
+
+M10C centralized credentials for providers whose capabilities differ materially.
+Before M11 begins, runtime architecture must stop treating provider identity as
+if it were synonymous with OHLCV-only price access.
+
+---
+
 These are future-state ADRs.
 
 Do NOT introduce these too early.
 
 ---
 
-# ADR-0038 â€” Behavioral Pattern Detection Architecture
+# ADR-0039 â€” Behavioral Pattern Detection Architecture
 
 ## Purpose
 
@@ -652,7 +675,7 @@ Define adaptive behavioral analysis.
 
 ---
 
-# ADR-0039 â€” Simulation Engine Architecture
+# ADR-0040 â€” Simulation Engine Architecture
 
 ## Purpose
 
@@ -660,7 +683,7 @@ Define hypothetical replay and simulation.
 
 ---
 
-# ADR-0040 â€” Scenario Branching Replay Model
+# ADR-0041 â€” Scenario Branching Replay Model
 
 ## Purpose
 
@@ -668,7 +691,7 @@ Define alternate replay path semantics.
 
 ---
 
-# ADR-0041 â€” RL Experimentation Boundary
+# ADR-0042 â€” RL Experimentation Boundary
 
 ## Purpose
 

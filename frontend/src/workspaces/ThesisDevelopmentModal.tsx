@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { postDevelopThesis } from "../api/runtime";
 import { type WorkspaceContext } from "../workspaceRouting";
+import { FundamentalsContextPanel } from "./FundamentalsContextPanel";
 
 type SubmitState = "idle" | "submitting" | "error";
 
@@ -175,6 +176,8 @@ export function ThesisDevelopmentModal({ context, symbol, onSuccess, onCancel }:
             ×
           </button>
         </div>
+
+        <FundamentalsContextPanel symbol={symbol} />
 
         <form className="thesis-modal-form" onSubmit={handleSubmit}>
           <div className="thesis-field-group">

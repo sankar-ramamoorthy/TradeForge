@@ -44,6 +44,7 @@ import { ActivePositionWorkspace } from "./workspaces/ActivePositionWorkspace";
 import { AttentionSummaryPanel } from "./workspaces/AttentionSummaryPanel";
 import { ContextualBriefingPanel } from "./workspaces/ContextualBriefingPanel";
 import { MarketContextPanel } from "./workspaces/MarketContextPanel";
+import { ProviderConfigurationPanel } from "./workspaces/ProviderConfigurationPanel";
 import { OperatingWorkspace } from "./workspaces/OperatingWorkspace";
 import { OpportunityWorkspace } from "./workspaces/OpportunityWorkspace";
 import { PlanReviewWorkspace } from "./workspaces/PlanReviewWorkspace";
@@ -70,36 +71,13 @@ function readCurrentLocation(): WorkspaceLocation {
   };
 }
 
-function RuntimeBoundaryStatus() {
-  const [status, setStatus] = useState<RuntimeStatus | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    const controller = new AbortController();
-
-    fetchRuntimeStatus(controller.signal)
-      .then((runtimeStatus) => {
-        setStatus(runtimeStatus);
-        setError(null);
-      })
-      .catch((requestError: unknown) => {
-        if (
-          requestError instanceof DOMException &&
-          requestError.name === "AbortError"
-        ) {
-          return;
-        }
-
-        setError(
-          requestError instanceof Error
-            ? requestError.message
-            : "Runtime status request failed",
-        );
-      });
-
-    return () => controller.abort();
-  }, []);
-
+function RuntimeBoundaryStatusPanel({
+  status,
+  error,
+}: {
+  status: RuntimeStatus | null;
+  error: string | null;
+}) {
   return (
     <RuntimeBoundaryPanel
       Icon={ShieldCheck}
@@ -112,6 +90,32 @@ function RuntimeBoundaryStatus() {
       React reads through FastAPI contracts. Canonical state remains in the
       event ledger and lifecycle services, not browser state.
     </RuntimeBoundaryPanel>
+  );
+}
+
+function RuntimeUnavailableSurface({
+  statusLabel,
+  error,
+}: {
+  statusLabel: string;
+  error: string | null;
+}) {
+  return (
+    <AppShell>
+      <section className="workspace-surface runtime-unavailable-surface" aria-live="polite">
+        <div className="surface-title">
+          <ShieldCheck aria-hidden="true" />
+          <div>
+            <p className="eyebrow">Runtime Boundary</p>
+            <h1>{statusLabel}</h1>
+          </div>
+        </div>
+        <p>
+          Start the TradeForge runtime API before loading operational workspaces.
+        </p>
+        {error ? <div className="runtime-error">{error}</div> : null}
+      </section>
+    </AppShell>
   );
 }
 
@@ -144,6 +148,9 @@ function activeDecisionDefaults(
 }
 
 export default function App() {
+  const [runtimeStatus, setRuntimeStatus] = useState<RuntimeStatus | null>(null);
+  const [runtimeError, setRuntimeError] = useState<string | null>(null);
+  const [runtimeReady, setRuntimeReady] = useState(false);
   const [location, setLocation] = useState<WorkspaceLocation>(() =>
     readCurrentLocation(),
   );
@@ -163,6 +170,35 @@ export default function App() {
   );
 
   useEffect(() => {
+    const controller = new AbortController();
+
+    fetchRuntimeStatus(controller.signal)
+      .then((status) => {
+        setRuntimeStatus(status);
+        setRuntimeError(null);
+        setRuntimeReady(true);
+      })
+      .catch((requestError: unknown) => {
+        if (
+          requestError instanceof DOMException &&
+          requestError.name === "AbortError"
+        ) {
+          return;
+        }
+
+        setRuntimeStatus(null);
+        setRuntimeError(
+          requestError instanceof Error
+            ? requestError.message
+            : "Runtime status request failed",
+        );
+        setRuntimeReady(false);
+      });
+
+    return () => controller.abort();
+  }, [runtimeReady]);
+
+  useEffect(() => {
     const handlePopState = () => setLocation(readCurrentLocation());
 
     window.addEventListener("popstate", handlePopState);
@@ -173,6 +209,10 @@ export default function App() {
     syncDecisionSymbol(activeDecision?.symbol ?? null);
   }, [activeDecision?.symbol]);
   useEffect(() => {
+    if (!runtimeReady) {
+      return;
+    }
+
     const controller = new AbortController();
 
     fetchRuntimeSession(controller.signal)
@@ -323,8 +363,30 @@ export default function App() {
       />
     ) : activeRoute.id === "opportunity" ||
       activeRoute.id === "active-position" ? (
-      <MarketContextPanel />
+      <>
+        <MarketContextPanel />
+        <ProviderConfigurationPanel />
+      </>
     ) : undefined;
+
+  if (!runtimeReady) {
+    const statusLabel = runtimeError
+      ? "Runtime API unavailable"
+      : "Checking runtime API";
+
+    return (
+      <>
+        <RuntimeUnavailableSurface
+          error={runtimeError}
+          statusLabel={statusLabel}
+        />
+        <RuntimeBoundaryStatusPanel
+          error={runtimeError}
+          status={runtimeStatus}
+        />
+      </>
+    );
+  }
 
   return (
     <>
@@ -430,7 +492,10 @@ export default function App() {
         )}
       </WorkspaceLayout>
 
-      <RuntimeBoundaryStatus />
+      <RuntimeBoundaryStatusPanel
+        error={runtimeError}
+        status={runtimeStatus}
+      />
     </AppShell>
     </>
   );

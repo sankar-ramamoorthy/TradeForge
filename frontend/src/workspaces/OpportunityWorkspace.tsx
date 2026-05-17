@@ -12,6 +12,7 @@ import {
 import { type WorkspaceContext } from "../workspaceRouting";
 import { ThesisDevelopmentModal } from "./ThesisDevelopmentModal";
 import { ScenarioBranchPanel } from "./ScenarioBranchPanel";
+import { FundamentalsContextPanel } from "./FundamentalsContextPanel";
 
 type TransitionState = "idle" | "open-thesis-modal" | "error";
 
@@ -205,6 +206,8 @@ export function OpportunityWorkspace({ context, onNavigateProgrammatic, onStageL
               );
             })}
           </div>
+
+          <FundamentalsContextPanel symbol={symbolFromProjection} />
 
           {branchList && context.decision_id ? (
             <ScenarioBranchPanel

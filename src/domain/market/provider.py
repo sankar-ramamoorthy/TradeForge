@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import Protocol
 
+from src.domain.market.fundamentals import FundamentalsBundle
 from src.domain.market.snapshot import MarketSnapshot
 
 
@@ -46,6 +47,22 @@ class MarketDataProvider(Protocol):
         return partial results silently.
         """
         ...
+
+
+class PriceDataProvider(MarketDataProvider, Protocol):
+    """Typed alias for providers that serve normalized price data."""
+
+
+class FundamentalsDataProvider(Protocol):
+    """Read-only provider port for normalized fundamentals data."""
+
+    @property
+    def provider_id(self) -> str: ...
+
+    @property
+    def provider_version(self) -> str: ...
+
+    def fetch_fundamentals(self, symbol: str) -> FundamentalsBundle: ...
 
 
 class ProviderUnavailableError(Exception):

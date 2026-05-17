@@ -7,10 +7,20 @@ from fastapi import FastAPI
 from src.app.api.routes import runtime_router
 from src.app.session import LocalSessionProvider, SessionProvider
 from src.domain.events import EventStore
-from src.domain.market.provider import MarketDataProvider
+from src.domain.market.capability import (
+    CapabilityPreference,
+    ProviderCapability,
+    ProviderDescriptor,
+)
+from src.domain.market.provider import FundamentalsDataProvider, MarketDataProvider
+from src.domain.market.registry import ProviderRegistry
 from src.infrastructure.event_store.in_memory import InMemoryEventStore
 from src.infrastructure.event_store.postgres import PostgresEventStore
 from src.infrastructure.market.alpaca_adapter import AlpacaProvider
+from src.infrastructure.market.alpha_vantage_adapter import (
+    AlphaVantageFundamentalsProvider,
+)
+from src.infrastructure.market.fmp_adapter import FmpFundamentalsProvider
 from src.infrastructure.market.in_memory_provenance_store import InMemoryProvenanceStore
 from src.infrastructure.market.in_memory_snapshot_store import (
     InMemoryMarketSnapshotStore,
@@ -20,6 +30,7 @@ from src.infrastructure.market.yfinance_adapter import YFinanceProvider
 from src.security import CredentialStore, KeyManager
 from src.services.lifecycle import LifecycleOrchestrationService
 from src.services.market.contextual_summary import ContextualSummaryService
+from src.services.market.fundamentals_service import FundamentalsService
 from src.services.market.provenance_query import ProvenanceQueryService
 from src.services.market.regime_interpreter import SingleBarRegimeInterpreter
 from src.services.market.snapshot_query import MarketSnapshotQueryService
@@ -87,6 +98,61 @@ def _default_market_provider(
     raise RuntimeError(f"unsupported market provider '{provider_id}'")
 
 
+def _default_provider_registry(
+    credential_store: CredentialStore | None,
+) -> ProviderRegistry:
+    descriptors = [
+        ProviderDescriptor("yfinance", (ProviderCapability.PRICE,)),
+        ProviderDescriptor("polygon", (ProviderCapability.PRICE,)),
+        ProviderDescriptor("alpaca", (ProviderCapability.PRICE,)),
+    ]
+    if credential_store is not None and credential_store.get("fmp") is not None:
+        descriptors.append(
+            ProviderDescriptor("fmp", (ProviderCapability.FUNDAMENTALS,))
+        )
+    if (
+        credential_store is not None
+        and credential_store.get("alpha_vantage") is not None
+    ):
+        descriptors.append(
+            ProviderDescriptor("alpha_vantage", (ProviderCapability.FUNDAMENTALS,))
+        )
+    return ProviderRegistry(
+        providers=tuple(descriptors),
+        preferences=(
+            CapabilityPreference(
+                ProviderCapability.PRICE,
+                os.environ.get("TRADEFORGE_MARKET_PROVIDER", "yfinance").lower(),
+            ),
+            CapabilityPreference(
+                ProviderCapability.FUNDAMENTALS,
+                "fmp",
+                ("alpha_vantage",),
+            ),
+        ),
+    )
+
+
+def _default_fundamentals_providers(
+    credential_store: CredentialStore | None,
+) -> dict[str, FundamentalsDataProvider]:
+    if credential_store is None:
+        return {}
+    key_manager = KeyManager.from_environment()
+    providers: dict[str, FundamentalsDataProvider] = {}
+    fmp = credential_store.get("fmp")
+    if fmp is not None:
+        payload = key_manager.decrypt_payload(fmp.encrypted_payload)
+        providers["fmp"] = FmpFundamentalsProvider(api_key=payload["api_key"])
+    alpha_vantage = credential_store.get("alpha_vantage")
+    if alpha_vantage is not None:
+        payload = key_manager.decrypt_payload(alpha_vantage.encrypted_payload)
+        providers["alpha_vantage"] = AlphaVantageFundamentalsProvider(
+            api_key=payload["api_key"]
+        )
+    return providers
+
+
 def create_app(
     event_store: EventStore | None = None,
     lifecycle_service: LifecycleOrchestrationService | None = None,
@@ -104,6 +170,8 @@ def create_app(
     provenance_query_service: ProvenanceQueryService | None = None,
     market_snapshot_query_service: MarketSnapshotQueryService | None = None,
     credential_store: CredentialStore | None = None,
+    provider_registry: ProviderRegistry | None = None,
+    fundamentals_service: FundamentalsService | None = None,
 ) -> FastAPI:
     shared_event_store = event_store or _default_event_store()
     app = FastAPI(
@@ -149,6 +217,11 @@ def create_app(
         if credential_store is not None
         else _default_credential_store()
     )
+    _provider_registry = (
+        provider_registry
+        if provider_registry is not None
+        else _default_provider_registry(_credential_store)
+    )
     _market_svc = (
         market_snapshot_service
         if market_snapshot_service is not None
@@ -177,6 +250,15 @@ def create_app(
         market_snapshot_query_service
         if market_snapshot_query_service is not None
         else MarketSnapshotQueryService(_snapshot_store)
+    )
+    app.state.provider_registry = _provider_registry
+    app.state.fundamentals_service = (
+        fundamentals_service
+        if fundamentals_service is not None
+        else FundamentalsService(
+            _provider_registry,
+            _default_fundamentals_providers(_credential_store),
+        )
     )
     app.include_router(runtime_router)
     return app
