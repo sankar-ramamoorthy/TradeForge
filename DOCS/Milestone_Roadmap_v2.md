@@ -2018,12 +2018,12 @@ becoming the first place where that model is invented.
 - TF-F034: Distinguish equity fundamentals from ETF context (**Done**)
 - TF-F041: Connect acquired advisory context to opportunity synthesis and thesis implications (**Done**)
 - TF-F042: Reframe market-context presentation from raw payload first to interpretation first (**Done**)
-- TF-F028: Add persistent instrument identity to decision workspaces
-- TF-F029: Replace misleading candidate terminology in operator-facing UX
-- TF-F030: Replace provenance-first Opportunity panels with cognition-first synthesis surfaces
-- TF-F031: Interpret unavailable-context states with operator meaning and next actions
-- TF-F035: Translate scenario-branch UX into trader-facing conditional reasoning
-- TF-F036: Add discretionary-thinking guidance to early opportunity evaluation
+- TF-F028: Add persistent instrument identity to decision workspaces (**Done**)
+- TF-F029: Replace misleading candidate terminology in operator-facing UX (**Done**)
+- TF-F030: Replace provenance-first Opportunity panels with cognition-first synthesis surfaces (**Done**)
+- TF-F031: Interpret unavailable-context states with operator meaning and next actions (**Done**)
+- TF-F035: Translate scenario-branch UX into trader-facing conditional reasoning (**Done**)
+- TF-F036: Add discretionary-thinking guidance to early opportunity evaluation (**Done**)
 
 ## Acceptance Meaning
 

@@ -155,14 +155,16 @@ export function MarketContextPanel() {
             <div className="market-unavailable">
               <span className="eyebrow">Unavailable</span>
               <p className="market-unavailable-list">
-                {overlay.unavailable_symbols.join(", ")}
+                {overlay.unavailable_symbols.join(", ")} did not return usable
+                price context from the attempted provider path. Continue with
+                caution or retry after checking provider status.
               </p>
             </div>
           ) : null}
           {overlay.is_empty ? (
             <p className="market-no-data">
-              No data available from provider. Symbol may be invalid or
-              provider unavailable.
+              No requested symbols returned usable price context. The current
+              workflow can continue, but technical interpretation is incomplete.
             </p>
           ) : null}
         </div>

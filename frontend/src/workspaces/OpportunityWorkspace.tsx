@@ -14,6 +14,9 @@ import { ThesisDevelopmentModal } from "./ThesisDevelopmentModal";
 import { ScenarioBranchPanel } from "./ScenarioBranchPanel";
 import { FundamentalsContextPanel } from "./FundamentalsContextPanel";
 import { OpportunitySynthesisPanel } from "./OpportunitySynthesisPanel";
+import { InstrumentIdentityBanner } from "./InstrumentIdentityBanner";
+import { OpportunityEvaluationPanel } from "./OpportunityEvaluationPanel";
+import { OpportunityGuidancePanel } from "./OpportunityGuidancePanel";
 
 type TransitionState = "idle" | "open-thesis-modal" | "error";
 
@@ -177,9 +180,7 @@ export function OpportunityWorkspace({ context, onNavigateProgrammatic, onStageL
         <Lightbulb aria-hidden="true" />
         <div>
           <p className="eyebrow">Opportunity Workspace</p>
-          <h1 id="opportunity-workspace-title">
-            What candidate decisions are developing?
-          </h1>
+          <h1 id="opportunity-workspace-title">Evaluate this setup</h1>
         </div>
       </div>
 
@@ -192,24 +193,36 @@ export function OpportunityWorkspace({ context, onNavigateProgrammatic, onStageL
 
       {projection !== null ? (
         <>
-          <div className="field-surfaces-grid">
-            {fieldOrder.map((name) => {
-              const field = projection.fields[name];
-              if (!field) return null;
-              return (
-                <FieldSurface
-                  authority={field.authority}
-                  key={name}
-                  name={name}
-                  sourceEventCount={field.source_event_count}
-                  sourceEventTypes={field.source_event_types}
-                />
-              );
-            })}
-          </div>
+          <InstrumentIdentityBanner
+            stage={lifecycleStage}
+            subtitle="Single-instrument opportunity evaluation"
+            symbol={symbolFromProjection}
+          />
+
+          <OpportunityEvaluationPanel branchList={branchList} projection={projection} />
+          <OpportunitySynthesisPanel symbol={symbolFromProjection} />
+          <OpportunityGuidancePanel />
+
+          <details className="opportunity-provenance-details">
+            <summary>Projection and provenance details</summary>
+            <div className="field-surfaces-grid">
+              {fieldOrder.map((name) => {
+                const field = projection.fields[name];
+                if (!field) return null;
+                return (
+                  <FieldSurface
+                    authority={field.authority}
+                    key={name}
+                    name={name}
+                    sourceEventCount={field.source_event_count}
+                    sourceEventTypes={field.source_event_types}
+                  />
+                );
+              })}
+            </div>
+          </details>
 
           <FundamentalsContextPanel symbol={symbolFromProjection} />
-          <OpportunitySynthesisPanel symbol={symbolFromProjection} />
 
           {branchList && context.decision_id ? (
             <ScenarioBranchPanel

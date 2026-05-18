@@ -68,7 +68,7 @@ DEFAULT_WORKSPACE_ROUTE_DEFINITIONS: Mapping[
             route_id=WorkspaceRouteId.OPPORTUNITY,
             name="Opportunity Workspace",
             path="/workspaces/opportunity",
-            operational_question="What candidate decisions are developing?",
+            operational_question="What is this setup showing, and is it worth developing?",
         ),
         WorkspaceRouteId.CONTEXT_WORKBENCH: WorkspaceRouteDefinition(
             route_id=WorkspaceRouteId.CONTEXT_WORKBENCH,

@@ -62,7 +62,7 @@ export const WORKSPACE_ROUTES: readonly WorkspaceRouteDefinition[] = [
     id: "opportunity",
     name: "Opportunity Workspace",
     path: "/workspaces/opportunity",
-    operationalQuestion: "What candidate decisions are developing?",
+    operationalQuestion: "What is this setup showing, and is it worth developing?",
     contextSurface: "Ideas, theses in formation, setup context, and risk conditions.",
     authorityBoundary: "Supports scenario reasoning without generating trade authority.",
     Icon: Lightbulb,

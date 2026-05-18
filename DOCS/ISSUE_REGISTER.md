@@ -157,15 +157,15 @@ Explicit roadmap checkpoint completed M9 Updated*Done*.
 | TF-F025 | Done | TBD | Gate frontend workspace loading when runtime API is unavailable | `fix/tf-f025-runtime-unavailable-gate` |
 | TF-F026 | Done | TBD | Forward master key into Docker runtime container | `fix/tf-f026-compose-master-key-forwarding` |
 | TF-F027 | Done | TBD | Clarify price versus fundamentals provider controls in context rail | `fix/tf-f027-provider-capability-rail-clarity` |
-| TF-F028 | Planned | M10E | Add persistent instrument identity to decision workspaces | `feature/tf-f028-workspace-instrument-identity` |
-| TF-F029 | Planned | M10E | Replace misleading candidate terminology in operator-facing UX | `feature/tf-f029-trader-facing-opportunity-language` |
-| TF-F030 | Planned | M10E | Replace provenance-first Opportunity panels with cognition-first synthesis surfaces | `feature/tf-f030-opportunity-synthesis-surfaces` |
-| TF-F031 | Planned | M10E | Interpret unavailable-context states with operator meaning and next actions | `feature/tf-f031-context-empty-state-interpretation` |
+| TF-F028 | Done | M10E | Add persistent instrument identity to decision workspaces | `feature/tf-f028-workspace-instrument-identity` |
+| TF-F029 | Done | M10E | Replace misleading candidate terminology in operator-facing UX | `feature/tf-f029-trader-facing-opportunity-language` |
+| TF-F030 | Done | M10E | Replace provenance-first Opportunity panels with cognition-first synthesis surfaces | `feature/tf-f030-opportunity-synthesis-surfaces` |
+| TF-F031 | Done | M10E | Interpret unavailable-context states with operator meaning and next actions | `feature/tf-f031-context-empty-state-interpretation` |
 | TF-F032 | Done | M10E | Add explicit advisory context acquisition workflow | `feature/tf-f032-context-acquisition-workflow` |
 | TF-F033 | Done | M10E | Surface advisory provider attempt status and fallback outcomes | `feature/tf-f033-provider-attempt-transparency` |
 | TF-F034 | Done | M10E | Distinguish equity fundamentals from ETF context | `feature/tf-f034-instrument-aware-context-types` |
-| TF-F035 | Planned | M10E | Translate scenario-branch UX into trader-facing conditional reasoning | `feature/tf-f035-scenario-language-translation` |
-| TF-F036 | Planned | M10E | Add discretionary-thinking guidance to early opportunity evaluation | `feature/tf-f036-opportunity-cognition-guidance` |
+| TF-F035 | Done | M10E | Translate scenario-branch UX into trader-facing conditional reasoning | `feature/tf-f035-scenario-language-translation` |
+| TF-F036 | Done | M10E | Add discretionary-thinking guidance to early opportunity evaluation | `feature/tf-f036-opportunity-cognition-guidance` |
 | TF-F037 | Done | M10E | Introduce context interpretation layer between provider payloads and operator cognition | `feature/tf-f037-context-interpretation-layer` |
 | TF-F038 | Done | M10E | Define dedicated Context Workbench workspace concept | `feature/tf-f038-context-workbench-concept` |
 | TF-F039 | Done | M10E | Require recovery-oriented missing-information states across UX | `docs/tf-f039-missing-information-guidance` |
@@ -479,6 +479,15 @@ The Opportunity Workspace currently reports state but offers limited guidance on
 - Rule-engine enforcement changes.
 - AI-generated recommendations.
 
+**Resolution Summary:**
+Added an advisory reasoning guide to the Opportunity Workspace covering
+confirmation, invalidation, missing information, and operator judgment so the
+surface supports discretionary evaluation before thesis formation.
+
+**Completed Verification:**
+
+- `npm.cmd run build`
+
 ---
 
 ## TF-F035: Translate Scenario-Branch UX Into Trader-Facing Conditional Reasoning
@@ -515,15 +524,25 @@ The Opportunity Workspace currently reports state but offers limited guidance on
 - Adding new scenario event types.
 - Changing lifecycle transitions.
 
+**Resolution Summary:**
+Translated scenario-facing UI copy into trader language: `Conditional Paths`,
+`Bull Case`, `Failed Setup`, `Alternate Path`, and supporting empty-state
+guidance now describe the operator task while preserving canonical scenario
+events underneath.
+
+**Completed Verification:**
+
+- `npm.cmd run build`
+
 ---
 
 ## TF-F034: Distinguish Equity Fundamentals From ETF Context
 
-**Status:** Planned
+**Status:** Done
 
 **Classification:** enhancement
 
-**Milestone:** TBD
+**Milestone:** M10E
 
 **Branch:** `feature/tf-f034-instrument-aware-context-types`
 
@@ -692,15 +711,24 @@ The current operator flow does not make advisory information acquisition explici
 - Full cross-product missing-state doctrine.
 - Converting unavailable advisory context into a lifecycle blocker.
 
+**Resolution Summary:**
+Reworked unavailable advisory context copy so price and fundamentals surfaces
+state what failed, what that means for current work, whether the operator can
+continue, and what next action remains available.
+
+**Completed Verification:**
+
+- `npm.cmd run build`
+
 ---
 
 ## TF-F030: Replace Provenance-First Opportunity Panels With Cognition-First Synthesis Surfaces
 
-**Status:** Planned
+**Status:** Done
 
 **Classification:** enhancement
 
-**Milestone:** TBD
+**Milestone:** M10E
 
 **Branch:** `feature/tf-f030-opportunity-synthesis-surfaces`
 
@@ -728,15 +756,24 @@ The main body of the Opportunity Workspace is dominated by provenance-oriented b
 - Replacing event-sourced projections with mutable UI state.
 - Completing context interpretation architecture inside the same issue.
 
+**Resolution Summary:**
+Reframed the Opportunity Workspace around evaluation surfaces answering what is
+interesting now, why it matters, what is missing, and how mature the setup is,
+while moving projection/provenance boxes behind a secondary details section.
+
+**Completed Verification:**
+
+- `npm.cmd run build`
+
 ---
 
 ## TF-F029: Replace Misleading Candidate Terminology In Operator-Facing UX
 
-**Status:** Planned
+**Status:** Done
 
 **Classification:** bug
 
-**Milestone:** TBD
+**Milestone:** M10E
 
 **Branch:** `feature/tf-f029-trader-facing-opportunity-language`
 
@@ -764,15 +801,24 @@ The main body of the Opportunity Workspace is dominated by provenance-oriented b
 - Solving all broader trader-language doctrine questions.
 - Redesigning the workspace layout.
 
+**Resolution Summary:**
+Replaced operator-facing `candidate` wording in the Opportunity flow with
+single-symbol setup language and updated the runtime route question to match.
+
+**Completed Verification:**
+
+- `npm.cmd run build`
+- `uv run pytest tests\test_workspace_routing.py`
+
 ---
 
 ## TF-F028: Add Persistent Instrument Identity To Decision Workspaces
 
-**Status:** Planned
+**Status:** Done
 
 **Classification:** enhancement
 
-**Milestone:** TBD
+**Milestone:** M10E
 
 **Branch:** `feature/tf-f028-workspace-instrument-identity`
 
@@ -799,6 +845,15 @@ After entering a symbol-specific Opportunity Workspace, the main surface does no
 - Full quote terminal behavior.
 - Redesigning every workspace in the same change.
 - Replacing decision ids internally.
+
+**Resolution Summary:**
+Added a reusable instrument-identity banner to the Opportunity Workspace so the
+active ticker and lifecycle stage are persistent first-class anchors during
+single-symbol evaluation.
+
+**Completed Verification:**
+
+- `npm.cmd run build`
 
 ## TF-F027: Clarify Price Versus Fundamentals Provider Controls In Context Rail
 

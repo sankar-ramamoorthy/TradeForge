@@ -47,11 +47,15 @@ export function FundamentalsContextPanel({
         </>
       ) : overlay.coverage_status === "unsupported" ? (
         <p className="market-no-data">
-          Company fundamentals do not describe this instrument type. Use the
-          relevant alternative context family instead.
+          Company fundamentals do not describe this instrument type. Continue
+          technical evaluation or switch to the relevant ETF context family.
         </p>
       ) : (
-        <p className="market-no-data">Fundamentals unavailable.</p>
+        <p className="market-no-data">
+          Fundamentals were requested but not returned by the available provider
+          path. You can continue, but valuation context is incomplete; inspect
+          provider attempts or retry later.
+        </p>
       )}
     </section>
   );

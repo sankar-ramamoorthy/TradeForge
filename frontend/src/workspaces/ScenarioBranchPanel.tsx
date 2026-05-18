@@ -4,10 +4,10 @@ import { type WorkspaceContext } from "../workspaceRouting";
 import { ScenarioBranchModal } from "./ScenarioBranchModal";
 
 const BRANCH_TYPE_LABELS: Record<string, string> = {
-  primary: "Primary",
-  alternative: "Alternative",
-  invalidation: "Invalidation",
-  regime_transition: "Regime Transition",
+  primary: "Bull Case",
+  alternative: "Alternate Path",
+  invalidation: "Failed Setup",
+  regime_transition: "Regime Shift",
 };
 
 const CONFIDENCE_LABELS: Record<number, string> = {
@@ -21,7 +21,7 @@ function BranchCard({ branch }: { branch: ScenarioBranch }) {
   return (
     <div
       className={`scenario-branch-card branch-type-${branch.branch_type}`}
-      aria-label={`${typeLabel} scenario branch`}
+      aria-label={`${typeLabel} conditional path`}
     >
       <div className="scenario-branch-header">
         <span className={`cognitive-branch-type-badge branch-${branch.branch_type}`}>
@@ -70,10 +70,10 @@ export function ScenarioBranchPanel({
   }, {});
 
   return (
-    <div className="scenario-branch-panel" aria-label="Scenario branches">
+    <div className="scenario-branch-panel" aria-label="Conditional paths">
       <div className="scenario-branch-panel-header">
         <p className="eyebrow">
-          Scenario Branches
+          Conditional Paths
           {branchList.total_branches > 0 ? (
             <span className="scenario-branch-count">
               {" "}— {branchList.total_branches}
@@ -86,7 +86,7 @@ export function ScenarioBranchPanel({
             onClick={() => setShowModal(true)}
             type="button"
           >
-            + Add Scenario
+            + Add Path
           </button>
         ) : null}
       </div>
@@ -104,8 +104,10 @@ export function ScenarioBranchPanel({
 
       {branchList.total_branches === 0 ? (
         <p className="field-no-data">
-          No scenario branches defined yet.
-          {canAdd ? " Add branches to capture conditional reasoning before planning." : ""}
+          No conditional paths defined yet.
+          {canAdd
+            ? " Add a bull case, failed setup, or alternate path before planning."
+            : ""}
         </p>
       ) : (
         <div className="scenario-branch-groups">
