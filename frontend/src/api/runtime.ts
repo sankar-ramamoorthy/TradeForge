@@ -223,6 +223,8 @@ export type MarketSnapshotOverlay = {
   close: string;
   volume: number;
   regime: string;
+  interpretation_headline: string;
+  interpretation_detail: string;
 };
 
 export type MarketContextOverlay = {
@@ -234,6 +236,7 @@ export type MarketContextOverlay = {
   is_complete: boolean;
   is_partial: boolean;
   is_empty: boolean;
+  attempts: ProviderAttempt[];
 };
 
 export async function fetchMarketContext(
@@ -301,12 +304,17 @@ export async function updateProviderPreference(
 export type FundamentalsOverlay = {
   authority: "advisory";
   symbol: string;
+  instrument_kind: "equity" | "etf" | "unknown";
+  requested_context_type: "company_fundamentals" | "etf_context";
+  coverage_status: "available" | "unavailable" | "unsupported";
+  alternative_context_type: "company_fundamentals" | "etf_context" | null;
   selected_provider_id: string | null;
   attempted_provider_ids: string[];
   used_fallback: boolean;
   is_available: boolean;
   fetched_at: string;
   errors: string[];
+  attempts: ProviderAttempt[];
   company_name: string | null;
   sector: string | null;
   industry: string | null;
@@ -317,11 +325,19 @@ export type FundamentalsOverlay = {
   data_as_of: string | null;
 };
 
+export type ProviderAttempt = {
+  provider_id: string;
+  attempted_at: string;
+  outcome: "success" | "failure";
+  failure_reason: string | null;
+};
+
 export async function fetchFundamentalsContext(
   symbol: string,
+  instrumentKind: "equity" | "etf" | "unknown" = "equity",
   signal?: AbortSignal,
 ): Promise<FundamentalsOverlay> {
-  const params = new URLSearchParams({ symbol });
+  const params = new URLSearchParams({ symbol, instrument_kind: instrumentKind });
   const response = await fetch(`/workspaces/fundamentals-context?${params}`, { signal });
   if (!response.ok) {
     throw new Error(`Fundamentals context request failed: ${response.status}`);

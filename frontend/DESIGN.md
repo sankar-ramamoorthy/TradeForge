@@ -106,6 +106,8 @@ they are not the default model for desktop workspaces.
 - Use icons for navigation and compact operational cues.
 - Keep radius at 8px or less.
 - Letter spacing remains `0`.
+- Operator-facing copy should translate canonical runtime semantics into trader-native language when the user is reasoning or acting. Preserve provenance and authority through badges, metadata, and diagnostics rather than forcing implementation terminology into primary headings or prompts.
+- Missing-information states should be recovery-oriented: distinguish not-requested, loading, failed, unsupported, stale, and intentionally omitted states when relevant; explain why the state matters, whether work can continue, and the next available action.
 
 ## Token Usage
 

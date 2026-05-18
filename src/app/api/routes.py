@@ -46,6 +46,7 @@ from src.services.market.snapshot_query import MarketSnapshotQueryService
 from src.services.market.snapshot_service import MarketSnapshotService
 from src.services.market.fundamentals_service import FundamentalsService
 from src.domain.market.capability import ProviderCapability
+from src.domain.market.instrument import ExternalContextType, InstrumentKind
 from src.domain.market.registry import ProviderRegistry
 from src.services.replay import (
     HistoricalReconstructionPipeline,
@@ -638,6 +639,15 @@ class MarketSnapshotOverlayResponse(BaseModel):
     close: str
     volume: int
     regime: str
+    interpretation_headline: str
+    interpretation_detail: str
+
+
+class ProviderAttemptResponse(BaseModel):
+    provider_id: str
+    attempted_at: datetime
+    outcome: Literal["success", "failure"]
+    failure_reason: str | None
 
 
 class MarketContextOverlayResponse(BaseModel):
@@ -649,6 +659,7 @@ class MarketContextOverlayResponse(BaseModel):
     is_complete: bool
     is_partial: bool
     is_empty: bool
+    attempts: list[ProviderAttemptResponse]
 
 
 class ProviderCapabilityResponse(BaseModel):
@@ -680,12 +691,17 @@ class ProviderPreferenceRequest(BaseModel):
 class FundamentalsOverlayResponse(BaseModel):
     authority: Literal["advisory"]
     symbol: str
+    instrument_kind: InstrumentKind
+    requested_context_type: ExternalContextType
+    coverage_status: Literal["available", "unavailable", "unsupported"]
+    alternative_context_type: ExternalContextType | None
     selected_provider_id: str | None
     attempted_provider_ids: list[str]
     used_fallback: bool
     is_available: bool
     fetched_at: datetime
     errors: list[str]
+    attempts: list[ProviderAttemptResponse]
     company_name: str | None
     sector: str | None
     industry: str | None
@@ -2840,6 +2856,12 @@ def get_market_context_overlay(
                 close=str(snap.price.close),
                 volume=snap.price.volume,
                 regime=snap.regime.value,
+                interpretation_headline=_market_interpretation_headline(
+                    snap.regime.value
+                ),
+                interpretation_detail=_market_interpretation_detail(
+                    snap.regime.value
+                ),
             )
             for snap in result.available
         ],
@@ -2847,6 +2869,16 @@ def get_market_context_overlay(
         is_complete=result.is_complete,
         is_partial=result.is_partial,
         is_empty=result.is_empty,
+        attempts=[
+            ProviderAttemptResponse(
+                provider_id=attempt.provider_id,
+                attempted_at=attempt.attempted_at,
+                outcome=attempt.outcome,
+                failure_reason=attempt.failure_reason,
+            )
+            for symbol_result in result.symbol_results
+            for attempt in symbol_result.attempts
+        ],
     )
 
 
@@ -2906,7 +2938,33 @@ def update_provider_configuration(
 def get_fundamentals_context(
     request: Request,
     symbol: str = Query(min_length=1),
+    instrument_kind: InstrumentKind = InstrumentKind.EQUITY,
 ) -> FundamentalsOverlayResponse:
+    if instrument_kind == InstrumentKind.ETF:
+        return FundamentalsOverlayResponse(
+            authority="advisory",
+            symbol=symbol.upper(),
+            instrument_kind=instrument_kind,
+            requested_context_type=ExternalContextType.COMPANY_FUNDAMENTALS,
+            coverage_status="unsupported",
+            alternative_context_type=ExternalContextType.ETF_CONTEXT,
+            selected_provider_id=None,
+            attempted_provider_ids=[],
+            used_fallback=False,
+            is_available=False,
+            fetched_at=datetime.now(UTC),
+            errors=[],
+            attempts=[],
+            company_name=None,
+            sector=None,
+            industry=None,
+            revenue=None,
+            net_income=None,
+            price_earnings=None,
+            return_on_equity=None,
+            data_as_of=None,
+        )
+
     result = _fundamentals_service_from(request).fetch(symbol)
     bundle = result.bundle
     profile = bundle.profile if bundle is not None else None
@@ -2919,12 +2977,25 @@ def get_fundamentals_context(
     return FundamentalsOverlayResponse(
         authority="advisory",
         symbol=result.symbol,
+        instrument_kind=instrument_kind,
+        requested_context_type=ExternalContextType.COMPANY_FUNDAMENTALS,
+        coverage_status="available" if result.is_available else "unavailable",
+        alternative_context_type=None,
         selected_provider_id=result.selected_provider_id,
         attempted_provider_ids=list(result.attempted_provider_ids),
         used_fallback=result.used_fallback,
         is_available=result.is_available,
         fetched_at=result.fetched_at,
         errors=list(result.error_reasons),
+        attempts=[
+            ProviderAttemptResponse(
+                provider_id=attempt.provider_id,
+                attempted_at=attempt.attempted_at,
+                outcome=attempt.outcome,
+                failure_reason=attempt.failure_reason,
+            )
+            for attempt in result.attempts
+        ],
         company_name=profile.company_name if profile else None,
         sector=profile.sector if profile else None,
         industry=profile.industry if profile else None,
@@ -2938,6 +3009,29 @@ def get_fundamentals_context(
 
 def _string_or_none(value: object | None) -> str | None:
     return None if value is None else str(value)
+
+
+def _market_interpretation_headline(regime: str) -> str:
+    return {
+        "bull": "Price structure is trending higher.",
+        "bear": "Price structure is trending lower.",
+        "ranging": "Price structure is range-bound.",
+        "high-volatility": "Price is moving with elevated volatility.",
+        "low-volatility": "Price is moving with compressed volatility.",
+    }.get(regime, "Price structure is not yet clear.")
+
+
+def _market_interpretation_detail(regime: str) -> str:
+    return {
+        "bull": "Use the raw fields below to inspect whether momentum remains extended or orderly.",
+        "bear": "Use the raw fields below to inspect whether weakness is persistent or stabilizing.",
+        "ranging": "Use the raw fields below to inspect where price sits inside the current range.",
+        "high-volatility": "Use the raw fields below to judge whether volatility supports or weakens the setup.",
+        "low-volatility": "Use the raw fields below to judge whether compression is constructive or merely inactive.",
+    }.get(
+        regime,
+        "Use the raw fields below to inspect the provider-backed snapshot before drawing conclusions.",
+    )
 
 
 @workspace_router.get("/{route_id}", response_model=WorkspaceProjectionResponse)

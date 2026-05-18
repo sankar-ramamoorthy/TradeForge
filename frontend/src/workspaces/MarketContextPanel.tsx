@@ -40,6 +40,10 @@ function SnapshotRow({ snap }: { snap: MarketSnapshotOverlay }) {
         ) : null}
         <span className="field-authority-badge authority-advisory">Advisory</span>
       </div>
+      <div className="snapshot-interpretation">
+        <strong>{snap.interpretation_headline}</strong>
+        <p>{snap.interpretation_detail}</p>
+      </div>
       <div className="snapshot-ohlcv">
         <span className="ohlcv-item">
           <span className="ohlcv-label">O</span>

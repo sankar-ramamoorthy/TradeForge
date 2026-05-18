@@ -16,6 +16,7 @@ def test_workspace_route_catalog_is_bounded_to_mvp_workspace_set() -> None:
     assert tuple(DEFAULT_WORKSPACE_ROUTE_DEFINITIONS) == (
         WorkspaceRouteId.OPERATING,
         WorkspaceRouteId.OPPORTUNITY,
+        WorkspaceRouteId.CONTEXT_WORKBENCH,
         WorkspaceRouteId.PLAN_REVIEW,
         WorkspaceRouteId.ACTIVE_POSITION,
         WorkspaceRouteId.REPLAY,
@@ -29,6 +30,7 @@ def test_workspace_route_catalog_is_bounded_to_mvp_workspace_set() -> None:
     } == {
         "Operating Workspace",
         "Opportunity Workspace",
+        "Context Workbench",
         "Plan Review Workspace",
         "Active Position Workspace",
         "Replay Workspace",

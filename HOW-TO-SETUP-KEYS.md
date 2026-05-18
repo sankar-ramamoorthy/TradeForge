@@ -30,6 +30,11 @@ For persistent local use on Windows, set it in your user environment:
 
 Open a new terminal after setting a persistent user variable.
 
+If you run TradeForge through Docker Compose, the shell that launches
+`docker compose` must also have `TRADEFORGE_MASTER_KEY` available. Compose
+passes that host value into the `tradeforge` container at startup and will
+fail fast if it is missing.
+
 ## 2. Register provider credentials
 
 Run the commands for the providers you use:

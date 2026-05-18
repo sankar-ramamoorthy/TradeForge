@@ -3,11 +3,28 @@ const STORAGE_KEY = "tradeforge.operational_context";
 type OperationalContext = {
   watched_symbols: string[];
   last_known_stage: string | null;
+  advisory_context_by_symbol: Record<string, AdvisoryContextRecord>;
 };
 
 function defaultContext(): OperationalContext {
-  return { watched_symbols: [], last_known_stage: null };
+  return {
+    watched_symbols: [],
+    last_known_stage: null,
+    advisory_context_by_symbol: {},
+  };
 }
+
+export type AdvisoryContextRecord = {
+  symbol: string;
+  price_regime: string | null;
+  price_provider_id: string | null;
+  price_data_as_of: string | null;
+  fundamentals_coverage_status: "available" | "unavailable" | "unsupported" | null;
+  fundamentals_provider_id: string | null;
+  fundamentals_company_name: string | null;
+  fundamentals_sector: string | null;
+  updated_at: string;
+};
 
 export function getOperationalContext(): OperationalContext {
   try {
@@ -22,6 +39,11 @@ export function getOperationalContext(): OperationalContext {
           : [],
         last_known_stage:
           typeof p.last_known_stage === "string" ? p.last_known_stage : null,
+        advisory_context_by_symbol:
+          typeof p.advisory_context_by_symbol === "object" &&
+          p.advisory_context_by_symbol !== null
+            ? (p.advisory_context_by_symbol as Record<string, AdvisoryContextRecord>)
+            : {},
       };
     }
     return defaultContext();
@@ -73,4 +95,42 @@ export function clearOperationalContext(): void {
   } catch {
     // fail silently
   }
+}
+
+export function upsertAdvisoryContext(
+  symbol: string,
+  patch: Partial<Omit<AdvisoryContextRecord, "symbol" | "updated_at">>,
+): void {
+  if (!symbol) return;
+  const upper = symbol.toUpperCase();
+  const ctx = getOperationalContext();
+  const current = ctx.advisory_context_by_symbol[upper] ?? {
+    symbol: upper,
+    price_regime: null,
+    price_provider_id: null,
+    price_data_as_of: null,
+    fundamentals_coverage_status: null,
+    fundamentals_provider_id: null,
+    fundamentals_company_name: null,
+    fundamentals_sector: null,
+    updated_at: new Date(0).toISOString(),
+  };
+
+  saveContext({
+    ...ctx,
+    advisory_context_by_symbol: {
+      ...ctx.advisory_context_by_symbol,
+      [upper]: {
+        ...current,
+        ...patch,
+        symbol: upper,
+        updated_at: new Date().toISOString(),
+      },
+    },
+  });
+}
+
+export function getAdvisoryContext(symbol: string): AdvisoryContextRecord | null {
+  if (!symbol) return null;
+  return getOperationalContext().advisory_context_by_symbol[symbol.toUpperCase()] ?? null;
 }

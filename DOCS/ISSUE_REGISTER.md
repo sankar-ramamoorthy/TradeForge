@@ -155,6 +155,742 @@ Explicit roadmap checkpoint completed M9 Updated*Done*.
 | TF-F023 | Done | M10D | M10D verification and M11 readiness gate | `docs/tf-f023-m10d-readiness-gate` |
 | TF-F024 | Done | TBD | Fix documented credential setup command import failure | `fix/tf-f024-credential-script-import-path` |
 | TF-F025 | Done | TBD | Gate frontend workspace loading when runtime API is unavailable | `fix/tf-f025-runtime-unavailable-gate` |
+| TF-F026 | Done | TBD | Forward master key into Docker runtime container | `fix/tf-f026-compose-master-key-forwarding` |
+| TF-F027 | Done | TBD | Clarify price versus fundamentals provider controls in context rail | `fix/tf-f027-provider-capability-rail-clarity` |
+| TF-F028 | Planned | M10E | Add persistent instrument identity to decision workspaces | `feature/tf-f028-workspace-instrument-identity` |
+| TF-F029 | Planned | M10E | Replace misleading candidate terminology in operator-facing UX | `feature/tf-f029-trader-facing-opportunity-language` |
+| TF-F030 | Planned | M10E | Replace provenance-first Opportunity panels with cognition-first synthesis surfaces | `feature/tf-f030-opportunity-synthesis-surfaces` |
+| TF-F031 | Planned | M10E | Interpret unavailable-context states with operator meaning and next actions | `feature/tf-f031-context-empty-state-interpretation` |
+| TF-F032 | Done | M10E | Add explicit advisory context acquisition workflow | `feature/tf-f032-context-acquisition-workflow` |
+| TF-F033 | Done | M10E | Surface advisory provider attempt status and fallback outcomes | `feature/tf-f033-provider-attempt-transparency` |
+| TF-F034 | Done | M10E | Distinguish equity fundamentals from ETF context | `feature/tf-f034-instrument-aware-context-types` |
+| TF-F035 | Planned | M10E | Translate scenario-branch UX into trader-facing conditional reasoning | `feature/tf-f035-scenario-language-translation` |
+| TF-F036 | Planned | M10E | Add discretionary-thinking guidance to early opportunity evaluation | `feature/tf-f036-opportunity-cognition-guidance` |
+| TF-F037 | Done | M10E | Introduce context interpretation layer between provider payloads and operator cognition | `feature/tf-f037-context-interpretation-layer` |
+| TF-F038 | Done | M10E | Define dedicated Context Workbench workspace concept | `feature/tf-f038-context-workbench-concept` |
+| TF-F039 | Done | M10E | Require recovery-oriented missing-information states across UX | `docs/tf-f039-missing-information-guidance` |
+| TF-F040 | Done | M10E | Define trader-language boundary between canonical ontology and UX copy | `docs/tf-f040-trader-language-boundary` |
+| TF-F041 | Done | M10E | Connect acquired advisory context to opportunity synthesis and thesis implications | `feature/tf-f041-context-to-synthesis-bridge` |
+| TF-F042 | Done | M10E | Reframe market-context presentation from raw payload first to interpretation first | `feature/tf-f042-market-context-interpretation-first` |
+
+## TF-F042: Reframe Market-Context Presentation From Raw Payload First To Interpretation First
+
+**Status:** Done
+
+**Classification:** enhancement
+
+**Milestone:** M10E
+
+**Branch:** `feature/tf-f042-market-context-interpretation-first`
+
+**Affected Layer:** frontend, services
+
+**Linked ADRs:** ADR-0010, ADR-0032, ADR-0038
+
+**Impacted Invariants:** UX Is Architectural, Derived State Must Remain Distinguishable
+
+**Source:** Opportunity Workspace discovery session captured on 2026-05-17 in `knowledge/raw/brainstorm-20260517-opportunity-workspace-ux-and-context-acquisition.md`; screenshots `brainstorm session Screenshot 2026-05-17 135450.png` and `brainstorm session Screenshot 2026-05-17 142020.png`.
+
+**Problem:**
+The current Market Context presentation leads with raw OHLCV values and provenance. That preserves advisory traceability, but it makes the surface feel like a provider payload inspector rather than a cognition aid. The operator must infer whether the instrument is ranging, compressing, breaking out, extended, or otherwise meaningful before the UI becomes useful.
+
+**Acceptance Criteria:**
+
+- Market-context presentation leads with an operator-readable interpretation before raw values.
+- Raw OHLCV and provider provenance remain visible and distinguishable as advisory metadata.
+- The interpretation does not become canonical truth or lifecycle authority.
+- The surface makes current market behavior easier to understand without requiring the operator to mentally decode raw fields first.
+
+**Out Of Scope:**
+
+- Replacing normalized price contracts.
+- Introducing AI-generated interpretation without a separate advisory-boundary decision.
+- Removing raw provenance detail required for replay and auditability.
+
+**Resolution Summary:**
+Added deterministic interpretation fields to advisory market-context responses
+and rendered those interpretations before raw OHLCV fields in both the shared
+market-context rail and the Context Workbench while preserving raw values and
+provider provenance.
+
+**Completed Verification:**
+
+- `uv run pytest tests\test_market_context_overlay.py`
+- `npm.cmd run build`
+
+---
+
+## TF-F041: Connect Acquired Advisory Context To Opportunity Synthesis And Thesis Implications
+
+**Status:** Done
+
+**Classification:** enhancement
+
+**Milestone:** M10E
+
+**Branch:** `feature/tf-f041-context-to-synthesis-bridge`
+
+**Affected Layer:** services, frontend
+
+**Linked ADRs:** ADR-0010, ADR-0038
+
+**Impacted Invariants:** UX Is Architectural, Workflow-Centric Architecture
+
+**Source:** Opportunity Workspace discovery session captured on 2026-05-17.
+
+**Problem:**
+The right rail can display advisory market context while the center workspace remains largely unchanged. Context acquisition and workflow cognition are therefore disconnected: the trader can fetch information, but the Opportunity Workspace does not meaningfully reflect how that information changes opportunity posture, readiness, scenario evaluation, or thesis development.
+
+**Acceptance Criteria:**
+
+- Acquired advisory context can be reflected in Opportunity Workspace synthesis surfaces without becoming canonical truth.
+- The workspace can show how context affects current opportunity interpretation, missing evidence, or thesis implications.
+- Provider data remains advisory and provenance-preserving.
+- The issue remains bounded to advisory synthesis; it does not alter lifecycle authority.
+
+**Out Of Scope:**
+
+- Auto-authoring a thesis from provider data.
+- Automatically changing lifecycle state from advisory inputs.
+- Solving the full future AI advisory layer.
+
+**Resolution Summary:**
+Added an advisory-only context handoff from the Context Workbench into the
+Opportunity Workspace through local operational context, then introduced an
+Opportunity synthesis surface that reflects acquired price posture, missing
+evidence, and thesis implications without mutating canonical state.
+
+**Completed Verification:**
+
+- `npm.cmd run build`
+- `uv run pytest tests\test_fundamentals_overlay.py tests\test_workspace_routing.py tests\test_workspace_state_contracts.py`
+
+---
+
+## TF-F040: Define Trader-Language Boundary Between Canonical Ontology And UX Copy
+
+**Status:** Done
+
+**Classification:** doctrine
+
+**Milestone:** M10E
+
+**Branch:** `docs/tf-f040-trader-language-boundary`
+
+**Affected Layer:** docs, frontend
+
+**Linked ADRs:** ADR-0012
+
+**Impacted Invariants:** Terminology Stability, UX Is Architectural
+
+**Source:** Opportunity Workspace discovery session captured on 2026-05-17.
+
+**Problem:**
+TradeForge currently exposes several internal ontology terms directly in operator-facing UX, including `candidate`, `scenario branches`, and visible provenance labels used as primary content. Canonical terminology is stable internally, but the system lacks an explicit boundary defining when operator-facing language should translate internal semantics into trader-native wording.
+
+**Acceptance Criteria:**
+
+- Runtime doctrine explicitly distinguishes canonical internal semantics from operator-facing language.
+- Guidance exists for headings, prompts, panel names, empty states, and tooltips.
+- The boundary preserves canonical terminology in the domain model while preventing avoidable ontology leakage into trader UX.
+- Future frontend work can evaluate wording against a documented rule rather than ad hoc taste.
+
+**Out Of Scope:**
+
+- Renaming canonical domain entities.
+- Rewriting all current UI copy in the same change.
+- Changing event or lifecycle semantics.
+
+**Resolution Summary:**
+Added canonical trader-language doctrine in the knowledge base, extended UX doctrine with an explicit internal-semantics versus operator-language boundary, and updated the frontend design translation guide so future copy decisions can be evaluated against a stable rule instead of ad hoc taste.
+
+**Completed Verification:**
+
+- Confirmed `design/trader-language-doctrine.md` defines headings, prompts, empty states, provenance handling, and translation tests.
+- Confirmed `UX_DOCTRINE.md` now carries the canonical trader-language principle.
+- Confirmed `frontend/DESIGN.md` references the runtime translation rule for operator-facing copy.
+
+---
+
+## TF-F039: Require Recovery-Oriented Missing-Information States Across UX
+
+**Status:** Done
+
+**Classification:** doctrine
+
+**Milestone:** M10E
+
+**Branch:** `docs/tf-f039-missing-information-guidance`
+
+**Affected Layer:** docs, frontend
+
+**Linked ADRs:** none
+
+**Impacted Invariants:** UX Is Architectural, Uncertainty Must Be Visible
+
+**Source:** Opportunity Workspace discovery session captured on 2026-05-17.
+
+**Problem:**
+Several current surfaces report unavailable or absent information without explaining meaning, severity, continuity, or next action. The session surfaced this through `Fundamentals unavailable`, but the underlying gap is broader: TradeForge lacks a UX rule that missing-information states should answer what happened, why it matters, whether work can continue, and what the operator can do next.
+
+**Acceptance Criteria:**
+
+- Runtime UX doctrine defines the minimum content of a missing-information state.
+- Missing states distinguish absence, not-yet-loaded state, failure, unsupported coverage, and intentional omission where relevant.
+- Future UI surfaces can be reviewed against a consistent recovery-oriented standard.
+- Guidance preserves uncertainty visibility rather than masking it.
+
+**Out Of Scope:**
+
+- Implementing every missing-state UI change immediately.
+- Provider-specific retry behavior.
+- Lifecycle changes.
+
+**Resolution Summary:**
+Added canonical missing-information doctrine in the KB, extended UX doctrine with a recovery-oriented rule, and updated frontend design guidance so future missing states must distinguish cause, consequence, continuity, and next action.
+
+**Completed Verification:**
+
+- Confirmed `design/missing-information-doctrine.md` defines distinct missing-state classes and required operator questions.
+- Confirmed `UX_DOCTRINE.md` now carries the recovery-oriented missing-information principle.
+- Confirmed `frontend/DESIGN.md` includes the corresponding runtime translation rule.
+
+---
+
+## TF-F038: Define Dedicated Context Workbench Workspace Concept
+
+**Status:** Done
+
+**Classification:** architectural
+
+**Milestone:** M10E
+
+**Branch:** `feature/tf-f038-context-workbench-concept`
+
+**Affected Layer:** docs, domain, services, frontend
+
+**Linked ADRs:** ADR-0012, ADR-0038, ADR-0040
+
+**Impacted Invariants:** Workspaces Are Operational Environments, Workflow-Centric Architecture, UX Is Architectural
+
+**Source:** Opportunity Workspace discovery session captured on 2026-05-17.
+
+**Problem:**
+The current Opportunity Workspace is being asked to support setup evaluation, context acquisition, provider inspection, and the early stages of research. The session surfaced a distinct operator need for a place devoted to gathering, inspecting, interpreting, and attaching advisory context before thesis or plan formation. That need appears semantically different from Opportunity evaluation itself.
+
+**Acceptance Criteria:**
+
+- The system evaluates whether a dedicated research/context workspace is required as a separate operational environment.
+- The concept distinguishes context acquisition from opportunity evaluation and thesis formation.
+- The proposed workspace owns a clear operational question and scope boundary.
+- ADR evaluation is completed before implementation if the concept is accepted.
+
+**Out Of Scope:**
+
+- Implementing the workspace in this issue.
+- Collapsing Opportunity, Thesis, and Research roles into one generic screen.
+- Treating the workspace as a dashboard or settings view.
+
+**Resolution Summary:**
+Accepted the Context Workbench as a dedicated research-oriented workspace concept through ADR-0040 and added canonical design guidance defining its operational question, ownership boundary, candidate context families, and relationship to Opportunity and Thesis work.
+
+**Completed Verification:**
+
+- Confirmed `DOCS/adr/0040-context-workbench-workspace-concept.md` records the accepted workspace boundary.
+- Confirmed `design/context-workbench.md` defines the workspace's operational question, owned responsibilities, exclusions, and downstream issue dependencies.
+
+---
+
+## TF-F037: Introduce Context Interpretation Layer Between Provider Payloads And Operator Cognition
+
+**Status:** Done
+
+**Classification:** architectural
+
+**Milestone:** M10E
+
+**Branch:** `feature/tf-f037-context-interpretation-layer`
+
+**Affected Layer:** services, frontend
+
+**Linked ADRs:** ADR-0010, ADR-0032, ADR-0038, ADR-0039
+
+**Impacted Invariants:** AI Advisory Boundary, Derived State Must Remain Distinguishable, UX Is Architectural
+
+**Source:** Opportunity Workspace discovery session captured on 2026-05-17.
+
+**Problem:**
+TradeForge currently has provider data and lifecycle workflow, but the session exposed a missing middle layer that translates fetched advisory data into operator-usable interpretation. Without that layer, the runtime can collect context while still failing to explain what it means for the decision process.
+
+**Acceptance Criteria:**
+
+- The architecture defines a bounded interpretation layer between normalized provider outputs and workspace presentation.
+- The layer is explicitly advisory and does not mutate canonical state.
+- The design preserves provenance and uncertainty while enabling operator-readable synthesis.
+- ADR evaluation occurs before implementation because the change introduces a durable architectural layer.
+
+**Out Of Scope:**
+
+- Autonomous trade recommendations.
+- Lifecycle transitions driven by provider data.
+- Hiding raw data or uncertainty from the operator.
+
+**Resolution Summary:**
+Introduced the Context Interpretation Layer through ADR-0039 and canonical design doctrine so normalized advisory provider outputs can become operator-readable cognition without becoming canonical truth or lifecycle authority.
+
+**Completed Verification:**
+
+- Confirmed `DOCS/adr/0039-context-interpretation-layer.md` records the accepted interpretation boundary.
+- Confirmed `design/context-interpretation-layer.md` defines inputs, outputs, authority limits, and the distinction between deterministic and future AI interpretation.
+
+---
+
+## TF-F036: Add Discretionary-Thinking Guidance To Early Opportunity Evaluation
+
+**Status:** Done
+
+**Classification:** enhancement
+
+**Milestone:** M10E
+
+**Branch:** `feature/tf-f036-opportunity-cognition-guidance`
+
+**Affected Layer:** frontend
+
+**Linked ADRs:** ADR-0012
+
+**Impacted Invariants:** UX Is Architectural, Workflow-Centric Architecture
+
+**Source:** Opportunity Workspace discovery session captured on 2026-05-17.
+
+**Problem:**
+The Opportunity Workspace currently reports state but offers limited guidance on how the operator should reason through an early setup. The session identified missing guidance around confirmation, invalidation, readiness, risk definition, and missing evidence.
+
+**Acceptance Criteria:**
+
+- Early opportunity surfaces guide the operator through the major questions needed before thesis development.
+- Guidance remains advisory and does not collapse into automatic recommendation.
+- Prompts distinguish what is known, what is missing, and what requires operator judgment.
+- The workspace becomes more useful for structured discretionary thinking, not just lifecycle display.
+
+**Out Of Scope:**
+
+- Completing the thesis for the operator.
+- Rule-engine enforcement changes.
+- AI-generated recommendations.
+
+---
+
+## TF-F035: Translate Scenario-Branch UX Into Trader-Facing Conditional Reasoning
+
+**Status:** Planned
+
+**Classification:** enhancement
+
+**Milestone:** M10E
+
+**Branch:** `feature/tf-f035-scenario-language-translation`
+
+**Affected Layer:** frontend
+
+**Linked ADRs:** ADR-0012
+
+**Impacted Invariants:** UX Is Architectural, Terminology Stability
+
+**Source:** Opportunity Workspace discovery session captured on 2026-05-17.
+
+**Problem:**
+`Scenario Branches` is structurally correct but operator-facing language remains abstract. The user-facing task is conditional reasoning about bull cases, failed setups, invalidation, and alternate paths, not managing a graph concept.
+
+**Acceptance Criteria:**
+
+- Scenario-related UX uses trader-readable framing while preserving underlying canonical scenario semantics.
+- Empty-state guidance explains the operator task in conditional-reasoning terms.
+- The operator can understand why creating scenarios matters before planning.
+- Canonical scenario models remain unchanged.
+
+**Out Of Scope:**
+
+- Redesigning scenario data structures.
+- Adding new scenario event types.
+- Changing lifecycle transitions.
+
+---
+
+## TF-F034: Distinguish Equity Fundamentals From ETF Context
+
+**Status:** Planned
+
+**Classification:** enhancement
+
+**Milestone:** TBD
+
+**Branch:** `feature/tf-f034-instrument-aware-context-types`
+
+**Affected Layer:** domain, services, frontend
+
+**Linked ADRs:** ADR-0038
+
+**Impacted Invariants:** Derived State Must Remain Distinguishable, Architectural Simplicity
+
+**Source:** Opportunity Workspace discovery session captured on 2026-05-17.
+
+**Problem:**
+The session used EWY as an example where `Fundamentals unavailable` may be a misleading presentation because ETF context is not the same as company fundamentals. The system currently lacks instrument-aware treatment that can distinguish equity fundamentals from ETF-relevant context such as holdings, exposure, or macro sensitivity.
+
+**Acceptance Criteria:**
+
+- The external-context model distinguishes company-fundamentals coverage from ETF-relevant context.
+- Unsupported or mismatched context is represented explicitly instead of collapsing into a generic unavailable state.
+- Operator-facing UI can explain why one context type is absent and what alternative context is relevant.
+- Existing fundamentals semantics remain intact for equities.
+
+**Out Of Scope:**
+
+- Full ETF analytics implementation.
+- Expanding to all future security types at once.
+- Treating absent ETF context as a provider failure when the issue is semantic mismatch.
+
+**Resolution Summary:**
+Introduced explicit instrument-kind and external-context-type semantics for
+fundamentals overlays, returning an `unsupported` company-fundamentals state
+for ETFs with an `etf_context` alternative instead of misclassifying that case
+as provider failure. The Context Workbench now lets the operator declare
+equity versus ETF when requesting context.
+
+**Completed Verification:**
+
+- `uv run pytest tests\test_fundamentals_overlay.py`
+- `npm.cmd run build`
+
+---
+
+## TF-F033: Surface Advisory Provider Attempt Status And Fallback Outcomes
+
+**Status:** Planned
+
+**Classification:** enhancement
+
+**Milestone:** TBD
+
+**Branch:** `feature/tf-f033-provider-attempt-transparency`
+
+**Affected Layer:** services, app, frontend
+
+**Linked ADRs:** ADR-0038
+
+**Impacted Invariants:** Derived State Must Remain Distinguishable, Replayability Is Foundational
+
+**Source:** Opportunity Workspace discovery session captured on 2026-05-17.
+
+**Problem:**
+The operator can see selected providers and fallback order, but when data is absent there is no visible evidence of whether retrieval was attempted, which provider was used, whether fallback was tried, or why retrieval failed. This weakens the transparency promised by the capability-aware provider architecture.
+
+**Acceptance Criteria:**
+
+- Advisory context surfaces expose attempted provider order, selected provider, fallback usage, timestamps, and failure reasons where relevant.
+- UI distinguishes configured provider state from actual acquisition attempts.
+- Provider attempt information remains advisory and replay-preservable.
+- Missing context can be understood without consulting logs.
+
+**Out Of Scope:**
+
+- Provider health-management systems.
+- Automatic remediation or credential rotation.
+- Changing provider preference semantics.
+
+**Resolution Summary:**
+Added explicit advisory provider-attempt records to the live price and
+fundamentals acquisition paths, exposed attempt order / outcome / timestamp /
+failure reason through the workspace APIs, and rendered those facts inside the
+Context Workbench so unavailable states no longer require log inspection.
+
+**Completed Verification:**
+
+- `uv run pytest`
+- `uv run pytest tests\test_market_snapshot_service.py tests\test_fundamentals_service.py tests\test_fundamentals_overlay.py tests\test_market_context_overlay.py`
+- `uv run ruff check src\services\market\context.py src\services\market\snapshot_service.py src\services\market\fundamentals_service.py tests\test_fundamentals_service.py tests\test_fundamentals_overlay.py tests\test_market_context_overlay.py tests\test_market_snapshot_service.py`
+- `npm.cmd run build`
+
+---
+
+## TF-F032: Add Explicit Advisory Context Acquisition Workflow
+
+**Status:** Planned
+
+**Classification:** enhancement
+
+**Milestone:** TBD
+
+**Branch:** `feature/tf-f032-context-acquisition-workflow`
+
+**Affected Layer:** services, app, frontend
+
+**Linked ADRs:** ADR-0010, ADR-0038, ADR-0039, ADR-0040
+
+**Impacted Invariants:** UX Is Architectural, Workflow-Centric Architecture
+
+**Source:** Opportunity Workspace discovery session captured on 2026-05-17.
+
+**Problem:**
+The current operator flow does not make advisory information acquisition explicit. Price loading exists, fundamentals may load elsewhere, and future context types are implied but not represented as a coherent workflow. The operator cannot clearly request or inspect distinct context domains such as fundamentals, catalysts, sector context, or technical context.
+
+**Acceptance Criteria:**
+
+- The runtime defines an explicit operator workflow for requesting advisory context by context family.
+- The workflow distinguishes configured providers from actual information acquisition.
+- Operator actions and resulting states make it clear what was requested, loaded, skipped, or unavailable.
+- Context acquisition remains advisory and does not become lifecycle authority.
+
+**Out Of Scope:**
+
+- Implementing every possible context family at once.
+- Automatically acquiring all context without operator intent.
+- Turning context acquisition into a generic dashboard.
+
+**Resolution Notes:**
+
+- Added first-class `context-workbench` routing and workspace-state contract support.
+- Added a dedicated frontend Context Workbench with explicit operator-requested acquisition for `Price / Technical` and `Fundamentals`.
+- Surfaced per-family `not requested`, `loading`, `loaded`, and `unavailable` states while keeping provider configuration separate from acquisition actions.
+- Preserved advisory-only boundaries; no lifecycle transitions or canonical events were introduced.
+- Verification passed for focused workspace-route/state-contract tests plus frontend typecheck/build. Full-suite verification remains blocked locally because the rotated `TRADEFORGE_MASTER_KEY` does not decrypt the persisted provider credential payloads during API import.
+
+---
+
+## TF-F031: Interpret Unavailable-Context States With Operator Meaning And Next Actions
+
+**Status:** Planned
+
+**Classification:** enhancement
+
+**Milestone:** TBD
+
+**Branch:** `feature/tf-f031-context-empty-state-interpretation`
+
+**Affected Layer:** frontend, services
+
+**Linked ADRs:** ADR-0038
+
+**Impacted Invariants:** UX Is Architectural, Uncertainty Must Be Visible
+
+**Source:** Opportunity Workspace discovery session captured on 2026-05-17.
+
+**Problem:**
+`Fundamentals unavailable` currently reports a technical state but gives the trader no meaning, implication, severity, or next action. The operator cannot tell whether retrieval was never attempted, a provider failed, the instrument is unsupported, credentials are missing, or the absence is non-blocking.
+
+**Acceptance Criteria:**
+
+- Unavailable-context states distinguish the major causes that matter to the operator.
+- The UI states what the absence means for current decision work and whether the operator can continue.
+- The surface offers an appropriate next action or explanation where one exists.
+- Advisory uncertainty remains visible rather than being hidden.
+
+**Out Of Scope:**
+
+- Building the full provider attempt history system.
+- Full cross-product missing-state doctrine.
+- Converting unavailable advisory context into a lifecycle blocker.
+
+---
+
+## TF-F030: Replace Provenance-First Opportunity Panels With Cognition-First Synthesis Surfaces
+
+**Status:** Planned
+
+**Classification:** enhancement
+
+**Milestone:** TBD
+
+**Branch:** `feature/tf-f030-opportunity-synthesis-surfaces`
+
+**Affected Layer:** frontend, services
+
+**Linked ADRs:** ADR-0012
+
+**Impacted Invariants:** UX Is Architectural, Workflow-Centric Architecture
+
+**Source:** Opportunity Workspace discovery session captured on 2026-05-17; screenshot `brainstorm session Screenshot 2026-05-17 142020.png`.
+
+**Problem:**
+The main body of the Opportunity Workspace is dominated by provenance-oriented boxes such as `Scenario References`, `Opportunity Candidates`, `Setup Quality`, and `Advisory Notes`. In their current form they communicate source categories more strongly than opportunity meaning, producing a visually large but cognitively thin region.
+
+**Acceptance Criteria:**
+
+- The primary Opportunity Workspace surfaces answer what is interesting now, why it matters, what is missing, and how mature the setup is.
+- Provenance remains accessible but becomes secondary metadata rather than the dominant visual structure.
+- Candidate surfaces can represent narrative, signals, readiness, missing confirmation, contradiction, and conditional paths.
+- The resulting workspace better supports opportunity evaluation before thesis formation.
+
+**Out Of Scope:**
+
+- Removing provenance or replay metadata.
+- Replacing event-sourced projections with mutable UI state.
+- Completing context interpretation architecture inside the same issue.
+
+---
+
+## TF-F029: Replace Misleading Candidate Terminology In Operator-Facing UX
+
+**Status:** Planned
+
+**Classification:** bug
+
+**Milestone:** TBD
+
+**Branch:** `feature/tf-f029-trader-facing-opportunity-language`
+
+**Affected Layer:** frontend
+
+**Linked ADRs:** ADR-0012
+
+**Impacted Invariants:** UX Is Architectural, Terminology Stability
+
+**Source:** Opportunity Workspace discovery session captured on 2026-05-17; screenshot `brainstorm session Screenshot 2026-05-17 142020.png`.
+
+**Problem:**
+`What candidate decisions are developing?` and related `candidate` wording are misleading inside a workspace entered for one selected symbol. The terms imply a scanner or portfolio-level decision surface and do not match how the operator naturally thinks about an early setup.
+
+**Acceptance Criteria:**
+
+- Opportunity Workspace headings and prompts use operator-facing wording that matches the actual single-symbol workflow.
+- Copy no longer makes the operator infer the meaning of `candidate` from internal lifecycle semantics.
+- Any chosen replacement language remains consistent across headings, explanatory text, and actions.
+- Canonical internal terms remain available where required for implementation and documentation.
+
+**Out Of Scope:**
+
+- Renaming domain entities.
+- Solving all broader trader-language doctrine questions.
+- Redesigning the workspace layout.
+
+---
+
+## TF-F028: Add Persistent Instrument Identity To Decision Workspaces
+
+**Status:** Planned
+
+**Classification:** enhancement
+
+**Milestone:** TBD
+
+**Branch:** `feature/tf-f028-workspace-instrument-identity`
+
+**Affected Layer:** frontend
+
+**Linked ADRs:** ADR-0012
+
+**Impacted Invariants:** UX Is Architectural, Workflow Continuity Principle
+
+**Source:** Opportunity Workspace discovery session captured on 2026-05-17; screenshot `brainstorm session Screenshot 2026-05-17 142020.png`.
+
+**Problem:**
+After entering a symbol-specific Opportunity Workspace, the main surface does not strongly anchor which instrument is being evaluated. The operator must rely on small sidebar context or infer identity indirectly, even though the trader’s cognitive frame is centered on the instrument rather than the internal decision id.
+
+**Acceptance Criteria:**
+
+- Symbol-specific workspaces present a persistent, prominent instrument identity anchor.
+- The anchor supports at least ticker identity and relevant descriptive context appropriate to the workspace.
+- Workspace headers make it immediately clear what instrument, context, and stage the operator is working on.
+- The pattern is designed for continuity across later workspaces, not only one local screen.
+
+**Out Of Scope:**
+
+- Full quote terminal behavior.
+- Redesigning every workspace in the same change.
+- Replacing decision ids internally.
+
+## TF-F027: Clarify Price Versus Fundamentals Provider Controls In Context Rail
+
+**Status:** Done
+
+**Classification:** bug
+
+**Milestone:** TBD
+
+**Branch:** `fix/tf-f027-provider-capability-rail-clarity`
+
+**Affected Layer:** frontend
+
+**Linked ADRs:** ADR-0038
+
+**Impacted Invariants:** UX Is Architectural, Derived State Must Remain Distinguishable
+
+**Source:** Operator observation captured on 2026-05-17 in `knowledge/raw/brainstorm-20260517-provider-capability-rail-clarity.md`.
+
+**Problem:**
+The Opportunity and Active Position context rail places a price-only `Market Context` loader directly above a provider configuration panel that only exposes the `fundamentals` capability. Because the rail does not show the `price` capability at all, changing the visible fundamentals provider makes the adjacent `Load` action appear as though it should stop using `yfinance`, even though that button correctly calls the separate price-data path.
+
+**Acceptance Criteria:**
+
+- The provider configuration panel visibly distinguishes `price` and `fundamentals` capabilities.
+- The `Market Context` loader remains clearly attributable to the selected `price` provider.
+- Fundamentals configuration remains editable without implying it controls price-data requests.
+- Price and fundamentals contracts remain separate; no provider-boundary semantics change.
+
+**Out Of Scope:**
+
+- Reworking the market snapshot service into dynamic multi-provider routing.
+- Moving fundamentals overlays into new workspaces.
+- Changing provider rollout doctrine or fallback semantics.
+
+**Resolution Summary:**
+Expanded the context-rail provider panel to surface both `price` and `fundamentals` capability resolution. The fundamentals selector remains editable, while the rail now also shows which price provider the adjacent market-context loader is using so the two external-data paths are no longer visually conflated.
+
+**Completed Verification:**
+
+- `npm.cmd run typecheck`
+- `npm.cmd run build`
+
+**Regression Note:**
+
+- `uv run pytest` could not complete in the current local environment because the rotated `TRADEFORGE_MASTER_KEY` no longer decrypts the existing `.keys.enc`, causing app import to fail during test collection before this frontend change is exercised.
+
+## TF-F026: Forward Master Key Into Docker Runtime Container
+
+**Status:** Done
+
+**Classification:** bug
+
+**Milestone:** TBD
+
+**Branch:** `fix/tf-f026-compose-master-key-forwarding`
+
+**Affected Layer:** infrastructure
+
+**Linked ADRs:** ADR-0037
+
+**Impacted Invariants:** Architectural Simplicity
+
+**Source:** Operator startup failure captured on 2026-05-17 in `knowledge/raw/brainstorm-20260517-compose-master-key-forwarding.md`.
+
+**Problem:**
+When TradeForge is started through Docker Compose with credentialed providers configured, the `tradeforge` container exits with `MasterKeyNotConfiguredError` even when PowerShell shows `TRADEFORGE_MASTER_KEY` in the host session. The Compose service definition forwards `TRADEFORGE_DATABASE_URL` but does not forward `TRADEFORGE_MASTER_KEY`, so the runtime container cannot see the credential boundary entry point required by ADR-0037.
+
+**Acceptance Criteria:**
+
+- `docker-compose.yml` explicitly passes `TRADEFORGE_MASTER_KEY` into the `tradeforge` service.
+- Compose fails fast with a clear configuration error when the host shell does not provide `TRADEFORGE_MASTER_KEY`.
+- Operator documentation explains that Docker Compose requires the key in the shell that launches the stack.
+- No credential semantics, storage model, or provider adapter boundaries change.
+
+**Out Of Scope:**
+
+- Introducing `.env` support for secrets.
+- Changing credential encryption or storage behavior.
+- Persisting provider-selection preferences.
+
+**Resolution Summary:**
+Forwarded `TRADEFORGE_MASTER_KEY` from the host environment into the runtime container through Compose interpolation and added a required-variable guard so missing configuration is detected before the app starts. Updated the credential setup guide to call out the Compose-specific requirement.
+
+**Completed Verification:**
+
+- `docker compose config` with `TRADEFORGE_MASTER_KEY` set
+- Manual inspection of the rendered service environment confirms the runtime container receives the key
+- `docker compose config` without `TRADEFORGE_MASTER_KEY` now fails before startup with a clear missing-variable message
+- `uv run pytest`
+- `npm.cmd run typecheck`
+- `npm.cmd run build`
 
 ## TF-F025: Gate Frontend Workspace Loading When Runtime API Is Unavailable
 

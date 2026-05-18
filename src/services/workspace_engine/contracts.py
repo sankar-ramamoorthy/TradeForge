@@ -182,6 +182,44 @@ DEFAULT_WORKSPACE_STATE_CONTRACTS: Mapping[
                 "Promotion to thesis or plan must use lifecycle authority.",
             ),
         ),
+        WorkspaceRouteId.CONTEXT_WORKBENCH: WorkspaceStateContract(
+            route_id=WorkspaceRouteId.CONTEXT_WORKBENCH,
+            operational_question=DEFAULT_WORKSPACE_ROUTE_DEFINITIONS[
+                WorkspaceRouteId.CONTEXT_WORKBENCH
+            ].operational_question,
+            state_fields=(
+                WorkspaceStateField(
+                    name="requested_context_families",
+                    authority=WorkspaceStateAuthority.ADVISORY,
+                    description="Operator-requested advisory context families.",
+                    source_inputs=("advisory.context_request",),
+                ),
+                WorkspaceStateField(
+                    name="retrieval_status",
+                    authority=WorkspaceStateAuthority.ADVISORY,
+                    description="Advisory retrieval outcomes by context family.",
+                    source_inputs=("provider.*",),
+                ),
+                WorkspaceStateField(
+                    name="normalized_context",
+                    authority=WorkspaceStateAuthority.ADVISORY,
+                    description="Normalized advisory context returned by providers.",
+                    source_inputs=("provider.*",),
+                ),
+            ),
+            lifecycle_actions=(),
+            required_event_inputs=("advisory.context_request", "provider.*"),
+            replay_requirements=(
+                WorkspaceReplayRequirement(
+                    description="Preserve visible advisory acquisition context.",
+                    required_inputs=("advisory.context_request", "provider.*"),
+                ),
+            ),
+            authority_boundaries=(
+                "Context acquisition remains advisory and not canonical truth.",
+                "Context acquisition does not own lifecycle transitions.",
+            ),
+        ),
         WorkspaceRouteId.PLAN_REVIEW: WorkspaceStateContract(
             route_id=WorkspaceRouteId.PLAN_REVIEW,
             operational_question=DEFAULT_WORKSPACE_ROUTE_DEFINITIONS[

@@ -63,6 +63,8 @@ def test_fundamentals_overlay_returns_advisory_bundle() -> None:
     data = response.json()
     assert data["authority"] == "advisory"
     assert data["selected_provider_id"] == "fmp"
+    assert data["attempts"][0]["provider_id"] == "fmp"
+    assert data["attempts"][0]["outcome"] == "success"
     assert data["company_name"] == "Apple Inc."
     assert data["revenue"] == "100"
 
@@ -93,3 +95,19 @@ def test_provider_configuration_exposes_capability_resolution() -> None:
     )
     assert fundamentals["preferred_provider_id"] == "fmp"
     assert fundamentals["fallback_provider_ids"] == ["alpha_vantage"]
+
+
+def test_etf_request_reports_semantic_mismatch_instead_of_provider_failure() -> None:
+    client = TestClient(create_app())
+
+    response = client.get(
+        "/workspaces/fundamentals-context?symbol=EWY&instrument_kind=etf"
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["instrument_kind"] == "etf"
+    assert data["requested_context_type"] == "company_fundamentals"
+    assert data["coverage_status"] == "unsupported"
+    assert data["alternative_context_type"] == "etf_context"
+    assert data["attempted_provider_ids"] == []

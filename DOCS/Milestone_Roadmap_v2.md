@@ -1919,6 +1919,123 @@ That gap matters before `M11`: provider credentials already cover providers with
 
 ---
 
+## M10E — Context Workbench And Advisory Context Acquisition
+
+**Status:** Planned
+
+## Semantic Intent
+
+Turn the capability-aware external-data foundation into a coherent
+operator-facing research environment before AI advisory work begins.
+
+## Architectural Significance
+
+`M10D` established that provider identity and provider capability are different
+concepts. It also introduced initial `price` and `fundamentals` contracts, but
+the runtime still leaves operators with a fragmented experience: one visible
+price load path, partial fundamentals surfaces, provider configuration without a
+full acquisition workflow, and no dedicated workspace for gathering and
+interpreting research context.
+
+`M10E` closes that gap by defining the research/acquisition layer that sits
+between normalized advisory provider outputs and later opportunity/thesis
+workflows. It formalizes how the operator requests context, how the system
+explains missing or failed context, how provider attempts remain transparent,
+and whether a dedicated `Context Workbench` becomes a canonical workspace.
+
+This milestone is intentionally placed before `M11`. AI advisory should enhance
+an already explicit context-acquisition and interpretation model rather than
+becoming the first place where that model is invented.
+
+## Canonical Concepts
+
+- [[UX Is Architectural]]
+- [[Workspaces Are Operational Environments]]
+- [[Workflow-Centric Architecture]]
+- [[Derived State Must Remain Distinguishable]]
+- [[Market Intelligence Is Interpreted Context]]
+- [[Terminology Stability]]
+
+## Scope
+
+`M10E` introduces or resolves:
+
+- trader-language boundary for operator-facing UX
+- recovery-oriented missing-information doctrine
+- context interpretation layer design
+- dedicated Context Workbench workspace concept
+- explicit advisory context acquisition workflow
+- provider attempt / fallback transparency
+- distinction between equity fundamentals and ETF-relevant context
+- interpretation-first presentation of acquired market context
+- bridge from acquired advisory context into later opportunity/thesis synthesis
+
+## Explicit Exclusions
+
+`M10E` explicitly excludes:
+
+- AI-generated advisory recommendations
+- autonomous lifecycle changes from acquired context
+- full news / macro / estimates / transcripts implementation
+- generic support for every future security type
+- replacing the existing normalized provider boundary
+
+## Recommended Issue Order
+
+### Foundation
+
+1. `TF-F040` - Define trader-language boundary between canonical ontology and UX copy.
+2. `TF-F039` - Require recovery-oriented missing-information states across UX.
+3. `TF-F037` - Introduce context interpretation layer between provider payloads and operator cognition.
+
+### Main Requirement Path
+
+4. `TF-F038` - Define dedicated Context Workbench workspace concept.
+5. `TF-F032` - Add explicit advisory context acquisition workflow.
+6. `TF-F033` - Surface advisory provider attempt status and fallback outcomes.
+7. `TF-F034` - Distinguish equity fundamentals from ETF context.
+
+### Downstream Productization
+
+8. `TF-F041` - Connect acquired advisory context to opportunity synthesis and thesis implications.
+9. `TF-F042` - Reframe market-context presentation from raw payload first to interpretation first.
+10. Opportunity Workspace refinement follow-ons:
+    - `TF-F028`
+    - `TF-F029`
+    - `TF-F030`
+    - `TF-F031`
+    - `TF-F035`
+    - `TF-F036`
+
+## Linked Runtime Issues
+
+- TF-F040: Define trader-language boundary between canonical ontology and UX copy
+- TF-F039: Require recovery-oriented missing-information states across UX
+- TF-F037: Introduce context interpretation layer between provider payloads and operator cognition
+- TF-F038: Define dedicated Context Workbench workspace concept
+- TF-F032: Add explicit advisory context acquisition workflow
+- TF-F033: Surface advisory provider attempt status and fallback outcomes (**Done**)
+- TF-F034: Distinguish equity fundamentals from ETF context (**Done**)
+- TF-F041: Connect acquired advisory context to opportunity synthesis and thesis implications (**Done**)
+- TF-F042: Reframe market-context presentation from raw payload first to interpretation first (**Done**)
+- TF-F028: Add persistent instrument identity to decision workspaces
+- TF-F029: Replace misleading candidate terminology in operator-facing UX
+- TF-F030: Replace provenance-first Opportunity panels with cognition-first synthesis surfaces
+- TF-F031: Interpret unavailable-context states with operator meaning and next actions
+- TF-F035: Translate scenario-branch UX into trader-facing conditional reasoning
+- TF-F036: Add discretionary-thinking guidance to early opportunity evaluation
+
+## Acceptance Meaning
+
+- TradeForge has an explicit operator-facing model for acquiring advisory context beyond OHLCV alone.
+- The system distinguishes provider configuration from actual information acquisition.
+- Missing and failed context states explain what happened, why it matters, and what the operator can do next.
+- A dedicated research/context workspace boundary is either accepted and defined or explicitly rejected with rationale.
+- Advisory context can be interpreted and later consumed by opportunity/thesis workflows without becoming canonical truth.
+- `M11` can build AI advisory on top of a coherent context-acquisition layer instead of compensating for missing UX and workspace architecture.
+
+---
+
 ## M11 — AI Advisory Boundary
 Status: Planned
 ## Semantic Intent
@@ -1939,7 +2056,7 @@ AI remains advisory rather than authoritative.
 
 ## Dependency Notes
 
-* `M10D` must complete first so AI advisory work can consume explicit provider capabilities rather than infer provider semantics from the older OHLCV-only model.
+* `M10E` must complete first so AI advisory work can consume explicit provider capabilities through a coherent context-acquisition and interpretation model rather than infer semantics from the older OHLCV-only path.
 
 ## Acceptance Meaning
 

@@ -29,6 +29,7 @@ def test_contracts_include_all_adr_0012_workspace_routes() -> None:
     assert set(DEFAULT_WORKSPACE_STATE_CONTRACTS) == {
         WorkspaceRouteId.OPERATING,
         WorkspaceRouteId.OPPORTUNITY,
+        WorkspaceRouteId.CONTEXT_WORKBENCH,
         WorkspaceRouteId.PLAN_REVIEW,
         WorkspaceRouteId.ACTIVE_POSITION,
         WorkspaceRouteId.REPLAY,

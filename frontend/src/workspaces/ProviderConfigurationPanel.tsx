@@ -7,6 +7,10 @@ import {
 
 export function ProviderConfigurationPanel() {
   const [config, setConfig] = useState<ProviderConfiguration | null>(null);
+  const price = useMemo(
+    () => config?.resolutions.find((item) => item.capability === "price"),
+    [config],
+  );
   const fundamentals = useMemo(
     () => config?.resolutions.find((item) => item.capability === "fundamentals"),
     [config],
@@ -16,9 +20,9 @@ export function ProviderConfigurationPanel() {
     fetchProviderConfiguration().then(setConfig).catch(() => setConfig(null));
   }, []);
 
-  if (!config || !fundamentals) return null;
+  if (!config || !price || !fundamentals) return null;
 
-  const options = config.providers
+  const fundamentalsOptions = config.providers
     .filter((provider) => provider.capabilities.includes("fundamentals"))
     .map((provider) => provider.provider_id);
 
@@ -28,19 +32,26 @@ export function ProviderConfigurationPanel() {
         <p className="eyebrow">Provider Configuration</p>
         <span className="field-authority-badge authority-advisory">Advisory</span>
       </div>
+      <div className="provider-capability-section">
+        <p className="provider-capability-label">Price provider</p>
+        <p className="projection-detail">
+          Selected: {price.selected_provider_id ?? "unavailable"} / fallback order:{" "}
+          {price.fallback_provider_ids.join(", ") || "none"}
+        </p>
+      </div>
       <label>
         Fundamentals provider
         <select
           value={fundamentals.preferred_provider_id}
           onChange={(event) => {
             const preferred = event.target.value;
-            const fallbacks = options.filter((item) => item !== preferred);
+            const fallbacks = fundamentalsOptions.filter((item) => item !== preferred);
             updateProviderPreference("fundamentals", preferred, fallbacks)
               .then(setConfig)
               .catch(() => undefined);
           }}
         >
-          {options.map((option) => (
+          {fundamentalsOptions.map((option) => (
             <option key={option} value={option}>{option}</option>
           ))}
         </select>

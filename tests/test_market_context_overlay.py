@@ -99,6 +99,13 @@ class TestMarketContextOverlaySuccess:
         assert snap["close"] == "186.40"
         assert snap["volume"] == 52_000_000
 
+    def test_snapshot_interpretation_present(self) -> None:
+        client = _make_client()
+        data = client.get("/workspaces/market-context?symbols=AAPL").json()
+        snap = data["available"][0]
+        assert snap["interpretation_headline"]
+        assert snap["interpretation_detail"]
+
     def test_is_complete_true_when_all_available(self) -> None:
         client = _make_client()
         data = client.get("/workspaces/market-context?symbols=AAPL").json()
@@ -110,6 +117,12 @@ class TestMarketContextOverlaySuccess:
         client = _make_client()
         data = client.get("/workspaces/market-context?symbols=AAPL").json()
         assert data["provider_id"] == "yfinance"
+
+    def test_attempt_record_present(self) -> None:
+        client = _make_client()
+        data = client.get("/workspaces/market-context?symbols=AAPL").json()
+        assert data["attempts"][0]["provider_id"] == "yfinance"
+        assert data["attempts"][0]["outcome"] == "success"
 
     def test_symbol_is_uppercased(self) -> None:
         client = _make_client()
@@ -152,6 +165,13 @@ class TestMarketContextOverlayPartial:
         assert data["is_partial"] is True
         assert data["is_complete"] is False
         assert data["is_empty"] is False
+
+    def test_failed_attempt_records_reason(self) -> None:
+        client = _make_client("TSLA")
+        data = client.get("/workspaces/market-context?symbols=AAPL,TSLA").json()
+        failed = next(item for item in data["attempts"] if item["outcome"] == "failure")
+        assert failed["provider_id"] == "yfinance"
+        assert failed["failure_reason"] == "unavailable"
 
 
 # ---------------------------------------------------------------------------
