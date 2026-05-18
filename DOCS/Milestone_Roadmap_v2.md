@@ -1921,7 +1921,7 @@ That gap matters before `M11`: provider credentials already cover providers with
 
 ## M10E — Context Workbench And Advisory Context Acquisition
 
-**Status:** Planned
+**Status:** Done
 
 ## Semantic Intent
 
