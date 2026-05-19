@@ -116,6 +116,9 @@ Explicit roadmap checkpoint completed M9 Updated*Done*.
 | TF-0063 | Done | M10 | Stabilize workspace transition ergonomics | `feature/tf-0063-workspace-transition-ergonomics` |
 | TF-0064 | Done | M10 | Implement operational attention continuity | `feature/tf-0064-operational-attention-continuity` |
 | TF-0065 | Done | M11 | Define AI advisory interfaces | `feature/tf-0065-ai-advisory-interfaces` |
+| TF-0066 | Done | M11 | Implement replay summarization assistance | `feature/m11-ai-advisory-boundary` |
+| TF-0067 | Done | M11 | Implement review assistance | `feature/m11-ai-advisory-boundary` |
+| TF-0068 | Done | M11 | Implement advisory provenance tracking | `feature/m11-ai-advisory-boundary` |
 | M10AIS01 | Done | M10A | Implement structured thesis domain model | `feature/tf-0064-operational-attention-continuity` |
 | M10AIS02 | Done | M10A | Implement thesis authoring workspace | `feature/tf-0064-operational-attention-continuity` |
 | M10AIS03 | Done | M10A | Implement thesis revision history | `feature/tf-0064-operational-attention-continuity` |
@@ -3899,6 +3902,151 @@ Added the first M11 AI advisory boundary as provider-agnostic domain contracts a
 - `uv run ruff check src\domain\advisory src\services\advisory tests\test_ai_advisory_interfaces.py`
 - `uv run mypy src\domain\advisory src\services\advisory tests\test_ai_advisory_interfaces.py`
 - `uv run pytest` (699 passed; local `.keys.enc` temporarily hidden during test process and restored)
+- M11 closeout: `uv run pytest` (704 passed; local `.keys.enc` temporarily hidden during test process and restored)
+- M11 closeout: `npm.cmd run typecheck` from `frontend\`
+- M11 closeout: `npm.cmd run build` from `frontend\`
+
+---
+
+## TF-0066: Implement Replay Summarization Assistance
+
+**Status:** Done
+
+**Milestone:** M11
+
+**Branch:** `feature/m11-ai-advisory-boundary`
+
+**Affected Layer:** services, domain
+
+**Linked ADRs:** ADR-0006, ADR-0008
+
+**Impacted Invariants:** AI Advisory Boundary, Replayability Is Foundational, Derived State Must Remain Distinguishable, Human Decision Sovereignty, Lifecycle Authority
+
+**Depends On:** TF-0065
+
+**Problem:**
+M11 needs AI-assisted replay summarization, but replay must remain deterministic historical reconstruction over canonical events. Without a bounded replay advisory service, later summarization work could accidentally depend on live mutable state, hide source events, or blur generated summaries with replay truth.
+
+**Acceptance Criteria:**
+
+- A replay advisory service can build an `AdvisoryRequest` from a replay timeline or reconstruction without writing events.
+- Replay advisory requests include source references to replay timeline entries or source events.
+- Replay summaries are returned as advisory artifacts through the TF-0065 contract.
+- The service has no lifecycle authority, event-store append path, broker dependency, or persistence responsibility.
+- Tests prove replay summaries remain advisory and source-linked.
+
+**Out Of Scope:**
+
+- Concrete LLM provider adapters.
+- Persisting advisory summaries.
+- API endpoints or frontend replay UI changes.
+- Changing replay timeline semantics.
+
+**Resolution Summary:**
+Added `ReplayAdvisoryService`, which turns existing `ReplayTimeline` entries into source-linked `AdvisoryRequest` values and delegates generation through the TF-0065 advisory boundary. Replay summaries remain non-canonical advisory responses with no event-store, lifecycle, persistence, API, frontend, or concrete LLM dependency.
+
+**Completed Verification:**
+
+- `uv run pytest tests\test_replay_advisory_service.py tests\test_ai_advisory_interfaces.py`
+- `uv run ruff check src\domain\advisory src\services\advisory tests\test_ai_advisory_interfaces.py tests\test_replay_advisory_service.py`
+- `uv run mypy src\domain\advisory src\services\advisory tests\test_ai_advisory_interfaces.py tests\test_replay_advisory_service.py`
+- M11 closeout: `uv run pytest` (704 passed; local `.keys.enc` temporarily hidden during test process and restored)
+- M11 closeout: `npm.cmd run typecheck` from `frontend\`
+- M11 closeout: `npm.cmd run build` from `frontend\`
+
+---
+
+## TF-0067: Implement Review Assistance
+
+**Status:** Done
+
+**Milestone:** M11
+
+**Branch:** `feature/m11-ai-advisory-boundary`
+
+**Affected Layer:** services, domain
+
+**Linked ADRs:** ADR-0006
+
+**Impacted Invariants:** AI Advisory Boundary, Reflection And Review Are First-Class, Human Decision Sovereignty, Derived State Must Remain Distinguishable, Lifecycle Authority
+
+**Depends On:** TF-0065
+
+**Problem:**
+Review assistance should help operators interpret completed decisions and reflection artifacts without becoming the review authority. Without a bounded review advisory service, AI review output could be confused with canonical review events or behavioral truth.
+
+**Acceptance Criteria:**
+
+- A review advisory service can build an advisory request from review artifacts and operator review questions.
+- Review advisory outputs remain non-canonical `AdvisoryResponse` artifacts with provenance and uncertainty.
+- The service cannot complete reviews, mutate review artifacts, append events, or change lifecycle state.
+- Tests prove review assistance is source-linked and advisory-only.
+
+**Out Of Scope:**
+
+- Concrete LLM provider adapters.
+- Behavioral intelligence or discipline scoring.
+- Persisting advisory review output.
+- API endpoints or frontend review UI changes.
+
+**Resolution Summary:**
+Added `ReviewAdvisoryService`, which turns structured `ReviewReflectionArtifact` values into source-linked `AdvisoryRequest` values and delegates generation through the TF-0065 advisory boundary. Review assistance remains non-canonical and cannot complete reviews, mutate review artifacts, append events, or change lifecycle state.
+
+**Completed Verification:**
+
+- `uv run pytest tests\test_review_advisory_service.py tests\test_replay_advisory_service.py tests\test_ai_advisory_interfaces.py`
+- `uv run ruff check src\domain\advisory src\services\advisory tests\test_ai_advisory_interfaces.py tests\test_replay_advisory_service.py tests\test_review_advisory_service.py`
+- `uv run mypy src\domain\advisory src\services\advisory tests\test_ai_advisory_interfaces.py tests\test_replay_advisory_service.py tests\test_review_advisory_service.py`
+- M11 closeout: `uv run pytest` (704 passed; local `.keys.enc` temporarily hidden during test process and restored)
+- M11 closeout: `npm.cmd run typecheck` from `frontend\`
+- M11 closeout: `npm.cmd run build` from `frontend\`
+
+---
+
+## TF-0068: Implement Advisory Provenance Tracking
+
+**Status:** Done
+
+**Milestone:** M11
+
+**Branch:** `feature/m11-ai-advisory-boundary`
+
+**Affected Layer:** domain, services, infrastructure
+
+**Linked ADRs:** ADR-0006
+
+**Impacted Invariants:** AI Advisory Boundary, Historical Integrity, Replayability Is Foundational, Derived State Must Remain Distinguishable, Event Ledger Canonical Truth
+
+**Depends On:** TF-0065, TF-0066, TF-0067
+
+**Problem:**
+AI advisory outputs must be reviewable and historically explainable. The runtime has an advisory response contract, but no provenance tracking port or storage adapter for preserving generated advisory artifacts outside the canonical event ledger.
+
+**Acceptance Criteria:**
+
+- An advisory provenance store port exists for recording and querying advisory responses.
+- A non-canonical in-memory advisory provenance adapter exists for tests and local runtime composition.
+- Provenance records preserve request identity, artifact kind, provider/model provenance, uncertainty, source references, and generated content.
+- Provenance tracking does not append canonical events or mutate lifecycle state.
+- Tests prove advisory provenance is distinguishable from event-ledger truth and queryable by request, artifact kind, and source reference.
+
+**Out Of Scope:**
+
+- Postgres advisory provenance persistence.
+- User-facing advisory provenance APIs or frontend surfaces.
+- Treating advisory records as canonical events.
+
+**Resolution Summary:**
+Added `AdvisoryProvenanceRecord`, an `AdvisoryProvenanceStore` port, a process-local `InMemoryAdvisoryProvenanceStore`, and `AdvisoryProvenanceService`. Advisory records preserve request identity, artifact kind, provider/model provenance, uncertainty, source references, content, and recording time without appending canonical events or mutating lifecycle state.
+
+**Completed Verification:**
+
+- `uv run pytest tests\test_advisory_provenance.py tests\test_review_advisory_service.py tests\test_replay_advisory_service.py tests\test_ai_advisory_interfaces.py`
+- `uv run ruff check src\domain\advisory src\services\advisory src\infrastructure\advisory tests\test_ai_advisory_interfaces.py tests\test_replay_advisory_service.py tests\test_review_advisory_service.py tests\test_advisory_provenance.py`
+- `uv run mypy src\domain\advisory src\services\advisory src\infrastructure\advisory tests\test_ai_advisory_interfaces.py tests\test_replay_advisory_service.py tests\test_review_advisory_service.py tests\test_advisory_provenance.py`
+- M11 closeout: `uv run pytest` (704 passed; local `.keys.enc` temporarily hidden during test process and restored)
+- M11 closeout: `npm.cmd run typecheck` from `frontend\`
+- M11 closeout: `npm.cmd run build` from `frontend\`
 
 ---
 

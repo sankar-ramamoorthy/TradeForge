@@ -2037,7 +2037,7 @@ becoming the first place where that model is invented.
 ---
 
 ## M11 — AI Advisory Boundary
-Status: Planned
+Status: Done
 ## Semantic Intent
 Introduce AI assistance without compromising human sovereignty.
 ## Architectural Significance
@@ -2050,9 +2050,9 @@ AI remains advisory rather than authoritative.
 ## Linked Runtime Issues
 
 * TF-0065: Define AI advisory interfaces (**Done**)
-* TF-0066: Implement replay summarization assistance
-* TF-0067: Implement review assistance
-* TF-0068: Implement advisory provenance tracking
+* TF-0066: Implement replay summarization assistance (**Done**)
+* TF-0067: Implement review assistance (**Done**)
+* TF-0068: Implement advisory provenance tracking (**Done**)
 
 ## Dependency Notes
 

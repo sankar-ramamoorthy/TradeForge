@@ -21,6 +21,7 @@ class AdvisoryArtifactKind(StrEnum):
 class AdvisorySourceKind(StrEnum):
     EVENT = "event"
     PROJECTION = "projection"
+    REPLAY_TIMELINE_ENTRY = "replay-timeline-entry"
     MARKET_CONTEXT = "market-context"
     FUNDAMENTALS_CONTEXT = "fundamentals-context"
     REVIEW_ARTIFACT = "review-artifact"

@@ -9,12 +9,18 @@ from src.domain.advisory.contracts import (
     AdvisoryUncertainty,
     AIAdvisoryProvider,
 )
+from src.domain.advisory.provenance import (
+    AdvisoryProvenanceRecord,
+    AdvisoryProvenanceStore,
+)
 
 __all__ = [
     "AIAdvisoryProvider",
     "AdvisoryArtifactKind",
     "AdvisoryAuthority",
     "AdvisoryProvenance",
+    "AdvisoryProvenanceRecord",
+    "AdvisoryProvenanceStore",
     "AdvisoryRequest",
     "AdvisoryResponse",
     "AdvisorySourceKind",

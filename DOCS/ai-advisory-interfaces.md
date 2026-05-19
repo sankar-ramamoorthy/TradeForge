@@ -40,14 +40,21 @@ The services layer exposes `AIAdvisoryService` in `src/services/advisory/`.
 It invokes a provider and validates that response identity, artifact kind, and
 authority remain consistent with the request.
 
+M11 also adds bounded service helpers:
+
+- `ReplayAdvisoryService` builds replay-summary requests from replay timelines.
+- `ReviewAdvisoryService` builds review-assistance requests from review artifacts.
+- `AdvisoryProvenanceService` records and queries non-canonical advisory provenance.
+
+The first provenance adapter is `InMemoryAdvisoryProvenanceStore` under
+`src/infrastructure/advisory/`.
+
 ## Boundary
 
-The TF-0065 boundary intentionally excludes:
+The M11 advisory boundary intentionally excludes:
 
 - concrete LLM provider adapters
-- advisory persistence
-- replay summarization implementation
-- review assistant implementation
+- Postgres advisory persistence
 - API endpoints
 - frontend surfaces
 
