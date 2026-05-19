@@ -144,7 +144,7 @@ Explicit roadmap checkpoint completed M9 Updated*Done*.
 | TF-F012 | Done | TBD | Replace centered workspace shell with workstation-oriented operational layout model | `feature/tf-f012-workstation-layout-model` |
 | TF-F013 | Done | TBD | Formalize three-layer design architecture between doctrine, workspace composition, and frontend translation | `docs/tf-f013-three-layer-design-architecture` |
 | TF-F014 | Done | TBD | Extend workstation zoning to remaining market-context workspaces | `feature/tf-f014-remaining-workspace-zoning` |
-| TF-F015 | Planned | TBD | Fix missing return path in operational attention decision spec | `fix/tf-f015-operational-attention-mypy-return` |
+| TF-F015 | Done | TBD | Fix missing return path in operational attention decision spec | `fix/tf-f015-operational-attention-mypy-return` |
 | TF-F016 | Done | M10D | Capture provider capability gap and define M10D architecture | `docs/tf-f016-provider-capability-gap` |
 | TF-F017 | Done | M10D | Introduce provider registry and capability metadata model | `feature/tf-f017-provider-registry-capabilities` |
 | TF-F018 | Done | M10D | Split external data access into typed capability contracts | `feature/tf-f018-typed-external-data-contracts` |
@@ -1496,6 +1496,18 @@ Moved persistent market context for the Opportunity and Active Position workspac
 
 - Broader refactoring of the operational attention queue.
 - Changes to lifecycle semantics, workspace routing, or attention prioritization.
+
+**Resolution Summary:**
+Added an explicit fallback `None` return path to `_decision_item_spec()` so the services-layer operational attention decision spec satisfies its declared nullable tuple contract. Supported lifecycle-stage behavior remains unchanged; the fallback only makes the fail-closed path explicit for type checking.
+
+**Completed Verification:**
+
+- `uv run mypy src\services\workspace_engine\attention.py`
+- `uv run pytest tests\test_operational_attention_queues.py`
+- `uv run ruff check src\services\workspace_engine\attention.py tests\test_operational_attention_queues.py`
+- `uv run pytest` (692 passed; local `.keys.enc` temporarily hidden during test process and restored)
+- `npm.cmd run typecheck` from `frontend\`
+- `npm.cmd run build` from `frontend\`
 
 ---
 

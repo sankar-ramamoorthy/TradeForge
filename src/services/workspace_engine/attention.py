@@ -339,6 +339,8 @@ def _decision_item_spec(
             )
         case LifecycleStage.REVIEW:
             return None
+        case _:
+            return None
 
 
 def _projection_stage(projection: WorkspaceProjection) -> LifecycleStage | None:
