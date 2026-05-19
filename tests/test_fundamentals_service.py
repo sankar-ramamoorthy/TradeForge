@@ -46,6 +46,8 @@ def test_fundamentals_service_uses_primary_provider_first() -> None:
 
     assert result.selected_provider_id == "fmp"
     assert result.used_fallback is False
+    assert tuple(attempt.provider_id for attempt in result.attempts) == ("fmp",)
+    assert tuple(attempt.outcome for attempt in result.attempts) == ("success",)
     alpha.fetch_fundamentals.assert_not_called()
 
 
@@ -61,4 +63,11 @@ def test_fundamentals_service_uses_ordered_fallback_after_failure() -> None:
     assert result.selected_provider_id == "alpha_vantage"
     assert result.used_fallback is True
     assert result.error_reasons == ("fmp: down",)
-
+    assert tuple(attempt.provider_id for attempt in result.attempts) == (
+        "fmp",
+        "alpha_vantage",
+    )
+    assert tuple(attempt.outcome for attempt in result.attempts) == (
+        "failure",
+        "success",
+    )

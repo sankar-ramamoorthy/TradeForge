@@ -10,6 +10,7 @@ from urllib.parse import urlencode
 class WorkspaceRouteId(StrEnum):
     OPERATING = "operating"
     OPPORTUNITY = "opportunity"
+    CONTEXT_WORKBENCH = "context-workbench"
     PLAN_REVIEW = "plan-review"
     ACTIVE_POSITION = "active-position"
     REPLAY = "replay"
@@ -67,7 +68,16 @@ DEFAULT_WORKSPACE_ROUTE_DEFINITIONS: Mapping[
             route_id=WorkspaceRouteId.OPPORTUNITY,
             name="Opportunity Workspace",
             path="/workspaces/opportunity",
-            operational_question="What candidate decisions are developing?",
+            operational_question="What is this setup showing, and is it worth developing?",
+        ),
+        WorkspaceRouteId.CONTEXT_WORKBENCH: WorkspaceRouteDefinition(
+            route_id=WorkspaceRouteId.CONTEXT_WORKBENCH,
+            name="Context Workbench",
+            path="/workspaces/context-workbench",
+            operational_question=(
+                "What do I need to know about this instrument before deciding "
+                "how to interpret it?"
+            ),
         ),
         WorkspaceRouteId.PLAN_REVIEW: WorkspaceRouteDefinition(
             route_id=WorkspaceRouteId.PLAN_REVIEW,

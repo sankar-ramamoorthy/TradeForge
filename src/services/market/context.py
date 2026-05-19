@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime
 from enum import StrEnum
+from typing import Literal
 
 from src.domain.market.snapshot import MarketSnapshot
 
@@ -14,6 +15,24 @@ class MarketContextAuthority(StrEnum):
     """
 
     ADVISORY = "advisory"
+
+
+@dataclass(frozen=True, slots=True)
+class ProviderAttempt:
+    """Advisory record for one provider attempt within a request."""
+
+    provider_id: str
+    attempted_at: datetime
+    outcome: Literal["success", "failure"]
+    failure_reason: str | None = None
+
+    def __post_init__(self) -> None:
+        if not self.provider_id.strip():
+            raise ValueError("provider_id must not be empty")
+        if self.outcome == "success" and self.failure_reason is not None:
+            raise ValueError("successful attempts must not have a failure reason")
+        if self.outcome == "failure" and not self.failure_reason:
+            raise ValueError("failed attempts require a failure reason")
 
 
 @dataclass(frozen=True, slots=True)
@@ -47,8 +66,10 @@ class SymbolFetchResult:
     symbol: str
     snapshot: MarketSnapshot | None
     error_reason: str | None
+    attempts: tuple[ProviderAttempt, ...] = ()
 
     def __post_init__(self) -> None:
+        object.__setattr__(self, "attempts", tuple(self.attempts))
         if (self.snapshot is None) == (self.error_reason is None):
             raise ValueError(
                 "exactly one of snapshot or error_reason must be set"
@@ -59,12 +80,31 @@ class SymbolFetchResult:
         return self.snapshot is not None
 
     @classmethod
-    def success(cls, snapshot: MarketSnapshot) -> SymbolFetchResult:
-        return cls(symbol=snapshot.symbol, snapshot=snapshot, error_reason=None)
+    def success(
+        cls,
+        snapshot: MarketSnapshot,
+        attempts: tuple[ProviderAttempt, ...] = (),
+    ) -> SymbolFetchResult:
+        return cls(
+            symbol=snapshot.symbol,
+            snapshot=snapshot,
+            error_reason=None,
+            attempts=attempts,
+        )
 
     @classmethod
-    def failure(cls, symbol: str, reason: str) -> SymbolFetchResult:
-        return cls(symbol=symbol, snapshot=None, error_reason=reason)
+    def failure(
+        cls,
+        symbol: str,
+        reason: str,
+        attempts: tuple[ProviderAttempt, ...] = (),
+    ) -> SymbolFetchResult:
+        return cls(
+            symbol=symbol,
+            snapshot=None,
+            error_reason=reason,
+            attempts=attempts,
+        )
 
 
 @dataclass(frozen=True, slots=True)

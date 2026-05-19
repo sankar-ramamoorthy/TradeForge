@@ -3,6 +3,7 @@ import {
   ClipboardCheck,
   Compass,
   History,
+  LibraryBig,
   Lightbulb,
   type LucideIcon,
   ShieldCheck,
@@ -21,6 +22,7 @@ export type WorkspaceContextKey = (typeof WORKSPACE_CONTEXT_KEYS)[number];
 export type WorkspaceRouteId =
   | "operating"
   | "opportunity"
+  | "context-workbench"
   | "plan-review"
   | "active-position"
   | "replay"
@@ -60,10 +62,22 @@ export const WORKSPACE_ROUTES: readonly WorkspaceRouteDefinition[] = [
     id: "opportunity",
     name: "Opportunity Workspace",
     path: "/workspaces/opportunity",
-    operationalQuestion: "What candidate decisions are developing?",
+    operationalQuestion: "What is this setup showing, and is it worth developing?",
     contextSurface: "Ideas, theses in formation, setup context, and risk conditions.",
     authorityBoundary: "Supports scenario reasoning without generating trade authority.",
     Icon: Lightbulb,
+  },
+  {
+    id: "context-workbench",
+    name: "Context Workbench",
+    path: "/workspaces/context-workbench",
+    operationalQuestion:
+      "What do I need to know about this instrument before deciding how to interpret it?",
+    contextSurface:
+      "Explicit advisory acquisition by context family for one instrument.",
+    authorityBoundary:
+      "Acquisition remains advisory and does not authorize lifecycle changes.",
+    Icon: LibraryBig,
   },
   {
     id: "plan-review",

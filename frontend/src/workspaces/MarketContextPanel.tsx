@@ -40,6 +40,10 @@ function SnapshotRow({ snap }: { snap: MarketSnapshotOverlay }) {
         ) : null}
         <span className="field-authority-badge authority-advisory">Advisory</span>
       </div>
+      <div className="snapshot-interpretation">
+        <strong>{snap.interpretation_headline}</strong>
+        <p>{snap.interpretation_detail}</p>
+      </div>
       <div className="snapshot-ohlcv">
         <span className="ohlcv-item">
           <span className="ohlcv-label">O</span>
@@ -151,14 +155,16 @@ export function MarketContextPanel() {
             <div className="market-unavailable">
               <span className="eyebrow">Unavailable</span>
               <p className="market-unavailable-list">
-                {overlay.unavailable_symbols.join(", ")}
+                {overlay.unavailable_symbols.join(", ")} did not return usable
+                price context from the attempted provider path. Continue with
+                caution or retry after checking provider status.
               </p>
             </div>
           ) : null}
           {overlay.is_empty ? (
             <p className="market-no-data">
-              No data available from provider. Symbol may be invalid or
-              provider unavailable.
+              No requested symbols returned usable price context. The current
+              workflow can continue, but technical interpretation is incomplete.
             </p>
           ) : null}
         </div>

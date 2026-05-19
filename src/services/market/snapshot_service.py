@@ -12,6 +12,7 @@ from src.services.market.context import (
     MarketContextAuthority,
     MarketContextRequest,
     MarketContextResult,
+    ProviderAttempt,
     SymbolFetchResult,
 )
 
@@ -103,10 +104,34 @@ class MarketSnapshotService:
                 snapshot = self._annotate(self._provider.fetch_snapshot(symbol))
                 self._record_success(snapshot)
                 self._persist_snapshot(snapshot)
-                symbol_results.append(SymbolFetchResult.success(snapshot))
+                symbol_results.append(
+                    SymbolFetchResult.success(
+                        snapshot,
+                        attempts=(
+                            ProviderAttempt(
+                                provider_id=self._provider.provider_id,
+                                attempted_at=attempt_at,
+                                outcome="success",
+                            ),
+                        ),
+                    )
+                )
             except ProviderUnavailableError as exc:
                 self._record_failure(symbol, attempt_at, exc.reason)
-                symbol_results.append(SymbolFetchResult.failure(symbol, exc.reason))
+                symbol_results.append(
+                    SymbolFetchResult.failure(
+                        symbol,
+                        exc.reason,
+                        attempts=(
+                            ProviderAttempt(
+                                provider_id=self._provider.provider_id,
+                                attempted_at=attempt_at,
+                                outcome="failure",
+                                failure_reason=exc.reason,
+                            ),
+                        ),
+                    )
+                )
 
         available = tuple(
             r.snapshot for r in symbol_results if r.snapshot is not None

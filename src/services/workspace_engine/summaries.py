@@ -232,7 +232,7 @@ def _default_emphasis(route_id: WorkspaceRouteId) -> WorkspaceSummaryEmphasis:
             return WorkspaceSummaryEmphasis.REVIEW
         case WorkspaceRouteId.OPPORTUNITY:
             return WorkspaceSummaryEmphasis.OPPORTUNITY
-        case WorkspaceRouteId.MARKET_CONTEXT:
+        case WorkspaceRouteId.CONTEXT_WORKBENCH | WorkspaceRouteId.MARKET_CONTEXT:
             return WorkspaceSummaryEmphasis.CONTEXT
         case WorkspaceRouteId.PLAYBOOKS_DOCTRINE:
             return WorkspaceSummaryEmphasis.DOCTRINE

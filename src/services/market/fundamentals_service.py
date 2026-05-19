@@ -10,6 +10,7 @@ from src.domain.market.provider import (
     ProviderUnavailableError,
 )
 from src.domain.market.registry import ProviderRegistry
+from src.services.market.context import ProviderAttempt
 
 
 @dataclass(frozen=True, slots=True)
@@ -19,6 +20,7 @@ class FundamentalsFetchResult:
     attempted_provider_ids: tuple[str, ...]
     selected_provider_id: str | None
     error_reasons: tuple[str, ...]
+    attempts: tuple[ProviderAttempt, ...]
     fetched_at: datetime
 
     @property
@@ -47,6 +49,7 @@ class FundamentalsService:
         resolution = self._registry.resolve(ProviderCapability.FUNDAMENTALS)
         attempted: list[str] = []
         errors: list[str] = []
+        attempts: list[ProviderAttempt] = []
         fetched_at = datetime.now(UTC)
 
         for provider_id in (
@@ -57,18 +60,35 @@ class FundamentalsService:
             if provider is None:
                 continue
             attempted.append(provider_id)
+            attempt_at = datetime.now(UTC)
             try:
                 bundle = provider.fetch_fundamentals(symbol)
+                attempts.append(
+                    ProviderAttempt(
+                        provider_id=provider_id,
+                        attempted_at=attempt_at,
+                        outcome="success",
+                    )
+                )
                 return FundamentalsFetchResult(
                     symbol=symbol.upper(),
                     bundle=bundle,
                     attempted_provider_ids=tuple(attempted),
                     selected_provider_id=provider_id,
                     error_reasons=tuple(errors),
+                    attempts=tuple(attempts),
                     fetched_at=fetched_at,
                 )
             except ProviderUnavailableError as exc:
                 errors.append(f"{provider_id}: {exc.reason}")
+                attempts.append(
+                    ProviderAttempt(
+                        provider_id=provider_id,
+                        attempted_at=attempt_at,
+                        outcome="failure",
+                        failure_reason=exc.reason,
+                    )
+                )
 
         return FundamentalsFetchResult(
             symbol=symbol.upper(),
@@ -76,5 +96,6 @@ class FundamentalsService:
             attempted_provider_ids=tuple(attempted),
             selected_provider_id=None,
             error_reasons=tuple(errors),
+            attempts=tuple(attempts),
             fetched_at=fetched_at,
         )

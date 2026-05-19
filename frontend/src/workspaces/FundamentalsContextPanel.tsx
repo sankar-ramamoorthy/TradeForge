@@ -4,17 +4,23 @@ import {
   type FundamentalsOverlay,
 } from "../api/runtime";
 
-export function FundamentalsContextPanel({ symbol }: { symbol: string }) {
+export function FundamentalsContextPanel({
+  symbol,
+  instrumentKind = "equity",
+}: {
+  symbol: string;
+  instrumentKind?: "equity" | "etf" | "unknown";
+}) {
   const [overlay, setOverlay] = useState<FundamentalsOverlay | null>(null);
 
   useEffect(() => {
     if (!symbol || symbol === "–") return;
     const controller = new AbortController();
-    fetchFundamentalsContext(symbol, controller.signal)
+    fetchFundamentalsContext(symbol, instrumentKind, controller.signal)
       .then(setOverlay)
       .catch(() => setOverlay(null));
     return () => controller.abort();
-  }, [symbol]);
+  }, [instrumentKind, symbol]);
 
   if (!overlay) return null;
 
@@ -39,8 +45,17 @@ export function FundamentalsContextPanel({ symbol }: { symbol: string }) {
             {overlay.used_fallback ? " via fallback" : ""} / as of {overlay.data_as_of}
           </p>
         </>
+      ) : overlay.coverage_status === "unsupported" ? (
+        <p className="market-no-data">
+          Company fundamentals do not describe this instrument type. Continue
+          technical evaluation or switch to the relevant ETF context family.
+        </p>
       ) : (
-        <p className="market-no-data">Fundamentals unavailable.</p>
+        <p className="market-no-data">
+          Fundamentals were requested but not returned by the available provider
+          path. You can continue, but valuation context is incomplete; inspect
+          provider attempts or retry later.
+        </p>
       )}
     </section>
   );

@@ -7,6 +7,7 @@ services:
     working_dir: /app
     environment:
       TRADEFORGE_DATABASE_URL: postgresql://tradeforge:tradeforge@postgres:5432/tradeforge
+      TRADEFORGE_MASTER_KEY: ${TRADEFORGE_MASTER_KEY:?TRADEFORGE_MASTER_KEY must be set in the host environment}
     ports:
       - "8000:8000"
     volumes:
