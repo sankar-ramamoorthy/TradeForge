@@ -2049,7 +2049,7 @@ AI remains advisory rather than authoritative.
 
 ## Linked Runtime Issues
 
-* TF-0065: Define AI advisory interfaces
+* TF-0065: Define AI advisory interfaces (**Done**)
 * TF-0066: Implement replay summarization assistance
 * TF-0067: Implement review assistance
 * TF-0068: Implement advisory provenance tracking

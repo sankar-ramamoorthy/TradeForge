@@ -115,7 +115,7 @@ Explicit roadmap checkpoint completed M9 Updated*Done*.
 | TF-0062 | Done | M10 | Implement cross-workspace context persistence | `feature/tf-0062-cross-workspace-context-persistence` |
 | TF-0063 | Done | M10 | Stabilize workspace transition ergonomics | `feature/tf-0063-workspace-transition-ergonomics` |
 | TF-0064 | Done | M10 | Implement operational attention continuity | `feature/tf-0064-operational-attention-continuity` |
-| TF-0065 | Planned | M11 | Define AI advisory interfaces | `feature/tf-0065-ai-advisory-interfaces` |
+| TF-0065 | Done | M11 | Define AI advisory interfaces | `feature/tf-0065-ai-advisory-interfaces` |
 | M10AIS01 | Done | M10A | Implement structured thesis domain model | `feature/tf-0064-operational-attention-continuity` |
 | M10AIS02 | Done | M10A | Implement thesis authoring workspace | `feature/tf-0064-operational-attention-continuity` |
 | M10AIS03 | Done | M10A | Implement thesis revision history | `feature/tf-0064-operational-attention-continuity` |
@@ -3889,6 +3889,16 @@ M11 introduces AI assistance, but the runtime does not yet expose a stable advis
 - Replay summarization assistance.
 - Review assistance.
 - Advisory provenance storage or query endpoints.
+
+**Resolution Summary:**
+Added the first M11 AI advisory boundary as provider-agnostic domain contracts and an orchestration-only advisory service. Advisory requests and responses are immutable non-canonical artifacts with explicit source references, provenance, uncertainty, and advisory authority. The service validates provider responses without importing event-store, lifecycle, persistence, broker, or app authority.
+
+**Completed Verification:**
+
+- `uv run pytest tests\test_ai_advisory_interfaces.py`
+- `uv run ruff check src\domain\advisory src\services\advisory tests\test_ai_advisory_interfaces.py`
+- `uv run mypy src\domain\advisory src\services\advisory tests\test_ai_advisory_interfaces.py`
+- `uv run pytest` (699 passed; local `.keys.enc` temporarily hidden during test process and restored)
 
 ---
 
