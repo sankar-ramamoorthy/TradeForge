@@ -35,15 +35,18 @@ class FmpFundamentalsProvider:
         fetched_at = datetime.now(UTC)
         try:
             profile_data = _get_json(
-                f"https://financialmodelingprep.com/api/v3/profile/{upper_symbol}",
+                "https://financialmodelingprep.com/stable/profile",
+                upper_symbol,
                 self._api_key,
             )
             income_data = _get_json(
-                f"https://financialmodelingprep.com/api/v3/income-statement/{upper_symbol}",
+                "https://financialmodelingprep.com/stable/income-statement",
+                upper_symbol,
                 self._api_key,
             )
             ratios_data = _get_json(
-                f"https://financialmodelingprep.com/api/v3/ratios/{upper_symbol}",
+                "https://financialmodelingprep.com/stable/ratios",
+                upper_symbol,
                 self._api_key,
             )
             profile_row = profile_data[0]
@@ -87,11 +90,14 @@ class FmpFundamentalsProvider:
                 values=(
                     (
                         "price_earnings",
-                        _optional_decimal(ratios_row.get("priceEarningsRatio")),
+                        _optional_decimal(ratios_row.get("priceToEarningsRatio")),
                     ),
                     (
                         "return_on_equity",
-                        _optional_decimal(ratios_row.get("returnOnEquity")),
+                        _optional_decimal(
+                            ratios_row.get("returnOnEquity")
+                            or ratios_row.get("returnOnEquityRatio")
+                        ),
                     ),
                 ),
                 provenance=provenance,
@@ -100,8 +106,9 @@ class FmpFundamentalsProvider:
         )
 
 
-def _get_json(url: str, api_key: str) -> list[dict[str, object]]:
-    with urlopen(f"{url}?{urlencode({'apikey': api_key})}", timeout=10) as response:
+def _get_json(base_url: str, symbol: str, api_key: str) -> list[dict[str, object]]:
+    query = urlencode({"symbol": symbol, "apikey": api_key})
+    with urlopen(f"{base_url}?{query}", timeout=10) as response:
         payload = json.loads(response.read().decode("utf-8"))
     if not isinstance(payload, list) or not payload:
         raise ValueError("empty response")

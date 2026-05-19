@@ -172,6 +172,58 @@ Explicit roadmap checkpoint completed M9 Updated*Done*.
 | TF-F040 | Done | M10E | Define trader-language boundary between canonical ontology and UX copy | `docs/tf-f040-trader-language-boundary` |
 | TF-F041 | Done | M10E | Connect acquired advisory context to opportunity synthesis and thesis implications | `feature/tf-f041-context-to-synthesis-bridge` |
 | TF-F042 | Done | M10E | Reframe market-context presentation from raw payload first to interpretation first | `feature/tf-f042-market-context-interpretation-first` |
+| TF-F043 | Done | M10D | Update FMP fundamentals adapter to use stable endpoints | `fix/tf-f043-fmp-stable-fundamentals-endpoints` |
+
+## TF-F043: Update FMP Fundamentals Adapter To Use Stable Endpoints
+
+**Status:** Done
+
+**Classification:** bug
+
+**Milestone:** M10D
+
+**Branch:** `fix/tf-f043-fmp-stable-fundamentals-endpoints`
+
+**Affected Layer:** infrastructure
+
+**Linked ADRs:** ADR-0038
+
+**Impacted Invariants:** Market Intelligence Is Interpreted Context, Derived State Must Remain Distinguishable, Architectural Simplicity
+
+**Source:** Runtime investigation and operator feedback captured on 2026-05-19 in `knowledge/raw/brainstorm-20260519-fmp-stable-endpoints-and-quote-context.md`.
+
+**Problem:**
+The FMP fundamentals adapter still calls older `/api/v3/...` FinancialModelingPrep endpoints. Live testing with the configured local FMP key showed those routes can return `403 Forbidden`, while the newer `/stable/income-statement` path succeeds. This causes fundamentals acquisition for symbols such as NVDA to degrade to unavailable even when the credential can access the newer stable API.
+
+**Acceptance Criteria:**
+
+- FMP fundamentals requests use the working stable endpoint family for profile, income statement, and ratios.
+- The adapter continues to normalize provider-specific payloads into the existing `FundamentalsBundle` contract.
+- Provider provenance and advisory/non-canonical boundaries remain unchanged.
+- Tests cover stable endpoint URL construction and stable response normalization.
+- FMP stable quote observations remain captured for future evaluation and are not added to the current fundamentals contract.
+
+**Out Of Scope:**
+
+- Adding FMP quote fields such as market cap, `priceAvg50`, or `priceAvg200` to runtime models.
+- Changing provider preference semantics or fallback order.
+- Changing lifecycle, event, or workspace authority.
+
+**Resolution Summary:**
+Updated the FMP fundamentals adapter to call the stable `profile`, `income-statement`, and `ratios` endpoint family with symbol query parameters. Adjusted stable ratios normalization to use `priceToEarningsRatio` while preserving the existing optional `return_on_equity` field. Captured the FMP stable quote observation as future advisory-context input without expanding the current fundamentals contract.
+
+**Completed Verification:**
+
+- `uv run ruff check src\infrastructure\market\fmp_adapter.py tests\test_fundamentals_adapters.py`
+- `uv run mypy src\infrastructure\market\fmp_adapter.py tests\test_fundamentals_adapters.py`
+- `uv run pytest tests\test_fundamentals_adapters.py tests\test_fundamentals_service.py tests\test_fundamentals_overlay.py`
+- `uv run pytest`
+- `npm.cmd run typecheck`
+- `npm.cmd run build`
+- Live FMP stable adapter check for `NVDA` returned company name, sector, statement date, revenue, net income, and P/E from provider `fmp`.
+- Restarted the local API container and confirmed `GET /workspaces/fundamentals-context?symbol=NVDA&instrument_kind=equity` returns `coverage_status: available`, selected provider `fmp`, and a successful provider attempt.
+
+---
 
 ## TF-F042: Reframe Market-Context Presentation From Raw Payload First To Interpretation First
 
