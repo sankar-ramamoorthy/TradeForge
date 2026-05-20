@@ -119,6 +119,11 @@ Explicit roadmap checkpoint completed M9 Updated*Done*.
 | TF-0066 | Done | M11 | Implement replay summarization assistance | `feature/m11-ai-advisory-boundary` |
 | TF-0067 | Done | M11 | Implement review assistance | `feature/m11-ai-advisory-boundary` |
 | TF-0068 | Done | M11 | Implement advisory provenance tracking | `feature/m11-ai-advisory-boundary` |
+| TF-A001 | Planned | M12 | Define AdvisoryObservation domain model | `feature/m12-advisory-observation-foundation` |
+| TF-A002 | Planned | M12 | Implement advisory observation event taxonomy | `feature/m12-advisory-observation-foundation` |
+| TF-A003 | Planned | M12 | Implement observation provenance persistence | `feature/m12-advisory-observation-foundation` |
+| TF-A004 | Planned | M12 | Implement uncertainty metadata support | `feature/m12-advisory-observation-foundation` |
+| TF-A005 | Planned | M12 | Implement replay-visible advisory observation timeline | `feature/m12-advisory-observation-foundation` |
 | M10AIS01 | Done | M10A | Implement structured thesis domain model | `feature/tf-0064-operational-attention-continuity` |
 | M10AIS02 | Done | M10A | Implement thesis authoring workspace | `feature/tf-0064-operational-attention-continuity` |
 | M10AIS03 | Done | M10A | Implement thesis revision history | `feature/tf-0064-operational-attention-continuity` |
@@ -176,6 +181,190 @@ Explicit roadmap checkpoint completed M9 Updated*Done*.
 | TF-F041 | Done | M10E | Connect acquired advisory context to opportunity synthesis and thesis implications | `feature/tf-f041-context-to-synthesis-bridge` |
 | TF-F042 | Done | M10E | Reframe market-context presentation from raw payload first to interpretation first | `feature/tf-f042-market-context-interpretation-first` |
 | TF-F043 | Done | M10D | Update FMP fundamentals adapter to use stable endpoints | `fix/tf-f043-fmp-stable-fundamentals-endpoints` |
+| TF-F044 | Done | M11 | Fold machine-assisted discretionary cognition roadmap into active roadmap v2 | `docs/tf-f044-roadmap-v3-integration` |
+
+## TF-A001: Define AdvisoryObservation Domain Model
+
+**Status:** Planned
+
+**Classification:** architectural
+
+**Milestone:** M12
+
+**Branch:** `feature/m12-advisory-observation-foundation`
+
+**Affected Layer:** domain, services, docs, knowledge-base
+
+**Linked ADRs:** ADR-0001, ADR-0003, ADR-0006, ADR-0008, ADR-0041
+
+**Impacted Invariants:** Human Decision Sovereignty, AI Advisory Boundary, Derived State Must Remain Distinguishable, Terminology Stability
+
+**Problem:**
+TradeForge needs a durable pre-lifecycle advisory observation model that can capture machine- or operator-supplied observations without implying lifecycle, thesis, recommendation, or execution authority.
+
+**Acceptance Criteria:**
+
+- `AdvisoryObservation` exists as a pure domain contract.
+- `CognitiveEvidence` exists as a pure domain contract.
+- Observation kind is limited to: `price_action`, `fundamentals`, `market_context`, `news_research`, `risk`, `behavioral_process`, `operator_note`.
+- Capture origin is limited to: `operator_manual`, `provider_import`, `codex_generated`, `claude_generated`, `imported_research`, `replay_annotation`, `future_scanner`.
+- Observations require persona, workspace, capture origin, provenance, at least one source/evidence reference, uncertainty, caveats, and captured timestamp.
+- Observations cannot carry recommendation authority, lifecycle transition intent, or execution authority.
+
+---
+
+## TF-A002: Implement Advisory Observation Event Taxonomy
+
+**Status:** Planned
+
+**Classification:** architectural
+
+**Milestone:** M12
+
+**Branch:** `feature/m12-advisory-observation-foundation`
+
+**Affected Layer:** domain, event model, docs
+
+**Linked ADRs:** ADR-0001, ADR-0003, ADR-0006, ADR-0008, ADR-0041
+
+**Impacted Invariants:** Event Ledger Canonical Truth, Events Are Immutable, Replayability Is Foundational, AI Advisory Boundary
+
+**Problem:**
+M12 advisory captures need a canonical fact event that records only that an observation artifact was captured, while preserving advisory artifact content outside the canonical ledger.
+
+**Acceptance Criteria:**
+
+- `advisory` is an accepted canonical event domain.
+- `advisory.observation_captured` can be appended to the event store and replayed.
+- Event payload includes capture fact fields only: `observation_id`, `artifact_id`, `observation_kind`, `capture_origin`, optional `decision_id`, optional `thesis_id`, source references, provenance summary, uncertainty band, tags, and captured timestamp.
+- Event payload does not include generated recommendation authority, lifecycle transition intent, execution authority, or generated observation content as canonical truth.
+
+---
+
+## TF-A003: Implement Observation Provenance Persistence
+
+**Status:** Planned
+
+**Classification:** enhancement
+
+**Milestone:** M12
+
+**Branch:** `feature/m12-advisory-observation-foundation`
+
+**Affected Layer:** infrastructure, services, app
+
+**Linked ADRs:** ADR-0006, ADR-0018, ADR-0041
+
+**Impacted Invariants:** Derived State Must Remain Distinguishable, Historical Integrity, AI Advisory Boundary
+
+**Problem:**
+Advisory observation content and evidence must persist durably without becoming event-ledger truth.
+
+**Acceptance Criteria:**
+
+- A non-canonical advisory artifact store persists observation text, evidence references, provenance, caveats, tags, capture origin, persona/workspace context, and optional decision/thesis context.
+- Postgres storage is separate from `event_ledger`.
+- In-memory storage exists for tests and default runtime behavior.
+- Stored records are retrievable by observation ID and listable by persona/workspace with filters for decision, thesis, observation kind, source kind, and capture origin.
+
+---
+
+## TF-A004: Implement Uncertainty Metadata Support
+
+**Status:** Planned
+
+**Classification:** enhancement
+
+**Milestone:** M12
+
+**Branch:** `feature/m12-advisory-observation-foundation`
+
+**Affected Layer:** domain, services, app
+
+**Linked ADRs:** ADR-0006, ADR-0041
+
+**Impacted Invariants:** AI Advisory Boundary, Derived State Must Remain Distinguishable, Human Decision Sovereignty
+
+**Problem:**
+Advisory observations must preserve uncertainty in qualitative, non-authoritative form so operators do not confuse them with deterministic signals.
+
+**Acceptance Criteria:**
+
+- `AdvisoryUncertaintyBand` supports `low`, `medium`, `high`, and `unknown`.
+- Invalid uncertainty bands fail validation.
+- Caveats are required and persisted.
+- API responses expose uncertainty as advisory metadata, not confidence-backed authority.
+
+---
+
+## TF-A005: Implement Replay-Visible Advisory Observation Timeline
+
+**Status:** Planned
+
+**Classification:** enhancement
+
+**Milestone:** M12
+
+**Branch:** `feature/m12-advisory-observation-foundation`
+
+**Affected Layer:** replay, services, app
+
+**Linked ADRs:** ADR-0001, ADR-0006, ADR-0008, ADR-0041
+
+**Impacted Invariants:** Replayability Is Foundational, Event Ledger Canonical Truth, Derived State Must Remain Distinguishable
+
+**Problem:**
+Replay must show that an advisory observation existed at a historical point without treating non-canonical advisory content as event truth.
+
+**Acceptance Criteria:**
+
+- Replay timeline includes `advisory.observation_captured` entries in chronological order.
+- Replay entries identify the artifact ID and advisory/non-canonical boundary.
+- Replay distinguishes canonical capture facts from advisory artifact content.
+- Replay does not depend on current AI output or live provider calls.
+
+---
+
+## TF-F044: Fold Machine-Assisted Discretionary Cognition Roadmap Into Active Roadmap v2
+
+**Status:** Done
+
+**Classification:** documentation
+
+**Milestone:** M11
+
+**Branch:** `docs/tf-f044-roadmap-v3-integration`
+
+**Affected Layer:** docs, knowledge-base
+
+**Linked ADRs:** ADR-0006, ADR-0010, ADR-0014, ADR-0038
+
+**Impacted Invariants:** Human Decision Sovereignty, AI Advisory Boundary, Event Ledger Canonical Truth, Replayability Is Foundational, Derived State Must Remain Distinguishable, Reflection And Review Are First-Class
+
+**Source:** Brainstorm session captured in `knowledge/raw/TradeForge Future Direction - Machine-Assisted Discretionary Cognition.md` and proposed runtime roadmap `DOCS/Milestone_Roadmap_v3.md`.
+
+**Problem:**
+`DOCS/Milestone_Roadmap_v3.md` captured a stronger future direction for TradeForge after M11: machine-assisted discretionary cognition, evidence accumulation, contextual interpretation, behavioral auditability, replayable cognition, attention allocation, simulation, adaptive advisory research, and long-horizon cognitive performance analysis. The active planning authority remains `DOCS/Milestone_Roadmap_v2.md`, so v3 must be integrated into v2 rather than becoming a competing active roadmap.
+
+**Acceptance Criteria:**
+
+- M11 records the roadmap evolution note that foundational AI advisory work expands into machine-assisted discretionary cognition beginning with M12.
+- `DOCS/Milestone_Roadmap_v2.md` remains the active roadmap and incorporates the v3 M12-M19 future direction.
+- `DOCS/Milestone_Roadmap_v3.md` is marked as a historical proposal/source artifact rather than active planning authority.
+- The raw brainstorm note is promoted into a processed KB synthesis.
+- The raw brainstorm note is moved under `knowledge/raw/archived/`.
+- KB index documentation is updated to point at active roadmap v2 and the processed synthesis.
+- No runtime code, event model, lifecycle transition, or execution authority changes are introduced.
+
+**Resolution Summary:**
+Integrated the v3 cognitive advisory evolution into active roadmap v2, preserving v2 as the single going-forward planning source. Added the M11 roadmap evolution note and recast future milestones M12-M19 around advisory observations, contextual interpretation, behavioral auditability, cognitive replay, attention allocation, simulation, adaptive advisory research, and long-horizon cognitive performance analysis. Processed the source brainstorm into KB synthesis and archived the raw note.
+
+**Completed Verification:**
+
+- Documentation-only review.
+- Confirmed no runtime code changes were required.
+
+---
 
 ## TF-F043: Update FMP Fundamentals Adapter To Use Stable Endpoints
 

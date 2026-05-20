@@ -18,6 +18,7 @@ persona.*
 workspace.*
 market.*
 scenario.*
+advisory.*
 decision.*
 execution.*
 review.*
@@ -33,6 +34,11 @@ Workspace events record facts about persona-scoped operational environments, suc
 Market events record observed market facts, such as market data received, price updates, volume spikes, volatility regime changes, and macro events detected. Market events are observations, not trade decisions.
 
 Scenario events record advisory scenario activity, such as scenarios generated, ranked, invalidated, or promoted to a watchlist. Scenario events represent hypotheses and attention-routing artifacts, not decisions, trade signals, or execution instructions.
+
+Advisory events record factual advisory-system activity, such as an advisory
+observation artifact being captured. Advisory events do not make the advisory
+content canonical; they record only the fact that the advisory artifact existed
+in a persona/workspace context at a point in time.
 
 Decision events record human workflow facts controlled by the Decision Lifecycle Engine, such as trade ideas created, theses created, plans created, plans approved or rejected, decisions queued, and decisions executed. Decision events are explicit, user-driven, lifecycle-controlled facts.
 

@@ -7,10 +7,36 @@ from typing import Any, Literal
 from fastapi import APIRouter, HTTPException, Query, Request, status
 from pydantic import BaseModel, Field
 from src.app.session import SessionProvider
+from src.domain.advisory import (
+    AdvisoryCaptureOrigin,
+    AdvisoryObservation,
+    AdvisoryObservationQuery,
+    AdvisorySourceKind,
+    AdvisoryUncertaintyBand,
+    CognitiveEvidence,
+    ObservationKind,
+)
+from src.domain.cognition import (
+    ANNOTATION_TYPES,
+    SCENARIO_BRANCH_TYPES,
+    ReplayAnnotationArtifact,
+    ReplayAnnotationArtifactValidationError,
+    ReviewReflectionArtifact,
+    ReviewReflectionArtifactValidationError,
+    ScenarioBranchArtifact,
+    ScenarioBranchArtifactValidationError,
+    ThesisArtifact,
+    ThesisArtifactValidationError,
+    TradePlanArtifact,
+    TradePlanArtifactValidationError,
+)
 from src.domain.events import EntityReference, EventEnvelope
 from src.domain.lifecycle import LifecycleStage
 from src.domain.lifecycle.state import LIFECYCLE_EVENT_STAGE_MAP, derive_lifecycle_state
 from src.domain.lifecycle.transitions import ALLOWED_LIFECYCLE_TRANSITIONS
+from src.domain.market.capability import ProviderCapability
+from src.domain.market.instrument import ExternalContextType, InstrumentKind
+from src.domain.market.registry import ProviderRegistry
 from src.domain.personas import (
     PersonaContext,
     PersonaDecisionVelocity,
@@ -21,19 +47,9 @@ from src.domain.personas import (
     PersonaVersion,
 )
 from src.domain.replay import ProjectionAuthority, ReplayTimelineEntryKind
-from src.domain.cognition import (
-    ANNOTATION_TYPES,
-    ReplayAnnotationArtifact,
-    ReplayAnnotationArtifactValidationError,
-    ReviewReflectionArtifact,
-    ReviewReflectionArtifactValidationError,
-    ScenarioBranchArtifact,
-    ScenarioBranchArtifactValidationError,
-    SCENARIO_BRANCH_TYPES,
-    ThesisArtifact,
-    ThesisArtifactValidationError,
-    TradePlanArtifact,
-    TradePlanArtifactValidationError,
+from src.services.advisory import (
+    AdvisoryObservationCaptureService,
+    AdvisoryObservationQueryService,
 )
 from src.services.lifecycle import (
     LifecycleOrchestrationService,
@@ -41,13 +57,10 @@ from src.services.lifecycle import (
 )
 from src.services.market.context import MarketContextRequest
 from src.services.market.contextual_summary import ContextualSummaryService
+from src.services.market.fundamentals_service import FundamentalsService
 from src.services.market.provenance_query import ProvenanceQueryService
 from src.services.market.snapshot_query import MarketSnapshotQueryService
 from src.services.market.snapshot_service import MarketSnapshotService
-from src.services.market.fundamentals_service import FundamentalsService
-from src.domain.market.capability import ProviderCapability
-from src.domain.market.instrument import ExternalContextType, InstrumentKind
-from src.domain.market.registry import ProviderRegistry
 from src.services.replay import (
     HistoricalReconstructionPipeline,
     ReconstructionStateAuthority,
@@ -71,6 +84,7 @@ replay_router = APIRouter(prefix="/replay", tags=["replay"])
 workspace_router = APIRouter(prefix="/workspaces", tags=["workspaces"])
 provenance_router = APIRouter(prefix="/provenance", tags=["provenance"])
 market_router = APIRouter(prefix="/market", tags=["market"])
+advisory_router = APIRouter(prefix="/advisory", tags=["advisory"])
 
 
 class RuntimeStatusResponse(BaseModel):
@@ -106,6 +120,66 @@ class RuntimeSessionResponse(BaseModel):
 class EntityReferencePayload(BaseModel):
     entity_type: str
     entity_id: str
+
+
+class AdvisoryEvidencePayload(BaseModel):
+    evidence_id: str = Field(min_length=1)
+    source_kind: AdvisorySourceKind
+    source_id: str = Field(min_length=1)
+    summary: str = Field(min_length=1, max_length=3000)
+    observed_at: datetime | None = None
+
+
+class CreateAdvisoryObservationPayload(BaseModel):
+    observation_kind: ObservationKind
+    capture_origin: AdvisoryCaptureOrigin
+    content: str = Field(min_length=1, max_length=10000)
+    evidence: list[AdvisoryEvidencePayload] = Field(min_length=1)
+    provenance_summary: str = Field(min_length=1, max_length=3000)
+    uncertainty_band: AdvisoryUncertaintyBand
+    caveats: list[str] = Field(min_length=1)
+    persona_id: str = Field(min_length=1)
+    workspace_id: str = Field(min_length=1)
+    decision_id: str | None = Field(default=None, min_length=1)
+    thesis_id: str | None = Field(default=None, min_length=1)
+    tags: list[str] = Field(default_factory=list)
+    captured_at: datetime | None = None
+
+
+class CognitiveEvidenceResponse(BaseModel):
+    evidence_id: str
+    source_kind: AdvisorySourceKind
+    source_id: str
+    summary: str
+    observed_at: datetime | None
+
+
+class AdvisoryObservationResponse(BaseModel):
+    observation_id: str
+    artifact_id: str
+    observation_kind: ObservationKind
+    capture_origin: AdvisoryCaptureOrigin
+    content: str
+    evidence: list[CognitiveEvidenceResponse]
+    provenance_summary: str
+    uncertainty_band: AdvisoryUncertaintyBand
+    caveats: list[str]
+    persona_id: str
+    workspace_id: str
+    decision_id: str | None
+    thesis_id: str | None
+    tags: list[str]
+    captured_at: datetime
+    authority: Literal["advisory"]
+    is_canonical: Literal[False]
+    canonical_event_type: Literal["advisory.observation_captured"]
+
+
+class AdvisoryObservationListResponse(BaseModel):
+    authority: Literal["advisory"]
+    is_canonical: Literal[False]
+    total_count: int
+    observations: list[AdvisoryObservationResponse]
 
 
 class LifecycleTransitionPayload(BaseModel):
@@ -798,6 +872,24 @@ def _replay_timeline_service_from(request: Request) -> ReplayTimelineService:
     return service
 
 
+def _advisory_observation_capture_service_from(
+    request: Request,
+) -> AdvisoryObservationCaptureService:
+    service = getattr(request.app.state, "advisory_observation_capture_service", None)
+    if not isinstance(service, AdvisoryObservationCaptureService):
+        raise RuntimeError("advisory observation capture service is not configured")
+    return service
+
+
+def _advisory_observation_query_service_from(
+    request: Request,
+) -> AdvisoryObservationQueryService:
+    service = getattr(request.app.state, "advisory_observation_query_service", None)
+    if not isinstance(service, AdvisoryObservationQueryService):
+        raise RuntimeError("advisory observation query service is not configured")
+    return service
+
+
 def _historical_reconstruction_pipeline_from(
     request: Request,
 ) -> HistoricalReconstructionPipeline:
@@ -928,6 +1020,40 @@ def _default_persona_context(
         workspace_id=workspace_id,
         workflow_id=workflow_id,
         decision_id=decision_id,
+    )
+
+
+def _advisory_observation_response(
+    observation: AdvisoryObservation,
+) -> AdvisoryObservationResponse:
+    return AdvisoryObservationResponse(
+        observation_id=observation.observation_id,
+        artifact_id=observation.artifact_id,
+        observation_kind=observation.observation_kind,
+        capture_origin=observation.capture_origin,
+        content=observation.content,
+        evidence=[
+            CognitiveEvidenceResponse(
+                evidence_id=evidence.evidence_id,
+                source_kind=evidence.source_kind,
+                source_id=evidence.source_id,
+                summary=evidence.summary,
+                observed_at=evidence.observed_at,
+            )
+            for evidence in observation.evidence
+        ],
+        provenance_summary=observation.provenance_summary,
+        uncertainty_band=observation.uncertainty_band,
+        caveats=list(observation.caveats),
+        persona_id=observation.persona_id,
+        workspace_id=observation.workspace_id,
+        decision_id=observation.decision_id,
+        thesis_id=observation.thesis_id,
+        tags=list(observation.tags),
+        captured_at=observation.captured_at,
+        authority="advisory",
+        is_canonical=False,
+        canonical_event_type="advisory.observation_captured",
     )
 
 
@@ -3107,6 +3233,104 @@ def get_market_data_provenance(
     )
 
 
+@advisory_router.post(
+    "/observations",
+    response_model=AdvisoryObservationResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+def create_advisory_observation(
+    request: Request,
+    payload: CreateAdvisoryObservationPayload,
+) -> AdvisoryObservationResponse:
+    captured_at = payload.captured_at or datetime.now(UTC)
+    observation_id = f"obs-{uuid.uuid4()}"
+    observation = AdvisoryObservation(
+        observation_id=observation_id,
+        artifact_id=f"artifact-{observation_id}",
+        observation_kind=payload.observation_kind,
+        capture_origin=payload.capture_origin,
+        content=payload.content,
+        evidence=tuple(
+            CognitiveEvidence(
+                evidence_id=evidence.evidence_id,
+                source_kind=evidence.source_kind,
+                source_id=evidence.source_id,
+                summary=evidence.summary,
+                observed_at=evidence.observed_at,
+            )
+            for evidence in payload.evidence
+        ),
+        provenance_summary=payload.provenance_summary,
+        uncertainty_band=payload.uncertainty_band,
+        caveats=tuple(payload.caveats),
+        persona_id=payload.persona_id,
+        workspace_id=payload.workspace_id,
+        captured_at=captured_at,
+        decision_id=payload.decision_id,
+        thesis_id=payload.thesis_id,
+        tags=tuple(payload.tags),
+    )
+    captured = _advisory_observation_capture_service_from(request).capture(
+        observation
+    )
+    return _advisory_observation_response(captured)
+
+
+@advisory_router.get(
+    "/observations/{observation_id}",
+    response_model=AdvisoryObservationResponse,
+)
+def get_advisory_observation(
+    request: Request,
+    observation_id: str,
+) -> AdvisoryObservationResponse:
+    observation = _advisory_observation_query_service_from(request).get(
+        observation_id
+    )
+    if observation is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"message": "advisory observation not found"},
+        )
+    return _advisory_observation_response(observation)
+
+
+@advisory_router.get(
+    "/observations",
+    response_model=AdvisoryObservationListResponse,
+)
+def list_advisory_observations(
+    request: Request,
+    persona_id: str = Query(min_length=1),
+    workspace_id: str = Query(min_length=1),
+    decision_id: str | None = Query(default=None, min_length=1),
+    thesis_id: str | None = Query(default=None, min_length=1),
+    observation_kind: ObservationKind | None = None,
+    source_kind: AdvisorySourceKind | None = None,
+    capture_origin: AdvisoryCaptureOrigin | None = None,
+) -> AdvisoryObservationListResponse:
+    observations = _advisory_observation_query_service_from(request).list(
+        AdvisoryObservationQuery(
+            persona_id=persona_id,
+            workspace_id=workspace_id,
+            decision_id=decision_id,
+            thesis_id=thesis_id,
+            observation_kind=observation_kind,
+            source_kind=source_kind,
+            capture_origin=capture_origin,
+        )
+    )
+    return AdvisoryObservationListResponse(
+        authority="advisory",
+        is_canonical=False,
+        total_count=len(observations),
+        observations=[
+            _advisory_observation_response(observation)
+            for observation in observations
+        ],
+    )
+
+
 @market_router.get("/snapshots", response_model=MarketSnapshotQueryResponse)
 def get_market_snapshots(
     request: Request,
@@ -3155,4 +3379,5 @@ runtime_router.include_router(lifecycle_router)
 runtime_router.include_router(replay_router)
 runtime_router.include_router(workspace_router)
 runtime_router.include_router(provenance_router)
+runtime_router.include_router(advisory_router)
 runtime_router.include_router(market_router)

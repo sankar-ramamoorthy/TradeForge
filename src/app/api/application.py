@@ -14,6 +14,12 @@ from src.domain.market.capability import (
 )
 from src.domain.market.provider import FundamentalsDataProvider, MarketDataProvider
 from src.domain.market.registry import ProviderRegistry
+from src.infrastructure.advisory.in_memory_observation_store import (
+    InMemoryAdvisoryObservationStore,
+)
+from src.infrastructure.advisory.postgres_observation_store import (
+    PostgresAdvisoryObservationStore,
+)
 from src.infrastructure.event_store.in_memory import InMemoryEventStore
 from src.infrastructure.event_store.postgres import PostgresEventStore
 from src.infrastructure.market.alpaca_adapter import AlpacaProvider
@@ -28,6 +34,10 @@ from src.infrastructure.market.in_memory_snapshot_store import (
 from src.infrastructure.market.polygon_adapter import PolygonProvider
 from src.infrastructure.market.yfinance_adapter import YFinanceProvider
 from src.security import CredentialStore, KeyManager
+from src.services.advisory import (
+    AdvisoryObservationCaptureService,
+    AdvisoryObservationQueryService,
+)
 from src.services.lifecycle import LifecycleOrchestrationService
 from src.services.market.contextual_summary import ContextualSummaryService
 from src.services.market.fundamentals_service import FundamentalsService
@@ -172,6 +182,10 @@ def create_app(
     credential_store: CredentialStore | None = None,
     provider_registry: ProviderRegistry | None = None,
     fundamentals_service: FundamentalsService | None = None,
+    advisory_observation_capture_service: (
+        AdvisoryObservationCaptureService | None
+    ) = None,
+    advisory_observation_query_service: AdvisoryObservationQueryService | None = None,
 ) -> FastAPI:
     shared_event_store = event_store or _default_event_store()
     app = FastAPI(
@@ -259,6 +273,24 @@ def create_app(
             _provider_registry,
             _default_fundamentals_providers(_credential_store),
         )
+    )
+    advisory_observation_store = (
+        PostgresAdvisoryObservationStore()
+        if os.environ.get("TRADEFORGE_DATABASE_URL")
+        else InMemoryAdvisoryObservationStore()
+    )
+    app.state.advisory_observation_capture_service = (
+        advisory_observation_capture_service
+        if advisory_observation_capture_service is not None
+        else AdvisoryObservationCaptureService(
+            advisory_observation_store,
+            shared_event_store,
+        )
+    )
+    app.state.advisory_observation_query_service = (
+        advisory_observation_query_service
+        if advisory_observation_query_service is not None
+        else AdvisoryObservationQueryService(advisory_observation_store)
     )
     app.include_router(runtime_router)
     return app
