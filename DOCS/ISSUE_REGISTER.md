@@ -115,7 +115,15 @@ Explicit roadmap checkpoint completed M9 Updated*Done*.
 | TF-0062 | Done | M10 | Implement cross-workspace context persistence | `feature/tf-0062-cross-workspace-context-persistence` |
 | TF-0063 | Done | M10 | Stabilize workspace transition ergonomics | `feature/tf-0063-workspace-transition-ergonomics` |
 | TF-0064 | Done | M10 | Implement operational attention continuity | `feature/tf-0064-operational-attention-continuity` |
-| TF-0065 | Planned | M11 | Define AI advisory interfaces | `feature/tf-0065-ai-advisory-interfaces` |
+| TF-0065 | Done | M11 | Define AI advisory interfaces | `feature/tf-0065-ai-advisory-interfaces` |
+| TF-0066 | Done | M11 | Implement replay summarization assistance | `feature/m11-ai-advisory-boundary` |
+| TF-0067 | Done | M11 | Implement review assistance | `feature/m11-ai-advisory-boundary` |
+| TF-0068 | Done | M11 | Implement advisory provenance tracking | `feature/m11-ai-advisory-boundary` |
+| TF-A001 | Planned | M12 | Define AdvisoryObservation domain model | `feature/m12-advisory-observation-foundation` |
+| TF-A002 | Planned | M12 | Implement advisory observation event taxonomy | `feature/m12-advisory-observation-foundation` |
+| TF-A003 | Planned | M12 | Implement observation provenance persistence | `feature/m12-advisory-observation-foundation` |
+| TF-A004 | Planned | M12 | Implement uncertainty metadata support | `feature/m12-advisory-observation-foundation` |
+| TF-A005 | Planned | M12 | Implement replay-visible advisory observation timeline | `feature/m12-advisory-observation-foundation` |
 | M10AIS01 | Done | M10A | Implement structured thesis domain model | `feature/tf-0064-operational-attention-continuity` |
 | M10AIS02 | Done | M10A | Implement thesis authoring workspace | `feature/tf-0064-operational-attention-continuity` |
 | M10AIS03 | Done | M10A | Implement thesis revision history | `feature/tf-0064-operational-attention-continuity` |
@@ -173,6 +181,190 @@ Explicit roadmap checkpoint completed M9 Updated*Done*.
 | TF-F041 | Done | M10E | Connect acquired advisory context to opportunity synthesis and thesis implications | `feature/tf-f041-context-to-synthesis-bridge` |
 | TF-F042 | Done | M10E | Reframe market-context presentation from raw payload first to interpretation first | `feature/tf-f042-market-context-interpretation-first` |
 | TF-F043 | Done | M10D | Update FMP fundamentals adapter to use stable endpoints | `fix/tf-f043-fmp-stable-fundamentals-endpoints` |
+| TF-F044 | Done | M11 | Fold machine-assisted discretionary cognition roadmap into active roadmap v2 | `docs/tf-f044-roadmap-v3-integration` |
+
+## TF-A001: Define AdvisoryObservation Domain Model
+
+**Status:** Planned
+
+**Classification:** architectural
+
+**Milestone:** M12
+
+**Branch:** `feature/m12-advisory-observation-foundation`
+
+**Affected Layer:** domain, services, docs, knowledge-base
+
+**Linked ADRs:** ADR-0001, ADR-0003, ADR-0006, ADR-0008, ADR-0041
+
+**Impacted Invariants:** Human Decision Sovereignty, AI Advisory Boundary, Derived State Must Remain Distinguishable, Terminology Stability
+
+**Problem:**
+TradeForge needs a durable pre-lifecycle advisory observation model that can capture machine- or operator-supplied observations without implying lifecycle, thesis, recommendation, or execution authority.
+
+**Acceptance Criteria:**
+
+- `AdvisoryObservation` exists as a pure domain contract.
+- `CognitiveEvidence` exists as a pure domain contract.
+- Observation kind is limited to: `price_action`, `fundamentals`, `market_context`, `news_research`, `risk`, `behavioral_process`, `operator_note`.
+- Capture origin is limited to: `operator_manual`, `provider_import`, `codex_generated`, `claude_generated`, `imported_research`, `replay_annotation`, `future_scanner`.
+- Observations require persona, workspace, capture origin, provenance, at least one source/evidence reference, uncertainty, caveats, and captured timestamp.
+- Observations cannot carry recommendation authority, lifecycle transition intent, or execution authority.
+
+---
+
+## TF-A002: Implement Advisory Observation Event Taxonomy
+
+**Status:** Planned
+
+**Classification:** architectural
+
+**Milestone:** M12
+
+**Branch:** `feature/m12-advisory-observation-foundation`
+
+**Affected Layer:** domain, event model, docs
+
+**Linked ADRs:** ADR-0001, ADR-0003, ADR-0006, ADR-0008, ADR-0041
+
+**Impacted Invariants:** Event Ledger Canonical Truth, Events Are Immutable, Replayability Is Foundational, AI Advisory Boundary
+
+**Problem:**
+M12 advisory captures need a canonical fact event that records only that an observation artifact was captured, while preserving advisory artifact content outside the canonical ledger.
+
+**Acceptance Criteria:**
+
+- `advisory` is an accepted canonical event domain.
+- `advisory.observation_captured` can be appended to the event store and replayed.
+- Event payload includes capture fact fields only: `observation_id`, `artifact_id`, `observation_kind`, `capture_origin`, optional `decision_id`, optional `thesis_id`, source references, provenance summary, uncertainty band, tags, and captured timestamp.
+- Event payload does not include generated recommendation authority, lifecycle transition intent, execution authority, or generated observation content as canonical truth.
+
+---
+
+## TF-A003: Implement Observation Provenance Persistence
+
+**Status:** Planned
+
+**Classification:** enhancement
+
+**Milestone:** M12
+
+**Branch:** `feature/m12-advisory-observation-foundation`
+
+**Affected Layer:** infrastructure, services, app
+
+**Linked ADRs:** ADR-0006, ADR-0018, ADR-0041
+
+**Impacted Invariants:** Derived State Must Remain Distinguishable, Historical Integrity, AI Advisory Boundary
+
+**Problem:**
+Advisory observation content and evidence must persist durably without becoming event-ledger truth.
+
+**Acceptance Criteria:**
+
+- A non-canonical advisory artifact store persists observation text, evidence references, provenance, caveats, tags, capture origin, persona/workspace context, and optional decision/thesis context.
+- Postgres storage is separate from `event_ledger`.
+- In-memory storage exists for tests and default runtime behavior.
+- Stored records are retrievable by observation ID and listable by persona/workspace with filters for decision, thesis, observation kind, source kind, and capture origin.
+
+---
+
+## TF-A004: Implement Uncertainty Metadata Support
+
+**Status:** Planned
+
+**Classification:** enhancement
+
+**Milestone:** M12
+
+**Branch:** `feature/m12-advisory-observation-foundation`
+
+**Affected Layer:** domain, services, app
+
+**Linked ADRs:** ADR-0006, ADR-0041
+
+**Impacted Invariants:** AI Advisory Boundary, Derived State Must Remain Distinguishable, Human Decision Sovereignty
+
+**Problem:**
+Advisory observations must preserve uncertainty in qualitative, non-authoritative form so operators do not confuse them with deterministic signals.
+
+**Acceptance Criteria:**
+
+- `AdvisoryUncertaintyBand` supports `low`, `medium`, `high`, and `unknown`.
+- Invalid uncertainty bands fail validation.
+- Caveats are required and persisted.
+- API responses expose uncertainty as advisory metadata, not confidence-backed authority.
+
+---
+
+## TF-A005: Implement Replay-Visible Advisory Observation Timeline
+
+**Status:** Planned
+
+**Classification:** enhancement
+
+**Milestone:** M12
+
+**Branch:** `feature/m12-advisory-observation-foundation`
+
+**Affected Layer:** replay, services, app
+
+**Linked ADRs:** ADR-0001, ADR-0006, ADR-0008, ADR-0041
+
+**Impacted Invariants:** Replayability Is Foundational, Event Ledger Canonical Truth, Derived State Must Remain Distinguishable
+
+**Problem:**
+Replay must show that an advisory observation existed at a historical point without treating non-canonical advisory content as event truth.
+
+**Acceptance Criteria:**
+
+- Replay timeline includes `advisory.observation_captured` entries in chronological order.
+- Replay entries identify the artifact ID and advisory/non-canonical boundary.
+- Replay distinguishes canonical capture facts from advisory artifact content.
+- Replay does not depend on current AI output or live provider calls.
+
+---
+
+## TF-F044: Fold Machine-Assisted Discretionary Cognition Roadmap Into Active Roadmap v2
+
+**Status:** Done
+
+**Classification:** documentation
+
+**Milestone:** M11
+
+**Branch:** `docs/tf-f044-roadmap-v3-integration`
+
+**Affected Layer:** docs, knowledge-base
+
+**Linked ADRs:** ADR-0006, ADR-0010, ADR-0014, ADR-0038
+
+**Impacted Invariants:** Human Decision Sovereignty, AI Advisory Boundary, Event Ledger Canonical Truth, Replayability Is Foundational, Derived State Must Remain Distinguishable, Reflection And Review Are First-Class
+
+**Source:** Brainstorm session captured in `knowledge/raw/TradeForge Future Direction - Machine-Assisted Discretionary Cognition.md` and proposed runtime roadmap `DOCS/Milestone_Roadmap_v3.md`.
+
+**Problem:**
+`DOCS/Milestone_Roadmap_v3.md` captured a stronger future direction for TradeForge after M11: machine-assisted discretionary cognition, evidence accumulation, contextual interpretation, behavioral auditability, replayable cognition, attention allocation, simulation, adaptive advisory research, and long-horizon cognitive performance analysis. The active planning authority remains `DOCS/Milestone_Roadmap_v2.md`, so v3 must be integrated into v2 rather than becoming a competing active roadmap.
+
+**Acceptance Criteria:**
+
+- M11 records the roadmap evolution note that foundational AI advisory work expands into machine-assisted discretionary cognition beginning with M12.
+- `DOCS/Milestone_Roadmap_v2.md` remains the active roadmap and incorporates the v3 M12-M19 future direction.
+- `DOCS/Milestone_Roadmap_v3.md` is marked as a historical proposal/source artifact rather than active planning authority.
+- The raw brainstorm note is promoted into a processed KB synthesis.
+- The raw brainstorm note is moved under `knowledge/raw/archived/`.
+- KB index documentation is updated to point at active roadmap v2 and the processed synthesis.
+- No runtime code, event model, lifecycle transition, or execution authority changes are introduced.
+
+**Resolution Summary:**
+Integrated the v3 cognitive advisory evolution into active roadmap v2, preserving v2 as the single going-forward planning source. Added the M11 roadmap evolution note and recast future milestones M12-M19 around advisory observations, contextual interpretation, behavioral auditability, cognitive replay, attention allocation, simulation, adaptive advisory research, and long-horizon cognitive performance analysis. Processed the source brainstorm into KB synthesis and archived the raw note.
+
+**Completed Verification:**
+
+- Documentation-only review.
+- Confirmed no runtime code changes were required.
+
+---
 
 ## TF-F043: Update FMP Fundamentals Adapter To Use Stable Endpoints
 
@@ -3889,6 +4081,161 @@ M11 introduces AI assistance, but the runtime does not yet expose a stable advis
 - Replay summarization assistance.
 - Review assistance.
 - Advisory provenance storage or query endpoints.
+
+**Resolution Summary:**
+Added the first M11 AI advisory boundary as provider-agnostic domain contracts and an orchestration-only advisory service. Advisory requests and responses are immutable non-canonical artifacts with explicit source references, provenance, uncertainty, and advisory authority. The service validates provider responses without importing event-store, lifecycle, persistence, broker, or app authority.
+
+**Completed Verification:**
+
+- `uv run pytest tests\test_ai_advisory_interfaces.py`
+- `uv run ruff check src\domain\advisory src\services\advisory tests\test_ai_advisory_interfaces.py`
+- `uv run mypy src\domain\advisory src\services\advisory tests\test_ai_advisory_interfaces.py`
+- `uv run pytest` (699 passed; local `.keys.enc` temporarily hidden during test process and restored)
+- M11 closeout: `uv run pytest` (704 passed; local `.keys.enc` temporarily hidden during test process and restored)
+- M11 closeout: `npm.cmd run typecheck` from `frontend\`
+- M11 closeout: `npm.cmd run build` from `frontend\`
+
+---
+
+## TF-0066: Implement Replay Summarization Assistance
+
+**Status:** Done
+
+**Milestone:** M11
+
+**Branch:** `feature/m11-ai-advisory-boundary`
+
+**Affected Layer:** services, domain
+
+**Linked ADRs:** ADR-0006, ADR-0008
+
+**Impacted Invariants:** AI Advisory Boundary, Replayability Is Foundational, Derived State Must Remain Distinguishable, Human Decision Sovereignty, Lifecycle Authority
+
+**Depends On:** TF-0065
+
+**Problem:**
+M11 needs AI-assisted replay summarization, but replay must remain deterministic historical reconstruction over canonical events. Without a bounded replay advisory service, later summarization work could accidentally depend on live mutable state, hide source events, or blur generated summaries with replay truth.
+
+**Acceptance Criteria:**
+
+- A replay advisory service can build an `AdvisoryRequest` from a replay timeline or reconstruction without writing events.
+- Replay advisory requests include source references to replay timeline entries or source events.
+- Replay summaries are returned as advisory artifacts through the TF-0065 contract.
+- The service has no lifecycle authority, event-store append path, broker dependency, or persistence responsibility.
+- Tests prove replay summaries remain advisory and source-linked.
+
+**Out Of Scope:**
+
+- Concrete LLM provider adapters.
+- Persisting advisory summaries.
+- API endpoints or frontend replay UI changes.
+- Changing replay timeline semantics.
+
+**Resolution Summary:**
+Added `ReplayAdvisoryService`, which turns existing `ReplayTimeline` entries into source-linked `AdvisoryRequest` values and delegates generation through the TF-0065 advisory boundary. Replay summaries remain non-canonical advisory responses with no event-store, lifecycle, persistence, API, frontend, or concrete LLM dependency.
+
+**Completed Verification:**
+
+- `uv run pytest tests\test_replay_advisory_service.py tests\test_ai_advisory_interfaces.py`
+- `uv run ruff check src\domain\advisory src\services\advisory tests\test_ai_advisory_interfaces.py tests\test_replay_advisory_service.py`
+- `uv run mypy src\domain\advisory src\services\advisory tests\test_ai_advisory_interfaces.py tests\test_replay_advisory_service.py`
+- M11 closeout: `uv run pytest` (704 passed; local `.keys.enc` temporarily hidden during test process and restored)
+- M11 closeout: `npm.cmd run typecheck` from `frontend\`
+- M11 closeout: `npm.cmd run build` from `frontend\`
+
+---
+
+## TF-0067: Implement Review Assistance
+
+**Status:** Done
+
+**Milestone:** M11
+
+**Branch:** `feature/m11-ai-advisory-boundary`
+
+**Affected Layer:** services, domain
+
+**Linked ADRs:** ADR-0006
+
+**Impacted Invariants:** AI Advisory Boundary, Reflection And Review Are First-Class, Human Decision Sovereignty, Derived State Must Remain Distinguishable, Lifecycle Authority
+
+**Depends On:** TF-0065
+
+**Problem:**
+Review assistance should help operators interpret completed decisions and reflection artifacts without becoming the review authority. Without a bounded review advisory service, AI review output could be confused with canonical review events or behavioral truth.
+
+**Acceptance Criteria:**
+
+- A review advisory service can build an advisory request from review artifacts and operator review questions.
+- Review advisory outputs remain non-canonical `AdvisoryResponse` artifacts with provenance and uncertainty.
+- The service cannot complete reviews, mutate review artifacts, append events, or change lifecycle state.
+- Tests prove review assistance is source-linked and advisory-only.
+
+**Out Of Scope:**
+
+- Concrete LLM provider adapters.
+- Behavioral intelligence or discipline scoring.
+- Persisting advisory review output.
+- API endpoints or frontend review UI changes.
+
+**Resolution Summary:**
+Added `ReviewAdvisoryService`, which turns structured `ReviewReflectionArtifact` values into source-linked `AdvisoryRequest` values and delegates generation through the TF-0065 advisory boundary. Review assistance remains non-canonical and cannot complete reviews, mutate review artifacts, append events, or change lifecycle state.
+
+**Completed Verification:**
+
+- `uv run pytest tests\test_review_advisory_service.py tests\test_replay_advisory_service.py tests\test_ai_advisory_interfaces.py`
+- `uv run ruff check src\domain\advisory src\services\advisory tests\test_ai_advisory_interfaces.py tests\test_replay_advisory_service.py tests\test_review_advisory_service.py`
+- `uv run mypy src\domain\advisory src\services\advisory tests\test_ai_advisory_interfaces.py tests\test_replay_advisory_service.py tests\test_review_advisory_service.py`
+- M11 closeout: `uv run pytest` (704 passed; local `.keys.enc` temporarily hidden during test process and restored)
+- M11 closeout: `npm.cmd run typecheck` from `frontend\`
+- M11 closeout: `npm.cmd run build` from `frontend\`
+
+---
+
+## TF-0068: Implement Advisory Provenance Tracking
+
+**Status:** Done
+
+**Milestone:** M11
+
+**Branch:** `feature/m11-ai-advisory-boundary`
+
+**Affected Layer:** domain, services, infrastructure
+
+**Linked ADRs:** ADR-0006
+
+**Impacted Invariants:** AI Advisory Boundary, Historical Integrity, Replayability Is Foundational, Derived State Must Remain Distinguishable, Event Ledger Canonical Truth
+
+**Depends On:** TF-0065, TF-0066, TF-0067
+
+**Problem:**
+AI advisory outputs must be reviewable and historically explainable. The runtime has an advisory response contract, but no provenance tracking port or storage adapter for preserving generated advisory artifacts outside the canonical event ledger.
+
+**Acceptance Criteria:**
+
+- An advisory provenance store port exists for recording and querying advisory responses.
+- A non-canonical in-memory advisory provenance adapter exists for tests and local runtime composition.
+- Provenance records preserve request identity, artifact kind, provider/model provenance, uncertainty, source references, and generated content.
+- Provenance tracking does not append canonical events or mutate lifecycle state.
+- Tests prove advisory provenance is distinguishable from event-ledger truth and queryable by request, artifact kind, and source reference.
+
+**Out Of Scope:**
+
+- Postgres advisory provenance persistence.
+- User-facing advisory provenance APIs or frontend surfaces.
+- Treating advisory records as canonical events.
+
+**Resolution Summary:**
+Added `AdvisoryProvenanceRecord`, an `AdvisoryProvenanceStore` port, a process-local `InMemoryAdvisoryProvenanceStore`, and `AdvisoryProvenanceService`. Advisory records preserve request identity, artifact kind, provider/model provenance, uncertainty, source references, content, and recording time without appending canonical events or mutating lifecycle state.
+
+**Completed Verification:**
+
+- `uv run pytest tests\test_advisory_provenance.py tests\test_review_advisory_service.py tests\test_replay_advisory_service.py tests\test_ai_advisory_interfaces.py`
+- `uv run ruff check src\domain\advisory src\services\advisory src\infrastructure\advisory tests\test_ai_advisory_interfaces.py tests\test_replay_advisory_service.py tests\test_review_advisory_service.py tests\test_advisory_provenance.py`
+- `uv run mypy src\domain\advisory src\services\advisory src\infrastructure\advisory tests\test_ai_advisory_interfaces.py tests\test_replay_advisory_service.py tests\test_review_advisory_service.py tests\test_advisory_provenance.py`
+- M11 closeout: `uv run pytest` (704 passed; local `.keys.enc` temporarily hidden during test process and restored)
+- M11 closeout: `npm.cmd run typecheck` from `frontend\`
+- M11 closeout: `npm.cmd run build` from `frontend\`
 
 ---
 

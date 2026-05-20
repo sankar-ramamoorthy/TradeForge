@@ -2,6 +2,7 @@ from enum import StrEnum
 
 
 class EventDomain(StrEnum):
+    ADVISORY = "advisory"
     PERSONA = "persona"
     WORKSPACE = "workspace"
     MARKET = "market"

@@ -15,6 +15,7 @@ from src.domain.events import (
 
 def test_all_canonical_event_domains_exist() -> None:
     assert CANONICAL_EVENT_DOMAINS == {
+        "advisory",
         "persona",
         "workspace",
         "market",
