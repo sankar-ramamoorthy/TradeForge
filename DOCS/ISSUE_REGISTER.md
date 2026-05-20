@@ -124,6 +124,21 @@ Explicit roadmap checkpoint completed M9 Updated*Done*.
 | TF-A003 | Planned | M12 | Implement observation provenance persistence | `feature/m12-advisory-observation-foundation` |
 | TF-A004 | Planned | M12 | Implement uncertainty metadata support | `feature/m12-advisory-observation-foundation` |
 | TF-A005 | Planned | M12 | Implement replay-visible advisory observation timeline | `feature/m12-advisory-observation-foundation` |
+| TF-B001 | Planned | M13 | Define interpretation artifact schema | `feature/m13-contextual-interpretation-thesis-influence` |
+| TF-B002 | Planned | M13 | Implement contextual weighting framework | `feature/m13-contextual-interpretation-thesis-influence` |
+| TF-B003 | Planned | M13 | Implement regime-aware weighting model | `feature/m13-contextual-interpretation-thesis-influence` |
+| TF-B004 | Planned | M13 | Implement conflicting evidence analysis | `feature/m13-contextual-interpretation-thesis-influence` |
+| TF-B005 | Planned | M13 | Implement confidence-range representation | `feature/m13-contextual-interpretation-thesis-influence` |
+| TF-B006 | Planned | M13 | Implement thesis evidence influence tracking | `feature/m13-contextual-interpretation-thesis-influence` |
+| TF-B007 | Planned | M13 | Implement supporting vs weakening evidence classification | `feature/m13-contextual-interpretation-thesis-influence` |
+| TF-B008 | Planned | M13 | Implement thesis drift detection | `feature/m13-contextual-interpretation-thesis-influence` |
+| TF-B009 | Planned | M13 | Implement contextual contradiction surfacing | `feature/m13-contextual-interpretation-thesis-influence` |
+| TF-B010 | Planned | M13 | Implement evidence impact replay overlays | `feature/m13-contextual-interpretation-thesis-influence` |
+| TF-B011 | Planned | M13 | Implement interpretation-first operational surfaces | `feature/m13-contextual-interpretation-thesis-influence` |
+| TF-B012 | Planned | M13 | Implement uncertainty-preserving UX patterns | `feature/m13-contextual-interpretation-thesis-influence` |
+| TF-B013 | Planned | M13 | Implement probabilistic cognition summaries | `feature/m13-contextual-interpretation-thesis-influence` |
+| TF-B014 | Planned | M13 | Implement evidence narrative generation | `feature/m13-contextual-interpretation-thesis-influence` |
+| TF-B015 | Planned | M13 | Implement contextual reasoning timelines | `feature/m13-contextual-interpretation-thesis-influence` |
 | M10AIS01 | Done | M10A | Implement structured thesis domain model | `feature/tf-0064-operational-attention-continuity` |
 | M10AIS02 | Done | M10A | Implement thesis authoring workspace | `feature/tf-0064-operational-attention-continuity` |
 | M10AIS03 | Done | M10A | Implement thesis revision history | `feature/tf-0064-operational-attention-continuity` |
@@ -322,6 +337,62 @@ Replay must show that an advisory observation existed at a historical point with
 - Replay entries identify the artifact ID and advisory/non-canonical boundary.
 - Replay distinguishes canonical capture facts from advisory artifact content.
 - Replay does not depend on current AI output or live provider calls.
+
+---
+
+## TF-B001 - TF-B015: Contextual Interpretation And Thesis Influence
+
+**Status:** Planned
+
+**Classification:** architectural, enhancement
+
+**Milestone:** M13
+
+**Branch:** `feature/m13-contextual-interpretation-thesis-influence`
+
+**Affected Layer:** domain, services, infrastructure, app, frontend, docs, knowledge-base
+
+**Linked ADRs:** ADR-0001, ADR-0006, ADR-0008, ADR-0041, ADR-0042
+
+**Impacted Invariants:** Human Decision Sovereignty, Event Ledger Canonical Truth, Events Are Immutable, Replayability Is Foundational, AI Advisory Boundary, Derived State Must Remain Distinguishable, Terminology Stability
+
+**Problem:**
+M12 captures advisory observations and cognitive evidence, but the runtime does
+not yet model contextual meaning, qualitative weighting, thesis influence,
+conflict visibility, or AI-assisted interpretation drafts. Operators need
+structured interpretation without the system implying buy/sell recommendations,
+lifecycle authority, thesis revision authority, plan approval, or execution
+authority.
+
+**Acceptance Criteria:**
+
+- `AdvisoryInterpretation` exists as a non-canonical advisory artifact linked to at least one `AdvisoryObservation` ID.
+- Fixed enums exist for interpretation kind, thesis influence, contextual weight, and advisory confidence range.
+- Accepted interpretations persist outside `event_ledger` before `advisory.interpretation_captured` is appended.
+- The capture event records only capture facts and excludes interpretation text, rationale, recommendations, lifecycle intent, and execution authority.
+- AI interpretation drafts use the existing `AIAdvisoryProvider` boundary and require operator acceptance/editing before persistence.
+- API endpoints support draft, create, read, list, and thesis-influence summary workflows with advisory/non-canonical labels.
+- In-memory and Postgres stores persist interpretations separately from the event ledger.
+- Replay timeline shows interpretation capture facts in chronological order.
+- Initial workspace surfaces render interpretation summaries, caveats, influence, weight, confidence, and provenance without implying recommendations.
+
+**Issue Mapping:**
+
+- `TF-B001`: interpretation artifact schema.
+- `TF-B002`: contextual weighting framework.
+- `TF-B003`: regime-aware weighting model.
+- `TF-B004`: conflicting evidence analysis.
+- `TF-B005`: confidence-range representation.
+- `TF-B006`: thesis evidence influence tracking.
+- `TF-B007`: supporting vs weakening evidence classification.
+- `TF-B008`: thesis drift detection.
+- `TF-B009`: contextual contradiction surfacing.
+- `TF-B010`: evidence impact replay overlays.
+- `TF-B011`: interpretation-first operational surfaces.
+- `TF-B012`: uncertainty-preserving UX patterns.
+- `TF-B013`: probabilistic cognition summaries.
+- `TF-B014`: evidence narrative generation.
+- `TF-B015`: contextual reasoning timelines.
 
 ---
 

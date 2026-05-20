@@ -20,6 +20,7 @@ import { PlanRevisionModal } from "./PlanRevisionModal";
 import { PlanDevelopmentModal } from "./PlanDevelopmentModal";
 import { ArmPlanModal } from "./ArmPlanModal";
 import { PlanReadinessPanel } from "./PlanReadinessPanel";
+import { AdvisoryInterpretationPanel } from "./AdvisoryInterpretationPanel";
 
 type TransitionState = "idle" | "transitioning" | "error";
 
@@ -419,6 +420,11 @@ export function PlanReviewWorkspace({ context, onNavigateProgrammatic, onStageLo
               plan={plan}
             />
           ) : null}
+
+          <AdvisoryInterpretationPanel
+            context={context}
+            title="Evidence influence and caveats"
+          />
 
           {showPlanModal && context.decision_id ? (
             <PlanDevelopmentModal

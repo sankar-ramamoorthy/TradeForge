@@ -366,6 +366,64 @@ export type ContextualSummary = {
   authority_boundaries: string[];
 };
 
+export type AdvisoryInterpretation = {
+  interpretation_id: string;
+  artifact_id: string;
+  observation_ids: string[];
+  interpretation_kind: string;
+  thesis_influence: string;
+  contextual_weight: string;
+  confidence_range: string;
+  content: string;
+  rationale: string;
+  provenance_summary: string;
+  caveats: string[];
+  persona_id: string;
+  workspace_id: string;
+  capture_origin: string;
+  decision_id: string | null;
+  thesis_id: string | null;
+  source_kinds: string[];
+  tags: string[];
+  captured_at: string;
+  authority: "advisory";
+  is_canonical: false;
+  canonical_event_type: "advisory.interpretation_captured";
+};
+
+export type AdvisoryInterpretationList = {
+  authority: "advisory";
+  is_canonical: false;
+  total_count: number;
+  interpretations: AdvisoryInterpretation[];
+};
+
+export async function fetchAdvisoryInterpretations(
+  params: {
+    persona_id: string;
+    workspace_id: string;
+    decision_id?: string;
+    thesis_id?: string;
+  },
+  signal?: AbortSignal,
+): Promise<AdvisoryInterpretationList> {
+  const urlParams = new URLSearchParams();
+  urlParams.set("persona_id", params.persona_id);
+  urlParams.set("workspace_id", params.workspace_id);
+  if (params.decision_id) urlParams.set("decision_id", params.decision_id);
+  if (params.thesis_id) urlParams.set("thesis_id", params.thesis_id);
+  const response = await fetch(
+    `/advisory/interpretations?${urlParams.toString()}`,
+    { signal },
+  );
+
+  if (!response.ok) {
+    throw new Error(`Advisory interpretations request failed: ${response.status}`);
+  }
+
+  return response.json() as Promise<AdvisoryInterpretationList>;
+}
+
 export async function fetchContextualSummary(
   params: WorkspaceApiParams,
   symbols?: string[],

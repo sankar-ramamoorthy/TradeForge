@@ -17,6 +17,7 @@ import {
 import { type WorkspaceContext } from "../workspaceRouting";
 import { CognitiveSnapshotPanel } from "./CognitiveSnapshotPanel";
 import { AnnotationModal } from "./AnnotationModal";
+import { AdvisoryInterpretationPanel } from "./AdvisoryInterpretationPanel";
 
 const AUTHORITY_LABELS: Record<string, string> = {
   canonical: "Canonical",
@@ -735,6 +736,11 @@ export function ReplayWorkspace({ context }: ReplayWorkspaceProps) {
           </p>
         </div>
       ) : null}
+
+      <AdvisoryInterpretationPanel
+        context={context}
+        title="Replay-visible interpretation artifacts"
+      />
 
       {projection !== null ? (
         <div className="projection-metadata">

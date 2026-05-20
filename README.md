@@ -1,4 +1,5 @@
 # TradeForge Runtime
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/sankar-ramamoorthy/TradeForge)
 
 > **Work in progress.** Core workflow is functional and demoable. Architecture and features are under active development.
 

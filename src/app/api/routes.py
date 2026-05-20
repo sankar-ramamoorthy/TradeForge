@@ -9,12 +9,18 @@ from pydantic import BaseModel, Field
 from src.app.session import SessionProvider
 from src.domain.advisory import (
     AdvisoryCaptureOrigin,
+    AdvisoryConfidenceRange,
+    AdvisoryInterpretation,
+    AdvisoryInterpretationQuery,
     AdvisoryObservation,
     AdvisoryObservationQuery,
     AdvisorySourceKind,
     AdvisoryUncertaintyBand,
     CognitiveEvidence,
+    ContextualWeight,
+    InterpretationKind,
     ObservationKind,
+    ThesisInfluence,
 )
 from src.domain.cognition import (
     ANNOTATION_TYPES,
@@ -48,8 +54,11 @@ from src.domain.personas import (
 )
 from src.domain.replay import ProjectionAuthority, ReplayTimelineEntryKind
 from src.services.advisory import (
+    AdvisoryInterpretationCaptureService,
+    AdvisoryInterpretationQueryService,
     AdvisoryObservationCaptureService,
     AdvisoryObservationQueryService,
+    InterpretationDraftService,
 )
 from src.services.lifecycle import (
     LifecycleOrchestrationService,
@@ -180,6 +189,92 @@ class AdvisoryObservationListResponse(BaseModel):
     is_canonical: Literal[False]
     total_count: int
     observations: list[AdvisoryObservationResponse]
+
+
+class InterpretationDraftPayload(BaseModel):
+    observation_ids: list[str] = Field(min_length=1)
+    operator_question: str = Field(min_length=1, max_length=3000)
+    persona_id: str = Field(min_length=1)
+    workspace_id: str = Field(min_length=1)
+    decision_id: str | None = Field(default=None, min_length=1)
+    requested_at: datetime | None = None
+
+
+class AdvisorySourceReferenceResponse(BaseModel):
+    source_kind: AdvisorySourceKind
+    source_id: str
+    description: str | None
+
+
+class InterpretationDraftResponse(BaseModel):
+    request_id: str
+    artifact_kind: Literal["interpretation-draft"]
+    content: str
+    source_references: list[AdvisorySourceReferenceResponse]
+    caveats: list[str]
+    authority: Literal["advisory"]
+    is_canonical: Literal[False]
+    requires_operator_acceptance: Literal[True]
+
+
+class CreateAdvisoryInterpretationPayload(BaseModel):
+    observation_ids: list[str] = Field(min_length=1)
+    interpretation_kind: InterpretationKind
+    thesis_influence: ThesisInfluence
+    contextual_weight: ContextualWeight
+    confidence_range: AdvisoryConfidenceRange
+    content: str = Field(min_length=1, max_length=10000)
+    rationale: str = Field(min_length=1, max_length=10000)
+    provenance_summary: str = Field(min_length=1, max_length=3000)
+    caveats: list[str] = Field(min_length=1)
+    persona_id: str = Field(min_length=1)
+    workspace_id: str = Field(min_length=1)
+    capture_origin: AdvisoryCaptureOrigin
+    decision_id: str | None = Field(default=None, min_length=1)
+    thesis_id: str | None = Field(default=None, min_length=1)
+    source_kinds: list[AdvisorySourceKind] = Field(default_factory=list)
+    tags: list[str] = Field(default_factory=list)
+    captured_at: datetime | None = None
+
+
+class AdvisoryInterpretationResponse(BaseModel):
+    interpretation_id: str
+    artifact_id: str
+    observation_ids: list[str]
+    interpretation_kind: InterpretationKind
+    thesis_influence: ThesisInfluence
+    contextual_weight: ContextualWeight
+    confidence_range: AdvisoryConfidenceRange
+    content: str
+    rationale: str
+    provenance_summary: str
+    caveats: list[str]
+    persona_id: str
+    workspace_id: str
+    capture_origin: AdvisoryCaptureOrigin
+    decision_id: str | None
+    thesis_id: str | None
+    source_kinds: list[AdvisorySourceKind]
+    tags: list[str]
+    captured_at: datetime
+    authority: Literal["advisory"]
+    is_canonical: Literal[False]
+    canonical_event_type: Literal["advisory.interpretation_captured"]
+
+
+class AdvisoryInterpretationListResponse(BaseModel):
+    authority: Literal["advisory"]
+    is_canonical: Literal[False]
+    total_count: int
+    interpretations: list[AdvisoryInterpretationResponse]
+
+
+class ThesisInfluenceSummaryResponse(BaseModel):
+    authority: Literal["advisory"]
+    is_canonical: Literal[False]
+    thesis_id: str | None
+    total_count: int
+    counts: dict[str, int]
 
 
 class LifecycleTransitionPayload(BaseModel):
@@ -890,6 +985,50 @@ def _advisory_observation_query_service_from(
     return service
 
 
+def _advisory_interpretation_capture_service_from(
+    request: Request,
+) -> AdvisoryInterpretationCaptureService:
+    service = getattr(
+        request.app.state,
+        "advisory_interpretation_capture_service",
+        None,
+    )
+    if not isinstance(service, AdvisoryInterpretationCaptureService):
+        raise RuntimeError(
+            "advisory interpretation capture service is not configured"
+        )
+    return service
+
+
+def _advisory_interpretation_query_service_from(
+    request: Request,
+) -> AdvisoryInterpretationQueryService:
+    service = getattr(
+        request.app.state,
+        "advisory_interpretation_query_service",
+        None,
+    )
+    if not isinstance(service, AdvisoryInterpretationQueryService):
+        raise RuntimeError(
+            "advisory interpretation query service is not configured"
+        )
+    return service
+
+
+def _interpretation_draft_service_from(request: Request) -> InterpretationDraftService:
+    service = getattr(request.app.state, "interpretation_draft_service", None)
+    if not isinstance(service, InterpretationDraftService):
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail={
+                "message": "interpretation draft provider is not configured",
+                "authority": "advisory",
+                "requires_operator_acceptance": True,
+            },
+        )
+    return service
+
+
 def _historical_reconstruction_pipeline_from(
     request: Request,
 ) -> HistoricalReconstructionPipeline:
@@ -1054,6 +1193,35 @@ def _advisory_observation_response(
         authority="advisory",
         is_canonical=False,
         canonical_event_type="advisory.observation_captured",
+    )
+
+
+def _advisory_interpretation_response(
+    interpretation: AdvisoryInterpretation,
+) -> AdvisoryInterpretationResponse:
+    return AdvisoryInterpretationResponse(
+        interpretation_id=interpretation.interpretation_id,
+        artifact_id=interpretation.artifact_id,
+        observation_ids=list(interpretation.observation_ids),
+        interpretation_kind=interpretation.interpretation_kind,
+        thesis_influence=interpretation.thesis_influence,
+        contextual_weight=interpretation.contextual_weight,
+        confidence_range=interpretation.confidence_range,
+        content=interpretation.content,
+        rationale=interpretation.rationale,
+        provenance_summary=interpretation.provenance_summary,
+        caveats=list(interpretation.caveats),
+        persona_id=interpretation.persona_id,
+        workspace_id=interpretation.workspace_id,
+        capture_origin=interpretation.capture_origin,
+        decision_id=interpretation.decision_id,
+        thesis_id=interpretation.thesis_id,
+        source_kinds=list(interpretation.source_kinds),
+        tags=list(interpretation.tags),
+        captured_at=interpretation.captured_at,
+        authority="advisory",
+        is_canonical=False,
+        canonical_event_type="advisory.interpretation_captured",
     )
 
 
@@ -3328,6 +3496,170 @@ def list_advisory_observations(
             _advisory_observation_response(observation)
             for observation in observations
         ],
+    )
+
+
+@advisory_router.post(
+    "/interpretations/draft",
+    response_model=InterpretationDraftResponse,
+)
+def draft_advisory_interpretation(
+    request: Request,
+    payload: InterpretationDraftPayload,
+) -> InterpretationDraftResponse:
+    requested_at = payload.requested_at or datetime.now(UTC)
+    response = _interpretation_draft_service_from(request).draft(
+        request_id=f"interpretation-draft-{uuid.uuid4()}",
+        observation_ids=tuple(payload.observation_ids),
+        operator_question=payload.operator_question,
+        persona_id=payload.persona_id,
+        workspace_id=payload.workspace_id,
+        requested_at=requested_at,
+        decision_id=payload.decision_id,
+    )
+    return InterpretationDraftResponse(
+        request_id=response.request_id,
+        artifact_kind="interpretation-draft",
+        content=response.content,
+        source_references=[
+            AdvisorySourceReferenceResponse(
+                source_kind=source.source_kind,
+                source_id=source.source_id,
+                description=source.description,
+            )
+            for source in response.source_references
+        ],
+        caveats=list(response.uncertainty.caveats),
+        authority="advisory",
+        is_canonical=False,
+        requires_operator_acceptance=True,
+    )
+
+
+@advisory_router.post(
+    "/interpretations",
+    response_model=AdvisoryInterpretationResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+def create_advisory_interpretation(
+    request: Request,
+    payload: CreateAdvisoryInterpretationPayload,
+) -> AdvisoryInterpretationResponse:
+    captured_at = payload.captured_at or datetime.now(UTC)
+    interpretation_id = f"interp-{uuid.uuid4()}"
+    interpretation = AdvisoryInterpretation(
+        interpretation_id=interpretation_id,
+        artifact_id=f"artifact-{interpretation_id}",
+        observation_ids=tuple(payload.observation_ids),
+        interpretation_kind=payload.interpretation_kind,
+        thesis_influence=payload.thesis_influence,
+        contextual_weight=payload.contextual_weight,
+        confidence_range=payload.confidence_range,
+        content=payload.content,
+        rationale=payload.rationale,
+        provenance_summary=payload.provenance_summary,
+        caveats=tuple(payload.caveats),
+        persona_id=payload.persona_id,
+        workspace_id=payload.workspace_id,
+        captured_at=captured_at,
+        capture_origin=payload.capture_origin,
+        decision_id=payload.decision_id,
+        thesis_id=payload.thesis_id,
+        source_kinds=tuple(payload.source_kinds),
+        tags=tuple(payload.tags),
+    )
+    captured = _advisory_interpretation_capture_service_from(request).capture(
+        interpretation
+    )
+    return _advisory_interpretation_response(captured)
+
+
+@advisory_router.get(
+    "/interpretations/{interpretation_id}",
+    response_model=AdvisoryInterpretationResponse,
+)
+def get_advisory_interpretation(
+    request: Request,
+    interpretation_id: str,
+) -> AdvisoryInterpretationResponse:
+    interpretation = _advisory_interpretation_query_service_from(request).get(
+        interpretation_id
+    )
+    if interpretation is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"message": "advisory interpretation not found"},
+        )
+    return _advisory_interpretation_response(interpretation)
+
+
+@advisory_router.get(
+    "/interpretations",
+    response_model=AdvisoryInterpretationListResponse,
+)
+def list_advisory_interpretations(
+    request: Request,
+    persona_id: str = Query(min_length=1),
+    workspace_id: str = Query(min_length=1),
+    decision_id: str | None = Query(default=None, min_length=1),
+    thesis_id: str | None = Query(default=None, min_length=1),
+    observation_id: str | None = Query(default=None, min_length=1),
+    interpretation_kind: InterpretationKind | None = None,
+    thesis_influence: ThesisInfluence | None = None,
+    source_kind: AdvisorySourceKind | None = None,
+    capture_origin: AdvisoryCaptureOrigin | None = None,
+) -> AdvisoryInterpretationListResponse:
+    interpretations = _advisory_interpretation_query_service_from(request).list(
+        AdvisoryInterpretationQuery(
+            persona_id=persona_id,
+            workspace_id=workspace_id,
+            decision_id=decision_id,
+            thesis_id=thesis_id,
+            observation_id=observation_id,
+            interpretation_kind=interpretation_kind,
+            thesis_influence=thesis_influence,
+            source_kind=source_kind,
+            capture_origin=capture_origin,
+        )
+    )
+    return AdvisoryInterpretationListResponse(
+        authority="advisory",
+        is_canonical=False,
+        total_count=len(interpretations),
+        interpretations=[
+            _advisory_interpretation_response(interpretation)
+            for interpretation in interpretations
+        ],
+    )
+
+
+@advisory_router.get(
+    "/thesis-influence",
+    response_model=ThesisInfluenceSummaryResponse,
+)
+def get_thesis_influence_summary(
+    request: Request,
+    persona_id: str = Query(min_length=1),
+    workspace_id: str = Query(min_length=1),
+    thesis_id: str | None = Query(default=None, min_length=1),
+    decision_id: str | None = Query(default=None, min_length=1),
+) -> ThesisInfluenceSummaryResponse:
+    summary = _advisory_interpretation_query_service_from(
+        request
+    ).thesis_influence_summary(
+        AdvisoryInterpretationQuery(
+            persona_id=persona_id,
+            workspace_id=workspace_id,
+            thesis_id=thesis_id,
+            decision_id=decision_id,
+        )
+    )
+    return ThesisInfluenceSummaryResponse(
+        authority="advisory",
+        is_canonical=False,
+        thesis_id=summary.thesis_id,
+        total_count=summary.total_count,
+        counts={influence.value: count for influence, count in summary.counts.items()},
     )
 
 

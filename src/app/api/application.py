@@ -6,6 +6,7 @@ from pathlib import Path
 from fastapi import FastAPI
 from src.app.api.routes import runtime_router
 from src.app.session import LocalSessionProvider, SessionProvider
+from src.domain.advisory import AIAdvisoryProvider
 from src.domain.events import EventStore
 from src.domain.market.capability import (
     CapabilityPreference,
@@ -14,8 +15,14 @@ from src.domain.market.capability import (
 )
 from src.domain.market.provider import FundamentalsDataProvider, MarketDataProvider
 from src.domain.market.registry import ProviderRegistry
+from src.infrastructure.advisory.in_memory_interpretation_store import (
+    InMemoryAdvisoryInterpretationStore,
+)
 from src.infrastructure.advisory.in_memory_observation_store import (
     InMemoryAdvisoryObservationStore,
+)
+from src.infrastructure.advisory.postgres_interpretation_store import (
+    PostgresAdvisoryInterpretationStore,
 )
 from src.infrastructure.advisory.postgres_observation_store import (
     PostgresAdvisoryObservationStore,
@@ -35,8 +42,11 @@ from src.infrastructure.market.polygon_adapter import PolygonProvider
 from src.infrastructure.market.yfinance_adapter import YFinanceProvider
 from src.security import CredentialStore, KeyManager
 from src.services.advisory import (
+    AdvisoryInterpretationCaptureService,
+    AdvisoryInterpretationQueryService,
     AdvisoryObservationCaptureService,
     AdvisoryObservationQueryService,
+    InterpretationDraftService,
 )
 from src.services.lifecycle import LifecycleOrchestrationService
 from src.services.market.contextual_summary import ContextualSummaryService
@@ -186,6 +196,14 @@ def create_app(
         AdvisoryObservationCaptureService | None
     ) = None,
     advisory_observation_query_service: AdvisoryObservationQueryService | None = None,
+    advisory_interpretation_capture_service: (
+        AdvisoryInterpretationCaptureService | None
+    ) = None,
+    advisory_interpretation_query_service: (
+        AdvisoryInterpretationQueryService | None
+    ) = None,
+    interpretation_draft_service: InterpretationDraftService | None = None,
+    ai_advisory_provider: AIAdvisoryProvider | None = None,
 ) -> FastAPI:
     shared_event_store = event_store or _default_event_store()
     app = FastAPI(
@@ -279,6 +297,11 @@ def create_app(
         if os.environ.get("TRADEFORGE_DATABASE_URL")
         else InMemoryAdvisoryObservationStore()
     )
+    advisory_interpretation_store = (
+        PostgresAdvisoryInterpretationStore()
+        if os.environ.get("TRADEFORGE_DATABASE_URL")
+        else InMemoryAdvisoryInterpretationStore()
+    )
     app.state.advisory_observation_capture_service = (
         advisory_observation_capture_service
         if advisory_observation_capture_service is not None
@@ -291,6 +314,31 @@ def create_app(
         advisory_observation_query_service
         if advisory_observation_query_service is not None
         else AdvisoryObservationQueryService(advisory_observation_store)
+    )
+    app.state.advisory_interpretation_capture_service = (
+        advisory_interpretation_capture_service
+        if advisory_interpretation_capture_service is not None
+        else AdvisoryInterpretationCaptureService(
+            advisory_interpretation_store,
+            shared_event_store,
+        )
+    )
+    app.state.advisory_interpretation_query_service = (
+        advisory_interpretation_query_service
+        if advisory_interpretation_query_service is not None
+        else AdvisoryInterpretationQueryService(advisory_interpretation_store)
+    )
+    app.state.interpretation_draft_service = (
+        interpretation_draft_service
+        if interpretation_draft_service is not None
+        else (
+            InterpretationDraftService(
+                ai_advisory_provider,
+                advisory_observation_store,
+            )
+            if ai_advisory_provider is not None
+            else None
+        )
     )
     app.include_router(runtime_router)
     return app

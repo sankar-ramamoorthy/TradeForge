@@ -17,6 +17,7 @@ import { OpportunitySynthesisPanel } from "./OpportunitySynthesisPanel";
 import { InstrumentIdentityBanner } from "./InstrumentIdentityBanner";
 import { OpportunityEvaluationPanel } from "./OpportunityEvaluationPanel";
 import { OpportunityGuidancePanel } from "./OpportunityGuidancePanel";
+import { AdvisoryInterpretationPanel } from "./AdvisoryInterpretationPanel";
 
 type TransitionState = "idle" | "open-thesis-modal" | "error";
 
@@ -202,6 +203,10 @@ export function OpportunityWorkspace({ context, onNavigateProgrammatic, onStageL
           <OpportunityEvaluationPanel branchList={branchList} projection={projection} />
           <OpportunitySynthesisPanel symbol={symbolFromProjection} />
           <OpportunityGuidancePanel />
+          <AdvisoryInterpretationPanel
+            context={context}
+            title="Thesis influence context"
+          />
 
           <details className="opportunity-provenance-details">
             <summary>Projection and provenance details</summary>
