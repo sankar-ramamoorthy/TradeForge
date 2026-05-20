@@ -12,6 +12,7 @@ class AdvisoryAuthority(StrEnum):
 
 class AdvisoryArtifactKind(StrEnum):
     CONTEXT_SUMMARY = "context-summary"
+    INTERPRETATION_DRAFT = "interpretation-draft"
     REPLAY_SUMMARY = "replay-summary"
     REVIEW_ASSISTANCE = "review-assistance"
     SCENARIO_RANKING = "scenario-ranking"

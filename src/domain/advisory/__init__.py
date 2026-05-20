@@ -9,6 +9,15 @@ from src.domain.advisory.contracts import (
     AdvisoryUncertainty,
     AIAdvisoryProvider,
 )
+from src.domain.advisory.interpretation import (
+    AdvisoryConfidenceRange,
+    AdvisoryInterpretation,
+    AdvisoryInterpretationQuery,
+    AdvisoryInterpretationStore,
+    ContextualWeight,
+    InterpretationKind,
+    ThesisInfluence,
+)
 from src.domain.advisory.observation import (
     AdvisoryCaptureOrigin,
     AdvisoryObservation,
@@ -28,6 +37,10 @@ __all__ = [
     "AdvisoryArtifactKind",
     "AdvisoryAuthority",
     "AdvisoryCaptureOrigin",
+    "AdvisoryConfidenceRange",
+    "AdvisoryInterpretation",
+    "AdvisoryInterpretationQuery",
+    "AdvisoryInterpretationStore",
     "AdvisoryObservation",
     "AdvisoryObservationQuery",
     "AdvisoryObservationStore",
@@ -40,6 +53,9 @@ __all__ = [
     "AdvisorySourceReference",
     "AdvisoryUncertainty",
     "AdvisoryUncertaintyBand",
+    "ContextualWeight",
     "CognitiveEvidence",
+    "InterpretationKind",
     "ObservationKind",
+    "ThesisInfluence",
 ]

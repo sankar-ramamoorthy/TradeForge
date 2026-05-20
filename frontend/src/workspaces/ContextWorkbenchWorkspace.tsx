@@ -13,6 +13,8 @@ import {
   getWatchedSymbolsString,
   upsertAdvisoryContext,
 } from "../operationalContext";
+import { type WorkspaceContext } from "../workspaceRouting";
+import { AdvisoryInterpretationPanel } from "./AdvisoryInterpretationPanel";
 
 type AcquisitionState = "not-requested" | "loading" | "loaded" | "unavailable";
 type InstrumentKind = "equity" | "etf";
@@ -89,7 +91,11 @@ function AttemptList({ attempts }: { attempts: ProviderAttempt[] }) {
   );
 }
 
-export function ContextWorkbenchWorkspace() {
+export function ContextWorkbenchWorkspace({
+  context,
+}: {
+  context: Required<WorkspaceContext>;
+}) {
   const [symbolInput, setSymbolInput] = useState(() => getWatchedSymbolsString());
   const [instrumentKind, setInstrumentKind] = useState<InstrumentKind>("equity");
   const symbol = useMemo(() => normalizeSymbol(symbolInput), [symbolInput]);
@@ -266,6 +272,10 @@ export function ContextWorkbenchWorkspace() {
           <AttemptList attempts={fundamentalsOverlay?.attempts ?? []} />
         </ContextFamilyCard>
       </div>
+      <AdvisoryInterpretationPanel
+        context={context}
+        title="Accepted interpretation artifacts"
+      />
     </section>
   );
 }

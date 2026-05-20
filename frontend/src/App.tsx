@@ -465,7 +465,7 @@ export default function App() {
             onStageLoaded={handleStageLoaded}
           />
         ) : activeRoute.id === "context-workbench" ? (
-          <ContextWorkbenchWorkspace />
+          <ContextWorkbenchWorkspace context={context} />
         ) : activeRoute.id === "plan-review" ? (
           <PlanReviewWorkspace
             context={context}
