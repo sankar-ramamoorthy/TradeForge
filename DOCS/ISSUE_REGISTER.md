@@ -124,6 +124,21 @@ Explicit roadmap checkpoint completed M9 Updated*Done*.
 | TF-A003 | Planned | M12 | Implement observation provenance persistence | `feature/m12-advisory-observation-foundation` |
 | TF-A004 | Planned | M12 | Implement uncertainty metadata support | `feature/m12-advisory-observation-foundation` |
 | TF-A005 | Planned | M12 | Implement replay-visible advisory observation timeline | `feature/m12-advisory-observation-foundation` |
+| TF-A006 | Planned | M12 | Implement evidence attachment framework | `feature/m12-advisory-observation-foundation` |
+| TF-A007 | Planned | M12 | Implement thesis evidence linkage | `feature/m12-advisory-observation-foundation` |
+| TF-A008 | Planned | M12 | Implement contextual interpretation artifacts | `feature/m12-advisory-observation-foundation` |
+| TF-A009 | Planned | M12 | Implement conflicting evidence surfacing | `feature/m12-advisory-observation-foundation` |
+| TF-A010 | Planned | M12 | Implement evidence aging/staleness visibility | `feature/m12-advisory-observation-foundation` |
+| TF-A011 | Planned | M12 | Implement advisory candidate ingestion pipeline | `feature/m12-advisory-observation-foundation` |
+| TF-A012 | Planned | M12 | Implement candidate review queue | `feature/m12-advisory-observation-foundation` |
+| TF-A013 | Planned | M12 | Implement operator candidate promotion workflow | `feature/m12-advisory-observation-foundation` |
+| TF-A014 | Planned | M12 | Prevent automated lifecycle promotion into TradeIdea | `feature/m12-advisory-observation-foundation` |
+| TF-A015 | Planned | M12 | Implement candidate provenance visualization | `feature/m12-advisory-observation-foundation` |
+| TF-A016 | Planned | M12 | Define external research cockpit import boundary | `feature/m12-advisory-observation-foundation` |
+| TF-A017 | Planned | M12 | Implement research artifact ingestion API | `feature/m12-advisory-observation-foundation` |
+| TF-A018 | Planned | M12 | Implement Codex/Claude-generated advisory artifact support | `feature/m12-advisory-observation-foundation` |
+| TF-A019 | Planned | M12 | Implement advisory markdown artifact persistence | `feature/m12-advisory-observation-foundation` |
+| TF-A020 | Planned | M12 | Implement replay-safe advisory snapshot capture | `feature/m12-advisory-observation-foundation` |
 | TF-B001 | Planned | M13 | Define interpretation artifact schema | `feature/m13-contextual-interpretation-thesis-influence` |
 | TF-B002 | Planned | M13 | Implement contextual weighting framework | `feature/m13-contextual-interpretation-thesis-influence` |
 | TF-B003 | Planned | M13 | Implement regime-aware weighting model | `feature/m13-contextual-interpretation-thesis-influence` |
@@ -340,59 +355,873 @@ Replay must show that an advisory observation existed at a historical point with
 
 ---
 
-## TF-B001 - TF-B015: Contextual Interpretation And Thesis Influence
+## TF-A006: Implement Evidence Attachment Framework
 
 **Status:** Planned
 
-**Classification:** architectural, enhancement
+**Classification:** enhancement
+
+**Milestone:** M12
+
+**Branch:** `feature/m12-advisory-observation-foundation`
+
+**Affected Layer:** domain, services, infrastructure, app
+
+**Linked ADRs:** ADR-0001, ADR-0006, ADR-0033, ADR-0041
+
+**Impacted Invariants:** AI Advisory Boundary, Derived State Must Remain Distinguishable, Historical Integrity, Replayability Is Foundational
+
+**Problem:**
+Advisory observations require durable evidence references so operators can inspect why an observation exists without treating supporting material as canonical lifecycle state.
+
+**Acceptance Criteria:**
+
+- `CognitiveEvidence` supports typed references for provider payloads, imported research, markdown artifacts, URLs, operator notes, replay annotations, and generated advisory artifacts.
+- Advisory observations require at least one evidence reference at capture time.
+- Evidence attachment records preserve source kind, source URI or artifact ID, captured timestamp, provenance summary, and caveats.
+- Evidence content persists in the non-canonical advisory artifact store, not in `event_ledger`.
+- Evidence attachment APIs and responses label evidence as advisory and non-canonical.
+
+---
+
+## TF-A007: Implement Thesis Evidence Linkage
+
+**Status:** Planned
+
+**Classification:** enhancement
+
+**Milestone:** M12
+
+**Branch:** `feature/m12-advisory-observation-foundation`
+
+**Affected Layer:** domain, services, app, replay
+
+**Linked ADRs:** ADR-0001, ADR-0002, ADR-0006, ADR-0033, ADR-0041
+
+**Impacted Invariants:** Human Decision Sovereignty, Lifecycle Authority, AI Advisory Boundary, Derived State Must Remain Distinguishable
+
+**Problem:**
+Operators need to associate advisory observations with an existing decision or thesis for context, while preserving that the association does not revise, approve, strengthen, weaken, or transition lifecycle state.
+
+**Acceptance Criteria:**
+
+- Advisory observations may optionally reference an existing `decision_id` and/or `thesis_id`.
+- Linkage validation rejects references that cannot be resolved by deterministic runtime state.
+- Thesis evidence links are contextual metadata only and do not create lifecycle events, thesis revisions, plan changes, approvals, or execution intent.
+- API responses distinguish contextual advisory links from canonical thesis content.
+- Replay can show that an observation was linked to a decision or thesis at capture time without deriving thesis influence semantics.
+
+---
+
+## TF-A008: Implement Contextual Interpretation Artifacts
+
+**Status:** Planned
+
+**Classification:** architectural
+
+**Milestone:** M12
+
+**Branch:** `feature/m12-advisory-observation-foundation`
+
+**Affected Layer:** domain, services, infrastructure, app
+
+**Linked ADRs:** ADR-0006, ADR-0039, ADR-0041, ADR-0042
+
+**Impacted Invariants:** AI Advisory Boundary, Derived State Must Remain Distinguishable, Human Decision Sovereignty, Terminology Stability
+
+**Problem:**
+Some advisory observations need lightweight contextual framing so the operator can understand what environment the observation belongs to, but M12 must not implement M13 thesis influence, weighting, scoring, or recommendation semantics.
+
+**Acceptance Criteria:**
+
+- M12 contextual artifacts are stored as non-canonical advisory context attached to observations.
+- Contextual artifacts may include regime notes, relevant market context references, caveats, provenance, and source links.
+- Contextual artifacts do not include thesis influence, contextual weight, advisory confidence range, buy/sell direction, lifecycle transition intent, or execution authority.
+- The implementation explicitly labels M13 `AdvisoryInterpretation` semantics as out of scope for this issue.
+- Contextual artifact content persists outside `event_ledger`; canonical events record capture facts only when required by ADR-0041.
+
+---
+
+## TF-A009: Implement Conflicting Evidence Surfacing
+
+**Status:** Planned
+
+**Classification:** enhancement
+
+**Milestone:** M12
+
+**Branch:** `feature/m12-advisory-observation-foundation`
+
+**Affected Layer:** services, app, frontend
+
+**Linked ADRs:** ADR-0006, ADR-0039, ADR-0041, ADR-0042
+
+**Impacted Invariants:** Human Decision Sovereignty, AI Advisory Boundary, Derived State Must Remain Distinguishable, Historical Integrity
+
+**Problem:**
+Operators need visibility when advisory evidence points in different directions, but M12 must surface conflict without turning it into scoring, thesis influence, recommendation authority, or automated decision guidance.
+
+**Acceptance Criteria:**
+
+- Advisory observation list/read workflows can expose conflict markers derived from explicit evidence metadata or operator-provided caveats.
+- Conflicting evidence surfacing preserves source references and caveats for each side of the conflict.
+- Conflict labels are qualitative advisory metadata only and do not rank, score, approve, reject, or promote observations.
+- M13 supporting/weakening classification and thesis influence semantics remain out of scope.
+- UI/API responses label conflict information as advisory and non-canonical.
+
+---
+
+## TF-A010: Implement Evidence Aging/Staleness Visibility
+
+**Status:** Planned
+
+**Classification:** enhancement
+
+**Milestone:** M12
+
+**Branch:** `feature/m12-advisory-observation-foundation`
+
+**Affected Layer:** domain, services, app, frontend
+
+**Linked ADRs:** ADR-0006, ADR-0041
+
+**Impacted Invariants:** Historical Integrity, Replayability Is Foundational, AI Advisory Boundary, Derived State Must Remain Distinguishable
+
+**Problem:**
+Advisory evidence changes operational relevance over time. Operators need staleness visibility without the system mutating historical evidence or hiding uncertainty.
+
+**Acceptance Criteria:**
+
+- Evidence records preserve original captured timestamp and optional source timestamp.
+- Derived staleness metadata is computed from timestamps and deterministic configuration, not stored as canonical truth.
+- Staleness views distinguish current derived freshness from historical capture facts.
+- Staleness labels do not invalidate, delete, rewrite, or silently downgrade historical observations.
+- API/UI responses preserve uncertainty and caveats alongside staleness information.
+
+---
+
+## TF-A011: Implement Advisory Candidate Ingestion Pipeline
+
+**Status:** Planned
+
+**Classification:** enhancement
+
+**Milestone:** M12
+
+**Branch:** `feature/m12-advisory-observation-foundation`
+
+**Affected Layer:** domain, services, infrastructure, app
+
+**Linked ADRs:** ADR-0005, ADR-0006, ADR-0032, ADR-0041
+
+**Impacted Invariants:** Human Decision Sovereignty, Scenario Discovery Is Non-Authoritative, AI Advisory Boundary, Derived State Must Remain Distinguishable
+
+**Problem:**
+TradeForge needs a way to ingest external or machine-surfaced advisory candidates into reviewable advisory space without creating trade ideas or lifecycle state.
+
+**Acceptance Criteria:**
+
+- `AdvisoryCandidate` exists as a non-canonical advisory artifact or view backed by advisory artifact persistence.
+- Candidate ingestion accepts provider, imported research, generated advisory, and operator-supplied origins consistent with capture origin rules.
+- Ingested candidates require provenance, evidence references, uncertainty, caveats, persona, workspace, and captured timestamp.
+- Candidate ingestion does not create `TradeIdea`, thesis, plan, approval, execution, or decision lifecycle events.
+- Candidate ingestion can append only advisory capture facts allowed by ADR-0041.
+
+---
+
+## TF-A012: Implement Candidate Review Queue
+
+**Status:** Planned
+
+**Classification:** enhancement
+
+**Milestone:** M12
+
+**Branch:** `feature/m12-advisory-observation-foundation`
+
+**Affected Layer:** services, app, frontend
+
+**Linked ADRs:** ADR-0004, ADR-0006, ADR-0013, ADR-0041
+
+**Impacted Invariants:** Workspaces Are Operational Environments, Human Decision Sovereignty, Derived State Must Remain Distinguishable, Scenario Discovery Is Non-Authoritative
+
+**Problem:**
+Operators need a review queue for advisory candidates so attention can be organized without converting candidates into decisions or lifecycle obligations.
+
+**Acceptance Criteria:**
+
+- Candidate review queue is a derived read model, not canonical state.
+- Queue entries are scoped by persona and workspace.
+- Queue entries preserve source candidate ID, evidence references, provenance summary, uncertainty, caveats, and captured timestamp.
+- Queue actions support inspect, dismiss from view, and begin operator-controlled promotion workflow without automated lifecycle transition.
+- Queue ordering is deterministic and transparent; it does not introduce hidden AI ranking authority.
+
+---
+
+## TF-A013: Implement Operator Candidate Promotion Workflow
+
+**Status:** Planned
+
+**Classification:** architectural
+
+**Milestone:** M12
+
+**Branch:** `feature/m12-advisory-observation-foundation`
+
+**Affected Layer:** domain, services, app, frontend
+
+**Linked ADRs:** ADR-0002, ADR-0006, ADR-0034, ADR-0041
+
+**Impacted Invariants:** Human Decision Sovereignty, Lifecycle Authority, AI Advisory Boundary, Workflow-Centric Architecture
+
+**Problem:**
+Operators need an explicit workflow to use an advisory candidate as input to a new trade idea while preserving that promotion is a human-owned lifecycle action.
+
+**Acceptance Criteria:**
+
+- Promotion requires an explicit operator action.
+- Promotion opens or invokes the existing trade idea creation workflow rather than bypassing lifecycle rules.
+- Advisory candidate content may prefill draft context only when labeled advisory and editable by the operator.
+- The canonical lifecycle event, if created, is a normal operator-owned decision event and not an advisory event.
+- Promotion records or preserves traceability back to the source advisory candidate without granting it lifecycle authority.
+
+---
+
+## TF-A014: Prevent Automated Lifecycle Promotion Into TradeIdea
+
+**Status:** Planned
+
+**Classification:** architectural
+
+**Milestone:** M12
+
+**Branch:** `feature/m12-advisory-observation-foundation`
+
+**Affected Layer:** domain, services, app, tests
+
+**Linked ADRs:** ADR-0002, ADR-0006, ADR-0041
+
+**Impacted Invariants:** Human Decision Sovereignty, Lifecycle Authority, AI Advisory Boundary, Events Are Immutable
+
+**Problem:**
+M12 introduces advisory observations and candidates, increasing the risk that generated artifacts could be incorrectly treated as lifecycle inputs. Runtime safeguards must prevent automated promotion into `TradeIdea`.
+
+**Acceptance Criteria:**
+
+- Advisory capture, candidate ingestion, provider import, and generated artifact flows cannot create `TradeIdea` lifecycle events directly.
+- Service-layer validation requires explicit operator intent for any transition from advisory candidate context into trade idea creation.
+- AI/provider-generated artifacts are rejected as direct lifecycle transition commands.
+- Tests cover attempts to create trade ideas through advisory ingestion paths.
+- Error responses explain that advisory artifacts cannot bypass the decision lifecycle.
+
+---
+
+## TF-A015: Implement Candidate Provenance Visualization
+
+**Status:** Planned
+
+**Classification:** enhancement
+
+**Milestone:** M12
+
+**Branch:** `feature/m12-advisory-observation-foundation`
+
+**Affected Layer:** services, app, frontend
+
+**Linked ADRs:** ADR-0006, ADR-0007, ADR-0012, ADR-0041
+
+**Impacted Invariants:** Historical Integrity, AI Advisory Boundary, Derived State Must Remain Distinguishable, UX Is Architectural
+
+**Problem:**
+Operators need to inspect where advisory candidates came from and why they are visible, without mistaking provenance displays for recommendation authority.
+
+**Acceptance Criteria:**
+
+- Candidate detail surfaces show capture origin, provider/source references, evidence references, caveats, uncertainty, captured timestamp, and artifact IDs.
+- Provenance visualization distinguishes operator, provider, imported research, generated advisory, replay annotation, and future scanner origins.
+- Provenance display is read-only with respect to canonical event history.
+- UI copy labels candidates and provenance as advisory and non-canonical.
+- Provenance views do not include buy/sell instructions, scores, lifecycle authority, or execution affordances.
+
+---
+
+## TF-A016: Define External Research Cockpit Import Boundary
+
+**Status:** Planned
+
+**Classification:** architectural
+
+**Milestone:** M12
+
+**Branch:** `feature/m12-advisory-observation-foundation`
+
+**Affected Layer:** services, infrastructure, app, docs
+
+**Linked ADRs:** ADR-0006, ADR-0032, ADR-0041
+
+**Impacted Invariants:** AI Advisory Boundary, Market Intelligence Is Interpreted Context, Derived State Must Remain Distinguishable, Historical Integrity
+
+**Problem:**
+External research needs a controlled import boundary so research can become advisory evidence without becoming canonical truth, lifecycle authority, or untraceable external state.
+
+**Acceptance Criteria:**
+
+- Import boundary defines accepted research artifact metadata, source references, provenance, caveats, uncertainty, and capture origin.
+- Imported research persists outside `event_ledger`.
+- Imported research can be attached to advisory observations or candidates as evidence.
+- Import boundary rejects payloads that attempt to create lifecycle transitions, approvals, execution intent, or recommendations as canonical truth.
+- Runtime documentation records the non-canonical boundary and replay implications for imported research.
+
+---
+
+## TF-A017: Implement Research Artifact Ingestion API
+
+**Status:** Planned
+
+**Classification:** enhancement
+
+**Milestone:** M12
+
+**Branch:** `feature/m12-advisory-observation-foundation`
+
+**Affected Layer:** infrastructure, services, app
+
+**Linked ADRs:** ADR-0006, ADR-0020, ADR-0032, ADR-0041
+
+**Impacted Invariants:** AI Advisory Boundary, Derived State Must Remain Distinguishable, Event Ledger Canonical Truth, Historical Integrity
+
+**Problem:**
+Operators need an API path to ingest research artifacts into advisory persistence with validation, provenance, and optional observation/candidate linkage.
+
+**Acceptance Criteria:**
+
+- API endpoint accepts research artifacts with required source, provenance, uncertainty, caveats, persona, workspace, and captured timestamp fields.
+- API endpoint persists research content in the non-canonical advisory artifact store.
+- API endpoint may create or link advisory observations/candidates only through M12 advisory capture services.
+- API responses expose advisory/non-canonical labels and artifact IDs.
+- Invalid payloads that imply recommendation, lifecycle transition intent, execution authority, or canonical truth are rejected.
+
+---
+
+## TF-A018: Implement Codex/Claude-Generated Advisory Artifact Support
+
+**Status:** Planned
+
+**Classification:** enhancement
+
+**Milestone:** M12
+
+**Branch:** `feature/m12-advisory-observation-foundation`
+
+**Affected Layer:** domain, services, infrastructure, app
+
+**Linked ADRs:** ADR-0006, ADR-0041
+
+**Impacted Invariants:** AI Advisory Boundary, Human Decision Sovereignty, Derived State Must Remain Distinguishable, Historical Integrity
+
+**Problem:**
+Generated advisory artifacts from Codex or Claude need explicit capture origin, provenance, uncertainty, and operator-visible caveats so they can be inspected without becoming autonomous system authority.
+
+**Acceptance Criteria:**
+
+- Capture origin supports `codex_generated` and `claude_generated` for advisory artifacts.
+- Generated artifacts require prompt/session provenance, source inputs or references, uncertainty, caveats, persona, workspace, and captured timestamp.
+- Generated artifacts persist in the non-canonical advisory artifact store.
+- Generated artifacts cannot append decision, lifecycle, approval, execution, or review events directly.
+- API responses clearly label generated artifacts as advisory and non-canonical.
+
+---
+
+## TF-A019: Implement Advisory Markdown Artifact Persistence
+
+**Status:** Planned
+
+**Classification:** enhancement
+
+**Milestone:** M12
+
+**Branch:** `feature/m12-advisory-observation-foundation`
+
+**Affected Layer:** infrastructure, services, app
+
+**Linked ADRs:** ADR-0006, ADR-0041
+
+**Impacted Invariants:** AI Advisory Boundary, Historical Integrity, Derived State Must Remain Distinguishable, Replayability Is Foundational
+
+**Problem:**
+Advisory research and generated cognition often arrive as markdown. Runtime needs durable markdown artifact persistence that remains advisory and non-canonical.
+
+**Acceptance Criteria:**
+
+- Advisory artifact store supports markdown body content with metadata, provenance, caveats, uncertainty, and source references.
+- Markdown artifacts are retrievable by artifact ID and listable through advisory filters.
+- Markdown content is stored outside `event_ledger`.
+- Markdown rendering or retrieval does not execute embedded scripts or treat content as trusted commands.
+- Markdown artifacts can be linked as evidence to observations or candidates.
+
+---
+
+## TF-A020: Implement Replay-Safe Advisory Snapshot Capture
+
+**Status:** Planned
+
+**Classification:** enhancement
+
+**Milestone:** M12
+
+**Branch:** `feature/m12-advisory-observation-foundation`
+
+**Affected Layer:** replay, services, infrastructure, app
+
+**Linked ADRs:** ADR-0001, ADR-0006, ADR-0008, ADR-0041
+
+**Impacted Invariants:** Replayability Is Foundational, Event Ledger Canonical Truth, Historical Integrity, Derived State Must Remain Distinguishable
+
+**Problem:**
+Replay needs to reconstruct what advisory artifacts existed at the time of capture without depending on live providers, current AI output, or mutable external research sources.
+
+**Acceptance Criteria:**
+
+- Advisory artifact capture stores a replay-safe snapshot of required metadata, provenance, evidence references, uncertainty, caveats, and source identifiers.
+- Snapshot capture preserves enough context to inspect historical advisory state without live provider calls.
+- Snapshot content remains non-canonical; canonical events record only capture facts and artifact identifiers.
+- Replay APIs expose advisory snapshot references while distinguishing event truth from advisory artifact content.
+- Snapshot capture does not mutate, delete, or rewrite prior advisory artifacts or event ledger records.
+
+---
+
+## TF-B001: Define Interpretation Artifact Schema
+
+**Status:** Planned
+
+**Classification:** architectural
 
 **Milestone:** M13
 
 **Branch:** `feature/m13-contextual-interpretation-thesis-influence`
 
-**Affected Layer:** domain, services, infrastructure, app, frontend, docs, knowledge-base
+**Affected Layer:** domain, services, docs
 
 **Linked ADRs:** ADR-0001, ADR-0006, ADR-0008, ADR-0041, ADR-0042
 
 **Impacted Invariants:** Human Decision Sovereignty, Event Ledger Canonical Truth, Events Are Immutable, Replayability Is Foundational, AI Advisory Boundary, Derived State Must Remain Distinguishable, Terminology Stability
 
 **Problem:**
-M12 captures advisory observations and cognitive evidence, but the runtime does
-not yet model contextual meaning, qualitative weighting, thesis influence,
-conflict visibility, or AI-assisted interpretation drafts. Operators need
-structured interpretation without the system implying buy/sell recommendations,
-lifecycle authority, thesis revision authority, plan approval, or execution
-authority.
+M13 needs a durable interpretation artifact schema so advisory observations can gain contextual meaning without becoming lifecycle truth, recommendations, thesis revisions, approvals, or execution instructions.
 
 **Acceptance Criteria:**
 
 - `AdvisoryInterpretation` exists as a non-canonical advisory artifact linked to at least one `AdvisoryObservation` ID.
-- Fixed enums exist for interpretation kind, thesis influence, contextual weight, and advisory confidence range.
-- Accepted interpretations persist outside `event_ledger` before `advisory.interpretation_captured` is appended.
-- The capture event records only capture facts and excludes interpretation text, rationale, recommendations, lifecycle intent, and execution authority.
-- AI interpretation drafts use the existing `AIAdvisoryProvider` boundary and require operator acceptance/editing before persistence.
-- API endpoints support draft, create, read, list, and thesis-influence summary workflows with advisory/non-canonical labels.
-- In-memory and Postgres stores persist interpretations separately from the event ledger.
-- Replay timeline shows interpretation capture facts in chronological order.
-- Initial workspace surfaces render interpretation summaries, caveats, influence, weight, confidence, and provenance without implying recommendations.
+- Schema captures interpretation ID, artifact ID, linked observation IDs, optional decision/thesis IDs, interpretation kind, thesis influence, contextual weight, confidence range, provenance, caveats, tags, and captured timestamp.
+- Interpretation content and rationale persist outside `event_ledger`.
+- `advisory.interpretation_captured` records capture facts only and excludes interpretation body text, rationale, recommendations, lifecycle intent, and execution authority.
+- Schema validation rejects buy/sell instructions, lifecycle transition intent, plan approval language, and execution instructions as authoritative fields.
 
-**Issue Mapping:**
+---
 
-- `TF-B001`: interpretation artifact schema.
-- `TF-B002`: contextual weighting framework.
-- `TF-B003`: regime-aware weighting model.
-- `TF-B004`: conflicting evidence analysis.
-- `TF-B005`: confidence-range representation.
-- `TF-B006`: thesis evidence influence tracking.
-- `TF-B007`: supporting vs weakening evidence classification.
-- `TF-B008`: thesis drift detection.
-- `TF-B009`: contextual contradiction surfacing.
-- `TF-B010`: evidence impact replay overlays.
-- `TF-B011`: interpretation-first operational surfaces.
-- `TF-B012`: uncertainty-preserving UX patterns.
-- `TF-B013`: probabilistic cognition summaries.
-- `TF-B014`: evidence narrative generation.
-- `TF-B015`: contextual reasoning timelines.
+## TF-B002: Implement Contextual Weighting Framework
+
+**Status:** Planned
+
+**Classification:** enhancement
+
+**Milestone:** M13
+
+**Branch:** `feature/m13-contextual-interpretation-thesis-influence`
+
+**Affected Layer:** domain, services, app
+
+**Linked ADRs:** ADR-0006, ADR-0039, ADR-0041, ADR-0042
+
+**Impacted Invariants:** AI Advisory Boundary, Derived State Must Remain Distinguishable, Human Decision Sovereignty, Deterministic Rule Evaluation
+
+**Problem:**
+Operators need qualitative contextual weight for interpretations, but the system must avoid hidden scoring engines, deterministic predictive scoring, and recommendation authority.
+
+**Acceptance Criteria:**
+
+- Fixed qualitative contextual weight enum exists for M13 interpretation metadata.
+- Contextual weight is stored as advisory metadata on `AdvisoryInterpretation`, not canonical decision state.
+- Contextual weight cannot create, revise, approve, reject, or execute lifecycle artifacts.
+- API responses label contextual weight as advisory and non-canonical.
+- Numeric scoring, opaque ranking, and automated trade recommendation behavior are explicitly out of scope.
+
+---
+
+## TF-B003: Implement Regime-Aware Weighting Model
+
+**Status:** Planned
+
+**Classification:** enhancement
+
+**Milestone:** M13
+
+**Branch:** `feature/m13-contextual-interpretation-thesis-influence`
+
+**Affected Layer:** domain, services, app
+
+**Linked ADRs:** ADR-0006, ADR-0010, ADR-0039, ADR-0042
+
+**Impacted Invariants:** Market Intelligence Is Interpreted Context, AI Advisory Boundary, Derived State Must Remain Distinguishable, Human Decision Sovereignty
+
+**Problem:**
+Interpretations may carry different meaning under different market regimes. Runtime needs a qualitative regime-aware model without turning regime context into automated trade selection.
+
+**Acceptance Criteria:**
+
+- Interpretations may reference regime context or market context artifacts as advisory inputs.
+- Regime-aware metadata explains how regime context affects interpretation weight in qualitative terms.
+- Regime-aware weighting does not mutate market intelligence facts, lifecycle state, thesis artifacts, plans, approvals, or executions.
+- Missing or stale regime context is represented explicitly rather than inferred silently.
+- API responses preserve provenance and caveats for regime context references.
+
+---
+
+## TF-B004: Implement Conflicting Evidence Analysis
+
+**Status:** Planned
+
+**Classification:** enhancement
+
+**Milestone:** M13
+
+**Branch:** `feature/m13-contextual-interpretation-thesis-influence`
+
+**Affected Layer:** domain, services, app
+
+**Linked ADRs:** ADR-0006, ADR-0041, ADR-0042
+
+**Impacted Invariants:** Human Decision Sovereignty, AI Advisory Boundary, Derived State Must Remain Distinguishable, Historical Integrity
+
+**Problem:**
+M13 must allow operators to understand evidence conflict across observations and interpretations without reducing conflict to a hidden score or automated conclusion.
+
+**Acceptance Criteria:**
+
+- Conflict analysis can link multiple observations and interpretations into a non-canonical conflict artifact or interpretation field set.
+- Conflict output preserves source evidence, provenance, caveats, uncertainty, and linked observation IDs.
+- Conflict analysis distinguishes contradictory, partially conflicting, and unresolved evidence in qualitative terms.
+- Conflict analysis cannot approve, reject, promote, execute, or revise lifecycle artifacts.
+- Replay can show conflict analysis capture facts without treating conflict rationale as canonical event truth.
+
+---
+
+## TF-B005: Implement Confidence-Range Representation
+
+**Status:** Planned
+
+**Classification:** enhancement
+
+**Milestone:** M13
+
+**Branch:** `feature/m13-contextual-interpretation-thesis-influence`
+
+**Affected Layer:** domain, services, app
+
+**Linked ADRs:** ADR-0006, ADR-0041, ADR-0042
+
+**Impacted Invariants:** AI Advisory Boundary, Derived State Must Remain Distinguishable, Human Decision Sovereignty, Terminology Stability
+
+**Problem:**
+Operators need uncertainty-preserving confidence ranges for interpretations, but M13 must avoid false precision and numeric prediction.
+
+**Acceptance Criteria:**
+
+- Fixed qualitative advisory confidence range enum exists for `AdvisoryInterpretation`.
+- Confidence range requires caveats and provenance when persisted.
+- Confidence range is exposed as advisory metadata only.
+- Invalid confidence range values fail validation.
+- Numeric prediction, probability-as-authority, and hidden model scores are rejected or out of scope.
+
+---
+
+## TF-B006: Implement Thesis Evidence Influence Tracking
+
+**Status:** Planned
+
+**Classification:** architectural
+
+**Milestone:** M13
+
+**Branch:** `feature/m13-contextual-interpretation-thesis-influence`
+
+**Affected Layer:** domain, services, app, replay
+
+**Linked ADRs:** ADR-0002, ADR-0006, ADR-0033, ADR-0041, ADR-0042
+
+**Impacted Invariants:** Human Decision Sovereignty, Lifecycle Authority, AI Advisory Boundary, Derived State Must Remain Distinguishable
+
+**Problem:**
+Operators need to see how interpreted advisory evidence may influence an existing thesis, while preserving that the system does not revise the thesis or own lifecycle authority.
+
+**Acceptance Criteria:**
+
+- Interpretations may optionally reference a thesis and store qualitative thesis influence metadata.
+- Thesis influence tracking is advisory and does not mutate thesis artifact content or append thesis revision events.
+- Influence metadata preserves linked observation IDs, interpretation ID, caveats, provenance, and captured timestamp.
+- API responses distinguish advisory influence from canonical thesis content.
+- Operator-owned thesis revision remains a separate lifecycle or artifact workflow.
+
+---
+
+## TF-B007: Implement Supporting Vs Weakening Evidence Classification
+
+**Status:** Planned
+
+**Classification:** enhancement
+
+**Milestone:** M13
+
+**Branch:** `feature/m13-contextual-interpretation-thesis-influence`
+
+**Affected Layer:** domain, services, app
+
+**Linked ADRs:** ADR-0006, ADR-0041, ADR-0042
+
+**Impacted Invariants:** Human Decision Sovereignty, AI Advisory Boundary, Derived State Must Remain Distinguishable, Terminology Stability
+
+**Problem:**
+Interpretations need qualitative classification for whether evidence appears to support, weaken, complicate, or remain neutral toward a thesis, without becoming an automated thesis judgment.
+
+**Acceptance Criteria:**
+
+- Fixed qualitative thesis influence classification exists for support, weaken, neutral, mixed, and unknown cases.
+- Classification requires linked observations or evidence references.
+- Classification is advisory metadata and cannot revise thesis content, promote lifecycle state, approve plans, or execute trades.
+- Mixed or unknown classifications preserve uncertainty and caveats.
+- API/UI responses label classification as advisory and non-canonical.
+
+---
+
+## TF-B008: Implement Thesis Drift Detection
+
+**Status:** Planned
+
+**Classification:** enhancement
+
+**Milestone:** M13
+
+**Branch:** `feature/m13-contextual-interpretation-thesis-influence`
+
+**Affected Layer:** services, app, frontend
+
+**Linked ADRs:** ADR-0002, ADR-0006, ADR-0033, ADR-0042
+
+**Impacted Invariants:** Human Decision Sovereignty, Lifecycle Authority, Reflection And Review Are First-Class, Derived State Must Remain Distinguishable
+
+**Problem:**
+Operators need visibility when accumulated interpretations suggest that thesis context may have drifted, but the system must not automatically revise or invalidate the thesis.
+
+**Acceptance Criteria:**
+
+- Thesis drift indicators are derived from advisory interpretations and linked thesis context.
+- Drift indicators are advisory-only and cannot append thesis revision, plan revision, approval, rejection, or execution events.
+- Drift output preserves supporting interpretation IDs, evidence references, caveats, and uncertainty.
+- Drift detection surfaces missing or insufficient evidence explicitly.
+- UI/API responses present drift as operator attention context, not deterministic lifecycle authority.
+
+---
+
+## TF-B009: Implement Contextual Contradiction Surfacing
+
+**Status:** Planned
+
+**Classification:** enhancement
+
+**Milestone:** M13
+
+**Branch:** `feature/m13-contextual-interpretation-thesis-influence`
+
+**Affected Layer:** services, app, frontend
+
+**Linked ADRs:** ADR-0006, ADR-0039, ADR-0041, ADR-0042
+
+**Impacted Invariants:** AI Advisory Boundary, Derived State Must Remain Distinguishable, Human Decision Sovereignty, UX Is Architectural
+
+**Problem:**
+Operators need contradictions between context, observations, interpretations, and thesis assumptions surfaced clearly without the runtime hiding uncertainty or resolving ambiguity automatically.
+
+**Acceptance Criteria:**
+
+- Contradiction surfacing links contradictory observations, interpretations, context references, or thesis assumptions.
+- Contradictions preserve source provenance, caveats, uncertainty, and timestamps.
+- The system does not automatically choose a winning interpretation or generate trade recommendations.
+- Contradictions can create attention context but not lifecycle transitions.
+- UI/API responses distinguish contradiction visibility from canonical decision truth.
+
+---
+
+## TF-B010: Implement Evidence Impact Replay Overlays
+
+**Status:** Planned
+
+**Classification:** enhancement
+
+**Milestone:** M13
+
+**Branch:** `feature/m13-contextual-interpretation-thesis-influence`
+
+**Affected Layer:** replay, services, app, frontend
+
+**Linked ADRs:** ADR-0001, ADR-0006, ADR-0008, ADR-0041, ADR-0042
+
+**Impacted Invariants:** Replayability Is Foundational, Event Ledger Canonical Truth, Historical Integrity, Derived State Must Remain Distinguishable
+
+**Problem:**
+Replay should show when interpretations and evidence influence artifacts existed during a historical decision timeline without treating their content as canonical event truth.
+
+**Acceptance Criteria:**
+
+- Replay timeline includes `advisory.interpretation_captured` entries in chronological order.
+- Replay overlays can display linked observation IDs, interpretation IDs, thesis references, influence metadata, confidence range, caveats, and provenance.
+- Replay distinguishes canonical capture facts from non-canonical interpretation content.
+- Replay does not require live providers, current AI output, mutable research sources, or UI state.
+- Replay overlays do not alter lifecycle reconstruction or historical event ordering.
+
+---
+
+## TF-B011: Implement Interpretation-First Operational Surfaces
+
+**Status:** Planned
+
+**Classification:** enhancement
+
+**Milestone:** M13
+
+**Branch:** `feature/m13-contextual-interpretation-thesis-influence`
+
+**Affected Layer:** services, app, frontend
+
+**Linked ADRs:** ADR-0004, ADR-0006, ADR-0007, ADR-0012, ADR-0042
+
+**Impacted Invariants:** Workspaces Are Operational Environments, UX Is Architectural, AI Advisory Boundary, Derived State Must Remain Distinguishable
+
+**Problem:**
+Workspace surfaces need to present interpretations as contextual cognition rather than raw payload lists, dashboard metrics, or recommendation cards.
+
+**Acceptance Criteria:**
+
+- Operational surfaces can list and inspect advisory interpretations by persona, workspace, decision, thesis, observation, influence, weight, confidence range, and tag filters.
+- Surfaces prioritize interpretation summaries, caveats, provenance, uncertainty, and linked evidence.
+- Surfaces label interpretation content as advisory and non-canonical.
+- Surfaces do not include autonomous approve, execute, buy/sell, or lifecycle-transition controls.
+- UI remains workspace-contextual rather than dashboard-centric.
+
+---
+
+## TF-B012: Implement Uncertainty-Preserving UX Patterns
+
+**Status:** Planned
+
+**Classification:** enhancement
+
+**Milestone:** M13
+
+**Branch:** `feature/m13-contextual-interpretation-thesis-influence`
+
+**Affected Layer:** frontend, app, docs
+
+**Linked ADRs:** ADR-0006, ADR-0007, ADR-0012, ADR-0042
+
+**Impacted Invariants:** UX Is Architectural, AI Advisory Boundary, Derived State Must Remain Distinguishable, Human Decision Sovereignty
+
+**Problem:**
+M13 UX must preserve uncertainty, caveats, and non-authoritative status so operators do not confuse interpretation artifacts with deterministic signals.
+
+**Acceptance Criteria:**
+
+- Interpretation views render confidence range, uncertainty, caveats, provenance, and advisory/non-canonical labels together.
+- Unknown, mixed, stale, or conflicting interpretation states are represented explicitly.
+- UX patterns avoid numeric score emphasis, buy/sell language, hidden ranking, and recommendation framing.
+- Empty and missing-information states guide operator review without fabricating conclusions.
+- Runtime documentation records the uncertainty-preserving UI boundary for M13.
+
+---
+
+## TF-B013: Implement Probabilistic Cognition Summaries
+
+**Status:** Planned
+
+**Classification:** enhancement
+
+**Milestone:** M13
+
+**Branch:** `feature/m13-contextual-interpretation-thesis-influence`
+
+**Affected Layer:** services, app, frontend
+
+**Linked ADRs:** ADR-0006, ADR-0041, ADR-0042
+
+**Impacted Invariants:** AI Advisory Boundary, Human Decision Sovereignty, Derived State Must Remain Distinguishable, Reflection And Review Are First-Class
+
+**Problem:**
+Operators need summaries of probabilistic cognition across interpretations, but summaries must remain qualitative advisory context rather than predictive scoring or automated recommendations.
+
+**Acceptance Criteria:**
+
+- Summary service derives qualitative cognition summaries from stored interpretations and linked observations.
+- Summaries preserve uncertainty, caveats, conflicts, confidence ranges, and source provenance.
+- Summaries are derived, rebuildable, non-canonical read models.
+- Summaries do not create events, lifecycle transitions, thesis revisions, approvals, executions, or recommendations.
+- API/UI responses label summaries as advisory and derived.
+
+---
+
+## TF-B014: Implement Evidence Narrative Generation
+
+**Status:** Planned
+
+**Classification:** enhancement
+
+**Milestone:** M13
+
+**Branch:** `feature/m13-contextual-interpretation-thesis-influence`
+
+**Affected Layer:** services, app
+
+**Linked ADRs:** ADR-0006, ADR-0041, ADR-0042
+
+**Impacted Invariants:** AI Advisory Boundary, Human Decision Sovereignty, Historical Integrity, Derived State Must Remain Distinguishable
+
+**Problem:**
+Operators need narrative explanations of evidence and interpretation context, including AI-assisted drafts, but generated narratives must require operator acceptance before persistence and must not become canonical truth.
+
+**Acceptance Criteria:**
+
+- AI-assisted narrative drafts use the existing `AIAdvisoryProvider` boundary.
+- Draft narratives are not persisted and do not append events until explicitly accepted or edited by the operator.
+- Accepted narratives persist as non-canonical advisory interpretation artifact content.
+- Narrative capture appends only allowed advisory capture facts and excludes generated rationale from canonical event truth.
+- Generated narratives preserve source IDs, provenance, caveats, uncertainty, and advisory/non-canonical labels.
+
+---
+
+## TF-B015: Implement Contextual Reasoning Timelines
+
+**Status:** Planned
+
+**Classification:** enhancement
+
+**Milestone:** M13
+
+**Branch:** `feature/m13-contextual-interpretation-thesis-influence`
+
+**Affected Layer:** replay, services, app, frontend
+
+**Linked ADRs:** ADR-0001, ADR-0006, ADR-0008, ADR-0041, ADR-0042
+
+**Impacted Invariants:** Replayability Is Foundational, Historical Integrity, Event Ledger Canonical Truth, Derived State Must Remain Distinguishable
+
+**Problem:**
+Operators need a contextual reasoning timeline that reconstructs how observations, interpretations, conflicts, and thesis influence evolved around a decision without altering canonical lifecycle history.
+
+**Acceptance Criteria:**
+
+- Contextual reasoning timeline composes advisory observation capture facts, interpretation capture facts, linked evidence, thesis references, and replay-safe snapshots.
+- Timeline ordering is deterministic and based on captured timestamps and event history.
+- Timeline distinguishes canonical events, non-canonical advisory artifacts, derived summaries, and inferred interpretation metadata.
+- Timeline reconstruction does not depend on live APIs, current AI output, mutable external documents, or UI state.
+- Timeline does not mutate lifecycle state, thesis artifacts, plans, approvals, executions, or event history.
 
 ---
 
