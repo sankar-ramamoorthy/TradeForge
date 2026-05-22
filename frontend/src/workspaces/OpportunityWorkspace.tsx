@@ -5,12 +5,15 @@ import { type MouseEvent, useCallback, useEffect, useRef, useState } from "react
 import {
   fetchWorkspaceProjection,
   fetchScenarioBranches,
+  type AdvisoryCandidate,
   type ScenarioBranchList,
   type WorkspaceApiParams,
   type WorkspaceProjection,
 } from "../api/runtime";
 import { type WorkspaceContext } from "../workspaceRouting";
+import { type ActiveDecisionRecord } from "../activeDecision";
 import { ThesisDevelopmentModal } from "./ThesisDevelopmentModal";
+import { NewTradeIdeaModal } from "./NewTradeIdeaModal";
 import { ScenarioBranchPanel } from "./ScenarioBranchPanel";
 import { FundamentalsContextPanel } from "./FundamentalsContextPanel";
 import { OpportunitySynthesisPanel } from "./OpportunitySynthesisPanel";
@@ -18,8 +21,13 @@ import { InstrumentIdentityBanner } from "./InstrumentIdentityBanner";
 import { OpportunityEvaluationPanel } from "./OpportunityEvaluationPanel";
 import { OpportunityGuidancePanel } from "./OpportunityGuidancePanel";
 import { AdvisoryInterpretationPanel } from "./AdvisoryInterpretationPanel";
+import { CandidateReviewQueuePanel } from "./CandidateReviewQueuePanel";
 
-type TransitionState = "idle" | "open-thesis-modal" | "error";
+type TransitionState =
+  | "idle"
+  | "open-thesis-modal"
+  | "open-candidate-promotion-modal"
+  | "error";
 
 const AUTHORITY_LABELS: Record<string, string> = {
   canonical: "Canonical",
@@ -85,12 +93,20 @@ type OpportunityWorkspaceProps = {
   context: Required<WorkspaceContext>;
   onNavigate: (event: MouseEvent<HTMLAnchorElement>, href: string) => void;
   onNavigateProgrammatic?: (href: string) => void;
+  onDecisionActivated?: (record: ActiveDecisionRecord) => void;
   onStageLoaded?: (stage: string | null) => void;
 };
 
-export function OpportunityWorkspace({ context, onNavigateProgrammatic, onStageLoaded }: OpportunityWorkspaceProps) {
+export function OpportunityWorkspace({
+  context,
+  onNavigateProgrammatic,
+  onDecisionActivated,
+  onStageLoaded,
+}: OpportunityWorkspaceProps) {
   const [projection, setProjection] = useState<WorkspaceProjection | null>(null);
   const [branchList, setBranchList] = useState<ScenarioBranchList | null>(null);
+  const [candidateForPromotion, setCandidateForPromotion] =
+    useState<AdvisoryCandidate | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [transitionState, setTransitionState] = useState<TransitionState>("idle");
   const fetchControllerRef = useRef<AbortController | null>(null);
@@ -156,6 +172,19 @@ export function OpportunityWorkspace({ context, onNavigateProgrammatic, onStageL
     onNavigateProgrammatic?.(href);
   }
 
+  function handleCandidatePromotion(candidate: AdvisoryCandidate) {
+    setCandidateForPromotion(candidate);
+    setTransitionState("open-candidate-promotion-modal");
+  }
+
+  function handleCandidateDecisionCreated(decisionId: string) {
+    setTransitionState("idle");
+    setCandidateForPromotion(null);
+    onNavigateProgrammatic?.(
+      `/workspaces/opportunity?decision_id=${encodeURIComponent(decisionId)}`,
+    );
+  }
+
   const symbolFromProjection = (() => {
     const sourceEvents = projection?.fields["scenario_references"]?.source_events ?? [];
     for (const event of sourceEvents) {
@@ -201,6 +230,10 @@ export function OpportunityWorkspace({ context, onNavigateProgrammatic, onStageL
           />
 
           <OpportunityEvaluationPanel branchList={branchList} projection={projection} />
+          <CandidateReviewQueuePanel
+            context={context}
+            onBeginPromotion={handleCandidatePromotion}
+          />
           <OpportunitySynthesisPanel symbol={symbolFromProjection} />
           <OpportunityGuidancePanel />
           <AdvisoryInterpretationPanel
@@ -248,6 +281,26 @@ export function OpportunityWorkspace({ context, onNavigateProgrammatic, onStageL
               onCancel={() => setTransitionState("idle")}
               onSuccess={handleThesisSuccess}
               symbol={symbolFromProjection}
+            />
+          ) : null}
+
+          {transitionState === "open-candidate-promotion-modal" &&
+          candidateForPromotion ? (
+            <NewTradeIdeaModal
+              advisoryPrefill={{
+                candidateId: candidateForPromotion.candidate_id,
+                symbol: candidateForPromotion.symbol,
+                initialThesis: `${candidateForPromotion.summary}\n\n${candidateForPromotion.rationale}`,
+              }}
+              onCancel={() => {
+                setCandidateForPromotion(null);
+                setTransitionState("idle");
+              }}
+              onCreated={handleCandidateDecisionCreated}
+              onDecisionActivated={(record) => onDecisionActivated?.(record)}
+              personaId={context.persona_id}
+              personaVersion={context.persona_version}
+              workspaceId={context.workspace_id}
             />
           ) : null}
 

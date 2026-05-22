@@ -17,6 +17,7 @@ class AdvisoryUncertaintyBand(StrEnum):
 
 
 class ObservationKind(StrEnum):
+    ADVISORY_CANDIDATE = "advisory_candidate"
     PRICE_ACTION = "price_action"
     FUNDAMENTALS = "fundamentals"
     MARKET_CONTEXT = "market_context"

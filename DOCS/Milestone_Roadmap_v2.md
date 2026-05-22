@@ -2172,9 +2172,9 @@ M12 excludes autonomous trade approval, autonomous trade execution, broker integ
 * TF-A008 (Done): Implement contextual interpretation artifacts
 * TF-A009 (Done): Implement conflicting evidence surfacing
 * TF-A010 (Done): Implement evidence aging/staleness visibility
-* TF-A011 (Planned): Implement advisory candidate ingestion pipeline
-* TF-A012 (Planned): Implement candidate review queue
-* TF-A013 (Planned): Implement operator candidate promotion workflow
+* TF-A011 (Done): Implement advisory candidate ingestion pipeline
+* TF-A012 (Done): Implement candidate review queue
+* TF-A013 (Done): Implement operator candidate promotion workflow
 * TF-A014 (Planned): Prevent automated lifecycle promotion into TradeIdea
 * TF-A015 (Planned): Implement candidate provenance visualization
 * TF-A016 (Planned): Define external research cockpit import boundary

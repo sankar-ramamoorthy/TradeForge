@@ -1,3 +1,10 @@
+from src.services.advisory.candidate import (
+    AdvisoryCandidateIngestionService,
+    AdvisoryCandidateQueryService,
+    CandidateReviewQueue,
+    CandidateReviewQueueQuery,
+    CandidateReviewQueueService,
+)
 from src.services.advisory.interpretation import (
     ADVISORY_INTERPRETATION_CAPTURED,
     AdvisoryInterpretationCaptureService,
@@ -19,11 +26,16 @@ __all__ = [
     "ADVISORY_OBSERVATION_CAPTURED",
     "ADVISORY_INTERPRETATION_CAPTURED",
     "AIAdvisoryService",
+    "AdvisoryCandidateIngestionService",
+    "AdvisoryCandidateQueryService",
     "AdvisoryInterpretationCaptureService",
     "AdvisoryInterpretationQueryService",
     "AdvisoryObservationCaptureService",
     "AdvisoryObservationQueryService",
     "AdvisoryProvenanceService",
+    "CandidateReviewQueue",
+    "CandidateReviewQueueQuery",
+    "CandidateReviewQueueService",
     "InterpretationDraftService",
     "ReplayAdvisoryService",
     "ReviewAdvisoryService",

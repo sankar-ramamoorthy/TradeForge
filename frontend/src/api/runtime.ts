@@ -398,6 +398,75 @@ export type AdvisoryInterpretationList = {
   interpretations: AdvisoryInterpretation[];
 };
 
+export type AdvisoryCandidate = {
+  candidate_id: string;
+  symbol: string;
+  summary: string;
+  rationale: string;
+  evidence: {
+    evidence_id: string;
+    source_kind: string;
+    source_id: string;
+    summary: string;
+    observed_at: string | null;
+    source_uri: string | null;
+    artifact_id: string | null;
+    captured_at: string | null;
+    provenance_summary: string | null;
+    caveats: string[];
+    conflict_marker: string | null;
+  }[];
+  capture_origin: string;
+  provenance_summary: string;
+  uncertainty_band: string;
+  caveats: string[];
+  persona_id: string;
+  workspace_id: string;
+  source_observation_ids: string[];
+  tags: string[];
+  captured_at: string;
+  authority: "advisory";
+  is_canonical: false;
+  canonical_event_type: "advisory.observation_captured";
+  lifecycle_authority: false;
+};
+
+export type CandidateReviewQueue = {
+  authority: "derived";
+  is_canonical: false;
+  persona_id: string;
+  workspace_id: string;
+  ordering: "captured_at_desc_then_candidate_id_asc";
+  total_count: number;
+  candidates: AdvisoryCandidate[];
+};
+
+export async function fetchCandidateReviewQueue(
+  params: {
+    persona_id: string;
+    workspace_id: string;
+    dismissed_candidate_ids?: string[];
+  },
+  signal?: AbortSignal,
+): Promise<CandidateReviewQueue> {
+  const urlParams = new URLSearchParams();
+  urlParams.set("persona_id", params.persona_id);
+  urlParams.set("workspace_id", params.workspace_id);
+  for (const candidateId of params.dismissed_candidate_ids ?? []) {
+    urlParams.append("dismissed_candidate_id", candidateId);
+  }
+  const response = await fetch(
+    `/advisory/candidates/review-queue?${urlParams.toString()}`,
+    { signal },
+  );
+
+  if (!response.ok) {
+    throw new Error(`Candidate review queue request failed: ${response.status}`);
+  }
+
+  return response.json() as Promise<CandidateReviewQueue>;
+}
+
 export async function fetchAdvisoryInterpretations(
   params: {
     persona_id: string;
@@ -467,6 +536,7 @@ export type NewTradeIdeaRequest = {
   initial_thesis?: string;
   persona_id: string;
   workspace_id: string;
+  source_advisory_candidate_id?: string;
 };
 
 export type NewTradeIdeaResponse = {

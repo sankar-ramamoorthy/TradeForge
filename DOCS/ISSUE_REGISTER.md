@@ -129,9 +129,9 @@ Explicit roadmap checkpoint completed M9 Updated*Done*.
 | TF-A008 | Done | M12 | Implement contextual interpretation artifacts | `feature/m12-advisory-observation-foundation` |
 | TF-A009 | Done | M12 | Implement conflicting evidence surfacing | `feature/m12-advisory-observation-foundation` |
 | TF-A010 | Done | M12 | Implement evidence aging/staleness visibility | `feature/m12-advisory-observation-foundation` |
-| TF-A011 | Planned | M12 | Implement advisory candidate ingestion pipeline | `feature/m12-advisory-observation-foundation` |
-| TF-A012 | Planned | M12 | Implement candidate review queue | `feature/m12-advisory-observation-foundation` |
-| TF-A013 | Planned | M12 | Implement operator candidate promotion workflow | `feature/m12-advisory-observation-foundation` |
+| TF-A011 | Done | M12 | Implement advisory candidate ingestion pipeline | `feature/m12-advisory-observation-foundation` |
+| TF-A012 | Done | M12 | Implement candidate review queue | `feature/m12-advisory-observation-foundation` |
+| TF-A013 | Done | M12 | Implement operator candidate promotion workflow | `feature/m12-advisory-observation-foundation` |
 | TF-A014 | Planned | M12 | Prevent automated lifecycle promotion into TradeIdea | `feature/m12-advisory-observation-foundation` |
 | TF-A015 | Planned | M12 | Implement candidate provenance visualization | `feature/m12-advisory-observation-foundation` |
 | TF-A016 | Planned | M12 | Define external research cockpit import boundary | `feature/m12-advisory-observation-foundation` |
@@ -572,7 +572,7 @@ Implemented derived evidence staleness visibility in advisory observation API re
 
 ## TF-A011: Implement Advisory Candidate Ingestion Pipeline
 
-**Status:** Planned
+**Status:** Done
 
 **Classification:** enhancement
 
@@ -597,11 +597,21 @@ TradeForge needs a way to ingest external or machine-surfaced advisory candidate
 - Candidate ingestion does not create `TradeIdea`, thesis, plan, approval, execution, or decision lifecycle events.
 - Candidate ingestion can append only advisory capture facts allowed by ADR-0041.
 
+**Resolution Summary:**
+Added `AdvisoryCandidate` as a non-canonical advisory view backed by advisory observation artifact persistence. Candidate ingestion writes through the advisory observation capture service, appends only `advisory.observation_captured`, and exposes create/read/list APIs under `/advisory/candidates`.
+
+**Completed Verification:**
+
+- `uv run pytest tests\test_advisory_candidate.py tests\test_advisory_observation.py`
+- `uv run pytest`
+- `uv run mypy src\domain\advisory src\services\advisory src\app\api tests\test_advisory_candidate.py`
+- `uv run ruff check src\domain\advisory\candidate.py src\services\advisory\candidate.py tests\test_advisory_candidate.py`
+
 ---
 
 ## TF-A012: Implement Candidate Review Queue
 
-**Status:** Planned
+**Status:** Done
 
 **Classification:** enhancement
 
@@ -626,11 +636,21 @@ Operators need a review queue for advisory candidates so attention can be organi
 - Queue actions support inspect, dismiss from view, and begin operator-controlled promotion workflow without automated lifecycle transition.
 - Queue ordering is deterministic and transparent; it does not introduce hidden AI ranking authority.
 
+**Resolution Summary:**
+Added a derived `CandidateReviewQueueService` scoped by persona and workspace with deterministic ordering by captured timestamp descending, then candidate ID. The Opportunity Workspace now surfaces advisory candidates with inspect, session-local dismiss, and explicit begin-workflow actions.
+
+**Completed Verification:**
+
+- `uv run pytest tests\test_advisory_candidate.py tests\test_advisory_observation.py`
+- `uv run pytest`
+- `npm.cmd run build`
+- `uv run mypy src\domain\advisory src\services\advisory src\app\api tests\test_advisory_candidate.py`
+
 ---
 
 ## TF-A013: Implement Operator Candidate Promotion Workflow
 
-**Status:** Planned
+**Status:** Done
 
 **Classification:** architectural
 
@@ -654,6 +674,16 @@ Operators need an explicit workflow to use an advisory candidate as input to a n
 - Advisory candidate content may prefill draft context only when labeled advisory and editable by the operator.
 - The canonical lifecycle event, if created, is a normal operator-owned decision event and not an advisory event.
 - Promotion records or preserves traceability back to the source advisory candidate without granting it lifecycle authority.
+
+**Resolution Summary:**
+Extended the existing new trade idea workflow with optional advisory candidate traceability. Promotion requires an explicit operator action, prefilled candidate context remains editable in the existing modal, and the resulting lifecycle event remains a normal human-owned `decision.trade_idea_created` event with advisory candidate references for traceability only.
+
+**Completed Verification:**
+
+- `uv run pytest tests\test_advisory_candidate.py tests\test_advisory_observation.py`
+- `uv run pytest`
+- `npm.cmd run build`
+- `uv run mypy src\domain\advisory src\services\advisory src\app\api tests\test_advisory_candidate.py`
 
 ---
 

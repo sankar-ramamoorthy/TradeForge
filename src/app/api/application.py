@@ -42,10 +42,13 @@ from src.infrastructure.market.polygon_adapter import PolygonProvider
 from src.infrastructure.market.yfinance_adapter import YFinanceProvider
 from src.security import CredentialStore, KeyManager
 from src.services.advisory import (
+    AdvisoryCandidateIngestionService,
+    AdvisoryCandidateQueryService,
     AdvisoryInterpretationCaptureService,
     AdvisoryInterpretationQueryService,
     AdvisoryObservationCaptureService,
     AdvisoryObservationQueryService,
+    CandidateReviewQueueService,
     InterpretationDraftService,
 )
 from src.services.lifecycle import LifecycleOrchestrationService
@@ -196,6 +199,11 @@ def create_app(
         AdvisoryObservationCaptureService | None
     ) = None,
     advisory_observation_query_service: AdvisoryObservationQueryService | None = None,
+    advisory_candidate_ingestion_service: (
+        AdvisoryCandidateIngestionService | None
+    ) = None,
+    advisory_candidate_query_service: AdvisoryCandidateQueryService | None = None,
+    candidate_review_queue_service: CandidateReviewQueueService | None = None,
     advisory_interpretation_capture_service: (
         AdvisoryInterpretationCaptureService | None
     ) = None,
@@ -314,6 +322,25 @@ def create_app(
         advisory_observation_query_service
         if advisory_observation_query_service is not None
         else AdvisoryObservationQueryService(advisory_observation_store)
+    )
+    app.state.advisory_candidate_ingestion_service = (
+        advisory_candidate_ingestion_service
+        if advisory_candidate_ingestion_service is not None
+        else AdvisoryCandidateIngestionService(
+            advisory_observation_store,
+            shared_event_store,
+        )
+    )
+    _candidate_query_service = (
+        advisory_candidate_query_service
+        if advisory_candidate_query_service is not None
+        else AdvisoryCandidateQueryService(advisory_observation_store)
+    )
+    app.state.advisory_candidate_query_service = _candidate_query_service
+    app.state.candidate_review_queue_service = (
+        candidate_review_queue_service
+        if candidate_review_queue_service is not None
+        else CandidateReviewQueueService(_candidate_query_service)
     )
     app.state.advisory_interpretation_capture_service = (
         advisory_interpretation_capture_service

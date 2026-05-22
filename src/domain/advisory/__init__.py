@@ -1,3 +1,4 @@
+from src.domain.advisory.candidate import AdvisoryCandidate
 from src.domain.advisory.contracts import (
     AdvisoryArtifactKind,
     AdvisoryAuthority,
@@ -38,6 +39,7 @@ __all__ = [
     "AIAdvisoryProvider",
     "AdvisoryArtifactKind",
     "AdvisoryAuthority",
+    "AdvisoryCandidate",
     "AdvisoryCaptureOrigin",
     "AdvisoryConfidenceRange",
     "AdvisoryInterpretation",
