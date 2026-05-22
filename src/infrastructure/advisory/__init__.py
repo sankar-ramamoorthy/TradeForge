@@ -1,6 +1,9 @@
 from src.infrastructure.advisory.in_memory_artifact_store import (
     InMemoryAdvisoryArtifactStore,
 )
+from src.infrastructure.advisory.openai_compatible_provider import (
+    OpenAICompatibleAdvisoryProvider,
+)
 from src.infrastructure.advisory.in_memory_interpretation_store import (
     InMemoryAdvisoryInterpretationStore,
 )
@@ -22,6 +25,7 @@ from src.infrastructure.advisory.postgres_observation_store import (
 
 __all__ = [
     "InMemoryAdvisoryArtifactStore",
+    "OpenAICompatibleAdvisoryProvider",
     "InMemoryAdvisoryInterpretationStore",
     "InMemoryAdvisoryObservationStore",
     "InMemoryAdvisoryProvenanceStore",

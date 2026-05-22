@@ -17,6 +17,9 @@ class AdvisoryArtifactKind(StrEnum):
     REVIEW_ASSISTANCE = "review-assistance"
     SCENARIO_RANKING = "scenario-ranking"
     RISK_HIGHLIGHT = "risk-highlight"
+    THESIS_REVIEW = "thesis-review"
+    OBSERVATION_GENERATION = "observation-generation"
+    CANDIDATE_SCREENING = "candidate-screening"
 
 
 class AdvisorySourceKind(StrEnum):
@@ -133,6 +136,10 @@ class AdvisoryResponse:
             "source_references",
             tuple(self.source_references),
         )
+
+
+class AdvisoryProviderUnavailableError(RuntimeError):
+    """Raised when the advisory LLM provider cannot be reached or is not configured."""
 
 
 class AIAdvisoryProvider(Protocol):
