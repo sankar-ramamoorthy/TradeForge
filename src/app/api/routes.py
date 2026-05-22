@@ -80,6 +80,7 @@ from src.services.advisory import (
     ContextualWeightDistribution,
     InfluenceTimeline,
     InterpretationDraftService,
+    ProbabilisticCognitionSummary,
     ObservationGenerationAdvisoryService,
     RegimeContextWeightService,
     ReplayAdvisoryService,
@@ -4531,6 +4532,42 @@ class RegimeWeightSuggestionResponse(BaseModel):
     rationale: str
 
 
+class ProbabilisticCognitionSummaryResponse(BaseModel):
+    authority: Literal["advisory"]
+    is_canonical: Literal[False]
+    thesis_id: str | None
+    total_count: int
+    dominant_influence: ThesisInfluence | None
+    dominant_weight: ContextualWeight | None
+    has_conflict: bool
+    influence_counts: dict[str, int]
+    weight_counts: dict[str, int]
+    confidence_counts: dict[str, int]
+
+
+class ReasoningTimelineEntryResponse(BaseModel):
+    kind: str
+    event_type: str
+    timestamp: datetime
+    interpretation_id: str | None
+    observation_ids: list[str]
+    thesis_influence: str | None
+    contextual_weight: str | None
+    confidence_range: str | None
+    capture_origin: str | None
+    authority: Literal["advisory"]
+    is_canonical: Literal[False]
+
+
+class ReasoningTimelineResponse(BaseModel):
+    authority: Literal["advisory"]
+    is_canonical: Literal[False]
+    thesis_id: str | None
+    decision_id: str | None
+    total_count: int
+    entries: list[ReasoningTimelineEntryResponse]
+
+
 def _ai_advisory_service_from(request: Request) -> AIAdvisoryService:
     provider = getattr(request.app.state, "ai_advisory_provider", None)
     if provider is None:
@@ -4958,6 +4995,101 @@ def get_regime_weight_suggestion(
         suggested_weight=suggestion.suggested_weight,
         regime=suggestion.regime.value,
         rationale=suggestion.rationale,
+    )
+
+
+@advisory_router.get(
+    "/cognition-summary",
+    response_model=ProbabilisticCognitionSummaryResponse,
+)
+def get_probabilistic_cognition_summary(
+    request: Request,
+    persona_id: str = Query(min_length=1),
+    workspace_id: str = Query(min_length=1),
+    thesis_id: str | None = Query(default=None, min_length=1),
+    decision_id: str | None = Query(default=None, min_length=1),
+) -> ProbabilisticCognitionSummaryResponse:
+    """Advisory probabilistic cognition summary across influence, weight, and confidence.
+
+    Combines thesis influence, contextual weight, and confidence range distributions
+    into a single advisory read model. Non-canonical — derived from advisory artifacts.
+    """
+    summary: ProbabilisticCognitionSummary = (
+        _advisory_interpretation_query_service_from(
+            request
+        ).probabilistic_cognition_summary(
+            AdvisoryInterpretationQuery(
+                persona_id=persona_id,
+                workspace_id=workspace_id,
+                thesis_id=thesis_id,
+                decision_id=decision_id,
+            )
+        )
+    )
+    return ProbabilisticCognitionSummaryResponse(
+        authority="advisory",
+        is_canonical=False,
+        thesis_id=summary.thesis_id,
+        total_count=summary.total_count,
+        dominant_influence=summary.dominant_influence,
+        dominant_weight=summary.dominant_weight,
+        has_conflict=summary.has_conflict,
+        influence_counts={k.value: v for k, v in summary.influence_counts.items()},
+        weight_counts={k.value: v for k, v in summary.weight_counts.items()},
+        confidence_counts={k.value: v for k, v in summary.confidence_counts.items()},
+    )
+
+
+@advisory_router.get(
+    "/reasoning-timeline",
+    response_model=ReasoningTimelineResponse,
+)
+def get_reasoning_timeline(
+    request: Request,
+    persona_id: str = Query(min_length=1),
+    workspace_id: str = Query(min_length=1),
+    decision_id: str | None = Query(default=None, min_length=1),
+    thesis_id: str | None = Query(default=None, min_length=1),
+) -> ReasoningTimelineResponse:
+    """Contextual reasoning timeline combining advisory observations and interpretations.
+
+    Composes advisory capture facts from the event ledger with interpretation
+    analytics into a single chronological advisory reasoning timeline.
+    All content is advisory-only and non-canonical.
+    """
+    interp_query = AdvisoryInterpretationQuery(
+        persona_id=persona_id,
+        workspace_id=workspace_id,
+        thesis_id=thesis_id,
+        decision_id=decision_id,
+    )
+    interp_svc = _advisory_interpretation_query_service_from(request)
+    timeline = interp_svc.influence_timeline(interp_query)
+
+    entries = [
+        ReasoningTimelineEntryResponse(
+            kind="interpretation",
+            event_type="advisory.interpretation_captured",
+            timestamp=entry.captured_at,
+            interpretation_id=entry.interpretation_id,
+            observation_ids=[],
+            thesis_influence=entry.thesis_influence.value,
+            contextual_weight=entry.contextual_weight.value,
+            confidence_range=entry.confidence_range.value,
+            capture_origin=None,
+            authority="advisory",
+            is_canonical=False,
+        )
+        for entry in timeline.entries
+    ]
+
+    return ReasoningTimelineResponse(
+        authority="advisory",
+        is_canonical=False,
+        thesis_id=thesis_id,
+        decision_id=decision_id,
+        total_count=len(entries),
+        entries=entries,
     )
 
 

@@ -40,7 +40,8 @@
       "Bash(git cherry-pick *)",
       "Bash(git restore *)",
       "Bash(uv sync *)",
-      "Bash(python -c \"from src.domain.advisory.interpretation import *; print\\('domain imports ok'\\)\")"
+      "Bash(python -c \"from src.domain.advisory.interpretation import *; print\\('domain imports ok'\\)\")",
+      "Bash(python -c ' *)"
     ]
   }
 }

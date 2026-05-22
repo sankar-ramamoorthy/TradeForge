@@ -16,6 +16,7 @@ from src.services.advisory.interpretation import (
     InfluenceTimeline,
     InfluenceTimelineEntry,
     InterpretationDraftService,
+    ProbabilisticCognitionSummary,
     ThesisDriftSignal,
     ThesisInfluenceSummary,
 )
@@ -59,6 +60,7 @@ __all__ = [
     "InfluenceTimeline",
     "InfluenceTimelineEntry",
     "ObservationGenerationAdvisoryService",
+    "ProbabilisticCognitionSummary",
     "RegimeContextWeightService",
     "RegimeWeightSuggestion",
     "ReplayAdvisoryService",

@@ -188,6 +188,45 @@ class AdvisoryInterpretationQueryService:
             ),
         )
 
+    def probabilistic_cognition_summary(
+        self,
+        query: AdvisoryInterpretationQuery,
+    ) -> ProbabilisticCognitionSummary:
+        interpretations = self.list(query)
+        influence_counts = {influence: 0 for influence in ThesisInfluence}
+        weight_counts = {weight: 0 for weight in ContextualWeight}
+        confidence_counts = {cr: 0 for cr in AdvisoryConfidenceRange}
+        for interp in interpretations:
+            influence_counts[interp.thesis_influence] += 1
+            weight_counts[interp.contextual_weight] += 1
+            confidence_counts[interp.confidence_range] += 1
+
+        dominant_influence = (
+            max(influence_counts, key=lambda k: influence_counts[k])
+            if interpretations
+            else None
+        )
+        dominant_weight = (
+            max(weight_counts, key=lambda k: weight_counts[k])
+            if interpretations
+            else None
+        )
+        has_conflict = (
+            influence_counts[ThesisInfluence.SUPPORTING] > 0
+            and influence_counts[ThesisInfluence.WEAKENING] > 0
+        )
+
+        return ProbabilisticCognitionSummary(
+            thesis_id=query.thesis_id,
+            total_count=len(interpretations),
+            dominant_influence=dominant_influence,
+            dominant_weight=dominant_weight,
+            has_conflict=has_conflict,
+            influence_counts=influence_counts,
+            weight_counts=weight_counts,
+            confidence_counts=confidence_counts,
+        )
+
     def drift_signal(
         self,
         query: AdvisoryInterpretationQuery,
@@ -360,6 +399,20 @@ class ThesisDriftSignal:
     previous_dominant: ThesisInfluence | None
     current_dominant: ThesisInfluence | None
     total_count: int
+
+
+@dataclass(frozen=True, slots=True)
+class ProbabilisticCognitionSummary:
+    """Advisory read model combining influence, weight, and confidence distributions."""
+
+    thesis_id: str | None
+    total_count: int
+    dominant_influence: ThesisInfluence | None
+    dominant_weight: ContextualWeight | None
+    has_conflict: bool
+    influence_counts: dict[ThesisInfluence, int]
+    weight_counts: dict[ContextualWeight, int]
+    confidence_counts: dict[AdvisoryConfidenceRange, int]
 
 
 def _capture_payload(interpretation: AdvisoryInterpretation) -> dict[str, object]:
