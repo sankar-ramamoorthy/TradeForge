@@ -11,6 +11,11 @@ type NewTradeIdeaModalProps = {
   personaId: string;
   personaVersion: string;
   workspaceId: string;
+  advisoryPrefill?: {
+    candidateId: string;
+    symbol: string;
+    initialThesis: string;
+  };
   onCreated: (decisionId: string, symbol: string) => void;
   onDecisionActivated: (record: ActiveDecisionRecord) => void;
   onCancel: () => void;
@@ -20,12 +25,15 @@ export function NewTradeIdeaModal({
   personaId,
   personaVersion,
   workspaceId,
+  advisoryPrefill,
   onCreated,
   onDecisionActivated,
   onCancel,
 }: NewTradeIdeaModalProps) {
-  const [symbol, setSymbol] = useState("");
-  const [initialThesis, setInitialThesis] = useState("");
+  const [symbol, setSymbol] = useState(advisoryPrefill?.symbol ?? "");
+  const [initialThesis, setInitialThesis] = useState(
+    advisoryPrefill?.initialThesis ?? "",
+  );
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const symbolRef = useRef<HTMLInputElement>(null);
@@ -48,6 +56,10 @@ export function NewTradeIdeaModal({
         initial_thesis: initialThesis.trim() || undefined,
         persona_id: personaId,
         workspace_id: workspaceId,
+        source_advisory_candidate_id: advisoryPrefill?.candidateId,
+        advisory_candidate_promotion_intent: advisoryPrefill
+          ? "operator_promotes_advisory_candidate"
+          : undefined,
       });
       const record: ActiveDecisionRecord = {
         decision_id: result.decision_id,
@@ -92,6 +104,12 @@ export function NewTradeIdeaModal({
               Initializes a canonical lifecycle event. Lifecycle authority remains
               with the Decision Lifecycle Engine.
             </p>
+            {advisoryPrefill ? (
+              <p className="modal-authority-note">
+                Advisory candidate context is prefilled for editing only. The
+                operator owns any lifecycle event created here.
+              </p>
+            ) : null}
 
             <div className="form-field">
               <label className="form-label" htmlFor="idea-symbol">

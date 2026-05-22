@@ -1,3 +1,13 @@
+from src.domain.advisory.artifact import (
+    AdvisoryArtifact,
+    AdvisoryArtifactFormat,
+    AdvisoryArtifactQuery,
+    AdvisoryArtifactSnapshot,
+    AdvisoryArtifactSourceReference,
+    AdvisoryArtifactStore,
+    AdvisoryArtifactType,
+)
+from src.domain.advisory.candidate import AdvisoryCandidate
 from src.domain.advisory.contracts import (
     AdvisoryArtifactKind,
     AdvisoryAuthority,
@@ -36,8 +46,16 @@ from src.domain.advisory.provenance import (
 
 __all__ = [
     "AIAdvisoryProvider",
+    "AdvisoryArtifact",
     "AdvisoryArtifactKind",
+    "AdvisoryArtifactFormat",
+    "AdvisoryArtifactQuery",
+    "AdvisoryArtifactSnapshot",
+    "AdvisoryArtifactSourceReference",
+    "AdvisoryArtifactStore",
+    "AdvisoryArtifactType",
     "AdvisoryAuthority",
+    "AdvisoryCandidate",
     "AdvisoryCaptureOrigin",
     "AdvisoryConfidenceRange",
     "AdvisoryInterpretation",

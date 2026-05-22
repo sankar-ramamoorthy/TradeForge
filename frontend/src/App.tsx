@@ -462,6 +462,7 @@ export default function App() {
             context={context}
             onNavigate={handleNavigate}
             onNavigateProgrammatic={handleNavigateProgrammatic}
+            onDecisionActivated={handleDecisionActivated}
             onStageLoaded={handleStageLoaded}
           />
         ) : activeRoute.id === "context-workbench" ? (
