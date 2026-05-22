@@ -8,7 +8,14 @@ from pathlib import Path
 if __package__ in {None, ""}:
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from src.security import Credential, CredentialStatus, CredentialStore, KeyManager
+from src.security import (
+    Credential,
+    CredentialStatus,
+    CredentialStore,
+    KeyManager,
+    LiteLLMCredentialPayload,
+    create_litellm_credential,
+)
 
 PROVIDER_FIELDS: dict[str, tuple[str, str]] = {
     "polygon": ("api_key", "api_key"),
@@ -16,6 +23,7 @@ PROVIDER_FIELDS: dict[str, tuple[str, str]] = {
     "alpha_vantage": ("api_key", "api_key"),
     "fmp": ("api_key", "api_key"),
     "finqual": ("api_key", "api_key"),
+    "litellm": ("base_url+api_key+default_model", "base_url,api_key,default_model"),
 }
 
 
@@ -35,6 +43,8 @@ def build_parser() -> argparse.ArgumentParser:
     register.add_argument("provider_id", choices=sorted(PROVIDER_FIELDS))
     register.add_argument("--api-key", required=True)
     register.add_argument("--secret-key")
+    register.add_argument("--base-url")
+    register.add_argument("--default-model")
     register.add_argument("--store-path", default=".keys.enc")
     register.add_argument("--set-by", default="operator")
     register.add_argument("--source", default="manual")
@@ -54,6 +64,8 @@ def main() -> None:
             provider_id=args.provider_id,
             api_key=args.api_key,
             secret_key=args.secret_key,
+            base_url=args.base_url,
+            default_model=args.default_model,
             store_path=Path(args.store_path),
             set_by=args.set_by,
             source=args.source,
@@ -68,18 +80,39 @@ def register_credential(
     provider_id: str,
     api_key: str,
     secret_key: str | None,
+    base_url: str | None,
+    default_model: str | None,
     store_path: Path,
     set_by: str,
     source: str,
 ) -> None:
     credential_type, field_spec = PROVIDER_FIELDS[provider_id]
+    key_manager = KeyManager.from_environment()
+
+    if provider_id == "litellm":
+        if not base_url:
+            raise ValueError("base_url is required for litellm credentials")
+        if not default_model:
+            raise ValueError("default_model is required for litellm credentials")
+        credential = create_litellm_credential(
+            LiteLLMCredentialPayload(
+                base_url=base_url,
+                api_key=api_key,
+                default_model=default_model,
+            ),
+            key_manager=key_manager,
+            set_by=set_by,
+            source=source,
+        )
+        CredentialStore(store_path).save(credential)
+        return
+
     payload = {"api_key": api_key}
     if "secret_key" in field_spec:
         if not secret_key:
             raise ValueError("secret_key is required for alpaca credentials")
         payload["secret_key"] = secret_key
 
-    key_manager = KeyManager.from_environment()
     encrypted_payload = key_manager.encrypt_payload(payload)
     credential = Credential(
         provider_id=provider_id,

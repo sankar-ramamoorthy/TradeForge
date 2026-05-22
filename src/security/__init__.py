@@ -5,6 +5,14 @@ from src.security.key_manager import (
     KeyManager,
     MasterKeyNotConfiguredError,
 )
+from src.security.litellm_credential import (
+    LITELLM_CREDENTIAL_TYPE,
+    LITELLM_PROVIDER_ID,
+    LiteLLMCredentialNotConfiguredError,
+    LiteLLMCredentialPayload,
+    create_litellm_credential,
+    get_litellm_credential,
+)
 
 __all__ = [
     "Credential",
@@ -12,5 +20,11 @@ __all__ = [
     "CredentialStore",
     "InvalidCredentialPayloadError",
     "KeyManager",
+    "LITELLM_CREDENTIAL_TYPE",
+    "LITELLM_PROVIDER_ID",
+    "LiteLLMCredentialNotConfiguredError",
+    "LiteLLMCredentialPayload",
     "MasterKeyNotConfiguredError",
+    "create_litellm_credential",
+    "get_litellm_credential",
 ]

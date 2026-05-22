@@ -2239,22 +2239,38 @@ M13 introduces interpretation artifacts, contextual weighting, regime-aware weig
 
 M13 excludes deterministic predictive scoring, autonomous trade recommendations, opaque AI ranking systems, execution automation, and hidden optimization engines.
 
-## Linked Runtime Issues
+## LLM Adapter Prerequisites (must complete before TF-B014)
 
-* TF-B001: Define interpretation artifact schema
-* TF-B002: Implement contextual weighting framework
+* TF-F045: Add LiteLLM credential shape to CredentialStore (**Done**)
+* TF-F046: Implement OpenAICompatibleAdvisoryProvider (**blocks TF-B014**)
+* TF-F047: Implement prompt template and service wiring for replay summary
+* TF-F048: Implement prompt template and service wiring for thesis review assistant
+* TF-F049: Implement prompt template and service wiring for advisory observation generation
+* TF-F050: Implement prompt template and service wiring for candidate screening
+* TF-F051: Add on-demand advisory API endpoints and frontend trigger surfaces
+* TF-F052: Add advisory service health check to ProviderConfigurationPanel
+* TF-F053: Validate NVIDIA NIM via LiteLLM and document credential shape
+* TF-F054: Document automatic enrichment lifecycle hook points
+
+## Interpretation Domain And Infrastructure
+
+* TF-B001: Define interpretation artifact schema *(M12 foundation: domain model, stores, and capture service already implemented)*
+* TF-B002: Implement contextual weighting framework *(M12 foundation: ContextualWeight enum and storage in place)*
 * TF-B003: Implement regime-aware weighting model
 * TF-B004: Implement conflicting evidence analysis
-* TF-B005: Implement confidence-range representation
-* TF-B006: Implement thesis evidence influence tracking
-* TF-B007: Implement supporting vs weakening evidence classification
+* TF-B005: Implement confidence-range representation *(M12 foundation: AdvisoryConfidenceRange enum and storage in place)*
+* TF-B006: Implement thesis evidence influence tracking *(M12 foundation: ThesisInfluence enum and ThesisInfluenceSummary service in place)*
+* TF-B007: Implement supporting vs weakening evidence classification *(M12 foundation: ThesisInfluence values and query filtering in place)*
 * TF-B008: Implement thesis drift detection
 * TF-B009: Implement contextual contradiction surfacing
+
+## Replay And UX Surfaces
+
 * TF-B010: Implement evidence impact replay overlays
 * TF-B011: Implement interpretation-first operational surfaces
 * TF-B012: Implement uncertainty-preserving UX patterns
 * TF-B013: Implement probabilistic cognition summaries
-* TF-B014: Implement evidence narrative generation
+* TF-B014: Implement evidence narrative generation *(requires TF-F046)*
 * TF-B015: Implement contextual reasoning timelines
 
 ## Acceptance Meaning
