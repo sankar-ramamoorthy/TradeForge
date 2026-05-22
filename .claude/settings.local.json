@@ -36,7 +36,9 @@
       "PowerShell(Test-Path \"C:\\\\Users\\\\bosto\\\\dockerstuff\\\\knowledge-base\\\\TradeForge\\\\knowledge\\\\raw\"; Get-ChildItem \"C:\\\\Users\\\\bosto\\\\dockerstuff\\\\knowledge-base\\\\TradeForge\\\\knowledge\\\\raw\" -ErrorAction SilentlyContinue | ForEach-Object { $_.FullName })",
       "PowerShell(Get-ChildItem \"C:\\\\Users\\\\bosto\\\\dockerstuff\\\\knowledge-base\\\\TradeForge\\\\knowledge\\\\raw\\\\archived\" -File -ErrorAction SilentlyContinue | ForEach-Object { $_.FullName })",
       "Bash(git push *)",
-      "Bash(gh issue *)"
+      "Bash(gh issue *)",
+      "Bash(wc -l DOCS/ISSUE_REGISTER.md)",
+      "Bash(python -c ' *)"
     ]
   }
 }
