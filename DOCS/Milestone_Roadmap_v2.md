@@ -2108,7 +2108,7 @@ What should I buy?
 
 ## M12 - Advisory Observation And Cognitive Evidence Layer
 
-**Status:** Planned
+**Status:** In Progress
 
 ## Semantic Intent
 
@@ -2162,26 +2162,26 @@ M12 excludes autonomous trade approval, autonomous trade execution, broker integ
 
 ## Linked Runtime Issues
 
-* TF-A001: Define AdvisoryObservation domain model
-* TF-A002: Implement advisory observation event taxonomy
-* TF-A003: Implement observation provenance persistence
-* TF-A004: Implement uncertainty metadata support
-* TF-A005: Implement replay-visible advisory observation timeline
-* TF-A006: Implement evidence attachment framework
-* TF-A007: Implement thesis evidence linkage
-* TF-A008: Implement contextual interpretation artifacts
-* TF-A009: Implement conflicting evidence surfacing
-* TF-A010: Implement evidence aging/staleness visibility
-* TF-A011: Implement advisory candidate ingestion pipeline
-* TF-A012: Implement candidate review queue
-* TF-A013: Implement operator candidate promotion workflow
-* TF-A014: Prevent automated lifecycle promotion into TradeIdea
-* TF-A015: Implement candidate provenance visualization
-* TF-A016: Define external research cockpit import boundary
-* TF-A017: Implement research artifact ingestion API
-* TF-A018: Implement Codex/Claude-generated advisory artifact support
-* TF-A019: Implement advisory markdown artifact persistence
-* TF-A020: Implement replay-safe advisory snapshot capture
+* TF-A001 (Done): Define AdvisoryObservation domain model
+* TF-A002 (Done): Implement advisory observation event taxonomy
+* TF-A003 (Done): Implement observation provenance persistence
+* TF-A004 (Done): Implement uncertainty metadata support
+* TF-A005 (Done): Implement replay-visible advisory observation timeline
+* TF-A006 (Done): Implement evidence attachment framework
+* TF-A007 (Done): Implement thesis evidence linkage
+* TF-A008 (Done): Implement contextual interpretation artifacts
+* TF-A009 (Done): Implement conflicting evidence surfacing
+* TF-A010 (Done): Implement evidence aging/staleness visibility
+* TF-A011 (Planned): Implement advisory candidate ingestion pipeline
+* TF-A012 (Planned): Implement candidate review queue
+* TF-A013 (Planned): Implement operator candidate promotion workflow
+* TF-A014 (Planned): Prevent automated lifecycle promotion into TradeIdea
+* TF-A015 (Planned): Implement candidate provenance visualization
+* TF-A016 (Planned): Define external research cockpit import boundary
+* TF-A017 (Planned): Implement research artifact ingestion API
+* TF-A018 (Planned): Implement Codex/Claude-generated advisory artifact support
+* TF-A019 (Planned): Implement advisory markdown artifact persistence
+* TF-A020 (Planned): Implement replay-safe advisory snapshot capture
 
 ## Acceptance Meaning
 
