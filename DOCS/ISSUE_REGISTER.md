@@ -126,9 +126,9 @@ Explicit roadmap checkpoint completed M9 Updated*Done*.
 | TF-A005 | Done | M12 | Implement replay-visible advisory observation timeline | `feature/m12-advisory-observation-foundation` |
 | TF-A006 | Done | M12 | Implement evidence attachment framework | `feature/m12-advisory-observation-foundation` |
 | TF-A007 | Done | M12 | Implement thesis evidence linkage | `feature/m12-advisory-observation-foundation` |
-| TF-A008 | Planned | M12 | Implement contextual interpretation artifacts | `feature/m12-advisory-observation-foundation` |
-| TF-A009 | Planned | M12 | Implement conflicting evidence surfacing | `feature/m12-advisory-observation-foundation` |
-| TF-A010 | Planned | M12 | Implement evidence aging/staleness visibility | `feature/m12-advisory-observation-foundation` |
+| TF-A008 | Done | M12 | Implement contextual interpretation artifacts | `feature/m12-advisory-observation-foundation` |
+| TF-A009 | Done | M12 | Implement conflicting evidence surfacing | `feature/m12-advisory-observation-foundation` |
+| TF-A010 | Done | M12 | Implement evidence aging/staleness visibility | `feature/m12-advisory-observation-foundation` |
 | TF-A011 | Planned | M12 | Implement advisory candidate ingestion pipeline | `feature/m12-advisory-observation-foundation` |
 | TF-A012 | Planned | M12 | Implement candidate review queue | `feature/m12-advisory-observation-foundation` |
 | TF-A013 | Planned | M12 | Implement operator candidate promotion workflow | `feature/m12-advisory-observation-foundation` |
@@ -464,7 +464,7 @@ Implemented deterministic context-link validation for advisory observations. The
 
 ## TF-A008: Implement Contextual Interpretation Artifacts
 
-**Status:** Planned
+**Status:** Done
 
 **Classification:** architectural
 
@@ -481,6 +481,13 @@ Implemented deterministic context-link validation for advisory observations. The
 **Problem:**
 Some advisory observations need lightweight contextual framing so the operator can understand what environment the observation belongs to, but M12 must not implement M13 thesis influence, weighting, scoring, or recommendation semantics.
 
+**Implementation Summary:**
+Implemented lightweight `ContextualObservationArtifact` metadata attached to advisory observations. Contextual artifacts can preserve regime notes, market context references, source links, provenance summary, and caveats as non-canonical advisory observation context. The implementation keeps M13 `AdvisoryInterpretation` semantics out of scope: no thesis influence, contextual weight, confidence range, buy/sell direction, lifecycle transition intent, or execution authority is introduced. Contextual artifact content persists in the advisory observation artifact store and is excluded from canonical capture events.
+
+**Validation:**
+
+- `uv run pytest tests\test_advisory_observation.py`
+
 **Acceptance Criteria:**
 
 - M12 contextual artifacts are stored as non-canonical advisory context attached to observations.
@@ -493,7 +500,7 @@ Some advisory observations need lightweight contextual framing so the operator c
 
 ## TF-A009: Implement Conflicting Evidence Surfacing
 
-**Status:** Planned
+**Status:** Done
 
 **Classification:** enhancement
 
@@ -510,6 +517,13 @@ Some advisory observations need lightweight contextual framing so the operator c
 **Problem:**
 Operators need visibility when advisory evidence points in different directions, but M12 must surface conflict without turning it into scoring, thesis influence, recommendation authority, or automated decision guidance.
 
+**Implementation Summary:**
+Implemented qualitative conflict visibility for advisory observations through explicit `EvidenceConflictMarker` metadata and operator caveat-derived unresolved conflict markers. API read/list responses expose conflict markers as advisory/non-canonical metadata while preserving source IDs and caveats. Conflict markers do not rank, score, approve, reject, promote, or derive thesis influence.
+
+**Validation:**
+
+- `uv run pytest tests\test_advisory_observation.py`
+
 **Acceptance Criteria:**
 
 - Advisory observation list/read workflows can expose conflict markers derived from explicit evidence metadata or operator-provided caveats.
@@ -522,7 +536,7 @@ Operators need visibility when advisory evidence points in different directions,
 
 ## TF-A010: Implement Evidence Aging/Staleness Visibility
 
-**Status:** Planned
+**Status:** Done
 
 **Classification:** enhancement
 
@@ -538,6 +552,13 @@ Operators need visibility when advisory evidence points in different directions,
 
 **Problem:**
 Advisory evidence changes operational relevance over time. Operators need staleness visibility without the system mutating historical evidence or hiding uncertainty.
+
+**Implementation Summary:**
+Implemented derived evidence staleness visibility in advisory observation API responses. Evidence records preserve captured/source timestamps, while response staleness metadata is computed deterministically from stored evidence timestamps and the observation capture timestamp. Staleness labels are derived advisory metadata only and do not mutate, delete, rewrite, or downgrade historical observations.
+
+**Validation:**
+
+- `uv run pytest tests\test_advisory_observation.py`
 
 **Acceptance Criteria:**
 

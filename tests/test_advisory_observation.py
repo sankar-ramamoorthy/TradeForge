@@ -13,6 +13,7 @@ from src.domain.advisory import (
     AdvisorySourceKind,
     AdvisoryUncertaintyBand,
     CognitiveEvidence,
+    ContextualObservationArtifact,
     ObservationKind,
 )
 from src.domain.events import (
@@ -87,6 +88,16 @@ def _rich_evidence() -> CognitiveEvidence:
     )
 
 
+def _contextual_artifact() -> ContextualObservationArtifact:
+    return ContextualObservationArtifact(
+        regime_notes=("Breadth context is mixed but improving.",),
+        market_context_references=("snapshot-1",),
+        source_links=("https://research.example.test/semis",),
+        provenance_summary="operator context framing",
+        caveats=("Context is advisory and not thesis influence.",),
+    )
+
+
 def _observation(
     observation_id: str = "obs-1",
     kind: ObservationKind = ObservationKind.MARKET_CONTEXT,
@@ -106,6 +117,7 @@ def _observation(
         workspace_id="workspace.context",
         decision_id=decision_id,
         thesis_id="thesis-1",
+        contextual_artifacts=(_contextual_artifact(),),
         tags=("semis", "breadth"),
         captured_at=_NOW,
     )
@@ -119,6 +131,11 @@ def test_advisory_domain_accepts_observation_contract() -> None:
     assert observation.observation_kind is ObservationKind.MARKET_CONTEXT
     assert observation.capture_origin is AdvisoryCaptureOrigin.OPERATOR_MANUAL
     assert observation.uncertainty_band is AdvisoryUncertaintyBand.MEDIUM
+    assert observation.contextual_artifacts[0].is_advisory is True
+    assert observation.contextual_artifacts[0].is_canonical is False
+    assert observation.contextual_artifacts[0].regime_notes == (
+        "Breadth context is mixed but improving.",
+    )
 
 
 def test_observation_rejects_empty_required_fields() -> None:
@@ -177,6 +194,8 @@ def test_advisory_event_domain_and_capture_event_are_supported() -> None:
     assert event.payload["uncertainty_band"] == "medium"
     assert event.payload["advisory_content_is_canonical"] is False
     assert "content" not in event.payload
+    assert "contextual_artifacts" not in event.payload
+    assert "conflict_markers" not in event.payload
     assert "recommendation_authority" not in event.payload
     assert "lifecycle_transition_intent" not in event.payload
     assert "execution_authority" not in event.payload
@@ -220,6 +239,12 @@ def test_postgres_observation_store_shape_and_migration() -> None:
     assert "event_ledger" not in text
     assert "content" in text
     assert "evidence" in text
+    assert "contextual_artifacts" in (
+        open(
+            "migrations/versions/20260521_0006_add_contextual_observation_artifacts.py",
+            encoding="utf-8",
+        ).read()
+    )
     assert "uncertainty_band" in text
     assert "capture_origin" in text
 
@@ -241,16 +266,27 @@ def test_create_read_list_api_labels_advisory_observations() -> None:
                     "source_kind": "market-context",
                     "source_id": "snapshot-1",
                     "summary": "Snapshot showed higher close.",
-                    "observed_at": "2026-05-19T14:30:00Z",
+                    "observed_at": "2026-04-01T14:30:00Z",
+                    "conflict_marker": "mixed",
+                    "caveats": ["Breadth and volume evidence conflict."],
                 }
             ],
             "provenance_summary": "operator supplied from context workbench",
             "uncertainty_band": "medium",
-            "caveats": ["Provider coverage was partial."],
+            "caveats": ["Provider coverage was partial and conflicting."],
             "persona_id": "persona.swing",
             "workspace_id": "workspace.context",
             "decision_id": "decision-1",
             "thesis_id": "thesis-1",
+            "contextual_artifacts": [
+                {
+                    "regime_notes": ["Breadth context is mixed but improving."],
+                    "market_context_references": ["snapshot-1"],
+                    "source_links": ["https://research.example.test/semis"],
+                    "provenance_summary": "operator context framing",
+                    "caveats": ["Context is advisory and not thesis influence."],
+                }
+            ],
             "tags": ["semis"],
             "captured_at": "2026-05-19T14:30:00Z",
         },
@@ -261,7 +297,16 @@ def test_create_read_list_api_labels_advisory_observations() -> None:
     assert created["authority"] == "advisory"
     assert created["capture_origin"] == "operator_manual"
     assert created["uncertainty_band"] == "medium"
-    assert created["caveats"] == ["Provider coverage was partial."]
+    assert created["caveats"] == ["Provider coverage was partial and conflicting."]
+    assert created["contextual_artifacts"][0]["authority"] == "advisory"
+    assert created["contextual_artifacts"][0]["is_canonical"] is False
+    assert created["contextual_artifacts"][0]["regime_notes"] == [
+        "Breadth context is mixed but improving."
+    ]
+    assert created["conflict_markers"][0]["label"] == "mixed"
+    assert created["conflict_markers"][1]["label"] == "unresolved"
+    assert created["evidence_staleness"][0]["label"] == "stale"
+    assert created["evidence_staleness"][0]["derived"] is True
     assert created["is_canonical"] is False
     assert created["canonical_event_type"] == "advisory.observation_captured"
     observation_id = created["observation_id"]
@@ -288,6 +333,7 @@ def test_create_read_list_api_labels_advisory_observations() -> None:
     assert body["total_count"] == 1
     assert body["observations"][0]["observation_id"] == observation_id
     assert body["observations"][0]["uncertainty_band"] == "medium"
+    assert body["observations"][0]["conflict_markers"][0]["authority"] == "advisory"
 
 
 def test_create_api_rejects_invalid_uncertainty_band() -> None:

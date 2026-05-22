@@ -25,6 +25,8 @@ from src.domain.advisory.observation import (
     AdvisoryObservationStore,
     AdvisoryUncertaintyBand,
     CognitiveEvidence,
+    ContextualObservationArtifact,
+    EvidenceConflictMarker,
     ObservationKind,
 )
 from src.domain.advisory.provenance import (
@@ -54,7 +56,9 @@ __all__ = [
     "AdvisoryUncertainty",
     "AdvisoryUncertaintyBand",
     "ContextualWeight",
+    "ContextualObservationArtifact",
     "CognitiveEvidence",
+    "EvidenceConflictMarker",
     "InterpretationKind",
     "ObservationKind",
     "ThesisInfluence",

@@ -36,6 +36,12 @@ class AdvisoryCaptureOrigin(StrEnum):
     FUTURE_SCANNER = "future_scanner"
 
 
+class EvidenceConflictMarker(StrEnum):
+    CONFLICTING = "conflicting"
+    MIXED = "mixed"
+    UNRESOLVED = "unresolved"
+
+
 @dataclass(frozen=True, slots=True)
 class CognitiveEvidence:
     evidence_id: str
@@ -48,6 +54,7 @@ class CognitiveEvidence:
     captured_at: datetime | None = None
     provenance_summary: str | None = None
     caveats: tuple[str, ...] = field(default_factory=tuple)
+    conflict_marker: EvidenceConflictMarker | None = None
 
     def __post_init__(self) -> None:
         _require_non_empty("evidence_id", self.evidence_id)
@@ -67,6 +74,51 @@ class CognitiveEvidence:
 
 
 @dataclass(frozen=True, slots=True)
+class ContextualObservationArtifact:
+    regime_notes: tuple[str, ...] = field(default_factory=tuple)
+    market_context_references: tuple[str, ...] = field(default_factory=tuple)
+    source_links: tuple[str, ...] = field(default_factory=tuple)
+    provenance_summary: str | None = None
+    caveats: tuple[str, ...] = field(default_factory=tuple)
+
+    def __post_init__(self) -> None:
+        if self.provenance_summary is not None:
+            _require_non_empty("context provenance_summary", self.provenance_summary)
+        object.__setattr__(
+            self,
+            "regime_notes",
+            tuple(note.strip() for note in self.regime_notes if note.strip()),
+        )
+        object.__setattr__(
+            self,
+            "market_context_references",
+            tuple(
+                reference.strip()
+                for reference in self.market_context_references
+                if reference.strip()
+            ),
+        )
+        object.__setattr__(
+            self,
+            "source_links",
+            tuple(link.strip() for link in self.source_links if link.strip()),
+        )
+        object.__setattr__(
+            self,
+            "caveats",
+            tuple(caveat.strip() for caveat in self.caveats if caveat.strip()),
+        )
+
+    @property
+    def is_advisory(self) -> bool:
+        return True
+
+    @property
+    def is_canonical(self) -> bool:
+        return False
+
+
+@dataclass(frozen=True, slots=True)
 class AdvisoryObservation:
     observation_id: str
     artifact_id: str
@@ -82,6 +134,9 @@ class AdvisoryObservation:
     captured_at: datetime
     decision_id: str | None = None
     thesis_id: str | None = None
+    contextual_artifacts: tuple[ContextualObservationArtifact, ...] = field(
+        default_factory=tuple
+    )
     tags: tuple[str, ...] = field(default_factory=tuple)
     authority: AdvisoryAuthority = AdvisoryAuthority.ADVISORY
 
@@ -104,6 +159,11 @@ class AdvisoryObservation:
             raise ValueError("advisory observations must remain advisory")
 
         object.__setattr__(self, "evidence", tuple(self.evidence))
+        object.__setattr__(
+            self,
+            "contextual_artifacts",
+            tuple(self.contextual_artifacts),
+        )
         object.__setattr__(
             self,
             "caveats",
