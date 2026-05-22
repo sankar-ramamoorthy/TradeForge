@@ -120,9 +120,9 @@ Explicit roadmap checkpoint completed M9 Updated*Done*.
 | TF-0067 | Done | M11 | Implement review assistance | `feature/m11-ai-advisory-boundary` |
 | TF-0068 | Done | M11 | Implement advisory provenance tracking | `feature/m11-ai-advisory-boundary` |
 | TF-A001 | Done | M12 | Define AdvisoryObservation domain model | `feature/m12-advisory-observation-foundation` |
-| TF-A002 | Planned | M12 | Implement advisory observation event taxonomy | `feature/m12-advisory-observation-foundation` |
-| TF-A003 | Planned | M12 | Implement observation provenance persistence | `feature/m12-advisory-observation-foundation` |
-| TF-A004 | Planned | M12 | Implement uncertainty metadata support | `feature/m12-advisory-observation-foundation` |
+| TF-A002 | Done | M12 | Implement advisory observation event taxonomy | `feature/m12-advisory-observation-foundation` |
+| TF-A003 | Done | M12 | Implement observation provenance persistence | `feature/m12-advisory-observation-foundation` |
+| TF-A004 | Done | M12 | Implement uncertainty metadata support | `feature/m12-advisory-observation-foundation` |
 | TF-A005 | Planned | M12 | Implement replay-visible advisory observation timeline | `feature/m12-advisory-observation-foundation` |
 | TF-A006 | Planned | M12 | Implement evidence attachment framework | `feature/m12-advisory-observation-foundation` |
 | TF-A007 | Planned | M12 | Implement thesis evidence linkage | `feature/m12-advisory-observation-foundation` |
@@ -252,7 +252,7 @@ Verified the existing advisory observation domain contract in `src/domain/adviso
 
 ## TF-A002: Implement Advisory Observation Event Taxonomy
 
-**Status:** Planned
+**Status:** Done
 
 **Classification:** architectural
 
@@ -269,6 +269,13 @@ Verified the existing advisory observation domain contract in `src/domain/adviso
 **Problem:**
 M12 advisory captures need a canonical fact event that records only that an observation artifact was captured, while preserving advisory artifact content outside the canonical ledger.
 
+**Implementation Summary:**
+Verified the existing advisory event taxonomy and capture path. `EventDomain.ADVISORY` is present in `src/domain/events/taxonomy.py`, and `AdvisoryObservationCaptureService` appends `advisory.observation_captured` as a capture-fact-only event. The payload includes observation ID, artifact ID, observation kind, capture origin, optional decision/thesis references, source references, provenance summary, uncertainty band, tags, captured timestamp, and advisory/non-canonical markers while excluding observation content and authority fields.
+
+**Validation:**
+
+- `uv run pytest tests\test_advisory_observation.py::test_advisory_event_domain_and_capture_event_are_supported tests\test_advisory_observation.py::test_replay_timeline_includes_advisory_capture_fact_without_content tests\test_domain_events.py`
+
 **Acceptance Criteria:**
 
 - `advisory` is an accepted canonical event domain.
@@ -280,7 +287,7 @@ M12 advisory captures need a canonical fact event that records only that an obse
 
 ## TF-A003: Implement Observation Provenance Persistence
 
-**Status:** Planned
+**Status:** Done
 
 **Classification:** enhancement
 
@@ -297,6 +304,13 @@ M12 advisory captures need a canonical fact event that records only that an obse
 **Problem:**
 Advisory observation content and evidence must persist durably without becoming event-ledger truth.
 
+**Implementation Summary:**
+Verified the existing non-canonical advisory observation artifact persistence. `InMemoryAdvisoryObservationStore` provides default/test persistence, and `PostgresAdvisoryObservationStore` persists observation content, evidence, provenance summary, caveats, tags, capture origin, persona/workspace context, optional decision/thesis context, and timestamps in the separate `advisory_observations` table. The migration creates `advisory_observations` separately from `event_ledger`, and stores support retrieval by observation ID plus list filtering by persona/workspace, decision, thesis, observation kind, source kind, and capture origin.
+
+**Validation:**
+
+- `uv run pytest tests\test_advisory_observation.py::test_in_memory_observation_store_persists_and_filters tests\test_advisory_observation.py::test_postgres_observation_store_shape_and_migration tests\test_advisory_observation.py::test_create_read_list_api_labels_advisory_observations`
+
 **Acceptance Criteria:**
 
 - A non-canonical advisory artifact store persists observation text, evidence references, provenance, caveats, tags, capture origin, persona/workspace context, and optional decision/thesis context.
@@ -308,7 +322,7 @@ Advisory observation content and evidence must persist durably without becoming 
 
 ## TF-A004: Implement Uncertainty Metadata Support
 
-**Status:** Planned
+**Status:** Done
 
 **Classification:** enhancement
 
@@ -324,6 +338,13 @@ Advisory observation content and evidence must persist durably without becoming 
 
 **Problem:**
 Advisory observations must preserve uncertainty in qualitative, non-authoritative form so operators do not confuse them with deterministic signals.
+
+**Implementation Summary:**
+Verified the existing qualitative uncertainty metadata model and added focused regression coverage. `AdvisoryUncertaintyBand` supports `low`, `medium`, `high`, and `unknown`; invalid values fail enum/API validation; caveats are required by the domain model and API payload; persisted/API responses expose `uncertainty_band` and `caveats` as advisory metadata alongside advisory/non-canonical labels.
+
+**Validation:**
+
+- `uv run pytest tests\test_advisory_observation.py`
 
 **Acceptance Criteria:**
 

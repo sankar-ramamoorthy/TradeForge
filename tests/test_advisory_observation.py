@@ -102,6 +102,14 @@ def test_observation_requires_evidence_and_caveats() -> None:
         replace(_observation(), caveats=())
 
 
+def test_invalid_uncertainty_band_fails_validation() -> None:
+    with pytest.raises(ValueError, match="not-a-band"):
+        replace(
+            _observation(),
+            uncertainty_band=AdvisoryUncertaintyBand("not-a-band"),
+        )
+
+
 def test_advisory_event_domain_and_capture_event_are_supported() -> None:
     event_store = InMemoryEventStore()
     service = AdvisoryObservationCaptureService(
@@ -203,6 +211,8 @@ def test_create_read_list_api_labels_advisory_observations() -> None:
     created = response.json()
     assert created["authority"] == "advisory"
     assert created["capture_origin"] == "operator_manual"
+    assert created["uncertainty_band"] == "medium"
+    assert created["caveats"] == ["Provider coverage was partial."]
     assert created["is_canonical"] is False
     assert created["canonical_event_type"] == "advisory.observation_captured"
     observation_id = created["observation_id"]
@@ -228,6 +238,38 @@ def test_create_read_list_api_labels_advisory_observations() -> None:
     assert body["is_canonical"] is False
     assert body["total_count"] == 1
     assert body["observations"][0]["observation_id"] == observation_id
+    assert body["observations"][0]["uncertainty_band"] == "medium"
+
+
+def test_create_api_rejects_invalid_uncertainty_band() -> None:
+    client = TestClient(create_app())
+
+    response = client.post(
+        "/advisory/observations",
+        json={
+            "observation_kind": "market_context",
+            "capture_origin": "operator_manual",
+            "content": "Semiconductor breadth improved while volume remained uneven.",
+            "evidence": [
+                {
+                    "evidence_id": "evidence-1",
+                    "source_kind": "market-context",
+                    "source_id": "snapshot-1",
+                    "summary": "Snapshot showed higher close.",
+                    "observed_at": "2026-05-19T14:30:00Z",
+                }
+            ],
+            "provenance_summary": "operator supplied from context workbench",
+            "uncertainty_band": "certain",
+            "caveats": ["Provider coverage was partial."],
+            "persona_id": "persona.swing",
+            "workspace_id": "workspace.context",
+            "captured_at": "2026-05-19T14:30:00Z",
+        },
+    )
+
+    assert response.status_code == 422
+
 
 
 def test_replay_timeline_includes_advisory_capture_fact_without_content() -> None:
