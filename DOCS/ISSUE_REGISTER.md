@@ -119,7 +119,7 @@ Explicit roadmap checkpoint completed M9 Updated*Done*.
 | TF-0066 | Done | M11 | Implement replay summarization assistance | `feature/m11-ai-advisory-boundary` |
 | TF-0067 | Done | M11 | Implement review assistance | `feature/m11-ai-advisory-boundary` |
 | TF-0068 | Done | M11 | Implement advisory provenance tracking | `feature/m11-ai-advisory-boundary` |
-| TF-A001 | Planned | M12 | Define AdvisoryObservation domain model | `feature/m12-advisory-observation-foundation` |
+| TF-A001 | Done | M12 | Define AdvisoryObservation domain model | `feature/m12-advisory-observation-foundation` |
 | TF-A002 | Planned | M12 | Implement advisory observation event taxonomy | `feature/m12-advisory-observation-foundation` |
 | TF-A003 | Planned | M12 | Implement observation provenance persistence | `feature/m12-advisory-observation-foundation` |
 | TF-A004 | Planned | M12 | Implement uncertainty metadata support | `feature/m12-advisory-observation-foundation` |
@@ -215,7 +215,7 @@ Explicit roadmap checkpoint completed M9 Updated*Done*.
 
 ## TF-A001: Define AdvisoryObservation Domain Model
 
-**Status:** Planned
+**Status:** Done
 
 **Classification:** architectural
 
@@ -231,6 +231,13 @@ Explicit roadmap checkpoint completed M9 Updated*Done*.
 
 **Problem:**
 TradeForge needs a durable pre-lifecycle advisory observation model that can capture machine- or operator-supplied observations without implying lifecycle, thesis, recommendation, or execution authority.
+
+**Implementation Summary:**
+Verified the existing advisory observation domain contract in `src/domain/advisory/observation.py`. The runtime already defines `AdvisoryObservation`, `CognitiveEvidence`, `ObservationKind`, `AdvisoryCaptureOrigin`, and `AdvisoryUncertaintyBand` as pure domain contracts with validation for persona/workspace context, provenance summary, evidence, caveats, captured timestamp, and advisory-only authority. The contract remains non-canonical and does not carry recommendation authority, lifecycle transition intent, or execution authority.
+
+**Validation:**
+
+- `uv run pytest tests\test_advisory_observation.py`
 
 **Acceptance Criteria:**
 
