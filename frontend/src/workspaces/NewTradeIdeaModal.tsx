@@ -57,6 +57,9 @@ export function NewTradeIdeaModal({
         persona_id: personaId,
         workspace_id: workspaceId,
         source_advisory_candidate_id: advisoryPrefill?.candidateId,
+        advisory_candidate_promotion_intent: advisoryPrefill
+          ? "operator_promotes_advisory_candidate"
+          : undefined,
       });
       const record: ActiveDecisionRecord = {
         decision_id: result.decision_id,

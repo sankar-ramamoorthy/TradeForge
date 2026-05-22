@@ -132,13 +132,13 @@ Explicit roadmap checkpoint completed M9 Updated*Done*.
 | TF-A011 | Done | M12 | Implement advisory candidate ingestion pipeline | `feature/m12-advisory-observation-foundation` |
 | TF-A012 | Done | M12 | Implement candidate review queue | `feature/m12-advisory-observation-foundation` |
 | TF-A013 | Done | M12 | Implement operator candidate promotion workflow | `feature/m12-advisory-observation-foundation` |
-| TF-A014 | Planned | M12 | Prevent automated lifecycle promotion into TradeIdea | `feature/m12-advisory-observation-foundation` |
-| TF-A015 | Planned | M12 | Implement candidate provenance visualization | `feature/m12-advisory-observation-foundation` |
-| TF-A016 | Planned | M12 | Define external research cockpit import boundary | `feature/m12-advisory-observation-foundation` |
-| TF-A017 | Planned | M12 | Implement research artifact ingestion API | `feature/m12-advisory-observation-foundation` |
-| TF-A018 | Planned | M12 | Implement Codex/Claude-generated advisory artifact support | `feature/m12-advisory-observation-foundation` |
-| TF-A019 | Planned | M12 | Implement advisory markdown artifact persistence | `feature/m12-advisory-observation-foundation` |
-| TF-A020 | Planned | M12 | Implement replay-safe advisory snapshot capture | `feature/m12-advisory-observation-foundation` |
+| TF-A014 | Done | M12 | Prevent automated lifecycle promotion into TradeIdea | `feature/m12-advisory-observation-foundation` |
+| TF-A015 | Done | M12 | Implement candidate provenance visualization | `feature/m12-advisory-observation-foundation` |
+| TF-A016 | Done | M12 | Define external research cockpit import boundary | `feature/m12-advisory-observation-foundation` |
+| TF-A017 | Done | M12 | Implement research artifact ingestion API | `feature/m12-advisory-observation-foundation` |
+| TF-A018 | Done | M12 | Implement Codex/Claude-generated advisory artifact support | `feature/m12-advisory-observation-foundation` |
+| TF-A019 | Done | M12 | Implement advisory markdown artifact persistence | `feature/m12-advisory-observation-foundation` |
+| TF-A020 | Done | M12 | Implement replay-safe advisory snapshot capture | `feature/m12-advisory-observation-foundation` |
 | TF-B001 | Planned | M13 | Define interpretation artifact schema | `feature/m13-contextual-interpretation-thesis-influence` |
 | TF-B002 | Planned | M13 | Implement contextual weighting framework | `feature/m13-contextual-interpretation-thesis-influence` |
 | TF-B003 | Planned | M13 | Implement regime-aware weighting model | `feature/m13-contextual-interpretation-thesis-influence` |
@@ -689,7 +689,7 @@ Extended the existing new trade idea workflow with optional advisory candidate t
 
 ## TF-A014: Prevent Automated Lifecycle Promotion Into TradeIdea
 
-**Status:** Planned
+**Status:** Done
 
 **Classification:** architectural
 
@@ -714,11 +714,20 @@ M12 introduces advisory observations and candidates, increasing the risk that ge
 - Tests cover attempts to create trade ideas through advisory ingestion paths.
 - Error responses explain that advisory artifacts cannot bypass the decision lifecycle.
 
+**Resolution Summary:**
+Added explicit operator-promotion intent validation for advisory-candidate promotion and forbids extra lifecycle-command fields on advisory candidate payloads. Advisory ingestion and artifact ingestion paths reject lifecycle authority, recommendation authority, and execution intent attempts.
+
+**Completed Verification:**
+
+- `uv run pytest tests\test_advisory_candidate.py tests\test_advisory_artifact.py`
+- `uv run pytest`
+- `npm.cmd run build`
+
 ---
 
 ## TF-A015: Implement Candidate Provenance Visualization
 
-**Status:** Planned
+**Status:** Done
 
 **Classification:** enhancement
 
@@ -743,11 +752,19 @@ Operators need to inspect where advisory candidates came from and why they are v
 - UI copy labels candidates and provenance as advisory and non-canonical.
 - Provenance views do not include buy/sell instructions, scores, lifecycle authority, or execution affordances.
 
+**Resolution Summary:**
+Expanded the candidate review queue detail surface with read-only advisory provenance, candidate/artifact identifiers, source references, evidence artifact IDs, uncertainty, caveats, and captured timestamp. The UI labels provenance as advisory and explicitly excludes scores, execution authority, and lifecycle commands.
+
+**Completed Verification:**
+
+- `npm.cmd run build`
+- `uv run pytest tests\test_advisory_candidate.py`
+
 ---
 
 ## TF-A016: Define External Research Cockpit Import Boundary
 
-**Status:** Planned
+**Status:** Done
 
 **Classification:** architectural
 
@@ -772,11 +789,19 @@ External research needs a controlled import boundary so research can become advi
 - Import boundary rejects payloads that attempt to create lifecycle transitions, approvals, execution intent, or recommendations as canonical truth.
 - Runtime documentation records the non-canonical boundary and replay implications for imported research.
 
+**Resolution Summary:**
+Added `DOCS/advisory-artifact-boundary.md` and an `AdvisoryArtifact` domain boundary for imported research, generated advisory artifacts, and markdown advisory artifacts. Imported research requires `imported_research` origin, persists outside `event_ledger`, and can be linked as evidence without becoming canonical truth.
+
+**Completed Verification:**
+
+- `uv run pytest tests\test_advisory_artifact.py`
+- `uv run pytest`
+
 ---
 
 ## TF-A017: Implement Research Artifact Ingestion API
 
-**Status:** Planned
+**Status:** Done
 
 **Classification:** enhancement
 
@@ -801,11 +826,19 @@ Operators need an API path to ingest research artifacts into advisory persistenc
 - API responses expose advisory/non-canonical labels and artifact IDs.
 - Invalid payloads that imply recommendation, lifecycle transition intent, execution authority, or canonical truth are rejected.
 
+**Resolution Summary:**
+Added `/advisory/artifacts` create/read/list APIs backed by in-memory and Postgres advisory artifact stores. The endpoint accepts source references, provenance, uncertainty, caveats, persona/workspace, metadata, tags, and captured timestamp while rejecting lifecycle authority and canonical recommendation claims.
+
+**Completed Verification:**
+
+- `uv run pytest tests\test_advisory_artifact.py`
+- `uv run pytest`
+
 ---
 
 ## TF-A018: Implement Codex/Claude-Generated Advisory Artifact Support
 
-**Status:** Planned
+**Status:** Done
 
 **Classification:** enhancement
 
@@ -830,11 +863,19 @@ Generated advisory artifacts from Codex or Claude need explicit capture origin, 
 - Generated artifacts cannot append decision, lifecycle, approval, execution, or review events directly.
 - API responses clearly label generated artifacts as advisory and non-canonical.
 
+**Resolution Summary:**
+Generated advisory artifacts now use the same non-canonical artifact boundary with required `codex_generated` or `claude_generated` capture origins. Generated artifacts require source references, provenance, uncertainty, caveats, persona/workspace, and captured timestamp, and they do not append lifecycle or decision events.
+
+**Completed Verification:**
+
+- `uv run pytest tests\test_advisory_artifact.py`
+- `uv run pytest`
+
 ---
 
 ## TF-A019: Implement Advisory Markdown Artifact Persistence
 
-**Status:** Planned
+**Status:** Done
 
 **Classification:** enhancement
 
@@ -859,11 +900,19 @@ Advisory research and generated cognition often arrive as markdown. Runtime need
 - Markdown rendering or retrieval does not execute embedded scripts or treat content as trusted commands.
 - Markdown artifacts can be linked as evidence to observations or candidates.
 
+**Resolution Summary:**
+Added markdown advisory artifact persistence with metadata, provenance, caveats, uncertainty, source references, and artifact retrieval/list filters. Markdown bodies remain inert stored text; script-bearing markdown is rejected, and markdown artifact IDs can be linked through `CognitiveEvidence.artifact_id`.
+
+**Completed Verification:**
+
+- `uv run pytest tests\test_advisory_artifact.py`
+- `uv run pytest`
+
 ---
 
 ## TF-A020: Implement Replay-Safe Advisory Snapshot Capture
 
-**Status:** Planned
+**Status:** Done
 
 **Classification:** enhancement
 
@@ -887,6 +936,14 @@ Replay needs to reconstruct what advisory artifacts existed at the time of captu
 - Snapshot content remains non-canonical; canonical events record only capture facts and artifact identifiers.
 - Replay APIs expose advisory snapshot references while distinguishing event truth from advisory artifact content.
 - Snapshot capture does not mutate, delete, or rewrite prior advisory artifacts or event ledger records.
+
+**Resolution Summary:**
+Artifact ingestion now records a replay-safe advisory snapshot containing captured timestamp, metadata copy, source reference count, caveat count, and body SHA-256 digest. Snapshots remain non-canonical and are returned by advisory artifact APIs without rewriting existing artifacts or ledger events.
+
+**Completed Verification:**
+
+- `uv run pytest tests\test_advisory_artifact.py`
+- `uv run pytest`
 
 ---
 

@@ -15,11 +15,17 @@ from src.domain.market.capability import (
 )
 from src.domain.market.provider import FundamentalsDataProvider, MarketDataProvider
 from src.domain.market.registry import ProviderRegistry
+from src.infrastructure.advisory.in_memory_artifact_store import (
+    InMemoryAdvisoryArtifactStore,
+)
 from src.infrastructure.advisory.in_memory_interpretation_store import (
     InMemoryAdvisoryInterpretationStore,
 )
 from src.infrastructure.advisory.in_memory_observation_store import (
     InMemoryAdvisoryObservationStore,
+)
+from src.infrastructure.advisory.postgres_artifact_store import (
+    PostgresAdvisoryArtifactStore,
 )
 from src.infrastructure.advisory.postgres_interpretation_store import (
     PostgresAdvisoryInterpretationStore,
@@ -42,6 +48,8 @@ from src.infrastructure.market.polygon_adapter import PolygonProvider
 from src.infrastructure.market.yfinance_adapter import YFinanceProvider
 from src.security import CredentialStore, KeyManager
 from src.services.advisory import (
+    AdvisoryArtifactIngestionService,
+    AdvisoryArtifactQueryService,
     AdvisoryCandidateIngestionService,
     AdvisoryCandidateQueryService,
     AdvisoryInterpretationCaptureService,
@@ -212,6 +220,10 @@ def create_app(
     ) = None,
     interpretation_draft_service: InterpretationDraftService | None = None,
     ai_advisory_provider: AIAdvisoryProvider | None = None,
+    advisory_artifact_ingestion_service: (
+        AdvisoryArtifactIngestionService | None
+    ) = None,
+    advisory_artifact_query_service: AdvisoryArtifactQueryService | None = None,
 ) -> FastAPI:
     shared_event_store = event_store or _default_event_store()
     app = FastAPI(
@@ -310,6 +322,11 @@ def create_app(
         if os.environ.get("TRADEFORGE_DATABASE_URL")
         else InMemoryAdvisoryInterpretationStore()
     )
+    advisory_artifact_store = (
+        PostgresAdvisoryArtifactStore()
+        if os.environ.get("TRADEFORGE_DATABASE_URL")
+        else InMemoryAdvisoryArtifactStore()
+    )
     app.state.advisory_observation_capture_service = (
         advisory_observation_capture_service
         if advisory_observation_capture_service is not None
@@ -366,6 +383,16 @@ def create_app(
             if ai_advisory_provider is not None
             else None
         )
+    )
+    app.state.advisory_artifact_ingestion_service = (
+        advisory_artifact_ingestion_service
+        if advisory_artifact_ingestion_service is not None
+        else AdvisoryArtifactIngestionService(advisory_artifact_store)
+    )
+    app.state.advisory_artifact_query_service = (
+        advisory_artifact_query_service
+        if advisory_artifact_query_service is not None
+        else AdvisoryArtifactQueryService(advisory_artifact_store)
     )
     app.include_router(runtime_router)
     return app

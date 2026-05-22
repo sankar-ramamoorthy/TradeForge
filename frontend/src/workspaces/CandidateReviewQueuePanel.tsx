@@ -129,6 +129,17 @@ export function CandidateReviewQueuePanel({
                   <p className="field-surface-desc">
                     {candidate.provenance_summary}
                   </p>
+                  <div className="source-event-types">
+                    <code className="event-type-tag">
+                      candidate: {candidate.candidate_id}
+                    </code>
+                    <code className="event-type-tag">
+                      artifact event: {candidate.canonical_event_type}
+                    </code>
+                    <code className="event-type-tag">
+                      captured: {new Date(candidate.captured_at).toLocaleString()}
+                    </code>
+                  </div>
                   {candidate.caveats.map((caveat) => (
                     <p className="authority-boundary" key={caveat}>
                       {caveat}
@@ -146,9 +157,14 @@ export function CandidateReviewQueuePanel({
                     {candidate.evidence.map((evidence) => (
                       <code className="event-type-tag" key={evidence.evidence_id}>
                         {evidence.source_kind}: {evidence.source_id}
+                        {evidence.artifact_id ? ` / ${evidence.artifact_id}` : ""}
                       </code>
                     ))}
                   </div>
+                  <p className="field-surface-desc">
+                    Provenance is read-only advisory context. It does not include
+                    scores, execution authority, or lifecycle commands.
+                  </p>
                 </div>
               </div>
             ) : null}

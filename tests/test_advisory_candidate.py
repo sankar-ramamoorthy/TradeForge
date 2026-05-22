@@ -209,6 +209,9 @@ def test_operator_promotion_uses_existing_lifecycle_init_with_traceability() -> 
             "persona_id": "persona.swing",
             "workspace_id": "workspace.context",
             "source_advisory_candidate_id": candidate["candidate_id"],
+            "advisory_candidate_promotion_intent": (
+                "operator_promotes_advisory_candidate"
+            ),
         },
     )
 
@@ -238,6 +241,9 @@ def test_promotion_rejects_unknown_candidate() -> None:
             "persona_id": "persona.swing",
             "workspace_id": "workspace.context",
             "source_advisory_candidate_id": "candidate-missing",
+            "advisory_candidate_promotion_intent": (
+                "operator_promotes_advisory_candidate"
+            ),
         },
     )
 
@@ -245,3 +251,34 @@ def test_promotion_rejects_unknown_candidate() -> None:
     assert response.json()["detail"]["message"] == (
         "source advisory candidate does not exist"
     )
+
+
+def test_promotion_requires_explicit_operator_intent() -> None:
+    app = create_app()
+    client = TestClient(app)
+    candidate = client.post("/advisory/candidates", json=_candidate_payload()).json()
+
+    response = client.post(
+        "/lifecycle/decisions/init",
+        json={
+            "symbol": "SMH",
+            "persona_id": "persona.swing",
+            "workspace_id": "workspace.context",
+            "source_advisory_candidate_id": candidate["candidate_id"],
+        },
+    )
+
+    assert response.status_code == 422
+    assert "cannot bypass the decision lifecycle" in (
+        response.json()["detail"]["message"]
+    )
+
+
+def test_candidate_ingestion_rejects_lifecycle_command_payload_fields() -> None:
+    client = TestClient(create_app())
+    payload = _candidate_payload()
+    payload["lifecycle_transition_intent"] = "Idea"
+
+    response = client.post("/advisory/candidates", json=payload)
+
+    assert response.status_code == 422

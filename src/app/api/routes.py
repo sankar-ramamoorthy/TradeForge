@@ -5,9 +5,14 @@ from datetime import UTC, datetime
 from typing import Any, Literal
 
 from fastapi import APIRouter, HTTPException, Query, Request, status
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 from src.app.session import SessionProvider
 from src.domain.advisory import (
+    AdvisoryArtifact,
+    AdvisoryArtifactFormat,
+    AdvisoryArtifactQuery,
+    AdvisoryArtifactSourceReference,
+    AdvisoryArtifactType,
     AdvisoryCandidate,
     AdvisoryCaptureOrigin,
     AdvisoryConfidenceRange,
@@ -57,6 +62,8 @@ from src.domain.personas import (
 )
 from src.domain.replay import ProjectionAuthority, ReplayTimelineEntryKind
 from src.services.advisory import (
+    AdvisoryArtifactIngestionService,
+    AdvisoryArtifactQueryService,
     AdvisoryCandidateIngestionService,
     AdvisoryCandidateQueryService,
     AdvisoryInterpretationCaptureService,
@@ -254,6 +261,8 @@ class AdvisoryObservationListResponse(BaseModel):
 
 
 class CreateAdvisoryCandidatePayload(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     symbol: str = Field(min_length=1, max_length=10)
     summary: str = Field(min_length=1, max_length=3000)
     rationale: str = Field(min_length=1, max_length=5000)
@@ -305,6 +314,82 @@ class CandidateReviewQueueResponse(BaseModel):
     ordering: Literal["captured_at_desc_then_candidate_id_asc"]
     total_count: int
     candidates: list[AdvisoryCandidateResponse]
+
+
+class AdvisoryArtifactSourceReferencePayload(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    source_kind: AdvisorySourceKind
+    source_id: str = Field(min_length=1)
+    summary: str = Field(min_length=1, max_length=3000)
+    source_uri: str | None = Field(default=None, min_length=1)
+
+
+class CreateAdvisoryArtifactPayload(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    artifact_type: AdvisoryArtifactType
+    artifact_format: AdvisoryArtifactFormat
+    title: str = Field(min_length=1, max_length=500)
+    body: str = Field(min_length=1, max_length=50000)
+    source_references: list[AdvisoryArtifactSourceReferencePayload] = Field(
+        min_length=1
+    )
+    capture_origin: AdvisoryCaptureOrigin
+    provenance_summary: str = Field(min_length=1, max_length=3000)
+    uncertainty_band: AdvisoryUncertaintyBand
+    caveats: list[str] = Field(min_length=1)
+    persona_id: str = Field(min_length=1)
+    workspace_id: str = Field(min_length=1)
+    metadata: dict[str, object] = Field(default_factory=dict)
+    tags: list[str] = Field(default_factory=list)
+    captured_at: datetime | None = None
+
+
+class AdvisoryArtifactSourceReferenceResponse(BaseModel):
+    source_kind: AdvisorySourceKind
+    source_id: str
+    summary: str
+    source_uri: str | None
+
+
+class AdvisoryArtifactSnapshotResponse(BaseModel):
+    captured_at: datetime
+    metadata: dict[str, object]
+    source_reference_count: int
+    caveat_count: int
+    body_sha256: str
+    authority: Literal["advisory"]
+    is_canonical: Literal[False]
+
+
+class AdvisoryArtifactResponse(BaseModel):
+    artifact_id: str
+    artifact_type: AdvisoryArtifactType
+    artifact_format: AdvisoryArtifactFormat
+    title: str
+    body: str
+    source_references: list[AdvisoryArtifactSourceReferenceResponse]
+    capture_origin: AdvisoryCaptureOrigin
+    provenance_summary: str
+    uncertainty_band: AdvisoryUncertaintyBand
+    caveats: list[str]
+    persona_id: str
+    workspace_id: str
+    metadata: dict[str, object]
+    snapshot: AdvisoryArtifactSnapshotResponse | None
+    tags: list[str]
+    captured_at: datetime
+    authority: Literal["advisory"]
+    is_canonical: Literal[False]
+    stored_outside_event_ledger: Literal[True]
+
+
+class AdvisoryArtifactListResponse(BaseModel):
+    authority: Literal["advisory"]
+    is_canonical: Literal[False]
+    total_count: int
+    artifacts: list[AdvisoryArtifactResponse]
 
 
 class InterpretationDraftPayload(BaseModel):
@@ -421,11 +506,16 @@ class LifecycleTransitionResponse(BaseModel):
 
 
 class NewTradeIdeaPayload(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     symbol: str = Field(min_length=1, max_length=10)
     initial_thesis: str | None = Field(default=None, max_length=2000)
     persona_id: str = Field(min_length=1)
     workspace_id: str = Field(min_length=1)
     source_advisory_candidate_id: str | None = Field(default=None, min_length=1)
+    advisory_candidate_promotion_intent: (
+        Literal["operator_promotes_advisory_candidate"] | None
+    ) = None
 
 
 class NewTradeIdeaResponse(BaseModel):
@@ -1129,6 +1219,24 @@ def _candidate_review_queue_service_from(
     return service
 
 
+def _advisory_artifact_ingestion_service_from(
+    request: Request,
+) -> AdvisoryArtifactIngestionService:
+    service = getattr(request.app.state, "advisory_artifact_ingestion_service", None)
+    if not isinstance(service, AdvisoryArtifactIngestionService):
+        raise RuntimeError("advisory artifact ingestion service is not configured")
+    return service
+
+
+def _advisory_artifact_query_service_from(
+    request: Request,
+) -> AdvisoryArtifactQueryService:
+    service = getattr(request.app.state, "advisory_artifact_query_service", None)
+    if not isinstance(service, AdvisoryArtifactQueryService):
+        raise RuntimeError("advisory artifact query service is not configured")
+    return service
+
+
 def _advisory_interpretation_capture_service_from(
     request: Request,
 ) -> AdvisoryInterpretationCaptureService:
@@ -1405,6 +1513,53 @@ def _advisory_candidate_response(
         is_canonical=False,
         canonical_event_type="advisory.observation_captured",
         lifecycle_authority=False,
+    )
+
+
+def _advisory_artifact_response(
+    artifact: AdvisoryArtifact,
+) -> AdvisoryArtifactResponse:
+    snapshot = artifact.snapshot
+    return AdvisoryArtifactResponse(
+        artifact_id=artifact.artifact_id,
+        artifact_type=artifact.artifact_type,
+        artifact_format=artifact.artifact_format,
+        title=artifact.title,
+        body=artifact.body,
+        source_references=[
+            AdvisoryArtifactSourceReferenceResponse(
+                source_kind=source.source_kind,
+                source_id=source.source_id,
+                summary=source.summary,
+                source_uri=source.source_uri,
+            )
+            for source in artifact.source_references
+        ],
+        capture_origin=artifact.capture_origin,
+        provenance_summary=artifact.provenance_summary,
+        uncertainty_band=artifact.uncertainty_band,
+        caveats=list(artifact.caveats),
+        persona_id=artifact.persona_id,
+        workspace_id=artifact.workspace_id,
+        metadata=artifact.metadata,
+        snapshot=(
+            AdvisoryArtifactSnapshotResponse(
+                captured_at=snapshot.captured_at,
+                metadata=snapshot.metadata,
+                source_reference_count=snapshot.source_reference_count,
+                caveat_count=snapshot.caveat_count,
+                body_sha256=snapshot.body_sha256,
+                authority="advisory",
+                is_canonical=False,
+            )
+            if snapshot is not None
+            else None
+        ),
+        tags=list(artifact.tags),
+        captured_at=artifact.captured_at,
+        authority="advisory",
+        is_canonical=False,
+        stored_outside_event_ledger=True,
     )
 
 
@@ -1783,6 +1938,19 @@ def init_new_trade_idea(
     now = datetime.now(tz=UTC)
     source_candidate = None
     if payload.source_advisory_candidate_id is not None:
+        if (
+            payload.advisory_candidate_promotion_intent
+            != "operator_promotes_advisory_candidate"
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail={
+                    "message": (
+                        "advisory artifacts cannot bypass the decision lifecycle; "
+                        "explicit operator promotion intent is required"
+                    )
+                },
+            )
         source_candidate = _advisory_candidate_query_service_from(request).get(
             payload.source_advisory_candidate_id
         )
@@ -2988,13 +3156,11 @@ def get_cognitive_snapshot(
         if at is not None:
             ts = event.timestamp
             if ts.tzinfo is None:
-                from datetime import timezone
-                ts = ts.replace(tzinfo=timezone.utc)
+                ts = ts.replace(tzinfo=UTC)
 
             snap_ts = snapshot_at
             if snap_ts.tzinfo is None:
-                from datetime import timezone
-                snap_ts = snap_ts.replace(tzinfo=timezone.utc)
+                snap_ts = snap_ts.replace(tzinfo=UTC)
 
             if ts >= snap_ts:
                 continue
@@ -3952,6 +4118,99 @@ def list_advisory_candidates(
             _advisory_candidate_response(candidate)
             for candidate in candidates
         ],
+    )
+
+
+@advisory_router.post(
+    "/artifacts",
+    response_model=AdvisoryArtifactResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+def create_advisory_artifact(
+    request: Request,
+    payload: CreateAdvisoryArtifactPayload,
+) -> AdvisoryArtifactResponse:
+    captured_at = payload.captured_at or datetime.now(UTC)
+    artifact = AdvisoryArtifact(
+        artifact_id=f"artifact-{uuid.uuid4()}",
+        artifact_type=payload.artifact_type,
+        artifact_format=payload.artifact_format,
+        title=payload.title,
+        body=payload.body,
+        source_references=tuple(
+            AdvisoryArtifactSourceReference(
+                source_kind=source.source_kind,
+                source_id=source.source_id,
+                summary=source.summary,
+                source_uri=source.source_uri,
+            )
+            for source in payload.source_references
+        ),
+        capture_origin=payload.capture_origin,
+        provenance_summary=payload.provenance_summary,
+        uncertainty_band=payload.uncertainty_band,
+        caveats=tuple(payload.caveats),
+        persona_id=payload.persona_id,
+        workspace_id=payload.workspace_id,
+        captured_at=captured_at,
+        metadata=payload.metadata,
+        tags=tuple(payload.tags),
+    )
+    try:
+        captured = _advisory_artifact_ingestion_service_from(request).ingest(
+            artifact
+        )
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={"message": str(exc)},
+        ) from exc
+    return _advisory_artifact_response(captured)
+
+
+@advisory_router.get(
+    "/artifacts/{artifact_id}",
+    response_model=AdvisoryArtifactResponse,
+)
+def get_advisory_artifact(
+    request: Request,
+    artifact_id: str,
+) -> AdvisoryArtifactResponse:
+    artifact = _advisory_artifact_query_service_from(request).get(artifact_id)
+    if artifact is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"message": "advisory artifact not found"},
+        )
+    return _advisory_artifact_response(artifact)
+
+
+@advisory_router.get(
+    "/artifacts",
+    response_model=AdvisoryArtifactListResponse,
+)
+def list_advisory_artifacts(
+    request: Request,
+    persona_id: str = Query(min_length=1),
+    workspace_id: str = Query(min_length=1),
+    artifact_type: AdvisoryArtifactType | None = None,
+    artifact_format: AdvisoryArtifactFormat | None = None,
+    capture_origin: AdvisoryCaptureOrigin | None = None,
+) -> AdvisoryArtifactListResponse:
+    artifacts = _advisory_artifact_query_service_from(request).list(
+        AdvisoryArtifactQuery(
+            persona_id=persona_id,
+            workspace_id=workspace_id,
+            artifact_type=artifact_type,
+            artifact_format=artifact_format,
+            capture_origin=capture_origin,
+        )
+    )
+    return AdvisoryArtifactListResponse(
+        authority="advisory",
+        is_canonical=False,
+        total_count=len(artifacts),
+        artifacts=[_advisory_artifact_response(artifact) for artifact in artifacts],
     )
 
 

@@ -537,6 +537,7 @@ export type NewTradeIdeaRequest = {
   persona_id: string;
   workspace_id: string;
   source_advisory_candidate_id?: string;
+  advisory_candidate_promotion_intent?: "operator_promotes_advisory_candidate";
 };
 
 export type NewTradeIdeaResponse = {

@@ -26,6 +26,8 @@ __all__ = [
     "ADVISORY_OBSERVATION_CAPTURED",
     "ADVISORY_INTERPRETATION_CAPTURED",
     "AIAdvisoryService",
+    "AdvisoryArtifactIngestionService",
+    "AdvisoryArtifactQueryService",
     "AdvisoryCandidateIngestionService",
     "AdvisoryCandidateQueryService",
     "AdvisoryInterpretationCaptureService",
@@ -41,3 +43,7 @@ __all__ = [
     "ReviewAdvisoryService",
     "ThesisInfluenceSummary",
 ]
+from src.services.advisory.artifact import (
+    AdvisoryArtifactIngestionService,
+    AdvisoryArtifactQueryService,
+)
