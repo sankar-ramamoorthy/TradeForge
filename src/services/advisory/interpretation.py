@@ -6,6 +6,7 @@ from datetime import datetime
 from src.domain.advisory import (
     AdvisoryArtifactKind,
     AdvisoryAuthority,
+    AdvisoryConfidenceRange,
     AdvisoryInterpretation,
     AdvisoryInterpretationQuery,
     AdvisoryInterpretationStore,
@@ -15,6 +16,8 @@ from src.domain.advisory import (
     AdvisoryResponse,
     AdvisorySourceReference,
     AIAdvisoryProvider,
+    ContextualWeight,
+    InterpretationKind,
     ThesisInfluence,
 )
 from src.domain.events import EntityReference, EventEnvelope, EventStore
@@ -105,6 +108,132 @@ class AdvisoryInterpretationQueryService:
             counts=counts,
         )
 
+    def contextual_weight_distribution(
+        self,
+        query: AdvisoryInterpretationQuery,
+    ) -> ContextualWeightDistribution:
+        interpretations = self.list(query)
+        counts = {weight: 0 for weight in ContextualWeight}
+        for interpretation in interpretations:
+            counts[interpretation.contextual_weight] += 1
+        return ContextualWeightDistribution(
+            thesis_id=query.thesis_id,
+            total_count=len(interpretations),
+            counts=counts,
+        )
+
+    def confidence_range_distribution(
+        self,
+        query: AdvisoryInterpretationQuery,
+    ) -> ConfidenceRangeDistribution:
+        interpretations = self.list(query)
+        counts = {cr: 0 for cr in AdvisoryConfidenceRange}
+        for interpretation in interpretations:
+            counts[interpretation.confidence_range] += 1
+        return ConfidenceRangeDistribution(
+            thesis_id=query.thesis_id,
+            total_count=len(interpretations),
+            counts=counts,
+        )
+
+    def influence_timeline(
+        self,
+        query: AdvisoryInterpretationQuery,
+    ) -> InfluenceTimeline:
+        interpretations = self.list(query)
+        entries = tuple(
+            InfluenceTimelineEntry(
+                interpretation_id=interp.interpretation_id,
+                captured_at=interp.captured_at,
+                thesis_influence=interp.thesis_influence,
+                contextual_weight=interp.contextual_weight,
+                confidence_range=interp.confidence_range,
+                interpretation_kind=interp.interpretation_kind,
+                tags=interp.tags,
+            )
+            for interp in sorted(interpretations, key=lambda i: i.captured_at)
+        )
+        return InfluenceTimeline(
+            thesis_id=query.thesis_id,
+            total_count=len(entries),
+            entries=entries,
+        )
+
+    def conflict_summary(
+        self,
+        query: AdvisoryInterpretationQuery,
+    ) -> ConflictSummary:
+        interpretations = self.list(query)
+        conflicting = tuple(
+            i for i in interpretations
+            if i.thesis_influence
+            in (ThesisInfluence.CONFLICTING, ThesisInfluence.MIXED)
+        )
+        has_supporting = any(
+            i.thesis_influence is ThesisInfluence.SUPPORTING
+            for i in interpretations
+        )
+        has_weakening = any(
+            i.thesis_influence is ThesisInfluence.WEAKENING
+            for i in interpretations
+        )
+        opposing_pair_detected = has_supporting and has_weakening
+        return ConflictSummary(
+            thesis_id=query.thesis_id,
+            total_count=len(interpretations),
+            conflicting_count=len(conflicting),
+            opposing_pair_detected=opposing_pair_detected,
+            conflicting_interpretation_ids=tuple(
+                i.interpretation_id for i in conflicting
+            ),
+        )
+
+    def drift_signal(
+        self,
+        query: AdvisoryInterpretationQuery,
+    ) -> ThesisDriftSignal:
+        interpretations = sorted(
+            self.list(query), key=lambda i: i.captured_at
+        )
+        if not interpretations:
+            return ThesisDriftSignal(
+                thesis_id=query.thesis_id,
+                drift_detected=False,
+                previous_dominant=None,
+                current_dominant=None,
+                total_count=0,
+            )
+
+        midpoint = max(1, len(interpretations) // 2)
+        early = interpretations[:midpoint]
+        recent = interpretations[midpoint:]
+
+        def dominant(items: list[AdvisoryInterpretation]) -> ThesisInfluence | None:
+            counts: dict[ThesisInfluence, int] = {}
+            for item in items:
+                counts[item.thesis_influence] = counts.get(item.thesis_influence, 0) + 1
+            if not counts:
+                return None
+            return max(counts, key=lambda k: counts[k])
+
+        prev_dominant = dominant(early)
+        curr_dominant = dominant(recent)
+        drift = (
+            prev_dominant is not None
+            and curr_dominant is not None
+            and prev_dominant != curr_dominant
+            and curr_dominant
+            in (ThesisInfluence.WEAKENING, ThesisInfluence.CONFLICTING)
+            and prev_dominant is ThesisInfluence.SUPPORTING
+        )
+        return ThesisDriftSignal(
+            thesis_id=query.thesis_id,
+            drift_detected=drift,
+            previous_dominant=prev_dominant,
+            current_dominant=curr_dominant,
+            total_count=len(interpretations),
+        )
+
 
 class InterpretationDraftService:
     """Builds source-linked advisory interpretation drafts through AI provider."""
@@ -181,6 +310,56 @@ class ThesisInfluenceSummary:
     thesis_id: str | None
     total_count: int
     counts: dict[ThesisInfluence, int]
+
+
+@dataclass(frozen=True, slots=True)
+class ContextualWeightDistribution:
+    thesis_id: str | None
+    total_count: int
+    counts: dict[ContextualWeight, int]
+
+
+@dataclass(frozen=True, slots=True)
+class ConfidenceRangeDistribution:
+    thesis_id: str | None
+    total_count: int
+    counts: dict[AdvisoryConfidenceRange, int]
+
+
+@dataclass(frozen=True, slots=True)
+class InfluenceTimelineEntry:
+    interpretation_id: str
+    captured_at: datetime
+    thesis_influence: ThesisInfluence
+    contextual_weight: ContextualWeight
+    confidence_range: AdvisoryConfidenceRange
+    interpretation_kind: InterpretationKind
+    tags: tuple[str, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class InfluenceTimeline:
+    thesis_id: str | None
+    total_count: int
+    entries: tuple[InfluenceTimelineEntry, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class ConflictSummary:
+    thesis_id: str | None
+    total_count: int
+    conflicting_count: int
+    opposing_pair_detected: bool
+    conflicting_interpretation_ids: tuple[str, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class ThesisDriftSignal:
+    thesis_id: str | None
+    drift_detected: bool
+    previous_dominant: ThesisInfluence | None
+    current_dominant: ThesisInfluence | None
+    total_count: int
 
 
 def _capture_payload(interpretation: AdvisoryInterpretation) -> dict[str, object]:

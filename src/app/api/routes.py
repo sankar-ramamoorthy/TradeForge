@@ -62,6 +62,7 @@ from src.domain.personas import (
 )
 from src.domain.replay import ProjectionAuthority, ReplayTimelineEntryKind
 from src.domain.advisory import AdvisoryProviderUnavailableError
+from src.domain.market.snapshot import MarketRegime
 from src.services.advisory import (
     AdvisoryArtifactIngestionService,
     AdvisoryArtifactQueryService,
@@ -69,15 +70,21 @@ from src.services.advisory import (
     AdvisoryCandidateQueryService,
     AdvisoryInterpretationCaptureService,
     AdvisoryInterpretationQueryService,
+    CandidateScreeningAdvisoryService,
     AdvisoryObservationCaptureService,
     AdvisoryObservationQueryService,
     CandidateReviewQueueQuery,
     CandidateReviewQueueService,
-    CandidateScreeningAdvisoryService,
+    ConfidenceRangeDistribution,
+    ConflictSummary,
+    ContextualWeightDistribution,
+    InfluenceTimeline,
     InterpretationDraftService,
     ObservationGenerationAdvisoryService,
+    RegimeContextWeightService,
     ReplayAdvisoryService,
     ReviewAdvisoryService,
+    ThesisDriftSignal,
     ThesisReviewAdvisoryService,
 )
 from src.services.advisory.service import AIAdvisoryService
@@ -4462,6 +4469,68 @@ def get_thesis_influence_summary(
     )
 
 
+class ContextualWeightDistributionResponse(BaseModel):
+    authority: Literal["advisory"]
+    is_canonical: Literal[False]
+    thesis_id: str | None
+    total_count: int
+    counts: dict[str, int]
+
+
+class ConfidenceRangeDistributionResponse(BaseModel):
+    authority: Literal["advisory"]
+    is_canonical: Literal[False]
+    thesis_id: str | None
+    total_count: int
+    counts: dict[str, int]
+
+
+class InfluenceTimelineEntryResponse(BaseModel):
+    interpretation_id: str
+    captured_at: datetime
+    thesis_influence: ThesisInfluence
+    contextual_weight: ContextualWeight
+    confidence_range: AdvisoryConfidenceRange
+    interpretation_kind: InterpretationKind
+    tags: list[str]
+
+
+class InfluenceTimelineResponse(BaseModel):
+    authority: Literal["advisory"]
+    is_canonical: Literal[False]
+    thesis_id: str | None
+    total_count: int
+    entries: list[InfluenceTimelineEntryResponse]
+
+
+class ConflictSummaryResponse(BaseModel):
+    authority: Literal["advisory"]
+    is_canonical: Literal[False]
+    thesis_id: str | None
+    total_count: int
+    conflicting_count: int
+    opposing_pair_detected: bool
+    conflicting_interpretation_ids: list[str]
+
+
+class ThesisDriftSignalResponse(BaseModel):
+    authority: Literal["advisory"]
+    is_canonical: Literal[False]
+    thesis_id: str | None
+    drift_detected: bool
+    previous_dominant: ThesisInfluence | None
+    current_dominant: ThesisInfluence | None
+    total_count: int
+
+
+class RegimeWeightSuggestionResponse(BaseModel):
+    authority: Literal["advisory"]
+    is_canonical: Literal[False]
+    suggested_weight: ContextualWeight
+    regime: str
+    rationale: str
+
+
 def _ai_advisory_service_from(request: Request) -> AIAdvisoryService:
     provider = getattr(request.app.state, "ai_advisory_provider", None)
     if provider is None:
@@ -4704,6 +4773,192 @@ def screen_advisory_candidates(
             detail=str(exc),
         ) from exc
     return _advisory_response_to_model(response)
+
+
+@advisory_router.get(
+    "/weight-distribution",
+    response_model=ContextualWeightDistributionResponse,
+)
+def get_contextual_weight_distribution(
+    request: Request,
+    persona_id: str = Query(min_length=1),
+    workspace_id: str = Query(min_length=1),
+    thesis_id: str | None = Query(default=None, min_length=1),
+    decision_id: str | None = Query(default=None, min_length=1),
+) -> ContextualWeightDistributionResponse:
+    dist: ContextualWeightDistribution = _advisory_interpretation_query_service_from(
+        request
+    ).contextual_weight_distribution(
+        AdvisoryInterpretationQuery(
+            persona_id=persona_id,
+            workspace_id=workspace_id,
+            thesis_id=thesis_id,
+            decision_id=decision_id,
+        )
+    )
+    return ContextualWeightDistributionResponse(
+        authority="advisory",
+        is_canonical=False,
+        thesis_id=dist.thesis_id,
+        total_count=dist.total_count,
+        counts={w.value: count for w, count in dist.counts.items()},
+    )
+
+
+@advisory_router.get(
+    "/confidence-distribution",
+    response_model=ConfidenceRangeDistributionResponse,
+)
+def get_confidence_range_distribution(
+    request: Request,
+    persona_id: str = Query(min_length=1),
+    workspace_id: str = Query(min_length=1),
+    thesis_id: str | None = Query(default=None, min_length=1),
+    decision_id: str | None = Query(default=None, min_length=1),
+) -> ConfidenceRangeDistributionResponse:
+    dist: ConfidenceRangeDistribution = _advisory_interpretation_query_service_from(
+        request
+    ).confidence_range_distribution(
+        AdvisoryInterpretationQuery(
+            persona_id=persona_id,
+            workspace_id=workspace_id,
+            thesis_id=thesis_id,
+            decision_id=decision_id,
+        )
+    )
+    return ConfidenceRangeDistributionResponse(
+        authority="advisory",
+        is_canonical=False,
+        thesis_id=dist.thesis_id,
+        total_count=dist.total_count,
+        counts={cr.value: count for cr, count in dist.counts.items()},
+    )
+
+
+@advisory_router.get(
+    "/influence-timeline",
+    response_model=InfluenceTimelineResponse,
+)
+def get_influence_timeline(
+    request: Request,
+    persona_id: str = Query(min_length=1),
+    workspace_id: str = Query(min_length=1),
+    thesis_id: str | None = Query(default=None, min_length=1),
+    decision_id: str | None = Query(default=None, min_length=1),
+) -> InfluenceTimelineResponse:
+    timeline: InfluenceTimeline = _advisory_interpretation_query_service_from(
+        request
+    ).influence_timeline(
+        AdvisoryInterpretationQuery(
+            persona_id=persona_id,
+            workspace_id=workspace_id,
+            thesis_id=thesis_id,
+            decision_id=decision_id,
+        )
+    )
+    return InfluenceTimelineResponse(
+        authority="advisory",
+        is_canonical=False,
+        thesis_id=timeline.thesis_id,
+        total_count=timeline.total_count,
+        entries=[
+            InfluenceTimelineEntryResponse(
+                interpretation_id=entry.interpretation_id,
+                captured_at=entry.captured_at,
+                thesis_influence=entry.thesis_influence,
+                contextual_weight=entry.contextual_weight,
+                confidence_range=entry.confidence_range,
+                interpretation_kind=entry.interpretation_kind,
+                tags=list(entry.tags),
+            )
+            for entry in timeline.entries
+        ],
+    )
+
+
+@advisory_router.get(
+    "/conflict-summary",
+    response_model=ConflictSummaryResponse,
+)
+def get_conflict_summary(
+    request: Request,
+    persona_id: str = Query(min_length=1),
+    workspace_id: str = Query(min_length=1),
+    thesis_id: str | None = Query(default=None, min_length=1),
+    decision_id: str | None = Query(default=None, min_length=1),
+) -> ConflictSummaryResponse:
+    summary: ConflictSummary = _advisory_interpretation_query_service_from(
+        request
+    ).conflict_summary(
+        AdvisoryInterpretationQuery(
+            persona_id=persona_id,
+            workspace_id=workspace_id,
+            thesis_id=thesis_id,
+            decision_id=decision_id,
+        )
+    )
+    return ConflictSummaryResponse(
+        authority="advisory",
+        is_canonical=False,
+        thesis_id=summary.thesis_id,
+        total_count=summary.total_count,
+        conflicting_count=summary.conflicting_count,
+        opposing_pair_detected=summary.opposing_pair_detected,
+        conflicting_interpretation_ids=list(summary.conflicting_interpretation_ids),
+    )
+
+
+@advisory_router.get(
+    "/drift-signal",
+    response_model=ThesisDriftSignalResponse,
+)
+def get_drift_signal(
+    request: Request,
+    persona_id: str = Query(min_length=1),
+    workspace_id: str = Query(min_length=1),
+    thesis_id: str | None = Query(default=None, min_length=1),
+    decision_id: str | None = Query(default=None, min_length=1),
+) -> ThesisDriftSignalResponse:
+    signal: ThesisDriftSignal = _advisory_interpretation_query_service_from(
+        request
+    ).drift_signal(
+        AdvisoryInterpretationQuery(
+            persona_id=persona_id,
+            workspace_id=workspace_id,
+            thesis_id=thesis_id,
+            decision_id=decision_id,
+        )
+    )
+    return ThesisDriftSignalResponse(
+        authority="advisory",
+        is_canonical=False,
+        thesis_id=signal.thesis_id,
+        drift_detected=signal.drift_detected,
+        previous_dominant=signal.previous_dominant,
+        current_dominant=signal.current_dominant,
+        total_count=signal.total_count,
+    )
+
+
+@advisory_router.get(
+    "/regime-weight-suggestion",
+    response_model=RegimeWeightSuggestionResponse,
+)
+def get_regime_weight_suggestion(
+    regime: MarketRegime = Query(...),
+) -> RegimeWeightSuggestionResponse:
+    """Suggest contextual weight for interpretations based on market regime.
+
+    Advisory only — the suggestion does not auto-apply. Operator decides.
+    """
+    suggestion = RegimeContextWeightService().suggest_weight(regime)
+    return RegimeWeightSuggestionResponse(
+        authority="advisory",
+        is_canonical=False,
+        suggested_weight=suggestion.suggested_weight,
+        regime=suggestion.regime.value,
+        rationale=suggestion.rationale,
+    )
 
 
 @market_router.get("/snapshots", response_model=MarketSnapshotQueryResponse)

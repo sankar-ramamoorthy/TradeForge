@@ -10,7 +10,13 @@ from src.services.advisory.interpretation import (
     ADVISORY_INTERPRETATION_CAPTURED,
     AdvisoryInterpretationCaptureService,
     AdvisoryInterpretationQueryService,
+    ConfidenceRangeDistribution,
+    ConflictSummary,
+    ContextualWeightDistribution,
+    InfluenceTimeline,
+    InfluenceTimelineEntry,
     InterpretationDraftService,
+    ThesisDriftSignal,
     ThesisInfluenceSummary,
 )
 from src.services.advisory.observation import (
@@ -20,6 +26,10 @@ from src.services.advisory.observation import (
 )
 from src.services.advisory.observation_gen import ObservationGenerationAdvisoryService
 from src.services.advisory.provenance import AdvisoryProvenanceService
+from src.services.advisory.regime_weight import (
+    RegimeContextWeightService,
+    RegimeWeightSuggestion,
+)
 from src.services.advisory.replay import ReplayAdvisoryService
 from src.services.advisory.review import ReviewAdvisoryService
 from src.services.advisory.service import AIAdvisoryService
@@ -43,9 +53,17 @@ __all__ = [
     "CandidateReviewQueueService",
     "InterpretationDraftService",
     "CandidateScreeningAdvisoryService",
+    "ConfidenceRangeDistribution",
+    "ConflictSummary",
+    "ContextualWeightDistribution",
+    "InfluenceTimeline",
+    "InfluenceTimelineEntry",
     "ObservationGenerationAdvisoryService",
+    "RegimeContextWeightService",
+    "RegimeWeightSuggestion",
     "ReplayAdvisoryService",
     "ReviewAdvisoryService",
+    "ThesisDriftSignal",
     "ThesisInfluenceSummary",
     "ThesisReviewAdvisoryService",
 ]
