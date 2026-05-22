@@ -43,11 +43,27 @@ class CognitiveEvidence:
     source_id: str
     summary: str
     observed_at: datetime | None = None
+    source_uri: str | None = None
+    artifact_id: str | None = None
+    captured_at: datetime | None = None
+    provenance_summary: str | None = None
+    caveats: tuple[str, ...] = field(default_factory=tuple)
 
     def __post_init__(self) -> None:
         _require_non_empty("evidence_id", self.evidence_id)
         _require_non_empty("source_id", self.source_id)
         _require_non_empty("summary", self.summary)
+        if self.source_uri is not None:
+            _require_non_empty("source_uri", self.source_uri)
+        if self.artifact_id is not None:
+            _require_non_empty("artifact_id", self.artifact_id)
+        if self.provenance_summary is not None:
+            _require_non_empty("provenance_summary", self.provenance_summary)
+        object.__setattr__(
+            self,
+            "caveats",
+            tuple(caveat.strip() for caveat in self.caveats if caveat.strip()),
+        )
 
 
 @dataclass(frozen=True, slots=True)

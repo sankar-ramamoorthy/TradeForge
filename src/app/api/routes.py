@@ -137,6 +137,11 @@ class AdvisoryEvidencePayload(BaseModel):
     source_id: str = Field(min_length=1)
     summary: str = Field(min_length=1, max_length=3000)
     observed_at: datetime | None = None
+    source_uri: str | None = Field(default=None, min_length=1)
+    artifact_id: str | None = Field(default=None, min_length=1)
+    captured_at: datetime | None = None
+    provenance_summary: str | None = Field(default=None, min_length=1, max_length=3000)
+    caveats: list[str] = Field(default_factory=list)
 
 
 class CreateAdvisoryObservationPayload(BaseModel):
@@ -161,6 +166,11 @@ class CognitiveEvidenceResponse(BaseModel):
     source_id: str
     summary: str
     observed_at: datetime | None
+    source_uri: str | None
+    artifact_id: str | None
+    captured_at: datetime | None
+    provenance_summary: str | None
+    caveats: list[str]
 
 
 class AdvisoryObservationResponse(BaseModel):
@@ -1178,6 +1188,11 @@ def _advisory_observation_response(
                 source_id=evidence.source_id,
                 summary=evidence.summary,
                 observed_at=evidence.observed_at,
+                source_uri=evidence.source_uri,
+                artifact_id=evidence.artifact_id,
+                captured_at=evidence.captured_at,
+                provenance_summary=evidence.provenance_summary,
+                caveats=list(evidence.caveats),
             )
             for evidence in observation.evidence
         ],
@@ -3425,6 +3440,11 @@ def create_advisory_observation(
                 source_id=evidence.source_id,
                 summary=evidence.summary,
                 observed_at=evidence.observed_at,
+                source_uri=evidence.source_uri,
+                artifact_id=evidence.artifact_id,
+                captured_at=evidence.captured_at,
+                provenance_summary=evidence.provenance_summary,
+                caveats=tuple(evidence.caveats),
             )
             for evidence in payload.evidence
         ),
@@ -3438,9 +3458,15 @@ def create_advisory_observation(
         thesis_id=payload.thesis_id,
         tags=tuple(payload.tags),
     )
-    captured = _advisory_observation_capture_service_from(request).capture(
-        observation
-    )
+    try:
+        captured = _advisory_observation_capture_service_from(request).capture(
+            observation
+        )
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={"message": str(exc)},
+        ) from exc
     return _advisory_observation_response(captured)
 
 

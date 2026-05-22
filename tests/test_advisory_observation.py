@@ -15,7 +15,12 @@ from src.domain.advisory import (
     CognitiveEvidence,
     ObservationKind,
 )
-from src.domain.events import CANONICAL_EVENT_DOMAINS, EventDomain
+from src.domain.events import (
+    CANONICAL_EVENT_DOMAINS,
+    EntityReference,
+    EventDomain,
+    EventEnvelope,
+)
 from src.infrastructure.advisory import InMemoryAdvisoryObservationStore
 from src.infrastructure.advisory.postgres_observation_store import (
     PostgresAdvisoryObservationStore,
@@ -25,6 +30,33 @@ from src.infrastructure.event_store.in_memory import InMemoryEventStore
 from src.services.advisory import AdvisoryObservationCaptureService
 
 _NOW = datetime(2026, 5, 19, 14, 30, tzinfo=UTC)
+
+
+def _decision_event(
+    decision_id: str = "decision-1",
+    thesis_id: str = "thesis-1",
+) -> EventEnvelope:
+    return EventEnvelope(
+        event_type="decision.thesis_created",
+        timestamp=_NOW,
+        persona_id="persona.swing",
+        workspace_id="workspace.context",
+        entity_references=(
+            EntityReference("decision", decision_id),
+            EntityReference("thesis", thesis_id),
+        ),
+        payload={"thesis_id": thesis_id},
+        provenance={"actor": "human"},
+    )
+
+
+def _event_store_with_links(
+    decision_id: str = "decision-1",
+    thesis_id: str = "thesis-1",
+) -> InMemoryEventStore:
+    event_store = InMemoryEventStore()
+    event_store.append(_decision_event(decision_id, thesis_id))
+    return event_store
 
 
 def _evidence(
@@ -37,6 +69,21 @@ def _evidence(
         source_id="source-1",
         summary="Provider-backed context snapshot existed.",
         observed_at=_NOW,
+    )
+
+
+def _rich_evidence() -> CognitiveEvidence:
+    return CognitiveEvidence(
+        evidence_id="evidence-rich",
+        source_kind=AdvisorySourceKind.IMPORTED_RESEARCH,
+        source_id="research-1",
+        summary="Imported research note described sector breadth.",
+        observed_at=_NOW,
+        source_uri="https://research.example.test/semis",
+        artifact_id="artifact-research-1",
+        captured_at=_NOW,
+        provenance_summary="operator imported research note",
+        caveats=("Research source may lag intraday conditions.",),
     )
 
 
@@ -111,7 +158,7 @@ def test_invalid_uncertainty_band_fails_validation() -> None:
 
 
 def test_advisory_event_domain_and_capture_event_are_supported() -> None:
-    event_store = InMemoryEventStore()
+    event_store = _event_store_with_links()
     service = AdvisoryObservationCaptureService(
         InMemoryAdvisoryObservationStore(),
         event_store,
@@ -119,7 +166,7 @@ def test_advisory_event_domain_and_capture_event_are_supported() -> None:
 
     service.capture(_observation())
 
-    event = event_store.read_events()[0]
+    event = event_store.read_events()[-1]
     assert "advisory" in CANONICAL_EVENT_DOMAINS
     assert event.event_domain is EventDomain.ADVISORY
     assert event.event_type == "advisory.observation_captured"
@@ -178,7 +225,9 @@ def test_postgres_observation_store_shape_and_migration() -> None:
 
 
 def test_create_read_list_api_labels_advisory_observations() -> None:
-    client = TestClient(create_app())
+    app = create_app()
+    app.state.event_store.append(_decision_event())
+    client = TestClient(app)
 
     response = client.post(
         "/advisory/observations",
@@ -269,6 +318,122 @@ def test_create_api_rejects_invalid_uncertainty_band() -> None:
     )
 
     assert response.status_code == 422
+
+
+def test_cognitive_evidence_supports_required_source_kinds_and_metadata() -> None:
+    required_source_kinds = {
+        AdvisorySourceKind.PROVIDER_PAYLOAD,
+        AdvisorySourceKind.IMPORTED_RESEARCH,
+        AdvisorySourceKind.MARKDOWN_ARTIFACT,
+        AdvisorySourceKind.URL,
+        AdvisorySourceKind.OPERATOR_NOTE,
+        AdvisorySourceKind.REPLAY_ANNOTATION,
+        AdvisorySourceKind.GENERATED_ADVISORY_ARTIFACT,
+    }
+
+    assert {
+        AdvisorySourceKind(source_kind.value)
+        for source_kind in required_source_kinds
+    } == required_source_kinds
+
+    evidence = _rich_evidence()
+    assert evidence.source_uri == "https://research.example.test/semis"
+    assert evidence.artifact_id == "artifact-research-1"
+    assert evidence.captured_at == _NOW
+    assert evidence.provenance_summary == "operator imported research note"
+    assert evidence.caveats == ("Research source may lag intraday conditions.",)
+
+
+def test_evidence_metadata_persists_without_becoming_event_content() -> None:
+    event_store = _event_store_with_links()
+    store = InMemoryAdvisoryObservationStore()
+    service = AdvisoryObservationCaptureService(store, event_store)
+    observation = replace(_observation(), evidence=(_rich_evidence(),))
+
+    service.capture(observation)
+
+    stored = store.get(observation.observation_id)
+    assert stored is not None
+    assert stored.evidence[0].source_uri == "https://research.example.test/semis"
+    assert stored.evidence[0].artifact_id == "artifact-research-1"
+    assert stored.evidence[0].caveats == (
+        "Research source may lag intraday conditions.",
+    )
+    source_reference = event_store.read_events()[-1].payload["source_references"][0]
+    assert source_reference["source_uri"] == "https://research.example.test/semis"
+    assert source_reference["artifact_id"] == "artifact-research-1"
+    assert "summary" not in source_reference
+    assert "provenance_summary" not in source_reference
+    assert "caveats" not in source_reference
+
+
+def test_observation_capture_rejects_unresolved_context_links() -> None:
+    service = AdvisoryObservationCaptureService(
+        InMemoryAdvisoryObservationStore(),
+        InMemoryEventStore(),
+    )
+
+    with pytest.raises(ValueError, match="decision_id does not resolve"):
+        service.capture(_observation())
+
+    event_store = _event_store_with_links(thesis_id="thesis-known")
+    service = AdvisoryObservationCaptureService(
+        InMemoryAdvisoryObservationStore(),
+        event_store,
+    )
+
+    with pytest.raises(ValueError, match="thesis_id does not resolve"):
+        service.capture(replace(_observation(), thesis_id="thesis-missing"))
+
+
+def test_context_links_remain_advisory_metadata_in_api_and_replay() -> None:
+    app = create_app()
+    app.state.event_store.append(_decision_event())
+    client = TestClient(app)
+
+    response = client.post(
+        "/advisory/observations",
+        json={
+            "observation_kind": "market_context",
+            "capture_origin": "operator_manual",
+            "content": "Semiconductor breadth improved while volume remained uneven.",
+            "evidence": [
+                {
+                    "evidence_id": "evidence-1",
+                    "source_kind": "operator-note",
+                    "source_id": "operator-note-1",
+                    "summary": "Operator linked context to existing thesis.",
+                }
+            ],
+            "provenance_summary": "operator supplied from context workbench",
+            "uncertainty_band": "medium",
+            "caveats": ["Link is contextual, not thesis revision."],
+            "persona_id": "persona.swing",
+            "workspace_id": "workspace.context",
+            "decision_id": "decision-1",
+            "thesis_id": "thesis-1",
+            "captured_at": "2026-05-19T14:30:00Z",
+        },
+    )
+
+    assert response.status_code == 201
+    created = response.json()
+    assert created["decision_id"] == "decision-1"
+    assert created["thesis_id"] == "thesis-1"
+    assert created["authority"] == "advisory"
+    assert created["is_canonical"] is False
+
+    replay_response = client.get("/replay/timeline")
+    advisory_entry = next(
+        entry
+        for entry in replay_response.json()["entries"]
+        if entry["event_type"] == "advisory.observation_captured"
+    )
+    assert advisory_entry["payload"]["decision_id"] == "decision-1"
+    assert advisory_entry["payload"]["thesis_id"] == "thesis-1"
+    assert advisory_entry["payload"]["artifact_authority"] == "advisory_non_canonical"
+    assert "thesis_influence" not in advisory_entry["payload"]
+    assert "lifecycle_transition_intent" not in advisory_entry["payload"]
 
 
 

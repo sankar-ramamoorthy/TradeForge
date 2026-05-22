@@ -159,6 +159,13 @@ def _serialize_evidence(
             "observed_at": item.observed_at.isoformat()
             if item.observed_at is not None
             else None,
+            "source_uri": item.source_uri,
+            "artifact_id": item.artifact_id,
+            "captured_at": item.captured_at.isoformat()
+            if item.captured_at is not None
+            else None,
+            "provenance_summary": item.provenance_summary,
+            "caveats": list(item.caveats),
         }
         for item in evidence
     ]
@@ -203,6 +210,12 @@ def _deserialize_evidence(value: Any) -> tuple[CognitiveEvidence, ...]:
             if observed_at_value is not None
             else None
         )
+        captured_at_value = item.get("captured_at")
+        captured_at = (
+            datetime.fromisoformat(str(captured_at_value))
+            if captured_at_value is not None
+            else None
+        )
         evidence.append(
             CognitiveEvidence(
                 evidence_id=str(item["evidence_id"]),
@@ -210,6 +223,17 @@ def _deserialize_evidence(value: Any) -> tuple[CognitiveEvidence, ...]:
                 source_id=str(item["source_id"]),
                 summary=str(item["summary"]),
                 observed_at=observed_at,
+                source_uri=str(item["source_uri"])
+                if item.get("source_uri") is not None
+                else None,
+                artifact_id=str(item["artifact_id"])
+                if item.get("artifact_id") is not None
+                else None,
+                captured_at=captured_at,
+                provenance_summary=str(item["provenance_summary"])
+                if item.get("provenance_summary") is not None
+                else None,
+                caveats=_string_tuple(item.get("caveats", [])),
             )
         )
     return tuple(evidence)

@@ -123,9 +123,9 @@ Explicit roadmap checkpoint completed M9 Updated*Done*.
 | TF-A002 | Done | M12 | Implement advisory observation event taxonomy | `feature/m12-advisory-observation-foundation` |
 | TF-A003 | Done | M12 | Implement observation provenance persistence | `feature/m12-advisory-observation-foundation` |
 | TF-A004 | Done | M12 | Implement uncertainty metadata support | `feature/m12-advisory-observation-foundation` |
-| TF-A005 | Planned | M12 | Implement replay-visible advisory observation timeline | `feature/m12-advisory-observation-foundation` |
-| TF-A006 | Planned | M12 | Implement evidence attachment framework | `feature/m12-advisory-observation-foundation` |
-| TF-A007 | Planned | M12 | Implement thesis evidence linkage | `feature/m12-advisory-observation-foundation` |
+| TF-A005 | Done | M12 | Implement replay-visible advisory observation timeline | `feature/m12-advisory-observation-foundation` |
+| TF-A006 | Done | M12 | Implement evidence attachment framework | `feature/m12-advisory-observation-foundation` |
+| TF-A007 | Done | M12 | Implement thesis evidence linkage | `feature/m12-advisory-observation-foundation` |
 | TF-A008 | Planned | M12 | Implement contextual interpretation artifacts | `feature/m12-advisory-observation-foundation` |
 | TF-A009 | Planned | M12 | Implement conflicting evidence surfacing | `feature/m12-advisory-observation-foundation` |
 | TF-A010 | Planned | M12 | Implement evidence aging/staleness visibility | `feature/m12-advisory-observation-foundation` |
@@ -357,7 +357,7 @@ Verified the existing qualitative uncertainty metadata model and added focused r
 
 ## TF-A005: Implement Replay-Visible Advisory Observation Timeline
 
-**Status:** Planned
+**Status:** Done
 
 **Classification:** enhancement
 
@@ -374,6 +374,13 @@ Verified the existing qualitative uncertainty metadata model and added focused r
 **Problem:**
 Replay must show that an advisory observation existed at a historical point without treating non-canonical advisory content as event truth.
 
+**Implementation Summary:**
+Verified and strengthened replay-visible advisory observation timeline behavior. The replay timeline builder includes `advisory.observation_captured` events as advisory entries in deterministic chronological order, preserves artifact identifiers and advisory/non-canonical boundary metadata, and does not require advisory content, live providers, current AI output, or mutable external state for reconstruction.
+
+**Validation:**
+
+- `uv run pytest tests\test_replay_timeline.py tests\test_replay_timeline_service.py tests\test_advisory_observation.py::test_replay_timeline_includes_advisory_capture_fact_without_content`
+
 **Acceptance Criteria:**
 
 - Replay timeline includes `advisory.observation_captured` entries in chronological order.
@@ -385,7 +392,7 @@ Replay must show that an advisory observation existed at a historical point with
 
 ## TF-A006: Implement Evidence Attachment Framework
 
-**Status:** Planned
+**Status:** Done
 
 **Classification:** enhancement
 
@@ -402,6 +409,13 @@ Replay must show that an advisory observation existed at a historical point with
 **Problem:**
 Advisory observations require durable evidence references so operators can inspect why an observation exists without treating supporting material as canonical lifecycle state.
 
+**Implementation Summary:**
+Extended the advisory evidence attachment contract with required M12 source kinds and optional per-evidence metadata for source URI, artifact ID, captured timestamp, provenance summary, and caveats. Evidence metadata is persisted in the non-canonical advisory artifact store and exposed through advisory API responses. Capture events retain only source-reference facts and continue to exclude evidence summary, provenance detail, caveats, and advisory content from canonical event truth.
+
+**Validation:**
+
+- `uv run pytest tests\test_advisory_observation.py`
+
 **Acceptance Criteria:**
 
 - `CognitiveEvidence` supports typed references for provider payloads, imported research, markdown artifacts, URLs, operator notes, replay annotations, and generated advisory artifacts.
@@ -414,7 +428,7 @@ Advisory observations require durable evidence references so operators can inspe
 
 ## TF-A007: Implement Thesis Evidence Linkage
 
-**Status:** Planned
+**Status:** Done
 
 **Classification:** enhancement
 
@@ -430,6 +444,13 @@ Advisory observations require durable evidence references so operators can inspe
 
 **Problem:**
 Operators need to associate advisory observations with an existing decision or thesis for context, while preserving that the association does not revise, approve, strengthen, weaken, or transition lifecycle state.
+
+**Implementation Summary:**
+Implemented deterministic context-link validation for advisory observations. The capture service now validates optional `decision_id` and `thesis_id` against event-store history before persisting an advisory observation or appending the capture fact. Valid links remain contextual advisory metadata in API responses and replay payloads; they do not create thesis influence, thesis revision, lifecycle transition, approval, plan change, or execution authority.
+
+**Validation:**
+
+- `uv run pytest tests\test_advisory_observation.py tests\test_replay_timeline.py tests\test_replay_timeline_service.py`
 
 **Acceptance Criteria:**
 
