@@ -212,6 +212,16 @@ Explicit roadmap checkpoint completed M9 Updated*Done*.
 | TF-F042 | Done | M10E | Reframe market-context presentation from raw payload first to interpretation first | `feature/tf-f042-market-context-interpretation-first` |
 | TF-F043 | Done | M10D | Update FMP fundamentals adapter to use stable endpoints | `fix/tf-f043-fmp-stable-fundamentals-endpoints` |
 | TF-F044 | Done | M11 | Fold machine-assisted discretionary cognition roadmap into active roadmap v2 | `docs/tf-f044-roadmap-v3-integration` |
+| TF-F045 | Done | M13 | Add LiteLLM credential shape to CredentialStore | `feature/tf-f045-litellm-credential-shape` |
+| TF-F046 | Planned | M13 | Implement OpenAICompatibleAdvisoryProvider | `feature/tf-f046-openai-compatible-advisory-provider` |
+| TF-F047 | Planned | M13 | Implement prompt template and service wiring for replay summary | `feature/tf-f047-advisory-replay-summary-prompt` |
+| TF-F048 | Planned | M13 | Implement prompt template and service wiring for thesis review assistant | `feature/tf-f048-advisory-thesis-review-prompt` |
+| TF-F049 | Planned | M13 | Implement prompt template and service wiring for advisory observation generation | `feature/tf-f049-advisory-observation-generation-prompt` |
+| TF-F050 | Planned | M13 | Implement prompt template and service wiring for candidate screening | `feature/tf-f050-advisory-candidate-screening-prompt` |
+| TF-F051 | Planned | M13 | Add on-demand advisory API endpoints and frontend trigger surfaces | `feature/tf-f051-advisory-on-demand-endpoints` |
+| TF-F052 | Planned | M13 | Add advisory service health check to ProviderConfigurationPanel | `feature/tf-f052-advisory-health-check` |
+| TF-F053 | Planned | M13 | Validate NVIDIA NIM via LiteLLM and document credential shape | `docs/tf-f053-nvidia-nim-litellm-validation` |
+| TF-F054 | Planned | M13 | Document automatic enrichment lifecycle hook points | `docs/tf-f054-auto-enrichment-hook-points` |
 
 ## TF-A001: Define AdvisoryObservation Domain Model
 
@@ -966,6 +976,9 @@ Artifact ingestion now records a replay-safe advisory snapshot containing captur
 **Problem:**
 M13 needs a durable interpretation artifact schema so advisory observations can gain contextual meaning without becoming lifecycle truth, recommendations, thesis revisions, approvals, or execution instructions.
 
+**Implementation Context (M12 Foundation):**
+`AdvisoryInterpretation`, `InterpretationKind`, `ThesisInfluence`, `ContextualWeight`, `AdvisoryConfidenceRange`, and `AdvisoryInterpretationStore` were fully defined in M12 (`src/domain/advisory/interpretation.py`). `PostgresAdvisoryInterpretationStore` and `InMemoryAdvisoryInterpretationStore` are also in place. `AdvisoryInterpretationCaptureService` appends `advisory.interpretation_captured` capture-fact events. `InterpretationDraftService` builds AI-assisted interpretation drafts via the `AIAdvisoryProvider` port. This issue verifies schema completeness against ADR-0042, adds any missing test coverage, and confirms the schema is correctly exposed via API.
+
 **Acceptance Criteria:**
 
 - `AdvisoryInterpretation` exists as a non-canonical advisory artifact linked to at least one `AdvisoryObservation` ID.
@@ -994,6 +1007,9 @@ M13 needs a durable interpretation artifact schema so advisory observations can 
 
 **Problem:**
 Operators need qualitative contextual weight for interpretations, but the system must avoid hidden scoring engines, deterministic predictive scoring, and recommendation authority.
+
+**Implementation Context (M12 Foundation):**
+`ContextualWeight` enum (`low`, `medium`, `high`, `watch`) is defined in M12 (`src/domain/advisory/interpretation.py`) and is a required field on `AdvisoryInterpretation`. The store and query layer already filters by contextual weight. This issue adds a qualitative weight-assignment service that recommends contextual weight based on observation kind and available regime context, and API surfaces that expose weight clearly in interpretation responses.
 
 **Acceptance Criteria:**
 
@@ -1082,6 +1098,9 @@ M13 must allow operators to understand evidence conflict across observations and
 **Problem:**
 Operators need uncertainty-preserving confidence ranges for interpretations, but M13 must avoid false precision and numeric prediction.
 
+**Implementation Context (M12 Foundation):**
+`AdvisoryConfidenceRange` enum (`low`, `medium`, `high`, `unknown`) is defined in M12 (`src/domain/advisory/interpretation.py`) and is a required field on `AdvisoryInterpretation`. This issue adds UX surfaces that display confidence ranges visually and API endpoint coverage that returns confidence range as an explicit advisory metadata field in interpretation queries and summaries.
+
 **Acceptance Criteria:**
 
 - Fixed qualitative advisory confidence range enum exists for `AdvisoryInterpretation`.
@@ -1111,6 +1130,9 @@ Operators need uncertainty-preserving confidence ranges for interpretations, but
 **Problem:**
 Operators need to see how interpreted advisory evidence may influence an existing thesis, while preserving that the system does not revise the thesis or own lifecycle authority.
 
+**Implementation Context (M12 Foundation):**
+`ThesisInfluence` enum and the optional `thesis_id` linkage on `AdvisoryInterpretation` were implemented in M12. `ThesisInfluenceSummary` — which counts interpretations by influence label for a given thesis — is implemented in `src/services/advisory/interpretation.py`. This issue extends tracking to expose influence over time (not only current counts), adds API surfaces for thesis influence history, and wires the influence summary into the relevant workspace panel.
+
 **Acceptance Criteria:**
 
 - Interpretations may optionally reference a thesis and store qualitative thesis influence metadata.
@@ -1139,6 +1161,9 @@ Operators need to see how interpreted advisory evidence may influence an existin
 
 **Problem:**
 Interpretations need qualitative classification for whether evidence appears to support, weaken, complicate, or remain neutral toward a thesis, without becoming an automated thesis judgment.
+
+**Implementation Context (M12 Foundation):**
+`ThesisInfluence` enum values `SUPPORTING`, `WEAKENING`, `CONFLICTING`, `MIXED`, `NEUTRAL`, `UNKNOWN` are defined in M12. Query filtering by `thesis_influence` is also in place. This issue adds the operator-facing API and workspace surfaces that present the supporting vs weakening evidence split clearly, grouped by linked thesis, with caveats and source provenance visible.
 
 **Acceptance Criteria:**
 
@@ -1342,6 +1367,9 @@ Operators need summaries of probabilistic cognition across interpretations, but 
 
 **Problem:**
 Operators need narrative explanations of evidence and interpretation context, including AI-assisted drafts, but generated narratives must require operator acceptance before persistence and must not become canonical truth.
+
+**Dependency:**
+Requires TF-F046 (`OpenAICompatibleAdvisoryProvider`) to be complete and wired before AI-assisted draft generation can be exercised end-to-end. The `InterpretationDraftService` in `src/services/advisory/interpretation.py` is already implemented and awaits a concrete `AIAdvisoryProvider` to call. TF-B014 should not be started until TF-F046 is done.
 
 **Acceptance Criteria:**
 
@@ -6125,6 +6153,358 @@ Added a `narrative.trim().length < 10` guard in `handleSubmit` with a descriptiv
 - `docker compose up -d` — container starts and stays running
 - `curl http://localhost:8000/health` — API responds
 - `docker exec tradeforge-postgres-1 psql -U tradeforge -d tradeforge -c "SELECT count(*) FROM event_ledger;"` — confirms events reach Postgres
+
+---
+
+## TF-F045: Add LiteLLM Credential Shape To CredentialStore
+
+**Status:** Done
+
+**Classification:** enhancement
+
+**Milestone:** M13
+
+**Branch:** `feature/tf-f045-litellm-credential-shape`
+
+**Affected Layer:** domain, security
+
+**Linked ADRs:** ADR-0037
+
+**Impacted Invariants:** Derived State Must Remain Distinguishable, Architectural Simplicity, Historical Integrity
+
+**Source:** LLM adapter strategy session 2026-05-22. See `DOCS/llm-adapter-strategy.md`.
+
+**Problem:**
+`CredentialStore` manages market data provider credentials but has no credential shape for LLM providers. M13 advisory tasks (TF-F046–TF-F050) need a concrete LLM provider configured through the existing credential boundary. Without this, the `OpenAICompatibleAdvisoryProvider` cannot retrieve its endpoint or key at runtime without leaking them into code or environment files.
+
+**Scope:**
+Add a `litellm` provider type to the security domain with credential fields `base_url`, `api_key`, and `default_model`. Register it through `CredentialStore` using the same `KeyManager` encryption path as existing market data credentials. The credential CLI workflow for setting and rotating LiteLLM credentials must match the existing provider credential workflow.
+
+**Acceptance Criteria:**
+
+- `CredentialStore` can store and retrieve a `litellm` credential with `base_url`, `api_key`, and `default_model` fields.
+- LiteLLM credential is encrypted at rest under `TRADEFORGE_MASTER_KEY` using the existing `KeyManager`.
+- No LiteLLM base URL, API key, or model string appears in application code, `.env` files, or git history.
+- Setting and rotating LiteLLM credentials uses the same CLI workflow as existing market data credentials.
+- Credential retrieval fails with a clear error if no `litellm` credential has been configured.
+
+**Resolution Summary:**
+Added a typed LiteLLM credential payload under the security boundary with `base_url`, `api_key`, and `default_model` fields. The existing `CredentialStore` remains the encrypted storage mechanism, while `create_litellm_credential()` and `get_litellm_credential()` provide the provider-specific shape and clear not-configured failure. Extended `scripts/manage_credentials.py register litellm` so setting or rotating LiteLLM credentials uses the same encrypted `.keys.enc` workflow as existing providers.
+
+**Completed Verification:**
+
+- `uv run pytest tests\test_credential.py tests\test_key_manager.py tests\test_credential_store.py tests\test_manage_credentials_script.py`
+- `uv run ruff check src\security scripts\manage_credentials.py tests\test_credential.py tests\test_key_manager.py tests\test_credential_store.py tests\test_manage_credentials_script.py`
+- `uv run mypy src\security scripts\manage_credentials.py tests\test_credential.py tests\test_key_manager.py tests\test_credential_store.py tests\test_manage_credentials_script.py`
+
+---
+
+## TF-F046: Implement OpenAICompatibleAdvisoryProvider
+
+**Status:** Planned
+
+**Classification:** architectural
+
+**Milestone:** M13
+
+**Branch:** `feature/tf-f046-openai-compatible-advisory-provider`
+
+**Affected Layer:** infrastructure/advisory, services/advisory, app
+
+**Linked ADRs:** ADR-0006, ADR-0037, ADR-0041, ADR-0042
+
+**Impacted Invariants:** AI Advisory Boundary, Human Decision Sovereignty, Derived State Must Remain Distinguishable
+
+**Source:** LLM adapter strategy session 2026-05-22. See `DOCS/llm-adapter-strategy.md`.
+
+**Problem:**
+The `AIAdvisoryProvider` protocol in `src/domain/advisory/` has no concrete implementation. `InterpretationDraftService`, `ReplayAdvisoryService`, and `ReviewAdvisoryService` cannot generate advisory content until a provider is wired. M13 advisory tasks cannot function without this.
+
+**Scope:**
+Implement `OpenAICompatibleAdvisoryProvider` in `src/infrastructure/advisory/openai_compatible_provider.py`. Reads `base_url`, `api_key`, and `default_model` from `CredentialStore` via the `litellm` credential shape (TF-F045). Calls the OpenAI chat completions API format (`POST /v1/chat/completions`). This format is supported by LiteLLM, Groq, NVIDIA NIM, and Ollama — provider routing is handled by LiteLLM configuration, not by the adapter. The adapter validates that all responses maintain `authority=ADVISORY`, matching `request_id`, and matching `artifact_kind`. Injected at `create_app()` composition root only.
+
+**Acceptance Criteria:**
+
+- `OpenAICompatibleAdvisoryProvider` implements the `AIAdvisoryProvider` protocol.
+- Provider reads all credentials from `CredentialStore`. No key, base URL, or model string in code.
+- Provider calls LiteLLM (or any OpenAI-compatible endpoint) using the `/v1/chat/completions` format.
+- `AIAdvisoryService.generate()` validates responses for `authority=ADVISORY`, `request_id` match, and `artifact_kind` match.
+- Provider is injected only at the composition root. Domain, lifecycle, and replay layers have no import dependency on it.
+- If LiteLLM is unreachable, advisory calls raise a typed `AdvisoryProviderUnavailableError` that the API layer handles gracefully without affecting lifecycle operations.
+- `InMemoryAdvisoryProvider` stub remains available for tests and demo mode.
+
+---
+
+## TF-F047: Implement Prompt Template And Service Wiring For Replay Summary
+
+**Status:** Planned
+
+**Classification:** enhancement
+
+**Milestone:** M13
+
+**Branch:** `feature/tf-f047-advisory-replay-summary-prompt`
+
+**Affected Layer:** services/advisory, app
+
+**Linked ADRs:** ADR-0006, ADR-0008, ADR-0041
+
+**Impacted Invariants:** AI Advisory Boundary, Replayability Is Foundational, Human Decision Sovereignty
+
+**Source:** LLM adapter strategy session 2026-05-22. See `DOCS/llm-adapter-strategy.md`.
+
+**Problem:**
+`ReplayAdvisoryService` exists as a boundary but has no prompt serialization logic. Replay summaries cannot be generated until a prompt template packages replay timeline data into an `AdvisoryRequest`. This is the lowest-risk advisory task and the first one to validate the adapter end-to-end.
+
+**Scope:**
+Add prompt serializer to `ReplayAdvisoryService` that packages replay timeline events (lifecycle transitions, advisory capture facts, cognitive artifact snapshots) into an `AdvisoryRequest` with `artifact_kind=REPLAY_SUMMARY`. System prompt instructs the LLM to summarize without issuing recommendations, lifecycle transitions, or buy/sell instructions. Add `POST /advisory/replay-summary` API endpoint that accepts a `decision_id` and returns an `AdvisoryResponse`. Generated summary is returned but not persisted — it is an ephemeral advisory output, not a replay event.
+
+**Acceptance Criteria:**
+
+- `ReplayAdvisoryService` serializes replay timeline context into a valid `AdvisoryRequest`.
+- System prompt explicitly prohibits recommendation authority, lifecycle transition suggestions, and buy/sell instructions.
+- Response maintains `authority=ADVISORY` and does not append events.
+- `POST /advisory/replay-summary` accepts a `decision_id` and returns an advisory summary response.
+- Response includes source references, provenance summary, and advisory/non-canonical label.
+- Empty or insufficient replay timeline returns a graceful advisory-null response, not a server error.
+
+---
+
+## TF-F048: Implement Prompt Template And Service Wiring For Thesis Review Assistant
+
+**Status:** Planned
+
+**Classification:** enhancement
+
+**Milestone:** M13
+
+**Branch:** `feature/tf-f048-advisory-thesis-review-prompt`
+
+**Affected Layer:** services/advisory, app
+
+**Linked ADRs:** ADR-0006, ADR-0033, ADR-0041, ADR-0042
+
+**Impacted Invariants:** AI Advisory Boundary, Human Decision Sovereignty, Lifecycle Authority
+
+**Source:** LLM adapter strategy session 2026-05-22. See `DOCS/llm-adapter-strategy.md`.
+
+**Problem:**
+No prompt template exists to package a structured thesis artifact into an `AdvisoryRequest`. Operators cannot request advisory review of thesis assumptions, invalidation conditions, or regime alignment through the system. This is the highest operator-value advisory task.
+
+**Scope:**
+Add prompt serializer that packages thesis narrative, catalysts, assumptions, invalidation conditions, regime alignment, and confidence level into an `AdvisoryRequest` with `artifact_kind=THESIS_REVIEW`. System prompt instructs the LLM to surface blind spots, missing assumptions, unstated risks, and regime misalignments — without issuing buy/sell instructions, lifecycle recommendations, or plan approval language. Add `POST /advisory/thesis-review` API endpoint accepting `thesis_id`.
+
+**Acceptance Criteria:**
+
+- Thesis review prompt includes all structured thesis fields without lifecycle authority fields.
+- System prompt explicitly prohibits buy/sell instructions, lifecycle recommendations, and plan approval language.
+- Response maintains `authority=ADVISORY`.
+- `POST /advisory/thesis-review` accepts `thesis_id` and returns advisory response.
+- Empty or minimal thesis fields return a graceful advisory-null response indicating insufficient context.
+
+---
+
+## TF-F049: Implement Prompt Template And Service Wiring For Advisory Observation Generation
+
+**Status:** Planned
+
+**Classification:** enhancement
+
+**Milestone:** M13
+
+**Branch:** `feature/tf-f049-advisory-observation-generation-prompt`
+
+**Affected Layer:** services/advisory, app
+
+**Linked ADRs:** ADR-0006, ADR-0038, ADR-0041, ADR-0042
+
+**Impacted Invariants:** AI Advisory Boundary, Human Decision Sovereignty, Derived State Must Remain Distinguishable, Market Intelligence Is Interpreted Context
+
+**Source:** LLM adapter strategy session 2026-05-22. See `DOCS/llm-adapter-strategy.md`.
+
+**Problem:**
+No prompt template exists to generate typed advisory observations from market context. Operators must manually enter all observations or import external documents. The M12 advisory observation pipeline has no LLM-assisted generation path.
+
+**Scope:**
+Add `ObservationGenerationAdvisoryService` that packages ticker, market snapshot (price context), fundamentals bundle, and market regime into an `AdvisoryRequest` with `artifact_kind=OBSERVATION_GENERATION`. LLM prompt requests discrete observations across specified `ObservationKind` values. Response is parsed into candidate `AdvisoryObservation` inputs. Operator must explicitly accept before observations are captured — auto-persistence is prohibited per ADR-0042. Accepted observations use `capture_origin=claude_generated`. Add `POST /advisory/generate-observations` API endpoint.
+
+**Acceptance Criteria:**
+
+- Observation generation prompt includes ticker, price context, fundamentals, and regime context.
+- System prompt prohibits buy/sell instructions, lifecycle authority, and recommendation framing.
+- Response is structured to produce multiple discrete typed observations.
+- Operator must explicitly accept before observations are captured. No auto-persist path.
+- Accepted observations set `capture_origin=claude_generated` or `capture_origin=codex_generated`.
+- `POST /advisory/generate-observations` returns candidate observations for operator review.
+
+---
+
+## TF-F050: Implement Prompt Template And Service Wiring For Candidate Screening
+
+**Status:** Planned
+
+**Classification:** enhancement
+
+**Milestone:** M13
+
+**Branch:** `feature/tf-f050-advisory-candidate-screening-prompt`
+
+**Affected Layer:** services/advisory, app
+
+**Linked ADRs:** ADR-0006, ADR-0041
+
+**Impacted Invariants:** AI Advisory Boundary, Human Decision Sovereignty, Derived State Must Remain Distinguishable
+
+**Source:** LLM adapter strategy session 2026-05-22. See `DOCS/llm-adapter-strategy.md`.
+
+**Problem:**
+The advisory candidate queue can accumulate candidates faster than an operator can manually triage. No LLM-assisted screening path exists to help the operator decide which candidates deserve attention first.
+
+**Scope:**
+Add `CandidateScreeningAdvisoryService` that packages candidate queue contents (ticker, observation summaries, evidence, provenance, uncertainty) into an `AdvisoryRequest` with `artifact_kind=CANDIDATE_SCREENING`. System prompt requests qualitative attention-ranking rationale. Response is returned as advisory commentary only and does not modify candidate records, candidate status, or lifecycle state. Add `POST /advisory/screen-candidates` API endpoint.
+
+**Acceptance Criteria:**
+
+- Screening prompt includes all candidate context fields without lifecycle authority fields.
+- System prompt explicitly prohibits candidate promotion, lifecycle changes, buy/sell instructions, and recommendation authority.
+- Response maintains `authority=ADVISORY` and does not modify any candidate records.
+- `POST /advisory/screen-candidates` returns advisory commentary only.
+- Empty candidate queue returns a graceful advisory-null response.
+
+---
+
+## TF-F051: Add On-Demand Advisory API Endpoints And Frontend Trigger Surfaces
+
+**Status:** Planned
+
+**Classification:** enhancement
+
+**Milestone:** M13
+
+**Branch:** `feature/tf-f051-advisory-on-demand-endpoints`
+
+**Affected Layer:** app/routes, frontend
+
+**Linked ADRs:** ADR-0006, ADR-0020, ADR-0021, ADR-0042
+
+**Impacted Invariants:** AI Advisory Boundary, Human Decision Sovereignty, UX Is Architectural
+
+**Source:** LLM adapter strategy session 2026-05-22. See `DOCS/llm-adapter-strategy.md`.
+
+**Problem:**
+The four advisory task services (TF-F047–TF-F050) need operator-facing trigger surfaces in relevant workspaces. Without API endpoints and frontend buttons, the advisory generation capability is backend-only and not usable from the UI.
+
+**Scope:**
+Wire API routes for all four advisory tasks to the FastAPI application. Add frontend trigger buttons in contextually appropriate workspaces: replay summary in `ReplayWorkspace`, thesis review in the thesis authoring surface, observation generation in `ContextWorkbenchWorkspace` or `OpportunityWorkspace`, candidate screening in `OperatingWorkspace` or the advisory panel. All buttons are explicit on-demand triggers only — nothing fires automatically.
+
+**Acceptance Criteria:**
+
+- Four API endpoints are exposed and respond correctly.
+- Frontend surfaces include trigger buttons for all four advisory tasks in appropriate workspaces.
+- Advisory responses render as clearly labelled non-canonical advisory panels with provenance and caveats visible.
+- No automatic triggers. All advisory generation requires explicit operator action.
+- Loading states, error states, and LiteLLM unavailability are handled gracefully in the UI.
+- Advisory panels do not include approve, execute, buy/sell, or lifecycle-transition controls.
+
+---
+
+## TF-F052: Add Advisory Service Health Check To ProviderConfigurationPanel
+
+**Status:** Planned
+
+**Classification:** enhancement
+
+**Milestone:** M13
+
+**Branch:** `feature/tf-f052-advisory-health-check`
+
+**Affected Layer:** app, frontend
+
+**Linked ADRs:** ADR-0006, ADR-0020, ADR-0038
+
+**Impacted Invariants:** UX Is Architectural, AI Advisory Boundary, Architectural Simplicity
+
+**Source:** LLM adapter strategy session 2026-05-22. See `DOCS/llm-adapter-strategy.md`.
+
+**Problem:**
+Operators have no visibility into whether the LiteLLM advisory service is reachable before attempting an advisory task. Silent failures (LiteLLM down, no credential configured) produce confusing errors deep inside advisory panels.
+
+**Scope:**
+Add `GET /advisory/health` endpoint that checks LiteLLM reachability via a lightweight probe (not a full generation call — no tokens consumed). Returns one of: `available`, `unavailable` (LiteLLM unreachable), or `not_configured` (no `litellm` credential in `CredentialStore`). Surface the result in `ProviderConfigurationPanel` alongside market data provider status.
+
+**Acceptance Criteria:**
+
+- `GET /advisory/health` returns a status distinguishing `available`, `unavailable`, and `not_configured`.
+- Health probe does not consume tokens or trigger advisory generation.
+- `ProviderConfigurationPanel` shows advisory service status.
+- A health check failure does not affect lifecycle, replay, or market data operations.
+- `not_configured` state clearly guides the operator toward credential setup.
+
+---
+
+## TF-F053: Validate NVIDIA NIM Via LiteLLM And Document Credential Shape
+
+**Status:** Planned
+
+**Classification:** investigation
+
+**Milestone:** M13
+
+**Branch:** `docs/tf-f053-nvidia-nim-litellm-validation`
+
+**Affected Layer:** docs
+
+**Linked ADRs:** ADR-0037
+
+**Impacted Invariants:** Architectural Simplicity
+
+**Source:** LLM adapter strategy session 2026-05-22. See `DOCS/llm-adapter-strategy.md`. NVIDIA NIM free tier is provisioned but untested.
+
+**Problem:**
+NVIDIA NIM free tier has been provisioned but not validated via LiteLLM. Rate limits, model strings, and token constraints are undocumented. Without this, the claim that NVIDIA NIM can be added as a LiteLLM route without code changes is unverified.
+
+**Scope:**
+Configure NVIDIA NIM as a model route in LiteLLM. Test a basic chat completion call through LiteLLM. Confirm the LiteLLM model string format for at least one NIM model (e.g., `nvidia/meta/llama-3.1-70b-instruct`). Document confirmed rate limits, daily token budgets, and any response format differences. Update `DOCS/llm-adapter-strategy.md` with confirmed NIM credential shape, model strings, and a comparison against Groq free-tier limits. No code changes required in TradeForge.
+
+**Acceptance Criteria:**
+
+- NVIDIA NIM successfully responds to a chat completion call routed through LiteLLM.
+- Confirmed LiteLLM model string documented for at least one NIM model.
+- `DOCS/llm-adapter-strategy.md` updated with NIM credential shape and confirmed rate limits.
+- No TradeForge application code changes required — NIM is a LiteLLM configuration addition.
+
+---
+
+## TF-F054: Document Automatic Enrichment Lifecycle Hook Points
+
+**Status:** Planned
+
+**Classification:** documentation
+
+**Milestone:** M13
+
+**Branch:** `docs/tf-f054-auto-enrichment-hook-points`
+
+**Affected Layer:** docs, knowledge-base
+
+**Linked ADRs:** ADR-0006, ADR-0042
+
+**Impacted Invariants:** AI Advisory Boundary, Human Decision Sovereignty, Replayability Is Foundational
+
+**Source:** LLM adapter strategy session 2026-05-22. See `DOCS/llm-adapter-strategy.md`. Automatic enrichment is explicitly deferred from the current on-demand implementation but the hook points need to be specified before the pattern drifts.
+
+**Problem:**
+The strategy document defers automatic advisory enrichment on lifecycle events to a future step, but no document specifies which lifecycle events are candidates for automatic triggers, what gating conditions apply, or what the failure behavior should be. Without this, the transition from on-demand to automatic enrichment has no specified shape.
+
+**Scope:**
+Define — in `DOCS/llm-adapter-strategy.md` or a new `DOCS/advisory-enrichment-trigger-model.md` — the candidate lifecycle events for automatic advisory enrichment (e.g., thesis captured → observation generation, lifecycle transition to Plan → thesis review, replay session completed → replay summary), the gating conditions for each hook (existing observation coverage, provider availability, per-decision operator opt-in), and the failure behavior (silent skip, degraded-state surface, operator notification). Document explicitly states that automatic enrichment is deferred; this is a specification for when it is eventually implemented.
+
+**Acceptance Criteria:**
+
+- At least six lifecycle events are documented as automatic enrichment candidates.
+- Each candidate hook specifies: trigger event, advisory task, gating conditions, failure behavior.
+- Document explicitly states automatic enrichment is deferred from current implementation.
+- No runtime code changes.
 
 ---
 
