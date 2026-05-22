@@ -19,7 +19,7 @@ TradeForge is:
 
 ---
 
-## What Works Now (M10)
+## What Works Now (M12 In Progress)
 
 * Full 7-stage decision lifecycle: **Idea → Thesis → Plan → Approval → Execution → Position → Review**
 * Event-sourced workflow — all state derives from immutable ledger events
@@ -30,6 +30,8 @@ TradeForge is:
 * Market context overlays via yfinance (advisory, non-canonical)
 * Deterministic replay and historical reconstruction
 * Postgres-backed event ledger (optional; defaults to in-memory)
+* M11 AI advisory boundary: advisory interfaces, replay assistance, review assistance, and provenance tracking
+* M12 advisory observation foundation in progress: advisory observations, cognitive evidence, provenance, uncertainty, replay-visible capture facts, contextual observation metadata, conflict markers, staleness visibility, and advisory-only decision/thesis links
 
 ---
 
@@ -95,7 +97,7 @@ src/
 frontend/
 └── src/           React workspace runtime
 
-tests/             Integration tests (513 passing)
+tests/             Pytest regression and integration suite
 DOCS/
 └── adr/           Architecture Decision Records
 ```
@@ -106,9 +108,9 @@ DOCS/
 
 | Layer | Owns | Must not |
 |---|---|---|
-| `domain/` | entities, value objects, lifecycle rules, event types | import infrastructure, persistence, or framework code |
-| `services/` | workflow orchestration, projection services | own persistence or define domain rules |
-| `infrastructure/` | event store, market adapters, Postgres | redefine domain semantics |
+| `domain/` | entities, value objects, lifecycle rules, event types, advisory contracts | import infrastructure, persistence, or framework code |
+| `services/` | workflow orchestration, projection services, advisory capture/query flows | own persistence or define domain rules |
+| `infrastructure/` | event store, advisory stores, market adapters, Postgres | redefine domain semantics |
 | `app/` | HTTP routes, FastAPI wiring | own domain rules or lifecycle authority |
 | `frontend/` | workspace UI, API consumption | treat browser state as canonical truth |
 
@@ -164,6 +166,8 @@ Key ADRs:
 * `0006` — AI advisory boundary model
 * `0008` — Replay system design
 * `0032` — External provider boundary model
+* `0041` — Advisory observation and cognitive evidence foundation
+* `0042` — Contextual interpretation and thesis influence
 
 ---
 
@@ -178,7 +182,9 @@ Key ADRs:
 | M8 | Done | First replayable MVP lifecycle flow |
 | M9 | Done | Market context, provider boundary, advisory overlays |
 | M10 | Done | Operational UX, demoability, guided workflow |
-| M11+ | Planned | AI advisory integration, behavioral intelligence, simulation |
+| M11 | Done | AI advisory boundary, replay/review assistance, provenance |
+| M12 | In Progress | Advisory observation and cognitive evidence layer |
+| M13+ | Planned | Contextual interpretation, behavioral intelligence, simulation |
 
 ---
 

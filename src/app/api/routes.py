@@ -16,7 +16,9 @@ from src.domain.advisory import (
     AdvisoryObservationQuery,
     AdvisorySourceKind,
     AdvisoryUncertaintyBand,
+    ContextualObservationArtifact,
     CognitiveEvidence,
+    EvidenceConflictMarker,
     ContextualWeight,
     InterpretationKind,
     ObservationKind,
@@ -137,6 +139,20 @@ class AdvisoryEvidencePayload(BaseModel):
     source_id: str = Field(min_length=1)
     summary: str = Field(min_length=1, max_length=3000)
     observed_at: datetime | None = None
+    source_uri: str | None = Field(default=None, min_length=1)
+    artifact_id: str | None = Field(default=None, min_length=1)
+    captured_at: datetime | None = None
+    provenance_summary: str | None = Field(default=None, min_length=1, max_length=3000)
+    caveats: list[str] = Field(default_factory=list)
+    conflict_marker: EvidenceConflictMarker | None = None
+
+
+class ContextualObservationArtifactPayload(BaseModel):
+    regime_notes: list[str] = Field(default_factory=list)
+    market_context_references: list[str] = Field(default_factory=list)
+    source_links: list[str] = Field(default_factory=list)
+    provenance_summary: str | None = Field(default=None, min_length=1, max_length=3000)
+    caveats: list[str] = Field(default_factory=list)
 
 
 class CreateAdvisoryObservationPayload(BaseModel):
@@ -151,6 +167,9 @@ class CreateAdvisoryObservationPayload(BaseModel):
     workspace_id: str = Field(min_length=1)
     decision_id: str | None = Field(default=None, min_length=1)
     thesis_id: str | None = Field(default=None, min_length=1)
+    contextual_artifacts: list[ContextualObservationArtifactPayload] = Field(
+        default_factory=list
+    )
     tags: list[str] = Field(default_factory=list)
     captured_at: datetime | None = None
 
@@ -161,6 +180,38 @@ class CognitiveEvidenceResponse(BaseModel):
     source_id: str
     summary: str
     observed_at: datetime | None
+    source_uri: str | None
+    artifact_id: str | None
+    captured_at: datetime | None
+    provenance_summary: str | None
+    caveats: list[str]
+    conflict_marker: EvidenceConflictMarker | None
+
+
+class EvidenceStalenessResponse(BaseModel):
+    evidence_id: str
+    label: Literal["fresh", "stale", "unknown"]
+    source_timestamp: datetime | None
+    as_of: datetime
+    derived: Literal[True]
+    authority: Literal["advisory"]
+
+
+class AdvisoryConflictMarkerResponse(BaseModel):
+    source_id: str
+    label: EvidenceConflictMarker
+    caveats: list[str]
+    authority: Literal["advisory"]
+
+
+class ContextualObservationArtifactResponse(BaseModel):
+    regime_notes: list[str]
+    market_context_references: list[str]
+    source_links: list[str]
+    provenance_summary: str | None
+    caveats: list[str]
+    authority: Literal["advisory"]
+    is_canonical: Literal[False]
 
 
 class AdvisoryObservationResponse(BaseModel):
@@ -177,6 +228,9 @@ class AdvisoryObservationResponse(BaseModel):
     workspace_id: str
     decision_id: str | None
     thesis_id: str | None
+    contextual_artifacts: list[ContextualObservationArtifactResponse]
+    conflict_markers: list[AdvisoryConflictMarkerResponse]
+    evidence_staleness: list[EvidenceStalenessResponse]
     tags: list[str]
     captured_at: datetime
     authority: Literal["advisory"]
@@ -1178,6 +1232,12 @@ def _advisory_observation_response(
                 source_id=evidence.source_id,
                 summary=evidence.summary,
                 observed_at=evidence.observed_at,
+                source_uri=evidence.source_uri,
+                artifact_id=evidence.artifact_id,
+                captured_at=evidence.captured_at,
+                provenance_summary=evidence.provenance_summary,
+                caveats=list(evidence.caveats),
+                conflict_marker=evidence.conflict_marker,
             )
             for evidence in observation.evidence
         ],
@@ -1188,11 +1248,90 @@ def _advisory_observation_response(
         workspace_id=observation.workspace_id,
         decision_id=observation.decision_id,
         thesis_id=observation.thesis_id,
+        contextual_artifacts=[
+            ContextualObservationArtifactResponse(
+                regime_notes=list(artifact.regime_notes),
+                market_context_references=list(
+                    artifact.market_context_references
+                ),
+                source_links=list(artifact.source_links),
+                provenance_summary=artifact.provenance_summary,
+                caveats=list(artifact.caveats),
+                authority="advisory",
+                is_canonical=False,
+            )
+            for artifact in observation.contextual_artifacts
+        ],
+        conflict_markers=_conflict_markers_for_observation(observation),
+        evidence_staleness=_evidence_staleness_for_observation(observation),
         tags=list(observation.tags),
         captured_at=observation.captured_at,
         authority="advisory",
         is_canonical=False,
         canonical_event_type="advisory.observation_captured",
+    )
+
+
+def _conflict_markers_for_observation(
+    observation: AdvisoryObservation,
+) -> list[AdvisoryConflictMarkerResponse]:
+    markers = [
+        AdvisoryConflictMarkerResponse(
+            source_id=evidence.source_id,
+            label=evidence.conflict_marker,
+            caveats=list(evidence.caveats),
+            authority="advisory",
+        )
+        for evidence in observation.evidence
+        if evidence.conflict_marker is not None
+    ]
+    for caveat in observation.caveats:
+        lower_caveat = caveat.lower()
+        if "conflict" in lower_caveat or "contradict" in lower_caveat:
+            markers.append(
+                AdvisoryConflictMarkerResponse(
+                    source_id=observation.observation_id,
+                    label=EvidenceConflictMarker.UNRESOLVED,
+                    caveats=[caveat],
+                    authority="advisory",
+                )
+            )
+    return markers
+
+
+def _evidence_staleness_for_observation(
+    observation: AdvisoryObservation,
+) -> list[EvidenceStalenessResponse]:
+    stale_after_days = 30
+    return [
+        EvidenceStalenessResponse(
+            evidence_id=evidence.evidence_id,
+            label=_staleness_label(
+                source_timestamp=evidence.observed_at or evidence.captured_at,
+                as_of=observation.captured_at,
+                stale_after_days=stale_after_days,
+            ),
+            source_timestamp=evidence.observed_at or evidence.captured_at,
+            as_of=observation.captured_at,
+            derived=True,
+            authority="advisory",
+        )
+        for evidence in observation.evidence
+    ]
+
+
+def _staleness_label(
+    source_timestamp: datetime | None,
+    as_of: datetime,
+    stale_after_days: int,
+) -> Literal["fresh", "stale", "unknown"]:
+    if source_timestamp is None:
+        return "unknown"
+    return (
+        "stale"
+        if (as_of - source_timestamp).total_seconds()
+        > stale_after_days * 24 * 60 * 60
+        else "fresh"
     )
 
 
@@ -3425,6 +3564,12 @@ def create_advisory_observation(
                 source_id=evidence.source_id,
                 summary=evidence.summary,
                 observed_at=evidence.observed_at,
+                source_uri=evidence.source_uri,
+                artifact_id=evidence.artifact_id,
+                captured_at=evidence.captured_at,
+                provenance_summary=evidence.provenance_summary,
+                caveats=tuple(evidence.caveats),
+                conflict_marker=evidence.conflict_marker,
             )
             for evidence in payload.evidence
         ),
@@ -3436,11 +3581,29 @@ def create_advisory_observation(
         captured_at=captured_at,
         decision_id=payload.decision_id,
         thesis_id=payload.thesis_id,
+        contextual_artifacts=tuple(
+            ContextualObservationArtifact(
+                regime_notes=tuple(artifact.regime_notes),
+                market_context_references=tuple(
+                    artifact.market_context_references
+                ),
+                source_links=tuple(artifact.source_links),
+                provenance_summary=artifact.provenance_summary,
+                caveats=tuple(artifact.caveats),
+            )
+            for artifact in payload.contextual_artifacts
+        ),
         tags=tuple(payload.tags),
     )
-    captured = _advisory_observation_capture_service_from(request).capture(
-        observation
-    )
+    try:
+        captured = _advisory_observation_capture_service_from(request).capture(
+            observation
+        )
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={"message": str(exc)},
+        ) from exc
     return _advisory_observation_response(captured)
 
 

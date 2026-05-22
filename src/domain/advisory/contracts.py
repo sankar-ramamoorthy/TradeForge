@@ -20,6 +20,13 @@ class AdvisoryArtifactKind(StrEnum):
 
 
 class AdvisorySourceKind(StrEnum):
+    PROVIDER_PAYLOAD = "provider-payload"
+    IMPORTED_RESEARCH = "imported-research"
+    MARKDOWN_ARTIFACT = "markdown-artifact"
+    URL = "url"
+    OPERATOR_NOTE = "operator-note"
+    REPLAY_ANNOTATION = "replay-annotation"
+    GENERATED_ADVISORY_ARTIFACT = "generated-advisory-artifact"
     EVENT = "event"
     PROJECTION = "projection"
     REPLAY_TIMELINE_ENTRY = "replay-timeline-entry"

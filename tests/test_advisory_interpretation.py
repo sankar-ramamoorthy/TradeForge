@@ -21,6 +21,7 @@ from src.domain.advisory import (
     InterpretationKind,
     ThesisInfluence,
 )
+from src.domain.events import EntityReference, EventEnvelope
 from src.infrastructure.advisory import InMemoryAdvisoryInterpretationStore
 from src.infrastructure.advisory.postgres_interpretation_store import (
     PostgresAdvisoryInterpretationStore,
@@ -30,6 +31,24 @@ from src.infrastructure.event_store.in_memory import InMemoryEventStore
 from src.services.advisory import AdvisoryInterpretationCaptureService
 
 _NOW = datetime(2026, 5, 20, 11, 0, tzinfo=UTC)
+
+
+def _decision_event(
+    decision_id: str = "decision-1",
+    thesis_id: str = "thesis-1",
+) -> EventEnvelope:
+    return EventEnvelope(
+        event_type="decision.thesis_created",
+        timestamp=_NOW,
+        persona_id="persona.swing",
+        workspace_id="workspace.context",
+        entity_references=(
+            EntityReference("decision", decision_id),
+            EntityReference("thesis", thesis_id),
+        ),
+        payload={"thesis_id": thesis_id},
+        provenance={"actor": "human"},
+    )
 
 
 class SeedInterpretationProvider:
@@ -202,7 +221,9 @@ def test_interpretation_draft_requires_configured_provider() -> None:
 
 
 def test_api_draft_create_read_list_and_thesis_influence_summary() -> None:
-    client = TestClient(create_app(ai_advisory_provider=SeedInterpretationProvider()))
+    app = create_app(ai_advisory_provider=SeedInterpretationProvider())
+    app.state.event_store.append(_decision_event())
+    client = TestClient(app)
     observation_id = _create_observation(client)
 
     draft_response = client.post(
@@ -288,7 +309,9 @@ def test_api_draft_create_read_list_and_thesis_influence_summary() -> None:
 
 
 def test_replay_timeline_includes_interpretation_capture_fact_without_content() -> None:
-    client = TestClient(create_app())
+    app = create_app()
+    app.state.event_store.append(_decision_event())
+    client = TestClient(app)
     observation_id = _create_observation(client)
     client.post(
         "/advisory/interpretations",
@@ -311,7 +334,11 @@ def test_replay_timeline_includes_interpretation_capture_fact_without_content() 
 
     response = client.get("/replay/timeline")
     entries = response.json()["entries"]
-    interpretation_entry = entries[1]
+    interpretation_entry = next(
+        entry
+        for entry in entries
+        if entry["event_type"] == "advisory.interpretation_captured"
+    )
 
     assert interpretation_entry["kind"] == "advisory"
     assert interpretation_entry["event_type"] == "advisory.interpretation_captured"

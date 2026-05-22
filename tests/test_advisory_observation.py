@@ -13,9 +13,15 @@ from src.domain.advisory import (
     AdvisorySourceKind,
     AdvisoryUncertaintyBand,
     CognitiveEvidence,
+    ContextualObservationArtifact,
     ObservationKind,
 )
-from src.domain.events import CANONICAL_EVENT_DOMAINS, EventDomain
+from src.domain.events import (
+    CANONICAL_EVENT_DOMAINS,
+    EntityReference,
+    EventDomain,
+    EventEnvelope,
+)
 from src.infrastructure.advisory import InMemoryAdvisoryObservationStore
 from src.infrastructure.advisory.postgres_observation_store import (
     PostgresAdvisoryObservationStore,
@@ -25,6 +31,33 @@ from src.infrastructure.event_store.in_memory import InMemoryEventStore
 from src.services.advisory import AdvisoryObservationCaptureService
 
 _NOW = datetime(2026, 5, 19, 14, 30, tzinfo=UTC)
+
+
+def _decision_event(
+    decision_id: str = "decision-1",
+    thesis_id: str = "thesis-1",
+) -> EventEnvelope:
+    return EventEnvelope(
+        event_type="decision.thesis_created",
+        timestamp=_NOW,
+        persona_id="persona.swing",
+        workspace_id="workspace.context",
+        entity_references=(
+            EntityReference("decision", decision_id),
+            EntityReference("thesis", thesis_id),
+        ),
+        payload={"thesis_id": thesis_id},
+        provenance={"actor": "human"},
+    )
+
+
+def _event_store_with_links(
+    decision_id: str = "decision-1",
+    thesis_id: str = "thesis-1",
+) -> InMemoryEventStore:
+    event_store = InMemoryEventStore()
+    event_store.append(_decision_event(decision_id, thesis_id))
+    return event_store
 
 
 def _evidence(
@@ -37,6 +70,31 @@ def _evidence(
         source_id="source-1",
         summary="Provider-backed context snapshot existed.",
         observed_at=_NOW,
+    )
+
+
+def _rich_evidence() -> CognitiveEvidence:
+    return CognitiveEvidence(
+        evidence_id="evidence-rich",
+        source_kind=AdvisorySourceKind.IMPORTED_RESEARCH,
+        source_id="research-1",
+        summary="Imported research note described sector breadth.",
+        observed_at=_NOW,
+        source_uri="https://research.example.test/semis",
+        artifact_id="artifact-research-1",
+        captured_at=_NOW,
+        provenance_summary="operator imported research note",
+        caveats=("Research source may lag intraday conditions.",),
+    )
+
+
+def _contextual_artifact() -> ContextualObservationArtifact:
+    return ContextualObservationArtifact(
+        regime_notes=("Breadth context is mixed but improving.",),
+        market_context_references=("snapshot-1",),
+        source_links=("https://research.example.test/semis",),
+        provenance_summary="operator context framing",
+        caveats=("Context is advisory and not thesis influence.",),
     )
 
 
@@ -59,6 +117,7 @@ def _observation(
         workspace_id="workspace.context",
         decision_id=decision_id,
         thesis_id="thesis-1",
+        contextual_artifacts=(_contextual_artifact(),),
         tags=("semis", "breadth"),
         captured_at=_NOW,
     )
@@ -72,6 +131,11 @@ def test_advisory_domain_accepts_observation_contract() -> None:
     assert observation.observation_kind is ObservationKind.MARKET_CONTEXT
     assert observation.capture_origin is AdvisoryCaptureOrigin.OPERATOR_MANUAL
     assert observation.uncertainty_band is AdvisoryUncertaintyBand.MEDIUM
+    assert observation.contextual_artifacts[0].is_advisory is True
+    assert observation.contextual_artifacts[0].is_canonical is False
+    assert observation.contextual_artifacts[0].regime_notes == (
+        "Breadth context is mixed but improving.",
+    )
 
 
 def test_observation_rejects_empty_required_fields() -> None:
@@ -102,8 +166,16 @@ def test_observation_requires_evidence_and_caveats() -> None:
         replace(_observation(), caveats=())
 
 
+def test_invalid_uncertainty_band_fails_validation() -> None:
+    with pytest.raises(ValueError, match="not-a-band"):
+        replace(
+            _observation(),
+            uncertainty_band=AdvisoryUncertaintyBand("not-a-band"),
+        )
+
+
 def test_advisory_event_domain_and_capture_event_are_supported() -> None:
-    event_store = InMemoryEventStore()
+    event_store = _event_store_with_links()
     service = AdvisoryObservationCaptureService(
         InMemoryAdvisoryObservationStore(),
         event_store,
@@ -111,7 +183,7 @@ def test_advisory_event_domain_and_capture_event_are_supported() -> None:
 
     service.capture(_observation())
 
-    event = event_store.read_events()[0]
+    event = event_store.read_events()[-1]
     assert "advisory" in CANONICAL_EVENT_DOMAINS
     assert event.event_domain is EventDomain.ADVISORY
     assert event.event_type == "advisory.observation_captured"
@@ -122,6 +194,8 @@ def test_advisory_event_domain_and_capture_event_are_supported() -> None:
     assert event.payload["uncertainty_band"] == "medium"
     assert event.payload["advisory_content_is_canonical"] is False
     assert "content" not in event.payload
+    assert "contextual_artifacts" not in event.payload
+    assert "conflict_markers" not in event.payload
     assert "recommendation_authority" not in event.payload
     assert "lifecycle_transition_intent" not in event.payload
     assert "execution_authority" not in event.payload
@@ -165,12 +239,20 @@ def test_postgres_observation_store_shape_and_migration() -> None:
     assert "event_ledger" not in text
     assert "content" in text
     assert "evidence" in text
+    assert "contextual_artifacts" in (
+        open(
+            "migrations/versions/20260521_0006_add_contextual_observation_artifacts.py",
+            encoding="utf-8",
+        ).read()
+    )
     assert "uncertainty_band" in text
     assert "capture_origin" in text
 
 
 def test_create_read_list_api_labels_advisory_observations() -> None:
-    client = TestClient(create_app())
+    app = create_app()
+    app.state.event_store.append(_decision_event())
+    client = TestClient(app)
 
     response = client.post(
         "/advisory/observations",
@@ -184,16 +266,27 @@ def test_create_read_list_api_labels_advisory_observations() -> None:
                     "source_kind": "market-context",
                     "source_id": "snapshot-1",
                     "summary": "Snapshot showed higher close.",
-                    "observed_at": "2026-05-19T14:30:00Z",
+                    "observed_at": "2026-04-01T14:30:00Z",
+                    "conflict_marker": "mixed",
+                    "caveats": ["Breadth and volume evidence conflict."],
                 }
             ],
             "provenance_summary": "operator supplied from context workbench",
             "uncertainty_band": "medium",
-            "caveats": ["Provider coverage was partial."],
+            "caveats": ["Provider coverage was partial and conflicting."],
             "persona_id": "persona.swing",
             "workspace_id": "workspace.context",
             "decision_id": "decision-1",
             "thesis_id": "thesis-1",
+            "contextual_artifacts": [
+                {
+                    "regime_notes": ["Breadth context is mixed but improving."],
+                    "market_context_references": ["snapshot-1"],
+                    "source_links": ["https://research.example.test/semis"],
+                    "provenance_summary": "operator context framing",
+                    "caveats": ["Context is advisory and not thesis influence."],
+                }
+            ],
             "tags": ["semis"],
             "captured_at": "2026-05-19T14:30:00Z",
         },
@@ -203,6 +296,17 @@ def test_create_read_list_api_labels_advisory_observations() -> None:
     created = response.json()
     assert created["authority"] == "advisory"
     assert created["capture_origin"] == "operator_manual"
+    assert created["uncertainty_band"] == "medium"
+    assert created["caveats"] == ["Provider coverage was partial and conflicting."]
+    assert created["contextual_artifacts"][0]["authority"] == "advisory"
+    assert created["contextual_artifacts"][0]["is_canonical"] is False
+    assert created["contextual_artifacts"][0]["regime_notes"] == [
+        "Breadth context is mixed but improving."
+    ]
+    assert created["conflict_markers"][0]["label"] == "mixed"
+    assert created["conflict_markers"][1]["label"] == "unresolved"
+    assert created["evidence_staleness"][0]["label"] == "stale"
+    assert created["evidence_staleness"][0]["derived"] is True
     assert created["is_canonical"] is False
     assert created["canonical_event_type"] == "advisory.observation_captured"
     observation_id = created["observation_id"]
@@ -228,6 +332,155 @@ def test_create_read_list_api_labels_advisory_observations() -> None:
     assert body["is_canonical"] is False
     assert body["total_count"] == 1
     assert body["observations"][0]["observation_id"] == observation_id
+    assert body["observations"][0]["uncertainty_band"] == "medium"
+    assert body["observations"][0]["conflict_markers"][0]["authority"] == "advisory"
+
+
+def test_create_api_rejects_invalid_uncertainty_band() -> None:
+    client = TestClient(create_app())
+
+    response = client.post(
+        "/advisory/observations",
+        json={
+            "observation_kind": "market_context",
+            "capture_origin": "operator_manual",
+            "content": "Semiconductor breadth improved while volume remained uneven.",
+            "evidence": [
+                {
+                    "evidence_id": "evidence-1",
+                    "source_kind": "market-context",
+                    "source_id": "snapshot-1",
+                    "summary": "Snapshot showed higher close.",
+                    "observed_at": "2026-05-19T14:30:00Z",
+                }
+            ],
+            "provenance_summary": "operator supplied from context workbench",
+            "uncertainty_band": "certain",
+            "caveats": ["Provider coverage was partial."],
+            "persona_id": "persona.swing",
+            "workspace_id": "workspace.context",
+            "captured_at": "2026-05-19T14:30:00Z",
+        },
+    )
+
+    assert response.status_code == 422
+
+
+def test_cognitive_evidence_supports_required_source_kinds_and_metadata() -> None:
+    required_source_kinds = {
+        AdvisorySourceKind.PROVIDER_PAYLOAD,
+        AdvisorySourceKind.IMPORTED_RESEARCH,
+        AdvisorySourceKind.MARKDOWN_ARTIFACT,
+        AdvisorySourceKind.URL,
+        AdvisorySourceKind.OPERATOR_NOTE,
+        AdvisorySourceKind.REPLAY_ANNOTATION,
+        AdvisorySourceKind.GENERATED_ADVISORY_ARTIFACT,
+    }
+
+    assert {
+        AdvisorySourceKind(source_kind.value)
+        for source_kind in required_source_kinds
+    } == required_source_kinds
+
+    evidence = _rich_evidence()
+    assert evidence.source_uri == "https://research.example.test/semis"
+    assert evidence.artifact_id == "artifact-research-1"
+    assert evidence.captured_at == _NOW
+    assert evidence.provenance_summary == "operator imported research note"
+    assert evidence.caveats == ("Research source may lag intraday conditions.",)
+
+
+def test_evidence_metadata_persists_without_becoming_event_content() -> None:
+    event_store = _event_store_with_links()
+    store = InMemoryAdvisoryObservationStore()
+    service = AdvisoryObservationCaptureService(store, event_store)
+    observation = replace(_observation(), evidence=(_rich_evidence(),))
+
+    service.capture(observation)
+
+    stored = store.get(observation.observation_id)
+    assert stored is not None
+    assert stored.evidence[0].source_uri == "https://research.example.test/semis"
+    assert stored.evidence[0].artifact_id == "artifact-research-1"
+    assert stored.evidence[0].caveats == (
+        "Research source may lag intraday conditions.",
+    )
+    source_reference = event_store.read_events()[-1].payload["source_references"][0]
+    assert source_reference["source_uri"] == "https://research.example.test/semis"
+    assert source_reference["artifact_id"] == "artifact-research-1"
+    assert "summary" not in source_reference
+    assert "provenance_summary" not in source_reference
+    assert "caveats" not in source_reference
+
+
+def test_observation_capture_rejects_unresolved_context_links() -> None:
+    service = AdvisoryObservationCaptureService(
+        InMemoryAdvisoryObservationStore(),
+        InMemoryEventStore(),
+    )
+
+    with pytest.raises(ValueError, match="decision_id does not resolve"):
+        service.capture(_observation())
+
+    event_store = _event_store_with_links(thesis_id="thesis-known")
+    service = AdvisoryObservationCaptureService(
+        InMemoryAdvisoryObservationStore(),
+        event_store,
+    )
+
+    with pytest.raises(ValueError, match="thesis_id does not resolve"):
+        service.capture(replace(_observation(), thesis_id="thesis-missing"))
+
+
+def test_context_links_remain_advisory_metadata_in_api_and_replay() -> None:
+    app = create_app()
+    app.state.event_store.append(_decision_event())
+    client = TestClient(app)
+
+    response = client.post(
+        "/advisory/observations",
+        json={
+            "observation_kind": "market_context",
+            "capture_origin": "operator_manual",
+            "content": "Semiconductor breadth improved while volume remained uneven.",
+            "evidence": [
+                {
+                    "evidence_id": "evidence-1",
+                    "source_kind": "operator-note",
+                    "source_id": "operator-note-1",
+                    "summary": "Operator linked context to existing thesis.",
+                }
+            ],
+            "provenance_summary": "operator supplied from context workbench",
+            "uncertainty_band": "medium",
+            "caveats": ["Link is contextual, not thesis revision."],
+            "persona_id": "persona.swing",
+            "workspace_id": "workspace.context",
+            "decision_id": "decision-1",
+            "thesis_id": "thesis-1",
+            "captured_at": "2026-05-19T14:30:00Z",
+        },
+    )
+
+    assert response.status_code == 201
+    created = response.json()
+    assert created["decision_id"] == "decision-1"
+    assert created["thesis_id"] == "thesis-1"
+    assert created["authority"] == "advisory"
+    assert created["is_canonical"] is False
+
+    replay_response = client.get("/replay/timeline")
+    advisory_entry = next(
+        entry
+        for entry in replay_response.json()["entries"]
+        if entry["event_type"] == "advisory.observation_captured"
+    )
+    assert advisory_entry["payload"]["decision_id"] == "decision-1"
+    assert advisory_entry["payload"]["thesis_id"] == "thesis-1"
+    assert advisory_entry["payload"]["artifact_authority"] == "advisory_non_canonical"
+    assert "thesis_influence" not in advisory_entry["payload"]
+    assert "lifecycle_transition_intent" not in advisory_entry["payload"]
+
 
 
 def test_replay_timeline_includes_advisory_capture_fact_without_content() -> None:

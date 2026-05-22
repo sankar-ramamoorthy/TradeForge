@@ -14,6 +14,8 @@ from src.domain.advisory import (
     AdvisorySourceKind,
     AdvisoryUncertaintyBand,
     CognitiveEvidence,
+    ContextualObservationArtifact,
+    EvidenceConflictMarker,
     ObservationKind,
 )
 from src.infrastructure.persistence import PostgresConnectionSettings
@@ -36,6 +38,7 @@ _ADVISORY_OBSERVATIONS = sa.Table(
     sa.Column("workspace_id", sa.Text(), nullable=False),
     sa.Column("decision_id", sa.Text(), nullable=True),
     sa.Column("thesis_id", sa.Text(), nullable=True),
+    sa.Column("contextual_artifacts", postgresql.JSONB(), nullable=False),
     sa.Column("tags", postgresql.JSONB(), nullable=False),
     sa.Column("captured_at", sa.DateTime(timezone=True), nullable=False),
     sa.Column(
@@ -81,6 +84,9 @@ class PostgresAdvisoryObservationStore:
                     workspace_id=observation.workspace_id,
                     decision_id=observation.decision_id,
                     thesis_id=observation.thesis_id,
+                    contextual_artifacts=_serialize_contextual_artifacts(
+                        observation.contextual_artifacts
+                    ),
                     tags=list(observation.tags),
                     captured_at=observation.captured_at,
                 )
@@ -159,8 +165,33 @@ def _serialize_evidence(
             "observed_at": item.observed_at.isoformat()
             if item.observed_at is not None
             else None,
+            "source_uri": item.source_uri,
+            "artifact_id": item.artifact_id,
+            "captured_at": item.captured_at.isoformat()
+            if item.captured_at is not None
+            else None,
+            "provenance_summary": item.provenance_summary,
+            "caveats": list(item.caveats),
+            "conflict_marker": item.conflict_marker.value
+            if item.conflict_marker is not None
+            else None,
         }
         for item in evidence
+    ]
+
+
+def _serialize_contextual_artifacts(
+    artifacts: tuple[ContextualObservationArtifact, ...],
+) -> list[dict[str, Any]]:
+    return [
+        {
+            "regime_notes": list(artifact.regime_notes),
+            "market_context_references": list(artifact.market_context_references),
+            "source_links": list(artifact.source_links),
+            "provenance_summary": artifact.provenance_summary,
+            "caveats": list(artifact.caveats),
+        }
+        for artifact in artifacts
     ]
 
 
@@ -186,6 +217,11 @@ def _row_to_observation(row: Mapping[str, Any]) -> AdvisoryObservation:
         captured_at=captured_at,
         decision_id=cast(str | None, row["decision_id"]),
         thesis_id=cast(str | None, row["thesis_id"]),
+        contextual_artifacts=_deserialize_contextual_artifacts(
+            row["contextual_artifacts"]
+        )
+        if "contextual_artifacts" in row
+        else (),
         tags=_string_tuple(row["tags"]),
     )
 
@@ -203,6 +239,12 @@ def _deserialize_evidence(value: Any) -> tuple[CognitiveEvidence, ...]:
             if observed_at_value is not None
             else None
         )
+        captured_at_value = item.get("captured_at")
+        captured_at = (
+            datetime.fromisoformat(str(captured_at_value))
+            if captured_at_value is not None
+            else None
+        )
         evidence.append(
             CognitiveEvidence(
                 evidence_id=str(item["evidence_id"]),
@@ -210,9 +252,48 @@ def _deserialize_evidence(value: Any) -> tuple[CognitiveEvidence, ...]:
                 source_id=str(item["source_id"]),
                 summary=str(item["summary"]),
                 observed_at=observed_at,
+                source_uri=str(item["source_uri"])
+                if item.get("source_uri") is not None
+                else None,
+                artifact_id=str(item["artifact_id"])
+                if item.get("artifact_id") is not None
+                else None,
+                captured_at=captured_at,
+                provenance_summary=str(item["provenance_summary"])
+                if item.get("provenance_summary") is not None
+                else None,
+                caveats=_string_tuple(item.get("caveats", [])),
+                conflict_marker=EvidenceConflictMarker(str(item["conflict_marker"]))
+                if item.get("conflict_marker") is not None
+                else None,
             )
         )
     return tuple(evidence)
+
+
+def _deserialize_contextual_artifacts(
+    value: Any,
+) -> tuple[ContextualObservationArtifact, ...]:
+    if not isinstance(value, list):
+        raise ValueError("contextual_artifacts must be stored as a list")
+    artifacts: list[ContextualObservationArtifact] = []
+    for item in value:
+        if not isinstance(item, dict):
+            raise ValueError("contextual artifact entries must be objects")
+        artifacts.append(
+            ContextualObservationArtifact(
+                regime_notes=_string_tuple(item.get("regime_notes", [])),
+                market_context_references=_string_tuple(
+                    item.get("market_context_references", [])
+                ),
+                source_links=_string_tuple(item.get("source_links", [])),
+                provenance_summary=str(item["provenance_summary"])
+                if item.get("provenance_summary") is not None
+                else None,
+                caveats=_string_tuple(item.get("caveats", [])),
+            )
+        )
+    return tuple(artifacts)
 
 
 def _string_tuple(value: Any) -> tuple[str, ...]:

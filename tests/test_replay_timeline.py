@@ -113,6 +113,85 @@ def test_replay_timeline_derives_lifecycle_stage_for_lifecycle_events() -> None:
     )
 
 
+def test_replay_timeline_includes_advisory_observation_capture_facts() -> None:
+    later_advisory_event = _event(
+        "advisory.observation_captured",
+        2,
+        payload={
+            "observation_id": "obs-2",
+            "artifact_id": "artifact-obs-2",
+            "observation_kind": "risk",
+            "capture_origin": "operator_manual",
+            "source_references": [
+                {
+                    "evidence_id": "evidence-2",
+                    "source_kind": "operator-prompt",
+                    "source_id": "operator-note-2",
+                }
+            ],
+            "provenance_summary": "manual capture",
+            "uncertainty_band": "unknown",
+            "captured_at": "2026-05-10T16:02:00+00:00",
+            "advisory_content_is_canonical": False,
+            "artifact_authority": "advisory_non_canonical",
+        },
+    )
+    earlier_advisory_event = _event(
+        "advisory.observation_captured",
+        1,
+        payload={
+            "observation_id": "obs-1",
+            "artifact_id": "artifact-obs-1",
+            "observation_kind": "market_context",
+            "capture_origin": "provider_import",
+            "source_references": [
+                {
+                    "evidence_id": "evidence-1",
+                    "source_kind": "market-context",
+                    "source_id": "snapshot-1",
+                }
+            ],
+            "provenance_summary": "provider import",
+            "uncertainty_band": "medium",
+            "captured_at": "2026-05-10T16:01:00+00:00",
+            "advisory_content_is_canonical": False,
+            "artifact_authority": "advisory_non_canonical",
+        },
+    )
+
+    timeline = ReplayTimelineBuilder().build(
+        (
+            later_advisory_event,
+            _event("decision.trade_idea_created", 0),
+            earlier_advisory_event,
+        )
+    )
+
+    advisory_entries = tuple(
+        entry
+        for entry in timeline.entries
+        if entry.kind is ReplayTimelineEntryKind.ADVISORY
+    )
+
+    assert tuple(entry.payload["artifact_id"] for entry in advisory_entries) == (
+        "artifact-obs-1",
+        "artifact-obs-2",
+    )
+    assert all(
+        entry.event_type == "advisory.observation_captured"
+        for entry in advisory_entries
+    )
+    assert all(
+        entry.payload["artifact_authority"] == "advisory_non_canonical"
+        for entry in advisory_entries
+    )
+    assert all(
+        entry.payload["advisory_content_is_canonical"] is False
+        for entry in advisory_entries
+    )
+    assert all("content" not in entry.payload for entry in advisory_entries)
+
+
 def test_replay_timeline_output_is_immutable() -> None:
     timeline = ReplayTimelineBuilder().build((_event("decision.trade_idea_created"),))
     field_name = "source_event_count"
