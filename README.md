@@ -83,8 +83,7 @@ uv run uvicorn src.app.api.application:app --host 127.0.0.1 --port 8000 --reload
 **Terminal 2 — Frontend**
 
 ```bash
-cd frontend
-npm install
+npm run install:frontend
 npm run dev
 ```
 
@@ -122,8 +121,7 @@ uv run mypy src tests
 ### Frontend
 
 ```bash
-cd frontend
-npm install
+npm run install:frontend
 npm run typecheck
 npm run lint
 npm run build

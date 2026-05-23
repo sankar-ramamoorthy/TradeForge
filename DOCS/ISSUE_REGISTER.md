@@ -225,6 +225,7 @@ Explicit roadmap checkpoint completed M9 Updated*Done*.
 | TF-F055 | Done | M13 | Implement UI-Based Credential Management | `feature/tf-f055-ui-credential-management` |
 | TF-F056 | Done | M13 | Fix missing default advisory provider bootstrap after merge | `fix/tf-f056-default-advisory-provider-bootstrap` |
 | TF-F057 | Done | M13 | Add optional LiteLLM Docker Compose runtime service | `feature/tf-f057-litellm-compose-service` |
+| TF-F058 | Done | M13 | Allow frontend npm commands from repository root | `fix/tf-f058-root-npm-frontend-scripts` |
 
 ## TF-A001: Define AdvisoryObservation Domain Model
 
@@ -6660,5 +6661,50 @@ Added an optional `litellm` service under the Compose `advisory` profile, expose
 - `docker compose --profile advisory up -d litellm`
 - `docker compose --profile advisory ps litellm` confirms `tradeforge-litellm-1` is running and publishes `0.0.0.0:4000->4000/tcp`
 - `Invoke-WebRequest http://localhost:4000/health/readiness` returns HTTP 200 with `status=healthy`
+
+---
+
+## TF-F058: Allow Frontend npm Commands From Repository Root
+
+**Status:** Done
+
+**Classification:** bug
+
+**Milestone:** M13
+
+**Branch:** `fix/tf-f058-root-npm-frontend-scripts`
+
+**Affected Layer:** developer tooling, docs
+
+**Linked ADRs:** ADR-0011, ADR-0021
+
+**Impacted Invariants:** Architectural Simplicity, UX Is Architectural, Domain Integrity Rules
+
+**Source:** Operator terminal failure captured on 2026-05-23 in `knowledge/raw/brainstorm-20260523-root-npm-dev-enoent.md`.
+
+**Problem:**
+Running `npm run dev` from the repository root fails with `ENOENT` because the frontend package lives under `frontend/` and there is no root `package.json`. The documented workflow says to `cd frontend`, but the failure mode is a generic npm error rather than a TradeForge-specific operational path.
+
+**Scope:**
+Add a root npm script shim that delegates common frontend commands to `frontend/`, update README command examples, and add a focused test to ensure the root scripts remain thin delegations. The frontend package remains under `frontend/` per ADR-0021.
+
+**Acceptance Criteria:**
+
+- `npm run dev` from the repository root resolves to the frontend Vite dev command.
+- Root `typecheck`, `build`, and `lint` scripts delegate to the frontend package.
+- Root `package.json` does not duplicate frontend dependencies.
+- README documents root-level frontend commands.
+- Focused tests verify root script delegation.
+
+**Resolution Summary:**
+Added a root `package.json` that delegates common npm commands to the existing frontend package through `npm --prefix frontend`. The root package owns no dependencies and does not move or duplicate the React/Vite frontend boundary. README quick-start and frontend setup now use root-level commands, including `npm run install:frontend` for dependency installation.
+
+**Completed Verification:**
+
+- `uv run pytest tests\test_frontend_root_scripts.py`
+- `npm.cmd run dev -- --help`
+- `uv run pytest`
+- `npm.cmd run typecheck`
+- `npm.cmd run build`
 
 ---
