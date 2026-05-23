@@ -2108,7 +2108,7 @@ What should I buy?
 
 ## M12 - Advisory Observation And Cognitive Evidence Layer
 
-**Status:** In Progress
+**Status:** Done
 
 ## Semantic Intent
 
@@ -2242,38 +2242,38 @@ M13 excludes deterministic predictive scoring, autonomous trade recommendations,
 ## LLM Adapter Prerequisites (must complete before TF-B014)
 
 * TF-F045: Add LiteLLM credential shape to CredentialStore (**Done**)
-* TF-F046: Implement OpenAICompatibleAdvisoryProvider (**blocks TF-B014**)
-* TF-F047: Implement prompt template and service wiring for replay summary
-* TF-F048: Implement prompt template and service wiring for thesis review assistant
-* TF-F049: Implement prompt template and service wiring for advisory observation generation
-* TF-F050: Implement prompt template and service wiring for candidate screening
-* TF-F051: Add on-demand advisory API endpoints and frontend trigger surfaces
-* TF-F052: Add advisory service health check to ProviderConfigurationPanel
-* TF-F053: Validate NVIDIA NIM via LiteLLM and document credential shape
-* TF-F054: Document automatic enrichment lifecycle hook points
+* TF-F046: Implement OpenAICompatibleAdvisoryProvider (**Done**)
+* TF-F047: Implement prompt template and service wiring for replay summary (**Done**)
+* TF-F048: Implement prompt template and service wiring for thesis review assistant (**Done**)
+* TF-F049: Implement prompt template and service wiring for advisory observation generation (**Done**)
+* TF-F050: Implement prompt template and service wiring for candidate screening (**Done**)
+* TF-F051: Add on-demand advisory API endpoints and frontend trigger surfaces (**Done**)
+* TF-F052: Add advisory service health check to ProviderConfigurationPanel (**Done**)
+* TF-F053: Validate NVIDIA NIM via LiteLLM and document credential shape (**Done**)
+* TF-F054: Document automatic enrichment lifecycle hook points (**Done**)
 * TF-F055: Implement UI-based credential management (**Done**)
 * TF-F056: Fix missing default advisory provider bootstrap after merge (**Done**)
 
 ## Interpretation Domain And Infrastructure
 
-* TF-B001: Define interpretation artifact schema *(M12 foundation: domain model, stores, and capture service already implemented)*
-* TF-B002: Implement contextual weighting framework *(M12 foundation: ContextualWeight enum and storage in place)*
-* TF-B003: Implement regime-aware weighting model
-* TF-B004: Implement conflicting evidence analysis
-* TF-B005: Implement confidence-range representation *(M12 foundation: AdvisoryConfidenceRange enum and storage in place)*
-* TF-B006: Implement thesis evidence influence tracking *(M12 foundation: ThesisInfluence enum and ThesisInfluenceSummary service in place)*
-* TF-B007: Implement supporting vs weakening evidence classification *(M12 foundation: ThesisInfluence values and query filtering in place)*
-* TF-B008: Implement thesis drift detection
-* TF-B009: Implement contextual contradiction surfacing
+* TF-B001: Define interpretation artifact schema (**Done**)
+* TF-B002: Implement contextual weighting framework (**Done**)
+* TF-B003: Implement regime-aware weighting model (**Done**)
+* TF-B004: Implement conflicting evidence analysis (**Done**)
+* TF-B005: Implement confidence-range representation (**Done**)
+* TF-B006: Implement thesis evidence influence tracking (**Done**)
+* TF-B007: Implement supporting vs weakening evidence classification (**Done**)
+* TF-B008: Implement thesis drift detection (**Done**)
+* TF-B009: Implement contextual contradiction surfacing (**Done**)
 
 ## Replay And UX Surfaces
 
-* TF-B010: Implement evidence impact replay overlays
-* TF-B011: Implement interpretation-first operational surfaces
-* TF-B012: Implement uncertainty-preserving UX patterns
-* TF-B013: Implement probabilistic cognition summaries
-* TF-B014: Implement evidence narrative generation *(requires TF-F046)*
-* TF-B015: Implement contextual reasoning timelines
+* TF-B010: Implement evidence impact replay overlays (**Done**)
+* TF-B011: Implement interpretation-first operational surfaces (**Done**)
+* TF-B012: Implement uncertainty-preserving UX patterns (**Done**)
+* TF-B013: Implement probabilistic cognition summaries (**Done**)
+* TF-B014: Implement evidence narrative generation (**Done**)
+* TF-B015: Implement contextual reasoning timelines (**Done**)
 
 ## Acceptance Meaning
 

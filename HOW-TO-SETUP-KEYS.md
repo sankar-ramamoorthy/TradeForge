@@ -50,6 +50,40 @@ uv run python scripts\manage_credentials.py register finqual --api-key "<finqual
 This creates or updates `.keys.enc` in the project root. The file contains
 encrypted payloads, not plaintext provider keys.
 
+### LiteLLM advisory credentials
+
+TradeForge talks to LiteLLM through the same encrypted credential registry. If
+the backend runs on the host, register LiteLLM with `localhost`:
+
+```powershell
+$env:LITELLM_MASTER_KEY = "sk-tradeforge-local-dev"
+uv run python scripts\manage_credentials.py register litellm `
+  --base-url "http://localhost:4000" `
+  --api-key $env:LITELLM_MASTER_KEY `
+  --default-model "tradeforge-groq-70b"
+```
+
+If the backend runs inside Docker Compose, register the Compose service URL
+instead:
+
+```powershell
+uv run python scripts\manage_credentials.py register litellm `
+  --base-url "http://litellm:4000" `
+  --api-key $env:LITELLM_MASTER_KEY `
+  --default-model "tradeforge-groq-70b"
+```
+
+Start the optional LiteLLM service with:
+
+```powershell
+$env:GROQ_API_KEY = "<groq-key>"
+docker compose --profile advisory up -d litellm
+```
+
+`litellm_config.yaml` reads provider API keys from environment variables such
+as `GROQ_API_KEY` and `NVIDIA_NIM_API_KEY`. Do not put provider keys in the
+config file.
+
 ## 3. Select a market provider when needed
 
 `yfinance` remains the default and does not require credentials.

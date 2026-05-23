@@ -147,7 +147,7 @@ uv run python scripts/manage_credentials.py register fmp --api-key "<key>"
 uv run python scripts/manage_credentials.py register litellm \
   --base-url "http://localhost:4000" \
   --api-key "<key>" \
-  --default-model "groq/llama-3.1-70b-versatile"
+  --default-model "tradeforge-groq-70b"
 ```
 
 See [`HOW-TO-SETUP-KEYS.md`](HOW-TO-SETUP-KEYS.md) for full credential setup.
@@ -164,6 +164,14 @@ Start the backend normally — it uses Postgres for the event ledger when `TRADE
 ### AI advisory
 
 AI advisory requires an OpenAI-compatible endpoint — LiteLLM pointing at Groq, NVIDIA NIM, or Ollama. Configure the `litellm` credential (see above), then advisory endpoints become available in the UI.
+
+To run LiteLLM through Docker Compose:
+
+```bash
+docker compose --profile advisory up -d litellm
+```
+
+Use `http://localhost:4000` as the LiteLLM base URL when the backend runs on the host. Use `http://litellm:4000` when the TradeForge backend also runs inside Docker Compose.
 
 Without a LiteLLM credential: lifecycle, market context, replay, and manual advisory artifact workflows all work normally. AI generation endpoints report `not_configured`.
 
@@ -230,7 +238,6 @@ DOCS/
 | M11 | Done | AI advisory boundary, replay/review assistance, provenance |
 | M12 | Done | Advisory observation and cognitive evidence layer |
 | M13 | Done | Contextual interpretation and thesis influence |
-| TF-F055 | Done | UI-based credential management |
 | M14+ | Planned | Behavioral intelligence, cognitive replay, attention allocation, simulation |
 
 ---
