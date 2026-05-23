@@ -24,6 +24,9 @@ from src.infrastructure.advisory.in_memory_interpretation_store import (
 from src.infrastructure.advisory.in_memory_observation_store import (
     InMemoryAdvisoryObservationStore,
 )
+from src.infrastructure.advisory.openai_compatible_provider import (
+    OpenAICompatibleAdvisoryProvider,
+)
 from src.infrastructure.advisory.postgres_artifact_store import (
     PostgresAdvisoryArtifactStore,
 )
@@ -46,10 +49,12 @@ from src.infrastructure.market.in_memory_snapshot_store import (
 )
 from src.infrastructure.market.polygon_adapter import PolygonProvider
 from src.infrastructure.market.yfinance_adapter import YFinanceProvider
-from src.infrastructure.advisory.openai_compatible_provider import (
-    OpenAICompatibleAdvisoryProvider,
+from src.security import (
+    CredentialStore,
+    InvalidCredentialPayloadError,
+    KeyManager,
+    MasterKeyNotConfiguredError,
 )
-from src.security import CredentialStore, KeyManager
 from src.security.litellm_credential import (
     LiteLLMCredentialNotConfiguredError,
     get_litellm_credential,
@@ -191,6 +196,29 @@ def _default_fundamentals_providers(
             api_key=payload["api_key"]
         )
     return providers
+
+
+def _default_advisory_provider(
+    credential_store: CredentialStore | None,
+) -> AIAdvisoryProvider | None:
+    if credential_store is None:
+        return None
+
+    try:
+        credential = get_litellm_credential(
+            credential_store,
+            key_manager=KeyManager.from_environment(),
+        )
+    except (
+        InvalidCredentialPayloadError,
+        KeyError,
+        LiteLLMCredentialNotConfiguredError,
+        MasterKeyNotConfiguredError,
+        ValueError,
+    ):
+        return None
+
+    return OpenAICompatibleAdvisoryProvider(credential)
 
 
 class ProviderBootstrapService:
