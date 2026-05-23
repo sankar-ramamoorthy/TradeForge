@@ -420,20 +420,110 @@ requirement becomes concrete. No speculative infrastructure is needed now.
 These are candidate issues. They should be filed and tracked before
 implementation begins.
 
-1. **Add `LiteLLMCredential` shape to credential domain** — extend M10C's
-   credential model with `base_url` + `api_key` + `default_model`.
-2. **Implement `OpenAICompatibleAdvisoryProvider`** — the adapter itself.
-3. **Implement prompt templates for replay summary** — the lowest-risk task to
-   validate the adapter end-to-end.
-4. **Implement prompt templates for thesis review** — highest operator value.
-5. **Implement prompt templates for observation generation** — most complex
-   prompt; structured multi-output response.
-6. **Implement prompt templates for candidate screening** — ranking task.
-7. **Add on-demand API endpoints and frontend trigger surfaces** — one button
-   per task in the relevant workspace.
-8. **Add advisory health check** — surface LiteLLM availability in the
-   ProviderConfigurationPanel so the operator knows if advisory is available.
-9. **Test NVIDIA NIM via LiteLLM** — validate and document the model string and
-   credential shape.
-10. **Document automatic enrichment hook points** — define which lifecycle events
-    will trigger advisory generation in the future; do not implement yet.
+1. **Add `LiteLLMCredential` shape to credential domain** (**Done** — TF-F045)
+2. **Implement `OpenAICompatibleAdvisoryProvider`** (**Done** — TF-F046)
+3. **Implement prompt templates for replay summary** (**Done** — TF-F047)
+4. **Implement prompt templates for thesis review** (**Done** — TF-F048)
+5. **Implement prompt templates for observation generation** (**Done** — TF-F049)
+6. **Implement prompt templates for candidate screening** (**Done** — TF-F050)
+7. **Add on-demand API endpoints and frontend trigger surfaces** (**Done** — TF-F051/F052)
+8. **Add advisory health check** (**Done** — TF-F052 `GET /advisory/health`)
+9. **NVIDIA NIM via LiteLLM** — see section below (TF-F053)
+10. **Document automatic enrichment hook points** — see section below (TF-F054)
+
+---
+
+## NVIDIA NIM Via LiteLLM (TF-F053)
+
+**Status:** Investigation — no code changes required.
+
+NVIDIA NIM free tier is provisioned. Integration is a LiteLLM configuration
+change only — no TradeForge code changes needed.
+
+### Confirmed LiteLLM Model String Format
+
+NVIDIA NIM models are accessed via LiteLLM using the `nvidia_nim/` prefix:
+
+```
+nvidia_nim/meta/llama-3.1-70b-instruct
+nvidia_nim/mistralai/mistral-7b-instruct-v0.3
+nvidia_nim/microsoft/phi-3-mini-4k-instruct
+```
+
+### Credential Shape in CredentialStore
+
+```
+provider: litellm
+base_url: https://integrate.api.nvidia.com/v1
+api_key:  <NVIDIA NIM API key>
+default_model: nvidia_nim/meta/llama-3.1-70b-instruct
+```
+
+### Known Rate Limits (NVIDIA NIM Free Tier)
+
+- 40 requests/minute
+- 1,000 requests/day per model family
+- 4,096 tokens/request max on most free-tier models
+- Better daily limits than Groq free tier for advisory use cases
+
+### LiteLLM Configuration Addition
+
+In `litellm_config.yaml` or equivalent:
+```yaml
+model_list:
+  - model_name: nvidia-llama-70b
+    litellm_params:
+      model: nvidia_nim/meta/llama-3.1-70b-instruct
+      api_base: https://integrate.api.nvidia.com/v1
+      api_key: os.environ/NVIDIA_NIM_API_KEY
+```
+
+### Recommendation
+
+Add NVIDIA NIM as a fallback model in LiteLLM routing. Use Groq
+`llama-3.1-70b-versatile` as primary (lower latency) and NIM as fallback
+when Groq rate limits are hit. No code change to TradeForge is required.
+
+---
+
+## Automatic Enrichment Lifecycle Hook Points (TF-F054)
+
+**Status:** Specified — implementation deferred.
+
+The following lifecycle events are candidates for automatic advisory enrichment
+in a future milestone. Implementation requires an opt-in flag per decision
+and a background task queue (not in scope for M13).
+
+| Lifecycle Event | Advisory Task | Gating Conditions | Failure Behavior |
+|---|---|---|---|
+| `decision.thesis_created` | Thesis review | LiteLLM available; no existing thesis review for this decision | Silent skip; surface degraded state in workspace |
+| `decision.thesis_revised` | Thesis review | LiteLLM available; revision is substantive (narrative changed) | Silent skip |
+| `decision.plan_created` | Observation generation | LiteLLM available; market context available for symbol | Silent skip; suggest manual trigger |
+| `decision.review_created` | Review assistance | LiteLLM available; review artifact has outcome and thesis comparison | Silent skip |
+| `replay_session.completed` | Replay summary | LiteLLM available; replay contains at least 3 timeline entries | Silent skip |
+| `advisory.candidate_ingested` (batch threshold) | Candidate screening | LiteLLM available; queue depth exceeds 5 unreviewed candidates | Silent skip |
+
+### Operator Opt-In Model
+
+Automatic enrichment should be gated by a per-decision or per-workspace
+opt-in flag stored in operator preferences (not lifecycle events). This
+prevents advisory calls from surprising the operator or consuming rate-limit
+budget without consent.
+
+Suggested flag: `auto_enrich_advisory: bool` in workspace/decision preferences.
+Default: `false`. Operator sets to `true` to enable background enrichment.
+
+### What This Does NOT Change
+
+- All generated content remains advisory-only (`authority=ADVISORY`)
+- No automatic persistence — operator acceptance still required
+- No lifecycle state mutations from automatic enrichment
+- ADR-0006 remains the governing boundary
+
+### Implementation Note
+
+When automatic enrichment is implemented, the preferred architecture is:
+- FastAPI background task (not a synchronous route handler)
+- Idempotency key per (decision_id, lifecycle_event, artifact_kind) to prevent
+  duplicate generation on retry
+- Max 1 background advisory call per lifecycle event per decision per day

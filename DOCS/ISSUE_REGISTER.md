@@ -139,21 +139,21 @@ Explicit roadmap checkpoint completed M9 Updated*Done*.
 | TF-A018 | Done | M12 | Implement Codex/Claude-generated advisory artifact support | `feature/m12-advisory-observation-foundation` |
 | TF-A019 | Done | M12 | Implement advisory markdown artifact persistence | `feature/m12-advisory-observation-foundation` |
 | TF-A020 | Done | M12 | Implement replay-safe advisory snapshot capture | `feature/m12-advisory-observation-foundation` |
-| TF-B001 | Planned | M13 | Define interpretation artifact schema | `feature/m13-contextual-interpretation-thesis-influence` |
-| TF-B002 | Planned | M13 | Implement contextual weighting framework | `feature/m13-contextual-interpretation-thesis-influence` |
-| TF-B003 | Planned | M13 | Implement regime-aware weighting model | `feature/m13-contextual-interpretation-thesis-influence` |
-| TF-B004 | Planned | M13 | Implement conflicting evidence analysis | `feature/m13-contextual-interpretation-thesis-influence` |
-| TF-B005 | Planned | M13 | Implement confidence-range representation | `feature/m13-contextual-interpretation-thesis-influence` |
-| TF-B006 | Planned | M13 | Implement thesis evidence influence tracking | `feature/m13-contextual-interpretation-thesis-influence` |
-| TF-B007 | Planned | M13 | Implement supporting vs weakening evidence classification | `feature/m13-contextual-interpretation-thesis-influence` |
-| TF-B008 | Planned | M13 | Implement thesis drift detection | `feature/m13-contextual-interpretation-thesis-influence` |
-| TF-B009 | Planned | M13 | Implement contextual contradiction surfacing | `feature/m13-contextual-interpretation-thesis-influence` |
-| TF-B010 | Planned | M13 | Implement evidence impact replay overlays | `feature/m13-contextual-interpretation-thesis-influence` |
-| TF-B011 | Planned | M13 | Implement interpretation-first operational surfaces | `feature/m13-contextual-interpretation-thesis-influence` |
-| TF-B012 | Planned | M13 | Implement uncertainty-preserving UX patterns | `feature/m13-contextual-interpretation-thesis-influence` |
-| TF-B013 | Planned | M13 | Implement probabilistic cognition summaries | `feature/m13-contextual-interpretation-thesis-influence` |
-| TF-B014 | Planned | M13 | Implement evidence narrative generation | `feature/m13-contextual-interpretation-thesis-influence` |
-| TF-B015 | Planned | M13 | Implement contextual reasoning timelines | `feature/m13-contextual-interpretation-thesis-influence` |
+| TF-B001 | Done | M13 | Define interpretation artifact schema | `feature/m13-contextual-interpretation-thesis-influence` |
+| TF-B002 | Done | M13 | Implement contextual weighting framework | `feature/m13-contextual-interpretation-thesis-influence` |
+| TF-B003 | Done | M13 | Implement regime-aware weighting model | `feature/m13-contextual-interpretation-thesis-influence` |
+| TF-B004 | Done | M13 | Implement conflicting evidence analysis | `feature/m13-contextual-interpretation-thesis-influence` |
+| TF-B005 | Done | M13 | Implement confidence-range representation | `feature/m13-contextual-interpretation-thesis-influence` |
+| TF-B006 | Done | M13 | Implement thesis evidence influence tracking | `feature/m13-contextual-interpretation-thesis-influence` |
+| TF-B007 | Done | M13 | Implement supporting vs weakening evidence classification | `feature/m13-contextual-interpretation-thesis-influence` |
+| TF-B008 | Done | M13 | Implement thesis drift detection | `feature/m13-contextual-interpretation-thesis-influence` |
+| TF-B009 | Done | M13 | Implement contextual contradiction surfacing | `feature/m13-contextual-interpretation-thesis-influence` |
+| TF-B010 | Done | M13 | Implement evidence impact replay overlays | `feature/m13-contextual-interpretation-thesis-influence` |
+| TF-B011 | Done | M13 | Implement interpretation-first operational surfaces | `feature/m13-contextual-interpretation-thesis-influence` |
+| TF-B012 | Done | M13 | Implement uncertainty-preserving UX patterns | `feature/m13-contextual-interpretation-thesis-influence` |
+| TF-B013 | Done | M13 | Implement probabilistic cognition summaries | `feature/m13-contextual-interpretation-thesis-influence` |
+| TF-B014 | Done | M13 | Implement evidence narrative generation | `feature/m13-contextual-interpretation-thesis-influence` |
+| TF-B015 | Done | M13 | Implement contextual reasoning timelines | `feature/m13-contextual-interpretation-thesis-influence` |
 | M10AIS01 | Done | M10A | Implement structured thesis domain model | `feature/tf-0064-operational-attention-continuity` |
 | M10AIS02 | Done | M10A | Implement thesis authoring workspace | `feature/tf-0064-operational-attention-continuity` |
 | M10AIS03 | Done | M10A | Implement thesis revision history | `feature/tf-0064-operational-attention-continuity` |
@@ -213,16 +213,15 @@ Explicit roadmap checkpoint completed M9 Updated*Done*.
 | TF-F043 | Done | M10D | Update FMP fundamentals adapter to use stable endpoints | `fix/tf-f043-fmp-stable-fundamentals-endpoints` |
 | TF-F044 | Done | M11 | Fold machine-assisted discretionary cognition roadmap into active roadmap v2 | `docs/tf-f044-roadmap-v3-integration` |
 | TF-F045 | Done | M13 | Add LiteLLM credential shape to CredentialStore | `feature/tf-f045-litellm-credential-shape` |
-| TF-F046 | Planned | M13 | Implement OpenAICompatibleAdvisoryProvider | `feature/tf-f046-openai-compatible-advisory-provider` |
-| TF-F047 | Planned | M13 | Implement prompt template and service wiring for replay summary | `feature/tf-f047-advisory-replay-summary-prompt` |
-| TF-F048 | Planned | M13 | Implement prompt template and service wiring for thesis review assistant | `feature/tf-f048-advisory-thesis-review-prompt` |
-| TF-F049 | Planned | M13 | Implement prompt template and service wiring for advisory observation generation | `feature/tf-f049-advisory-observation-generation-prompt` |
-| TF-F050 | Planned | M13 | Implement prompt template and service wiring for candidate screening | `feature/tf-f050-advisory-candidate-screening-prompt` |
-| TF-F051 | Planned | M13 | Add on-demand advisory API endpoints and frontend trigger surfaces | `feature/tf-f051-advisory-on-demand-endpoints` |
-| TF-F052 | Planned | M13 | Add advisory service health check to ProviderConfigurationPanel | `feature/tf-f052-advisory-health-check` |
-| TF-F053 | Planned | M13 | Validate NVIDIA NIM via LiteLLM and document credential shape | `docs/tf-f053-nvidia-nim-litellm-validation` |
-| TF-F054 | Planned | M13 | Document automatic enrichment lifecycle hook points | `docs/tf-f054-auto-enrichment-hook-points` |
-| TF-F055 | Done | M13 | Implement UI-based credential management | `feature/tf-f055-ui-credential-management` |
+| TF-F046 | Done | M13 | Implement OpenAICompatibleAdvisoryProvider | `feature/tf-f046-openai-compatible-advisory-provider` |
+| TF-F047 | Done | M13 | Implement prompt template and service wiring for replay summary | `feature/tf-f047-advisory-replay-summary-prompt` |
+| TF-F048 | Done | M13 | Implement prompt template and service wiring for thesis review assistant | `feature/tf-f048-advisory-thesis-review-prompt` |
+| TF-F049 | Done | M13 | Implement prompt template and service wiring for advisory observation generation | `feature/tf-f049-advisory-observation-generation-prompt` |
+| TF-F050 | Done | M13 | Implement prompt template and service wiring for candidate screening | `feature/tf-f050-advisory-candidate-screening-prompt` |
+| TF-F051 | Done | M13 | Add on-demand advisory API endpoints and frontend trigger surfaces | `feature/tf-f051-advisory-on-demand-endpoints` |
+| TF-F052 | Done | M13 | Add advisory service health check to ProviderConfigurationPanel | `feature/tf-f052-advisory-health-check` |
+| TF-F053 | Done | M13 | Validate NVIDIA NIM via LiteLLM and document credential shape | `docs/tf-f053-nvidia-nim-litellm-validation` |
+| TF-F054 | Done | M13 | Document automatic enrichment lifecycle hook points | `docs/tf-f054-auto-enrichment-hook-points` |
 
 ## TF-A001: Define AdvisoryObservation Domain Model
 

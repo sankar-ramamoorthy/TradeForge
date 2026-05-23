@@ -46,8 +46,14 @@ from src.infrastructure.market.in_memory_snapshot_store import (
 )
 from src.infrastructure.market.polygon_adapter import PolygonProvider
 from src.infrastructure.market.yfinance_adapter import YFinanceProvider
+from src.infrastructure.advisory.openai_compatible_provider import (
+    OpenAICompatibleAdvisoryProvider,
+)
 from src.security import CredentialStore, KeyManager
-from src.security.key_manager import MasterKeyNotConfiguredError
+from src.security.litellm_credential import (
+    LiteLLMCredentialNotConfiguredError,
+    get_litellm_credential,
+)
 from src.services.advisory import (
     AdvisoryArtifactIngestionService,
     AdvisoryArtifactQueryService,
@@ -435,15 +441,21 @@ def create_app(
         if advisory_interpretation_query_service is not None
         else AdvisoryInterpretationQueryService(advisory_interpretation_store)
     )
+    _resolved_advisory_provider = (
+        ai_advisory_provider
+        if ai_advisory_provider is not None
+        else _default_advisory_provider(_credential_store)
+    )
+    app.state.ai_advisory_provider = _resolved_advisory_provider
     app.state.interpretation_draft_service = (
         interpretation_draft_service
         if interpretation_draft_service is not None
         else (
             InterpretationDraftService(
-                ai_advisory_provider,
+                _resolved_advisory_provider,
                 advisory_observation_store,
             )
-            if ai_advisory_provider is not None
+            if _resolved_advisory_provider is not None
             else None
         )
     )

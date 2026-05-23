@@ -5,11 +5,19 @@ from src.services.advisory.candidate import (
     CandidateReviewQueueQuery,
     CandidateReviewQueueService,
 )
+from src.services.advisory.candidate_screening import CandidateScreeningAdvisoryService
 from src.services.advisory.interpretation import (
     ADVISORY_INTERPRETATION_CAPTURED,
     AdvisoryInterpretationCaptureService,
     AdvisoryInterpretationQueryService,
+    ConfidenceRangeDistribution,
+    ConflictSummary,
+    ContextualWeightDistribution,
+    InfluenceTimeline,
+    InfluenceTimelineEntry,
     InterpretationDraftService,
+    ProbabilisticCognitionSummary,
+    ThesisDriftSignal,
     ThesisInfluenceSummary,
 )
 from src.services.advisory.observation import (
@@ -17,10 +25,16 @@ from src.services.advisory.observation import (
     AdvisoryObservationCaptureService,
     AdvisoryObservationQueryService,
 )
+from src.services.advisory.observation_gen import ObservationGenerationAdvisoryService
 from src.services.advisory.provenance import AdvisoryProvenanceService
+from src.services.advisory.regime_weight import (
+    RegimeContextWeightService,
+    RegimeWeightSuggestion,
+)
 from src.services.advisory.replay import ReplayAdvisoryService
 from src.services.advisory.review import ReviewAdvisoryService
 from src.services.advisory.service import AIAdvisoryService
+from src.services.advisory.thesis_review import ThesisReviewAdvisoryService
 
 __all__ = [
     "ADVISORY_OBSERVATION_CAPTURED",
@@ -39,9 +53,21 @@ __all__ = [
     "CandidateReviewQueueQuery",
     "CandidateReviewQueueService",
     "InterpretationDraftService",
+    "CandidateScreeningAdvisoryService",
+    "ConfidenceRangeDistribution",
+    "ConflictSummary",
+    "ContextualWeightDistribution",
+    "InfluenceTimeline",
+    "InfluenceTimelineEntry",
+    "ObservationGenerationAdvisoryService",
+    "ProbabilisticCognitionSummary",
+    "RegimeContextWeightService",
+    "RegimeWeightSuggestion",
     "ReplayAdvisoryService",
     "ReviewAdvisoryService",
+    "ThesisDriftSignal",
     "ThesisInfluenceSummary",
+    "ThesisReviewAdvisoryService",
 ]
 from src.services.advisory.artifact import (
     AdvisoryArtifactIngestionService,

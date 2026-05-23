@@ -61,6 +61,8 @@ from src.domain.personas import (
     PersonaVersion,
 )
 from src.domain.replay import ProjectionAuthority, ReplayTimelineEntryKind
+from src.domain.advisory import AdvisoryProviderUnavailableError
+from src.domain.market.snapshot import MarketRegime
 from src.services.advisory import (
     AdvisoryArtifactIngestionService,
     AdvisoryArtifactQueryService,
@@ -68,12 +70,25 @@ from src.services.advisory import (
     AdvisoryCandidateQueryService,
     AdvisoryInterpretationCaptureService,
     AdvisoryInterpretationQueryService,
+    CandidateScreeningAdvisoryService,
     AdvisoryObservationCaptureService,
     AdvisoryObservationQueryService,
     CandidateReviewQueueQuery,
     CandidateReviewQueueService,
+    ConfidenceRangeDistribution,
+    ConflictSummary,
+    ContextualWeightDistribution,
+    InfluenceTimeline,
     InterpretationDraftService,
+    ProbabilisticCognitionSummary,
+    ObservationGenerationAdvisoryService,
+    RegimeContextWeightService,
+    ReplayAdvisoryService,
+    ReviewAdvisoryService,
+    ThesisDriftSignal,
+    ThesisReviewAdvisoryService,
 )
+from src.services.advisory.service import AIAdvisoryService
 from src.services.lifecycle import (
     LifecycleOrchestrationService,
     LifecycleTransitionRequest,
@@ -476,6 +491,83 @@ class ThesisInfluenceSummaryResponse(BaseModel):
     thesis_id: str | None
     total_count: int
     counts: dict[str, int]
+
+
+class AdvisoryProvenanceResponse(BaseModel):
+    provider_id: str
+    provider_version: str
+    model_id: str
+    generated_at: datetime
+    prompt_version: str | None
+
+
+class AdvisoryGeneratedResponse(BaseModel):
+    """Generic response for on-demand AI advisory generation."""
+
+    request_id: str
+    artifact_kind: str
+    content: str
+    source_references: list[AdvisorySourceReferenceResponse]
+    caveats: list[str]
+    confidence: float
+    provenance: AdvisoryProvenanceResponse
+    authority: Literal["advisory"]
+    is_canonical: Literal[False]
+    requires_operator_acceptance: Literal[True]
+
+
+class AdvisoryHealthResponse(BaseModel):
+    status: Literal["available", "unavailable", "not_configured"]
+    authority: Literal["advisory"]
+    is_canonical: Literal[False]
+
+
+class ReplaySummaryRequestPayload(BaseModel):
+    decision_id: str = Field(min_length=1)
+    persona_id: str = Field(min_length=1)
+    workspace_id: str = Field(min_length=1)
+    operator_question: str = Field(
+        default="Summarize this trade decision replay.",
+        min_length=1,
+        max_length=1000,
+    )
+
+
+class ThesisReviewRequestPayload(BaseModel):
+    decision_id: str = Field(min_length=1)
+    persona_id: str = Field(min_length=1)
+    workspace_id: str = Field(min_length=1)
+    operator_question: str = Field(
+        default="Review this thesis for blind spots, missing assumptions, and regime alignment gaps.",
+        min_length=1,
+        max_length=1000,
+    )
+
+
+class ObservationGenerationRequestPayload(BaseModel):
+    symbol: str = Field(min_length=1, max_length=20)
+    instrument_kind: str = Field(default="equity", min_length=1)
+    market_context_summary: str = Field(min_length=1, max_length=5000)
+    fundamentals_summary: str | None = Field(default=None, max_length=5000)
+    regime_label: str | None = Field(default=None, max_length=100)
+    persona_id: str = Field(min_length=1)
+    workspace_id: str = Field(min_length=1)
+    operator_question: str = Field(
+        default="Generate advisory observations for this instrument.",
+        min_length=1,
+        max_length=1000,
+    )
+    decision_id: str | None = Field(default=None, min_length=1)
+
+
+class CandidateScreeningRequestPayload(BaseModel):
+    persona_id: str = Field(min_length=1)
+    workspace_id: str = Field(min_length=1)
+    operator_question: str = Field(
+        default="Screen these candidates and prioritize which deserve immediate attention.",
+        min_length=1,
+        max_length=1000,
+    )
 
 
 class LifecycleTransitionPayload(BaseModel):
@@ -4375,6 +4467,629 @@ def get_thesis_influence_summary(
         thesis_id=summary.thesis_id,
         total_count=summary.total_count,
         counts={influence.value: count for influence, count in summary.counts.items()},
+    )
+
+
+class ContextualWeightDistributionResponse(BaseModel):
+    authority: Literal["advisory"]
+    is_canonical: Literal[False]
+    thesis_id: str | None
+    total_count: int
+    counts: dict[str, int]
+
+
+class ConfidenceRangeDistributionResponse(BaseModel):
+    authority: Literal["advisory"]
+    is_canonical: Literal[False]
+    thesis_id: str | None
+    total_count: int
+    counts: dict[str, int]
+
+
+class InfluenceTimelineEntryResponse(BaseModel):
+    interpretation_id: str
+    captured_at: datetime
+    thesis_influence: ThesisInfluence
+    contextual_weight: ContextualWeight
+    confidence_range: AdvisoryConfidenceRange
+    interpretation_kind: InterpretationKind
+    tags: list[str]
+
+
+class InfluenceTimelineResponse(BaseModel):
+    authority: Literal["advisory"]
+    is_canonical: Literal[False]
+    thesis_id: str | None
+    total_count: int
+    entries: list[InfluenceTimelineEntryResponse]
+
+
+class ConflictSummaryResponse(BaseModel):
+    authority: Literal["advisory"]
+    is_canonical: Literal[False]
+    thesis_id: str | None
+    total_count: int
+    conflicting_count: int
+    opposing_pair_detected: bool
+    conflicting_interpretation_ids: list[str]
+
+
+class ThesisDriftSignalResponse(BaseModel):
+    authority: Literal["advisory"]
+    is_canonical: Literal[False]
+    thesis_id: str | None
+    drift_detected: bool
+    previous_dominant: ThesisInfluence | None
+    current_dominant: ThesisInfluence | None
+    total_count: int
+
+
+class RegimeWeightSuggestionResponse(BaseModel):
+    authority: Literal["advisory"]
+    is_canonical: Literal[False]
+    suggested_weight: ContextualWeight
+    regime: str
+    rationale: str
+
+
+class ProbabilisticCognitionSummaryResponse(BaseModel):
+    authority: Literal["advisory"]
+    is_canonical: Literal[False]
+    thesis_id: str | None
+    total_count: int
+    dominant_influence: ThesisInfluence | None
+    dominant_weight: ContextualWeight | None
+    has_conflict: bool
+    influence_counts: dict[str, int]
+    weight_counts: dict[str, int]
+    confidence_counts: dict[str, int]
+
+
+class ReasoningTimelineEntryResponse(BaseModel):
+    kind: str
+    event_type: str
+    timestamp: datetime
+    interpretation_id: str | None
+    observation_ids: list[str]
+    thesis_influence: str | None
+    contextual_weight: str | None
+    confidence_range: str | None
+    capture_origin: str | None
+    authority: Literal["advisory"]
+    is_canonical: Literal[False]
+
+
+class ReasoningTimelineResponse(BaseModel):
+    authority: Literal["advisory"]
+    is_canonical: Literal[False]
+    thesis_id: str | None
+    decision_id: str | None
+    total_count: int
+    entries: list[ReasoningTimelineEntryResponse]
+
+
+def _ai_advisory_service_from(request: Request) -> AIAdvisoryService:
+    provider = getattr(request.app.state, "ai_advisory_provider", None)
+    if provider is None:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="advisory service is not configured (no LiteLLM credential found)",
+        )
+    return AIAdvisoryService(provider)
+
+
+def _advisory_response_to_model(response: object) -> AdvisoryGeneratedResponse:
+    from src.domain.advisory.contracts import AdvisoryResponse as _AR
+
+    r: _AR = response  # type: ignore[assignment]
+    return AdvisoryGeneratedResponse(
+        request_id=r.request_id,
+        artifact_kind=r.artifact_kind.value,
+        content=r.content,
+        source_references=[
+            AdvisorySourceReferenceResponse(
+                source_kind=ref.source_kind,
+                source_id=ref.source_id,
+                description=ref.description,
+            )
+            for ref in r.source_references
+        ],
+        caveats=list(r.uncertainty.caveats),
+        confidence=r.uncertainty.confidence,
+        provenance=AdvisoryProvenanceResponse(
+            provider_id=r.provenance.provider_id,
+            provider_version=r.provenance.provider_version,
+            model_id=r.provenance.model_id,
+            generated_at=r.provenance.generated_at,
+            prompt_version=r.provenance.prompt_version,
+        ),
+        authority="advisory",
+        is_canonical=False,
+        requires_operator_acceptance=True,
+    )
+
+
+@advisory_router.get("/health", response_model=AdvisoryHealthResponse)
+def get_advisory_health(request: Request) -> AdvisoryHealthResponse:
+    """Check advisory service availability without consuming tokens."""
+    provider = getattr(request.app.state, "ai_advisory_provider", None)
+    if provider is None:
+        return AdvisoryHealthResponse(
+            status="not_configured",
+            authority="advisory",
+            is_canonical=False,
+        )
+    try:
+        from src.infrastructure.advisory.openai_compatible_provider import (
+            OpenAICompatibleAdvisoryProvider,
+        )
+
+        if isinstance(provider, OpenAICompatibleAdvisoryProvider):
+            provider._client.models.list()
+        return AdvisoryHealthResponse(
+            status="available",
+            authority="advisory",
+            is_canonical=False,
+        )
+    except Exception:
+        return AdvisoryHealthResponse(
+            status="unavailable",
+            authority="advisory",
+            is_canonical=False,
+        )
+
+
+@advisory_router.post("/replay-summary", response_model=AdvisoryGeneratedResponse)
+def generate_replay_summary(
+    payload: ReplaySummaryRequestPayload,
+    request: Request,
+) -> AdvisoryGeneratedResponse:
+    """Generate an AI-assisted replay summary for a completed decision.
+
+    The summary is advisory-only and non-canonical. It does not persist
+    automatically — operator acceptance is required before capture.
+    """
+    ai_service = _ai_advisory_service_from(request)
+    replay_svc = ReplayAdvisoryService(ai_service)
+    timeline_svc = request.app.state.replay_timeline_service
+    timeline = timeline_svc.build_timeline(payload.decision_id)
+
+    try:
+        response = replay_svc.summarize_timeline(
+            request_id=str(uuid.uuid4()),
+            timeline=timeline,
+            operator_question=payload.operator_question,
+            persona_id=payload.persona_id,
+            workspace_id=payload.workspace_id,
+            requested_at=datetime.now(UTC),
+            decision_id=payload.decision_id,
+        )
+    except AdvisoryProviderUnavailableError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=str(exc),
+        ) from exc
+    return _advisory_response_to_model(response)
+
+
+@advisory_router.post("/thesis-review", response_model=AdvisoryGeneratedResponse)
+def generate_thesis_review(
+    payload: ThesisReviewRequestPayload,
+    request: Request,
+) -> AdvisoryGeneratedResponse:
+    """Generate an AI-assisted thesis review for an active decision.
+
+    The review surfaces blind spots and missing assumptions.
+    It is advisory-only and requires operator acceptance before capture.
+    """
+    ai_service = _ai_advisory_service_from(request)
+    thesis_svc = ThesisReviewAdvisoryService(ai_service)
+
+    event_store = request.app.state.event_store
+    events = event_store.load(aggregate_id=payload.decision_id)
+    thesis_artifact: ThesisArtifact | None = None
+    symbol: str = payload.decision_id
+    for event in reversed(events):
+        if event.event_type in ("decision.thesis_created", "decision.thesis_revised"):
+            p = event.payload
+            try:
+                thesis_artifact = ThesisArtifact.create(
+                    narrative=str(p.get("narrative", "")),
+                    catalysts=list(p.get("catalysts", [])),
+                    assumptions=list(p.get("assumptions", [])),
+                    invalidation_conditions=list(p.get("invalidation_conditions", [])),
+                    confidence_level=int(p.get("confidence_level", 3)),
+                    regime_alignment=str(p.get("regime_alignment", "")),
+                )
+                symbol = str(p.get("symbol", payload.decision_id))
+            except Exception:
+                pass
+            break
+
+    if thesis_artifact is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="no thesis artifact found for this decision",
+        )
+
+    try:
+        response = thesis_svc.review_thesis(
+            request_id=str(uuid.uuid4()),
+            thesis_artifact=thesis_artifact,
+            symbol=symbol,
+            operator_question=payload.operator_question,
+            persona_id=payload.persona_id,
+            workspace_id=payload.workspace_id,
+            requested_at=datetime.now(UTC),
+            decision_id=payload.decision_id,
+        )
+    except AdvisoryProviderUnavailableError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=str(exc),
+        ) from exc
+    return _advisory_response_to_model(response)
+
+
+@advisory_router.post(
+    "/generate-observations",
+    response_model=AdvisoryGeneratedResponse,
+)
+def generate_advisory_observations(
+    payload: ObservationGenerationRequestPayload,
+    request: Request,
+) -> AdvisoryGeneratedResponse:
+    """Generate candidate advisory observations for an instrument.
+
+    Returns candidate observations for operator review.
+    The operator must explicitly accept before observations are captured.
+    """
+    ai_service = _ai_advisory_service_from(request)
+    obs_svc = ObservationGenerationAdvisoryService(ai_service)
+
+    try:
+        response = obs_svc.generate_observations(
+            request_id=str(uuid.uuid4()),
+            symbol=payload.symbol,
+            instrument_kind=payload.instrument_kind,
+            market_context_summary=payload.market_context_summary,
+            fundamentals_summary=payload.fundamentals_summary,
+            regime_label=payload.regime_label,
+            operator_question=payload.operator_question,
+            persona_id=payload.persona_id,
+            workspace_id=payload.workspace_id,
+            requested_at=datetime.now(UTC),
+            decision_id=payload.decision_id,
+        )
+    except AdvisoryProviderUnavailableError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=str(exc),
+        ) from exc
+    return _advisory_response_to_model(response)
+
+
+@advisory_router.post("/screen-candidates", response_model=AdvisoryGeneratedResponse)
+def screen_advisory_candidates(
+    payload: CandidateScreeningRequestPayload,
+    request: Request,
+) -> AdvisoryGeneratedResponse:
+    """Screen the advisory candidate queue for operator attention prioritization.
+
+    Returns advisory commentary on candidate prioritization.
+    This endpoint does not modify any candidate records or lifecycle state.
+    """
+    ai_service = _ai_advisory_service_from(request)
+    screening_svc = CandidateScreeningAdvisoryService(ai_service)
+
+    candidates = request.app.state.candidate_review_queue_service.get_queue(
+        CandidateReviewQueueQuery(
+            persona_id=payload.persona_id,
+            workspace_id=payload.workspace_id,
+        )
+    ).candidates
+
+    if not candidates:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="advisory candidate queue is empty — no candidates to screen",
+        )
+
+    try:
+        response = screening_svc.screen_candidates(
+            request_id=str(uuid.uuid4()),
+            candidates=candidates,
+            operator_question=payload.operator_question,
+            persona_id=payload.persona_id,
+            workspace_id=payload.workspace_id,
+            requested_at=datetime.now(UTC),
+        )
+    except AdvisoryProviderUnavailableError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=str(exc),
+        ) from exc
+    return _advisory_response_to_model(response)
+
+
+@advisory_router.get(
+    "/weight-distribution",
+    response_model=ContextualWeightDistributionResponse,
+)
+def get_contextual_weight_distribution(
+    request: Request,
+    persona_id: str = Query(min_length=1),
+    workspace_id: str = Query(min_length=1),
+    thesis_id: str | None = Query(default=None, min_length=1),
+    decision_id: str | None = Query(default=None, min_length=1),
+) -> ContextualWeightDistributionResponse:
+    dist: ContextualWeightDistribution = _advisory_interpretation_query_service_from(
+        request
+    ).contextual_weight_distribution(
+        AdvisoryInterpretationQuery(
+            persona_id=persona_id,
+            workspace_id=workspace_id,
+            thesis_id=thesis_id,
+            decision_id=decision_id,
+        )
+    )
+    return ContextualWeightDistributionResponse(
+        authority="advisory",
+        is_canonical=False,
+        thesis_id=dist.thesis_id,
+        total_count=dist.total_count,
+        counts={w.value: count for w, count in dist.counts.items()},
+    )
+
+
+@advisory_router.get(
+    "/confidence-distribution",
+    response_model=ConfidenceRangeDistributionResponse,
+)
+def get_confidence_range_distribution(
+    request: Request,
+    persona_id: str = Query(min_length=1),
+    workspace_id: str = Query(min_length=1),
+    thesis_id: str | None = Query(default=None, min_length=1),
+    decision_id: str | None = Query(default=None, min_length=1),
+) -> ConfidenceRangeDistributionResponse:
+    dist: ConfidenceRangeDistribution = _advisory_interpretation_query_service_from(
+        request
+    ).confidence_range_distribution(
+        AdvisoryInterpretationQuery(
+            persona_id=persona_id,
+            workspace_id=workspace_id,
+            thesis_id=thesis_id,
+            decision_id=decision_id,
+        )
+    )
+    return ConfidenceRangeDistributionResponse(
+        authority="advisory",
+        is_canonical=False,
+        thesis_id=dist.thesis_id,
+        total_count=dist.total_count,
+        counts={cr.value: count for cr, count in dist.counts.items()},
+    )
+
+
+@advisory_router.get(
+    "/influence-timeline",
+    response_model=InfluenceTimelineResponse,
+)
+def get_influence_timeline(
+    request: Request,
+    persona_id: str = Query(min_length=1),
+    workspace_id: str = Query(min_length=1),
+    thesis_id: str | None = Query(default=None, min_length=1),
+    decision_id: str | None = Query(default=None, min_length=1),
+) -> InfluenceTimelineResponse:
+    timeline: InfluenceTimeline = _advisory_interpretation_query_service_from(
+        request
+    ).influence_timeline(
+        AdvisoryInterpretationQuery(
+            persona_id=persona_id,
+            workspace_id=workspace_id,
+            thesis_id=thesis_id,
+            decision_id=decision_id,
+        )
+    )
+    return InfluenceTimelineResponse(
+        authority="advisory",
+        is_canonical=False,
+        thesis_id=timeline.thesis_id,
+        total_count=timeline.total_count,
+        entries=[
+            InfluenceTimelineEntryResponse(
+                interpretation_id=entry.interpretation_id,
+                captured_at=entry.captured_at,
+                thesis_influence=entry.thesis_influence,
+                contextual_weight=entry.contextual_weight,
+                confidence_range=entry.confidence_range,
+                interpretation_kind=entry.interpretation_kind,
+                tags=list(entry.tags),
+            )
+            for entry in timeline.entries
+        ],
+    )
+
+
+@advisory_router.get(
+    "/conflict-summary",
+    response_model=ConflictSummaryResponse,
+)
+def get_conflict_summary(
+    request: Request,
+    persona_id: str = Query(min_length=1),
+    workspace_id: str = Query(min_length=1),
+    thesis_id: str | None = Query(default=None, min_length=1),
+    decision_id: str | None = Query(default=None, min_length=1),
+) -> ConflictSummaryResponse:
+    summary: ConflictSummary = _advisory_interpretation_query_service_from(
+        request
+    ).conflict_summary(
+        AdvisoryInterpretationQuery(
+            persona_id=persona_id,
+            workspace_id=workspace_id,
+            thesis_id=thesis_id,
+            decision_id=decision_id,
+        )
+    )
+    return ConflictSummaryResponse(
+        authority="advisory",
+        is_canonical=False,
+        thesis_id=summary.thesis_id,
+        total_count=summary.total_count,
+        conflicting_count=summary.conflicting_count,
+        opposing_pair_detected=summary.opposing_pair_detected,
+        conflicting_interpretation_ids=list(summary.conflicting_interpretation_ids),
+    )
+
+
+@advisory_router.get(
+    "/drift-signal",
+    response_model=ThesisDriftSignalResponse,
+)
+def get_drift_signal(
+    request: Request,
+    persona_id: str = Query(min_length=1),
+    workspace_id: str = Query(min_length=1),
+    thesis_id: str | None = Query(default=None, min_length=1),
+    decision_id: str | None = Query(default=None, min_length=1),
+) -> ThesisDriftSignalResponse:
+    signal: ThesisDriftSignal = _advisory_interpretation_query_service_from(
+        request
+    ).drift_signal(
+        AdvisoryInterpretationQuery(
+            persona_id=persona_id,
+            workspace_id=workspace_id,
+            thesis_id=thesis_id,
+            decision_id=decision_id,
+        )
+    )
+    return ThesisDriftSignalResponse(
+        authority="advisory",
+        is_canonical=False,
+        thesis_id=signal.thesis_id,
+        drift_detected=signal.drift_detected,
+        previous_dominant=signal.previous_dominant,
+        current_dominant=signal.current_dominant,
+        total_count=signal.total_count,
+    )
+
+
+@advisory_router.get(
+    "/regime-weight-suggestion",
+    response_model=RegimeWeightSuggestionResponse,
+)
+def get_regime_weight_suggestion(
+    regime: MarketRegime = Query(...),
+) -> RegimeWeightSuggestionResponse:
+    """Suggest contextual weight for interpretations based on market regime.
+
+    Advisory only — the suggestion does not auto-apply. Operator decides.
+    """
+    suggestion = RegimeContextWeightService().suggest_weight(regime)
+    return RegimeWeightSuggestionResponse(
+        authority="advisory",
+        is_canonical=False,
+        suggested_weight=suggestion.suggested_weight,
+        regime=suggestion.regime.value,
+        rationale=suggestion.rationale,
+    )
+
+
+@advisory_router.get(
+    "/cognition-summary",
+    response_model=ProbabilisticCognitionSummaryResponse,
+)
+def get_probabilistic_cognition_summary(
+    request: Request,
+    persona_id: str = Query(min_length=1),
+    workspace_id: str = Query(min_length=1),
+    thesis_id: str | None = Query(default=None, min_length=1),
+    decision_id: str | None = Query(default=None, min_length=1),
+) -> ProbabilisticCognitionSummaryResponse:
+    """Advisory probabilistic cognition summary across influence, weight, and confidence.
+
+    Combines thesis influence, contextual weight, and confidence range distributions
+    into a single advisory read model. Non-canonical — derived from advisory artifacts.
+    """
+    summary: ProbabilisticCognitionSummary = (
+        _advisory_interpretation_query_service_from(
+            request
+        ).probabilistic_cognition_summary(
+            AdvisoryInterpretationQuery(
+                persona_id=persona_id,
+                workspace_id=workspace_id,
+                thesis_id=thesis_id,
+                decision_id=decision_id,
+            )
+        )
+    )
+    return ProbabilisticCognitionSummaryResponse(
+        authority="advisory",
+        is_canonical=False,
+        thesis_id=summary.thesis_id,
+        total_count=summary.total_count,
+        dominant_influence=summary.dominant_influence,
+        dominant_weight=summary.dominant_weight,
+        has_conflict=summary.has_conflict,
+        influence_counts={k.value: v for k, v in summary.influence_counts.items()},
+        weight_counts={k.value: v for k, v in summary.weight_counts.items()},
+        confidence_counts={k.value: v for k, v in summary.confidence_counts.items()},
+    )
+
+
+@advisory_router.get(
+    "/reasoning-timeline",
+    response_model=ReasoningTimelineResponse,
+)
+def get_reasoning_timeline(
+    request: Request,
+    persona_id: str = Query(min_length=1),
+    workspace_id: str = Query(min_length=1),
+    decision_id: str | None = Query(default=None, min_length=1),
+    thesis_id: str | None = Query(default=None, min_length=1),
+) -> ReasoningTimelineResponse:
+    """Contextual reasoning timeline combining advisory observations and interpretations.
+
+    Composes advisory capture facts from the event ledger with interpretation
+    analytics into a single chronological advisory reasoning timeline.
+    All content is advisory-only and non-canonical.
+    """
+    interp_query = AdvisoryInterpretationQuery(
+        persona_id=persona_id,
+        workspace_id=workspace_id,
+        thesis_id=thesis_id,
+        decision_id=decision_id,
+    )
+    interp_svc = _advisory_interpretation_query_service_from(request)
+    timeline = interp_svc.influence_timeline(interp_query)
+
+    entries = [
+        ReasoningTimelineEntryResponse(
+            kind="interpretation",
+            event_type="advisory.interpretation_captured",
+            timestamp=entry.captured_at,
+            interpretation_id=entry.interpretation_id,
+            observation_ids=[],
+            thesis_influence=entry.thesis_influence.value,
+            contextual_weight=entry.contextual_weight.value,
+            confidence_range=entry.confidence_range.value,
+            capture_origin=None,
+            authority="advisory",
+            is_canonical=False,
+        )
+        for entry in timeline.entries
+    ]
+
+    return ReasoningTimelineResponse(
+        authority="advisory",
+        is_canonical=False,
+        thesis_id=thesis_id,
+        decision_id=decision_id,
+        total_count=len(entries),
+        entries=entries,
     )
 
 
