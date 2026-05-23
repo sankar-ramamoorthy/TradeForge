@@ -3,44 +3,75 @@
 
 > **Work in progress.** Core workflow is functional and demoable. Architecture and features are under active development.
 
-TradeForge is an event-sourced, persona-driven, workflow-centric decision support system for discretionary trading and investing.
+TradeForge is an event-sourced, persona-driven decision support system for discretionary swing trading and investing.
 
-It is NOT:
+It is **not** a trading bot, signal generator, broker integration, or autonomous execution system.
 
-* a generic trading bot
-* a CRUD trade tracker
-* a signal generator
-* a dashboard-centric brokerage application
-* an autonomous trading system
+It is:
 
-TradeForge is:
-
-> a structured cognition and decision system for discretionary trading workflows — built around replayability, lifecycle integrity, and human decision sovereignty.
+> A structured cognition and decision system — built around replayability, lifecycle integrity, and human decision sovereignty. It makes you write down why before you act, and holds you to it.
 
 ---
 
 ## What Works Now
 
-* Full 7-stage decision lifecycle: **Idea → Thesis → Plan → Approval → Execution → Position → Review**
-* Event-sourced workflow — all state derives from immutable ledger events
-* Six operational workspaces with lifecycle progress tracking and contextual guidance
-* New Trade Idea entry flow — no API calls required
-* Active decision context that persists across workspace navigation
-* Guided demo mode — seed a realistic AAPL breakout trade in one click
-* Market context overlays through provider adapters, with yfinance available without credentials
-* Deterministic replay and historical reconstruction
-* Postgres-backed event ledger (optional; defaults to in-memory)
-* AI advisory boundary: advisory interfaces, replay assistance, review assistance, provenance tracking, and OpenAI-compatible provider wiring through LiteLLM
-* Advisory observation and cognitive evidence layer: observations, evidence attachments, provenance, uncertainty, replay-visible capture facts, conflict markers, staleness visibility, advisory artifacts, and advisory candidate review
-* Contextual interpretation and thesis influence layer: interpretation artifacts, contextual weighting, confidence ranges, regime-aware weighting suggestions, conflict summaries, drift signals, cognition summaries, and reasoning timelines
+### Decision lifecycle
 
-AI and advisory outputs remain non-canonical. They cannot approve plans, execute trades, mutate lifecycle state, or write authoritative decision events.
+Full 7-stage lifecycle: **Idea → Thesis → Plan → Approval → Execution → Position → Review**
+
+- Start a new trade idea from the UI — no API calls, no curl
+- Author a structured thesis: narrative, catalysts, assumptions, invalidation conditions, confidence, regime alignment
+- Model conditional scenarios (primary, alternative, invalidation)
+- Build a structured trade plan: entry rationale, stop rationale, target rationale, sizing rationale, execution assumptions
+- Conditional execution state (Armed) — approved but waiting for trigger conditions
+- Track position state through execution
+- Structured review: thesis vs outcome, execution quality, discipline observations, lessons learned
+- All lifecycle state derives from immutable events — replayable and auditable
+
+### Replay
+
+- Walk back through any completed decision and reconstruct what you believed at the time
+- Replay reconstructs reasoning artifacts (thesis, scenarios, plan) alongside market context
+- Does not depend on live APIs — pure event reconstruction
+
+### Market context
+
+- Price data via yfinance (no API key required), Polygon, or Alpaca
+- Fundamentals via FMP or Alpha Vantage
+- Capability-aware provider registry — price and fundamentals are separate contracts
+- Context Workbench workspace for explicit advisory context acquisition
+- Market regime interpretation (bull / bear / ranging / high-volatility)
+- Provider provenance and fallback transparency surfaced in workspaces
+
+### AI advisory (optional — requires LiteLLM or compatible endpoint)
+
+Four on-demand advisory tasks, all accessible from workspaces:
+
+- **Thesis review** — surfaces blind spots, missing assumptions, and regime misalignments in a structured thesis
+- **Observation generation** — generates typed advisory observations (price action, fundamentals, risk, regime) for an instrument
+- **Replay summary** — narrative summary of a completed decision replay
+- **Candidate screening** — prioritizes the advisory candidate queue for operator attention
+
+Advisory analytics on accumulated evidence:
+- Thesis influence tracking (supporting / weakening / conflicting) over time
+- Drift signal — detects when accumulated interpretations shift from supporting to weakening
+- Conflict summary — flags opposing evidence for the same thesis
+- Contextual reasoning timeline — chronological advisory reasoning per decision
+
+All advisory outputs are non-canonical. They cannot approve plans, execute trades, mutate lifecycle state, or write authoritative decision events. Human decision sovereignty is mandatory.
+
+### Credential management
+
+- Configure provider API keys from the **ProviderConfigurationPanel** in the browser — no terminal required after initial master key setup
+- Masked field display (last 4 characters of secrets shown)
+- Provider registry reloads automatically after credential changes — no restart required
+- Revoke credentials with audit trail preserved
 
 ---
 
-## Try It (Two Terminals)
+## Quick Start
 
-No broker account, no API keys, no database required. The default runtime uses an in-memory event store.
+No broker account, no API keys, no database required. The default runtime uses an in-memory event store and yfinance for market data.
 
 **Terminal 1 — Backend**
 
@@ -57,65 +88,17 @@ npm install
 npm run dev
 ```
 
-Open **http://localhost:5173** in your browser.
+Open **http://localhost:5173**
 
 **Demo flow:**
-1. The Operating Workspace opens. Click **"Start Demo"** to seed an AAPL breakout scenario (seeds Idea → Thesis → Plan in one click).
-2. You land in Plan Review at the Plan stage — progress strip shows `✓ Idea  ✓ Thesis  ● Plan`.
-3. Click **Authorize Plan** → **Record Execution** → auto-navigated to Active Position.
-4. Click **Record Position Opened** → **Begin Position Review** → auto-navigated to Review.
-5. Complete the review. The full lifecycle runs in under two minutes.
+1. Operating Workspace opens. Click **Start Demo** to seed an AAPL breakout scenario (Idea → Thesis → Plan in one click).
+2. Click **Authorize Plan → Record Execution** → auto-navigated to Active Position.
+3. Click **Record Position Opened → Begin Position Review** → auto-navigated to Review.
+4. Complete the structured review. Full lifecycle in under two minutes.
 
-Or start a fresh decision with the **New Trade Idea** button (top right of Operating Workspace).
+Or start a fresh decision with **New Trade Idea** (top right of Operating Workspace).
 
-> **Note:** the event store is in-memory by default. Restarting the backend clears all decisions. Click "×" on the sidebar badge to clear and start fresh.
-
----
-
-## Architecture
-
-### Core principles
-
-**Event sourcing** — All durable state derives from immutable events. The event ledger is canonical truth. Projections are derived and discardable.
-
-**Decision lifecycle integrity** — The canonical lifecycle is `Idea → Thesis → Plan → Approval → Execution → Position → Review`. Stages cannot be collapsed or bypassed.
-
-**Replayability** — All material workflows support deterministic reconstruction from event history. Replay does not depend on live APIs or mutable external state.
-
-**AI is advisory only** — AI may summarize, rank, and contextualize. It may not mutate canonical state, bypass lifecycle controls, execute trades, or override deterministic rules. Human decision sovereignty is mandatory.
-
-**Workspace-centric, not dashboard-centric** — Workspaces are operational cognition environments, not generic screens or tabs.
-
----
-
-### Repository structure
-
-```
-src/
-├── app/           HTTP boundary (FastAPI)
-├── domain/        Pure domain model — events, lifecycle, personas
-├── infrastructure/  Adapters — event store, market data, persistence
-└── services/      Orchestration — lifecycle, replay, workspace, market
-
-frontend/
-└── src/           React workspace runtime
-
-tests/             Pytest regression and integration suite
-DOCS/
-└── adr/           Architecture Decision Records
-```
-
----
-
-### Layer rules
-
-| Layer | Owns | Must not |
-|---|---|---|
-| `domain/` | entities, value objects, lifecycle rules, event types, advisory contracts | import infrastructure, persistence, or framework code |
-| `services/` | workflow orchestration, projection services, advisory capture/query flows | own persistence or define domain rules |
-| `infrastructure/` | event store, advisory stores, market adapters, Postgres | redefine domain semantics |
-| `app/` | HTTP routes, FastAPI wiring | own domain rules or lifecycle authority |
-| `frontend/` | workspace UI, API consumption | treat browser state as canonical truth |
+> Events are in-memory by default — restarting the backend clears decisions. Use Docker + Postgres for persistence.
 
 ---
 
@@ -123,33 +106,18 @@ DOCS/
 
 ### Prerequisites
 
-* Python 3.12+ with [uv](https://docs.astral.sh/uv/)
-* Node.js 18+ with npm
-* Docker + Docker Compose (optional — only needed for Postgres)
+- Python 3.12+ with [uv](https://docs.astral.sh/uv/)
+- Node.js 18+ with npm
+- Docker + Docker Compose (optional — only needed for Postgres)
 
 ### Backend
 
 ```bash
 uv sync
 uv run pytest
-uv run ruff check .        # lint
-uv run mypy src tests      # type check
+uv run ruff check .
+uv run mypy src tests
 ```
-
-Provider keys are optional for the default `yfinance` workflow. For Polygon,
-Alpaca, or other credentialed providers, follow
-[`HOW-TO-SETUP-KEYS.md`](HOW-TO-SETUP-KEYS.md).
-
-For AI advisory generation, configure a LiteLLM/OpenAI-compatible endpoint with
-the encrypted credential store:
-
-```bash
-uv run python scripts/manage_credentials.py register litellm --base-url "http://localhost:4000" --api-key "<litellm-key>" --default-model "<model-name>"
-```
-
-Without a configured LiteLLM credential, lifecycle, market context, replay, and
-manual advisory workflows still run; AI generation endpoints report advisory
-service as not configured.
 
 ### Frontend
 
@@ -161,27 +129,89 @@ npm run lint
 npm run build
 ```
 
-### With Postgres (optional)
+### Credentials
+
+**Master key** — generate once and set in the OS environment:
+
+```bash
+uv run python scripts/manage_credentials.py generate-master-key
+# Copy the output and set it:
+# Windows: $env:TRADEFORGE_MASTER_KEY = "<generated-value>"
+# Linux/Mac: export TRADEFORGE_MASTER_KEY=<generated-value>
+```
+
+**Provider API keys** — enter from the UI (ProviderConfigurationPanel) once the master key is configured. Or via CLI:
+
+```bash
+uv run python scripts/manage_credentials.py register fmp --api-key "<key>"
+uv run python scripts/manage_credentials.py register litellm \
+  --base-url "http://localhost:4000" \
+  --api-key "<key>" \
+  --default-model "groq/llama-3.1-70b-versatile"
+```
+
+See [`HOW-TO-SETUP-KEYS.md`](HOW-TO-SETUP-KEYS.md) for full credential setup.
+
+### With Postgres (recommended for real use)
 
 ```bash
 docker compose up -d postgres
 uv run alembic upgrade head
 ```
 
-Then start the backend as normal — it will use Postgres for the event ledger.
+Start the backend normally — it uses Postgres for the event ledger when `TRADEFORGE_DATABASE_URL` is set.
 
-### ADRs
+### AI advisory
 
-Architecture decisions are recorded in `DOCS/adr/`. Read them before making structural changes.
+AI advisory requires an OpenAI-compatible endpoint — LiteLLM pointing at Groq, NVIDIA NIM, or Ollama. Configure the `litellm` credential (see above), then advisory endpoints become available in the UI.
 
-Key ADRs:
-* `0001` — Event sourcing core model
-* `0002` — Decision lifecycle engine
-* `0006` — AI advisory boundary model
-* `0008` — Replay system design
-* `0032` — External provider boundary model
-* `0041` — Advisory observation and cognitive evidence foundation
-* `0042` — Contextual interpretation and thesis influence
+Without a LiteLLM credential: lifecycle, market context, replay, and manual advisory artifact workflows all work normally. AI generation endpoints report `not_configured`.
+
+---
+
+## Architecture
+
+### Core principles
+
+**Event sourcing** — All durable state derives from immutable events. The event ledger is canonical truth. Projections are derived and discardable.
+
+**Decision lifecycle integrity** — `Idea → Thesis → Plan → Approval → Execution → Position → Review`. Stages cannot be collapsed or bypassed.
+
+**Replayability** — All material workflows support deterministic reconstruction from event history. Replay does not depend on live APIs.
+
+**AI is advisory only** — AI may summarize, rank, and contextualize. It may not mutate canonical state, approve plans, execute trades, or bypass lifecycle controls.
+
+**Workspace-centric, not dashboard-centric** — Workspaces are operational cognition environments, not generic screens.
+
+### Repository structure
+
+```
+src/
+├── app/            HTTP boundary (FastAPI, admin routes)
+├── domain/         Pure domain — events, lifecycle, advisory contracts
+├── infrastructure/ Adapters — event store, market, advisory stores
+├── security/       Credential boundary (KeyManager, CredentialStore)
+└── services/       Orchestration — lifecycle, replay, workspace, advisory
+
+frontend/
+└── src/            React workspace runtime
+
+tests/              Pytest suite (700+ tests)
+DOCS/
+├── adr/            Architecture Decision Records
+└── *.md            Strategy and design documents
+```
+
+### Layer rules
+
+| Layer | Owns | Must not |
+|---|---|---|
+| `domain/` | entities, lifecycle rules, event types, advisory contracts | import infrastructure, persistence, or framework code |
+| `security/` | credential encryption, key management | import domain or service logic |
+| `services/` | workflow orchestration, advisory capture/query | own persistence or define domain rules |
+| `infrastructure/` | event store, advisory stores, market adapters, Postgres | redefine domain semantics |
+| `app/` | HTTP routes, FastAPI wiring, composition root | own domain rules or lifecycle authority |
+| `frontend/` | workspace UI, API consumption | treat browser state as canonical truth |
 
 ---
 
@@ -196,9 +226,11 @@ Key ADRs:
 | M8 | Done | First replayable MVP lifecycle flow |
 | M9 | Done | Market context, provider boundary, advisory overlays |
 | M10 | Done | Operational UX, demoability, guided workflow |
+| M10A–E | Done | Structured cognition, credential boundary, provider capability, context workbench |
 | M11 | Done | AI advisory boundary, replay/review assistance, provenance |
 | M12 | Done | Advisory observation and cognitive evidence layer |
 | M13 | Done | Contextual interpretation and thesis influence |
+| TF-F055 | Done | UI-based credential management |
 | M14+ | Planned | Behavioral intelligence, cognitive replay, attention allocation, simulation |
 
 ---
