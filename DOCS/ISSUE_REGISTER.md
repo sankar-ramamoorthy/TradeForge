@@ -222,7 +222,9 @@ Explicit roadmap checkpoint completed M9 Updated*Done*.
 | TF-F052 | Done | M13 | Add advisory service health check to ProviderConfigurationPanel | `feature/tf-f052-advisory-health-check` |
 | TF-F053 | Done | M13 | Validate NVIDIA NIM via LiteLLM and document credential shape | `docs/tf-f053-nvidia-nim-litellm-validation` |
 | TF-F054 | Done | M13 | Document automatic enrichment lifecycle hook points | `docs/tf-f054-auto-enrichment-hook-points` |
+| TF-F055 | Done | M13 | Implement UI-Based Credential Management | `feature/tf-f055-ui-credential-management` |
 | TF-F056 | Done | M13 | Fix missing default advisory provider bootstrap after merge | `fix/tf-f056-default-advisory-provider-bootstrap` |
+| TF-F057 | Done | M13 | Add optional LiteLLM Docker Compose runtime service | `feature/tf-f057-litellm-compose-service` |
 
 ## TF-A001: Define AdvisoryObservation Domain Model
 
@@ -960,7 +962,7 @@ Artifact ingestion now records a replay-safe advisory snapshot containing captur
 
 ## TF-B001: Define Interpretation Artifact Schema
 
-**Status:** Planned
+**Status:** Done
 
 **Classification:** architectural
 
@@ -992,7 +994,7 @@ M13 needs a durable interpretation artifact schema so advisory observations can 
 
 ## TF-B002: Implement Contextual Weighting Framework
 
-**Status:** Planned
+**Status:** Done
 
 **Classification:** enhancement
 
@@ -1024,7 +1026,7 @@ Operators need qualitative contextual weight for interpretations, but the system
 
 ## TF-B003: Implement Regime-Aware Weighting Model
 
-**Status:** Planned
+**Status:** Done
 
 **Classification:** enhancement
 
@@ -1053,7 +1055,7 @@ Interpretations may carry different meaning under different market regimes. Runt
 
 ## TF-B004: Implement Conflicting Evidence Analysis
 
-**Status:** Planned
+**Status:** Done
 
 **Classification:** enhancement
 
@@ -1082,7 +1084,7 @@ M13 must allow operators to understand evidence conflict across observations and
 
 ## TF-B005: Implement Confidence-Range Representation
 
-**Status:** Planned
+**Status:** Done
 
 **Classification:** enhancement
 
@@ -1114,7 +1116,7 @@ Operators need uncertainty-preserving confidence ranges for interpretations, but
 
 ## TF-B006: Implement Thesis Evidence Influence Tracking
 
-**Status:** Planned
+**Status:** Done
 
 **Classification:** architectural
 
@@ -1146,7 +1148,7 @@ Operators need to see how interpreted advisory evidence may influence an existin
 
 ## TF-B007: Implement Supporting Vs Weakening Evidence Classification
 
-**Status:** Planned
+**Status:** Done
 
 **Classification:** enhancement
 
@@ -1178,7 +1180,7 @@ Interpretations need qualitative classification for whether evidence appears to 
 
 ## TF-B008: Implement Thesis Drift Detection
 
-**Status:** Planned
+**Status:** Done
 
 **Classification:** enhancement
 
@@ -1207,7 +1209,7 @@ Operators need visibility when accumulated interpretations suggest that thesis c
 
 ## TF-B009: Implement Contextual Contradiction Surfacing
 
-**Status:** Planned
+**Status:** Done
 
 **Classification:** enhancement
 
@@ -1236,7 +1238,7 @@ Operators need contradictions between context, observations, interpretations, an
 
 ## TF-B010: Implement Evidence Impact Replay Overlays
 
-**Status:** Planned
+**Status:** Done
 
 **Classification:** enhancement
 
@@ -1265,7 +1267,7 @@ Replay should show when interpretations and evidence influence artifacts existed
 
 ## TF-B011: Implement Interpretation-First Operational Surfaces
 
-**Status:** Planned
+**Status:** Done
 
 **Classification:** enhancement
 
@@ -1294,7 +1296,7 @@ Workspace surfaces need to present interpretations as contextual cognition rathe
 
 ## TF-B012: Implement Uncertainty-Preserving UX Patterns
 
-**Status:** Planned
+**Status:** Done
 
 **Classification:** enhancement
 
@@ -1323,7 +1325,7 @@ M13 UX must preserve uncertainty, caveats, and non-authoritative status so opera
 
 ## TF-B013: Implement Probabilistic Cognition Summaries
 
-**Status:** Planned
+**Status:** Done
 
 **Classification:** enhancement
 
@@ -1352,7 +1354,7 @@ Operators need summaries of probabilistic cognition across interpretations, but 
 
 ## TF-B014: Implement Evidence Narrative Generation
 
-**Status:** Planned
+**Status:** Done
 
 **Classification:** enhancement
 
@@ -1370,7 +1372,7 @@ Operators need summaries of probabilistic cognition across interpretations, but 
 Operators need narrative explanations of evidence and interpretation context, including AI-assisted drafts, but generated narratives must require operator acceptance before persistence and must not become canonical truth.
 
 **Dependency:**
-Requires TF-F046 (`OpenAICompatibleAdvisoryProvider`) to be complete and wired before AI-assisted draft generation can be exercised end-to-end. The `InterpretationDraftService` in `src/services/advisory/interpretation.py` is already implemented and awaits a concrete `AIAdvisoryProvider` to call. TF-B014 should not be started until TF-F046 is done.
+TF-F046 (`OpenAICompatibleAdvisoryProvider`) is complete and wired. AI-assisted draft generation can exercise the concrete `AIAdvisoryProvider` boundary.
 
 **Acceptance Criteria:**
 
@@ -1384,7 +1386,7 @@ Requires TF-F046 (`OpenAICompatibleAdvisoryProvider`) to be complete and wired b
 
 ## TF-B015: Implement Contextual Reasoning Timelines
 
-**Status:** Planned
+**Status:** Done
 
 **Classification:** enhancement
 
@@ -6202,7 +6204,7 @@ Added a typed LiteLLM credential payload under the security boundary with `base_
 
 ## TF-F046: Implement OpenAICompatibleAdvisoryProvider
 
-**Status:** Planned
+**Status:** Done
 
 **Classification:** architectural
 
@@ -6238,7 +6240,7 @@ Implement `OpenAICompatibleAdvisoryProvider` in `src/infrastructure/advisory/ope
 
 ## TF-F047: Implement Prompt Template And Service Wiring For Replay Summary
 
-**Status:** Planned
+**Status:** Done
 
 **Classification:** enhancement
 
@@ -6273,7 +6275,7 @@ Add prompt serializer to `ReplayAdvisoryService` that packages replay timeline e
 
 ## TF-F048: Implement Prompt Template And Service Wiring For Thesis Review Assistant
 
-**Status:** Planned
+**Status:** Done
 
 **Classification:** enhancement
 
@@ -6307,7 +6309,7 @@ Add prompt serializer that packages thesis narrative, catalysts, assumptions, in
 
 ## TF-F049: Implement Prompt Template And Service Wiring For Advisory Observation Generation
 
-**Status:** Planned
+**Status:** Done
 
 **Classification:** enhancement
 
@@ -6342,7 +6344,7 @@ Add `ObservationGenerationAdvisoryService` that packages ticker, market snapshot
 
 ## TF-F050: Implement Prompt Template And Service Wiring For Candidate Screening
 
-**Status:** Planned
+**Status:** Done
 
 **Classification:** enhancement
 
@@ -6376,7 +6378,7 @@ Add `CandidateScreeningAdvisoryService` that packages candidate queue contents (
 
 ## TF-F051: Add On-Demand Advisory API Endpoints And Frontend Trigger Surfaces
 
-**Status:** Planned
+**Status:** Done
 
 **Classification:** enhancement
 
@@ -6411,7 +6413,7 @@ Wire API routes for all four advisory tasks to the FastAPI application. Add fron
 
 ## TF-F052: Add Advisory Service Health Check To ProviderConfigurationPanel
 
-**Status:** Planned
+**Status:** Done
 
 **Classification:** enhancement
 
@@ -6445,7 +6447,7 @@ Add `GET /advisory/health` endpoint that checks LiteLLM reachability via a light
 
 ## TF-F053: Validate NVIDIA NIM Via LiteLLM And Document Credential Shape
 
-**Status:** Planned
+**Status:** Done
 
 **Classification:** investigation
 
@@ -6478,7 +6480,7 @@ Configure NVIDIA NIM as a model route in LiteLLM. Test a basic chat completion c
 
 ## TF-F054: Document Automatic Enrichment Lifecycle Hook Points
 
-**Status:** Planned
+**Status:** Done
 
 **Classification:** documentation
 
@@ -6608,5 +6610,55 @@ Restored `_default_advisory_provider()` in `src/app/api/application.py`. The com
 - `npm.cmd run typecheck`
 - `npm.cmd run build`
 - `docker compose run --rm tradeforge uv run python -c "from src.app.api.application import app; print(app.title)"`
+
+---
+
+## TF-F057: Add Optional LiteLLM Docker Compose Runtime Service
+
+**Status:** Done
+
+**Classification:** operational
+
+**Milestone:** M13
+
+**Branch:** `feature/tf-f057-litellm-compose-service`
+
+**Affected Layer:** infrastructure, docs
+
+**Linked ADRs:** ADR-0011, ADR-0037, ADR-0041, ADR-0042
+
+**Impacted Invariants:** AI Advisory Boundary, Human Decision Sovereignty, Architectural Simplicity, Derived State Must Remain Distinguishable
+
+**Source:** Operator observation captured on 2026-05-23 in `knowledge/raw/brainstorm-20260523-litellm-compose-runtime.md`.
+
+**Problem:**
+TradeForge has a LiteLLM-backed advisory provider and documentation assumes a local LiteLLM proxy is available at `http://localhost:4000`, but the Docker Compose runtime only starts TradeForge and Postgres. Operators who run the local stack do not have a reproducible LiteLLM service to host the OpenAI-compatible advisory endpoint.
+
+**Scope:**
+Add an optional LiteLLM service to `docker-compose.yml`, expose it on host port `4000`, add a secret-free LiteLLM config file that reads provider API keys from environment variables, update setup documentation with host-vs-container base URL guidance, and add focused compose/documentation tests. The service must remain optional and must not make AI advisory mandatory for lifecycle, replay, market context, or credential-management workflows.
+
+**Acceptance Criteria:**
+
+- `docker-compose.yml` defines a LiteLLM service that exposes port `4000`.
+- The LiteLLM service is optional and does not break the default TradeForge + Postgres runtime when provider API keys are absent.
+- LiteLLM provider API keys are read from operator environment variables and are not committed to Git.
+- Documentation explains when to use `http://localhost:4000` versus `http://litellm:4000` for the TradeForge `litellm` credential.
+- The Compose configuration validates with `docker compose config`.
+- Focused tests verify the Compose LiteLLM service and secret-free configuration.
+
+**Implementation Summary:**
+Added an optional `litellm` service under the Compose `advisory` profile, exposed on host port `4000`, using the official LiteLLM Docker image documented by LiteLLM. Added `litellm_config.yaml` with model aliases for Groq, NVIDIA NIM, and Ollama while reading all provider keys from environment variables. Updated README and credential setup docs to distinguish `http://localhost:4000` for host-run backend from `http://litellm:4000` for container-run backend. Added focused tests covering the Compose service and secret-free config.
+
+**Completed Verification:**
+
+- `uv run pytest tests\test_postgres_compose.py`
+- `docker compose config`
+- `docker compose --profile advisory config`
+- `uv run pytest`
+- `npm.cmd run typecheck`
+- `npm.cmd run build`
+- `docker compose --profile advisory up -d litellm`
+- `docker compose --profile advisory ps litellm` confirms `tradeforge-litellm-1` is running and publishes `0.0.0.0:4000->4000/tcp`
+- `Invoke-WebRequest http://localhost:4000/health/readiness` returns HTTP 200 with `status=healthy`
 
 ---

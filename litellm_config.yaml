@@ -1,0 +1,18 @@
+model_list:
+  - model_name: tradeforge-groq-70b
+    litellm_params:
+      model: groq/llama-3.1-70b-versatile
+      api_key: os.environ/GROQ_API_KEY
+
+  - model_name: tradeforge-nim-70b
+    litellm_params:
+      model: nvidia_nim/meta/llama-3.1-70b-instruct
+      api_key: os.environ/NVIDIA_NIM_API_KEY
+
+  - model_name: tradeforge-ollama
+    litellm_params:
+      model: ollama/llama3.1
+      api_base: os.environ/OLLAMA_API_BASE
+
+litellm_settings:
+  master_key: os.environ/LITELLM_MASTER_KEY

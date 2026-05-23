@@ -18,3 +18,24 @@ def test_runtime_service_receives_postgres_database_url() -> None:
         compose_text
     )
     assert "condition: service_healthy" in compose_text
+
+
+def test_docker_compose_defines_optional_litellm_service() -> None:
+    compose_text = Path("docker-compose.yml").read_text(encoding="utf-8")
+
+    assert "litellm:" in compose_text
+    assert "docker.litellm.ai/berriai/litellm:main-latest" in compose_text
+    assert "advisory" in compose_text
+    assert '"4000:4000"' in compose_text
+    assert "./litellm_config.yaml:/app/config.yaml:ro" in compose_text
+
+
+def test_litellm_config_uses_environment_secret_references() -> None:
+    config_text = Path("litellm_config.yaml").read_text(encoding="utf-8")
+
+    assert "tradeforge-groq-70b" in config_text
+    assert "os.environ/GROQ_API_KEY" in config_text
+    assert "os.environ/NVIDIA_NIM_API_KEY" in config_text
+    assert "os.environ/LITELLM_MASTER_KEY" in config_text
+    assert "<groq-key>" not in config_text
+    assert "sk-" not in config_text
