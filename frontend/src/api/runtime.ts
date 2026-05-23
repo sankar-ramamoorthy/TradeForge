@@ -301,6 +301,97 @@ export async function updateProviderPreference(
   return response.json() as Promise<ProviderConfiguration>;
 }
 
+// --------------------------------------------------------------------------- //
+// Credential management (TF-F055)                                              //
+// --------------------------------------------------------------------------- //
+
+export type ProviderCredentialField = {
+  name: string;
+  label: string;
+  secret: boolean;
+};
+
+export const PROVIDER_CREDENTIAL_SCHEMAS: Record<string, ProviderCredentialField[]> = {
+  yfinance: [],
+  polygon: [{ name: "api_key", label: "API Key", secret: true }],
+  alpaca: [
+    { name: "api_key", label: "API Key", secret: true },
+    { name: "secret_key", label: "Secret Key", secret: true },
+  ],
+  fmp: [{ name: "api_key", label: "API Key", secret: true }],
+  alpha_vantage: [{ name: "api_key", label: "API Key", secret: true }],
+  litellm: [
+    { name: "base_url", label: "Base URL", secret: false },
+    { name: "api_key", label: "API Key", secret: true },
+    { name: "default_model", label: "Default Model", secret: false },
+  ],
+};
+
+export type CredentialFieldStatus = {
+  name: string;
+  masked_value: string | null;
+  display_value: string | null;
+};
+
+export type CredentialStatus = {
+  provider_id: string;
+  configured: boolean;
+  status: string | null;
+  rotated_at: string | null;
+  fields: CredentialFieldStatus[];
+  master_key_configured: boolean;
+};
+
+export type CredentialListResponse = {
+  credentials: CredentialStatus[];
+  master_key_configured: boolean;
+};
+
+export async function fetchCredentials(
+  signal?: AbortSignal,
+): Promise<CredentialListResponse> {
+  const response = await fetch("/admin/credentials", { signal });
+  if (!response.ok) {
+    throw new Error(`Credential list request failed: ${response.status}`);
+  }
+  return response.json() as Promise<CredentialListResponse>;
+}
+
+export async function updateCredential(
+  provider_id: string,
+  fields: Record<string, string>,
+  signal?: AbortSignal,
+): Promise<CredentialStatus> {
+  const response = await fetch(`/admin/credentials/${provider_id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ fields }),
+    signal,
+  });
+  if (!response.ok) {
+    const detail = await response.text();
+    throw new Error(`Credential update failed (${response.status}): ${detail}`);
+  }
+  return response.json() as Promise<CredentialStatus>;
+}
+
+export async function revokeCredential(
+  provider_id: string,
+  signal?: AbortSignal,
+): Promise<CredentialStatus> {
+  const response = await fetch(`/admin/credentials/${provider_id}`, {
+    method: "DELETE",
+    signal,
+  });
+  if (!response.ok) {
+    const detail = await response.text();
+    throw new Error(`Credential revoke failed (${response.status}): ${detail}`);
+  }
+  return response.json() as Promise<CredentialStatus>;
+}
+
+// --------------------------------------------------------------------------- //
+
 export type FundamentalsOverlay = {
   authority: "advisory";
   symbol: string;

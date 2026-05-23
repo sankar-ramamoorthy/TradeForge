@@ -2251,6 +2251,7 @@ M13 excludes deterministic predictive scoring, autonomous trade recommendations,
 * TF-F052: Add advisory service health check to ProviderConfigurationPanel
 * TF-F053: Validate NVIDIA NIM via LiteLLM and document credential shape
 * TF-F054: Document automatic enrichment lifecycle hook points
+* TF-F055: Implement UI-based credential management (**Done**)
 
 ## Interpretation Domain And Infrastructure
 
