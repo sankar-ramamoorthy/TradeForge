@@ -19,7 +19,7 @@ TradeForge is:
 
 ---
 
-## What Works Now (M12 In Progress)
+## What Works Now
 
 * Full 7-stage decision lifecycle: **Idea → Thesis → Plan → Approval → Execution → Position → Review**
 * Event-sourced workflow — all state derives from immutable ledger events
@@ -27,11 +27,14 @@ TradeForge is:
 * New Trade Idea entry flow — no API calls required
 * Active decision context that persists across workspace navigation
 * Guided demo mode — seed a realistic AAPL breakout trade in one click
-* Market context overlays via yfinance (advisory, non-canonical)
+* Market context overlays through provider adapters, with yfinance available without credentials
 * Deterministic replay and historical reconstruction
 * Postgres-backed event ledger (optional; defaults to in-memory)
-* M11 AI advisory boundary: advisory interfaces, replay assistance, review assistance, and provenance tracking
-* M12 advisory observation foundation in progress: advisory observations, cognitive evidence, provenance, uncertainty, replay-visible capture facts, contextual observation metadata, conflict markers, staleness visibility, and advisory-only decision/thesis links
+* AI advisory boundary: advisory interfaces, replay assistance, review assistance, provenance tracking, and OpenAI-compatible provider wiring through LiteLLM
+* Advisory observation and cognitive evidence layer: observations, evidence attachments, provenance, uncertainty, replay-visible capture facts, conflict markers, staleness visibility, advisory artifacts, and advisory candidate review
+* Contextual interpretation and thesis influence layer: interpretation artifacts, contextual weighting, confidence ranges, regime-aware weighting suggestions, conflict summaries, drift signals, cognition summaries, and reasoning timelines
+
+AI and advisory outputs remain non-canonical. They cannot approve plans, execute trades, mutate lifecycle state, or write authoritative decision events.
 
 ---
 
@@ -128,7 +131,7 @@ DOCS/
 
 ```bash
 uv sync
-uv run pytest              # 513 tests
+uv run pytest
 uv run ruff check .        # lint
 uv run mypy src tests      # type check
 ```
@@ -136,6 +139,17 @@ uv run mypy src tests      # type check
 Provider keys are optional for the default `yfinance` workflow. For Polygon,
 Alpaca, or other credentialed providers, follow
 [`HOW-TO-SETUP-KEYS.md`](HOW-TO-SETUP-KEYS.md).
+
+For AI advisory generation, configure a LiteLLM/OpenAI-compatible endpoint with
+the encrypted credential store:
+
+```bash
+uv run python scripts/manage_credentials.py register litellm --base-url "http://localhost:4000" --api-key "<litellm-key>" --default-model "<model-name>"
+```
+
+Without a configured LiteLLM credential, lifecycle, market context, replay, and
+manual advisory workflows still run; AI generation endpoints report advisory
+service as not configured.
 
 ### Frontend
 
@@ -183,8 +197,9 @@ Key ADRs:
 | M9 | Done | Market context, provider boundary, advisory overlays |
 | M10 | Done | Operational UX, demoability, guided workflow |
 | M11 | Done | AI advisory boundary, replay/review assistance, provenance |
-| M12 | In Progress | Advisory observation and cognitive evidence layer |
-| M13+ | Planned | Contextual interpretation, behavioral intelligence, simulation |
+| M12 | Done | Advisory observation and cognitive evidence layer |
+| M13 | Done | Contextual interpretation and thesis influence |
+| M14+ | Planned | Behavioral intelligence, cognitive replay, attention allocation, simulation |
 
 ---
 
