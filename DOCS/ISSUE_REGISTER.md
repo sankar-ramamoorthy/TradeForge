@@ -222,6 +222,7 @@ Explicit roadmap checkpoint completed M9 Updated*Done*.
 | TF-F052 | Planned | M13 | Add advisory service health check to ProviderConfigurationPanel | `feature/tf-f052-advisory-health-check` |
 | TF-F053 | Planned | M13 | Validate NVIDIA NIM via LiteLLM and document credential shape | `docs/tf-f053-nvidia-nim-litellm-validation` |
 | TF-F054 | Planned | M13 | Document automatic enrichment lifecycle hook points | `docs/tf-f054-auto-enrichment-hook-points` |
+| TF-F055 | Done | M13 | Implement UI-based credential management | `feature/tf-f055-ui-credential-management` |
 
 ## TF-A001: Define AdvisoryObservation Domain Model
 
@@ -6508,3 +6509,57 @@ Define — in `DOCS/llm-adapter-strategy.md` or a new `DOCS/advisory-enrichment-
 
 ---
 
+
+## TF-F055: Implement UI-Based Credential Management
+
+**Status:** Done
+
+**Classification:** enhancement
+
+**Milestone:** M13
+
+**Branch:** `feature/tf-f055-ui-credential-management`
+
+**Affected Layer:** security, app, frontend, docs
+
+**Linked ADRs:** ADR-0037 (amended)
+
+**Impacted Invariants:** Architectural Simplicity, Derived State Must Remain Distinguishable, Historical Integrity
+
+**Source:** Operational friction identified after M10C implementation. Entering API keys via CLI is cumbersome for routine operation.
+
+**Problem:**
+Entering and rotating provider API keys requires terminal access and knowledge of the `manage_credentials.py` CLI. An operator should be able to configure market data and AI provider credentials from the browser UI without touching a terminal after the initial master key setup.
+
+**Scope:**
+- `ProviderBootstrapService` in `src/app/api/application.py` — in-process provider reload after credential change
+- `src/app/api/admin_routes.py` (new) — `GET/PUT/DELETE /admin/credentials/{provider_id}`
+- `frontend/src/api/runtime.ts` — `PROVIDER_CREDENTIAL_SCHEMAS`, `fetchCredentials()`, `updateCredential()`, `revokeCredential()`
+- `frontend/src/workspaces/ProviderConfigurationPanel.tsx` — credential section with inline forms
+- `DOCS/adr/0037-operational-credential-boundary.md` — amendment section
+- `DOCS/credential-ui-strategy.md` (new) — design document
+- Fix `_default_fundamentals_providers()` to only call `KeyManager` when credentials to decrypt actually exist
+
+**Acceptance Criteria:**
+
+- Operator can enter, view (masked), and rotate provider credentials from the ProviderConfigurationPanel.
+- Secrets are never returned from GET — only last 4 characters of secret fields shown.
+- TRADEFORGE_MASTER_KEY remains in the OS environment; it cannot be configured via UI.
+- Providers reload automatically after credential save — no restart required.
+- PUT returns 503 if master key is not set in the environment.
+- DELETE sets status=REVOKED and preserves the record for audit trail.
+- yfinance shows as always-active with no credential required.
+- litellm base_url and default_model (non-secret) display in full.
+- 13 new tests covering all credential management scenarios.
+
+**Resolution Summary:**
+Implemented `ProviderBootstrapService` attached to `app.state.provider_bootstrap` with a `reload()` method that rebuilds market/fundamentals/registry services in-place. Added `/admin/credentials` endpoints that encrypt via `KeyManager`, write to `CredentialStore`, and trigger reload. Extended `ProviderConfigurationPanel` with per-provider credential rows (configured badge, masked field display, inline form, revoke button). Added `PROVIDER_CREDENTIAL_SCHEMAS` static registry and three API functions to `runtime.ts`. Fixed `_default_fundamentals_providers()` to only invoke `KeyManager` when credentials actually exist, preventing `MasterKeyNotConfiguredError` in test environments with empty stores.
+
+**Completed Verification:**
+
+- `uv run pytest` — 745 tests pass
+- `uv run mypy src tests` — no type errors
+- `uv run ruff check .` — no lint errors
+- `npm.cmd run typecheck && npm.cmd run build` — frontend compiles cleanly
+
+---

@@ -47,6 +47,7 @@ from src.infrastructure.market.in_memory_snapshot_store import (
 from src.infrastructure.market.polygon_adapter import PolygonProvider
 from src.infrastructure.market.yfinance_adapter import YFinanceProvider
 from src.security import CredentialStore, KeyManager
+from src.security.key_manager import MasterKeyNotConfiguredError
 from src.services.advisory import (
     AdvisoryArtifactIngestionService,
     AdvisoryArtifactQueryService,
@@ -169,19 +170,80 @@ def _default_fundamentals_providers(
 ) -> dict[str, FundamentalsDataProvider]:
     if credential_store is None:
         return {}
+    fmp_cred = credential_store.get("fmp")
+    av_cred = credential_store.get("alpha_vantage")
+    if not fmp_cred and not av_cred:
+        return {}
     key_manager = KeyManager.from_environment()
     providers: dict[str, FundamentalsDataProvider] = {}
-    fmp = credential_store.get("fmp")
-    if fmp is not None:
-        payload = key_manager.decrypt_payload(fmp.encrypted_payload)
+    if fmp_cred is not None:
+        payload = key_manager.decrypt_payload(fmp_cred.encrypted_payload)
         providers["fmp"] = FmpFundamentalsProvider(api_key=payload["api_key"])
-    alpha_vantage = credential_store.get("alpha_vantage")
-    if alpha_vantage is not None:
-        payload = key_manager.decrypt_payload(alpha_vantage.encrypted_payload)
+    if av_cred is not None:
+        payload = key_manager.decrypt_payload(av_cred.encrypted_payload)
         providers["alpha_vantage"] = AlphaVantageFundamentalsProvider(
             api_key=payload["api_key"]
         )
     return providers
+
+
+class ProviderBootstrapService:
+    """Rebuilds provider-dependent services in-place after a credential change.
+
+    Attached to app.state.provider_bootstrap. The admin credential route calls
+    reload() after saving a new credential so the operator does not need to
+    restart the application.
+    """
+
+    def __init__(self, app: FastAPI, credential_store: CredentialStore | None) -> None:
+        self._app = app
+        self._credential_store = credential_store
+
+    def set_credential_store(self, credential_store: CredentialStore) -> None:
+        self._credential_store = credential_store
+
+    def reload(self) -> None:
+        """Rebuild market, fundamentals, and provider registry from current creds."""
+        credential_store = self._credential_store
+        try:
+            market_provider = _default_market_provider(credential_store)
+        except MasterKeyNotConfiguredError:
+            return
+        except RuntimeError:
+            market_provider = YFinanceProvider()
+
+        provenance_store = InMemoryProvenanceStore()
+        snapshot_store = InMemoryMarketSnapshotStore()
+        market_svc = MarketSnapshotService(
+            market_provider,
+            SingleBarRegimeInterpreter(),
+            provenance_store=provenance_store,
+            snapshot_persistence_store=snapshot_store,
+        )
+
+        self._app.state.market_snapshot_service = market_svc
+        self._app.state.contextual_summary_service = ContextualSummaryService(
+            event_store=self._app.state.event_store,
+            market_snapshot_service=market_svc,
+        )
+        self._app.state.provenance_query_service = ProvenanceQueryService(
+            provenance_store
+        )
+        self._app.state.market_snapshot_query_service = MarketSnapshotQueryService(
+            snapshot_store
+        )
+
+        try:
+            provider_registry = _default_provider_registry(credential_store)
+            fundamentals_providers = _default_fundamentals_providers(credential_store)
+        except MasterKeyNotConfiguredError:
+            return
+
+        self._app.state.provider_registry = provider_registry
+        self._app.state.fundamentals_service = FundamentalsService(
+            provider_registry,
+            fundamentals_providers,
+        )
 
 
 def create_app(
@@ -269,6 +331,7 @@ def create_app(
         if credential_store is not None
         else _default_credential_store()
     )
+    app.state.credential_store = _credential_store
     _provider_registry = (
         provider_registry
         if provider_registry is not None
@@ -394,7 +457,11 @@ def create_app(
         if advisory_artifact_query_service is not None
         else AdvisoryArtifactQueryService(advisory_artifact_store)
     )
+    app.state.provider_bootstrap = ProviderBootstrapService(app, _credential_store)
     app.include_router(runtime_router)
+    from src.app.api.admin_routes import admin_router  # noqa: PLC0415
+
+    app.include_router(admin_router)
     return app
 
 

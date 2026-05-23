@@ -173,3 +173,51 @@ for local-first operation.
 - Provider adapter tests continue to use constructor injection with mock values —
   no change to existing test patterns.
 - M10B (Postgres persistence + multi-decision navigation) precedes this milestone.
+
+---
+
+## Amendment — UI Credential Management (TF-F055)
+
+**Date:** 2026-05-22  
+**Milestone:** M13 (feedback issue)
+
+### Additional Decisions
+
+Two decisions are added as addenda to the original ADR. The encryption model,
+master key model, no-secrets-in-code rule, and composition root principle are
+unchanged.
+
+**1. Runtime credential write access via restricted admin API**
+
+`CredentialStore` is now accessible at runtime via a restricted `/admin/credentials`
+API surface (mounted separately from the main `runtime_router`). The endpoint
+enforces that:
+- `TRADEFORGE_MASTER_KEY` must be set in the OS environment before any credential
+  write succeeds (503 otherwise)
+- GET responses return masked field values only — secrets are never returned
+  (last 4 characters of secret fields, non-secret fields like `base_url` in full)
+- PUT encrypts the payload via `KeyManager` before writing to `CredentialStore`
+- DELETE sets `status=REVOKED` and preserves the record for audit trail
+- `create_app()` remains the sole startup path; the admin surface is a runtime
+  extension only
+
+**2. In-process provider reload after credential change**
+
+`ProviderBootstrapService` is attached to `app.state.provider_bootstrap`.
+After every successful PUT or DELETE, it calls `reload()` which rebuilds
+`MarketSnapshotService`, `FundamentalsService`, and `ProviderRegistry`
+from the updated `CredentialStore`. The operator does not need to restart
+the application to activate a new credential.
+
+`ProviderBootstrapService.reload()` handles `MasterKeyNotConfiguredError`
+gracefully (returns without rebuilding) — startup failures are not
+replicated as runtime failures.
+
+### What Does NOT Change
+
+- `TRADEFORGE_MASTER_KEY` cannot be set or changed via the UI. It remains
+  an OS environment variable set before the process starts.
+- Provider adapters continue to accept plain string parameters — they remain
+  unaware of encryption or credential storage.
+- `create_app()` is still the sole startup bootstrap path.
+- The `CredentialStore` path (`.keys.enc`) remains fixed at the project root.

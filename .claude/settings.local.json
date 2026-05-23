@@ -38,7 +38,9 @@
       "Bash(git push *)",
       "Bash(gh issue *)",
       "Bash(wc -l DOCS/ISSUE_REGISTER.md)",
-      "Bash(python -c ' *)"
+      "Bash(python -c ' *)",
+      "Bash(npm run *)",
+      "Bash(python -c \"import json; data=json.load\\(open\\('.keys.enc'\\)\\); [print\\(c['provider_id'], c['status']\\) for c in data['credentials']]\")"
     ]
   }
 }
