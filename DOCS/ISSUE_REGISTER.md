@@ -222,6 +222,7 @@ Explicit roadmap checkpoint completed M9 Updated*Done*.
 | TF-F052 | Done | M13 | Add advisory service health check to ProviderConfigurationPanel | `feature/tf-f052-advisory-health-check` |
 | TF-F053 | Done | M13 | Validate NVIDIA NIM via LiteLLM and document credential shape | `docs/tf-f053-nvidia-nim-litellm-validation` |
 | TF-F054 | Done | M13 | Document automatic enrichment lifecycle hook points | `docs/tf-f054-auto-enrichment-hook-points` |
+| TF-F056 | Done | M13 | Fix missing default advisory provider bootstrap after merge | `fix/tf-f056-default-advisory-provider-bootstrap` |
 
 ## TF-A001: Define AdvisoryObservation Domain Model
 
@@ -6560,5 +6561,52 @@ Implemented `ProviderBootstrapService` attached to `app.state.provider_bootstrap
 - `uv run mypy src tests` — no type errors
 - `uv run ruff check .` — no lint errors
 - `npm.cmd run typecheck && npm.cmd run build` — frontend compiles cleanly
+
+---
+
+## TF-F056: Fix Missing Default Advisory Provider Bootstrap After Merge
+
+**Status:** Done
+
+**Classification:** bug
+
+**Milestone:** M13
+
+**Branch:** `fix/tf-f056-default-advisory-provider-bootstrap`
+
+**Affected Layer:** app, infrastructure/advisory, security
+
+**Linked ADRs:** ADR-0006, ADR-0037
+
+**Impacted Invariants:** AI Advisory Boundary, Human Decision Sovereignty, Architectural Simplicity
+
+**Source:** Docker startup feedback captured in `knowledge/raw/feedback docker compose up bug.md`.
+
+**Problem:**
+`docker compose up` crashes during application import because `create_app()` calls `_default_advisory_provider(_credential_store)` but `_default_advisory_provider` is not defined. The missing helper appears to have been lost during a merge conflict resolution.
+
+**Scope:**
+Restore the default advisory provider bootstrap helper in `src/app/api/application.py`. The helper should return `None` when LiteLLM credentials are absent or unreadable, and construct `OpenAICompatibleAdvisoryProvider` only when the existing `CredentialStore` contains a valid `litellm` credential that can be decrypted through `KeyManager`.
+
+**Acceptance Criteria:**
+
+- `create_app()` starts without raising `NameError` when no LiteLLM credential is configured.
+- `GET /advisory/health` returns `not_configured` when no advisory provider can be built.
+- `create_app()` builds an `OpenAICompatibleAdvisoryProvider` when a valid `litellm` credential is present.
+- Missing or unreadable LiteLLM credentials do not prevent lifecycle, replay, workspace, market, or admin routes from starting.
+- No lifecycle, replay, event, credential schema, frontend, or Docker Compose behavior changes are introduced.
+
+**Resolution Summary:**
+Restored `_default_advisory_provider()` in `src/app/api/application.py`. The composition helper now returns `None` when LiteLLM credentials are absent, missing a master key, unreadable, or invalid, preserving app startup and advisory not-configured behavior. When a valid `litellm` credential is present, it constructs `OpenAICompatibleAdvisoryProvider` from the existing credential boundary. Also restored the missing `MasterKeyNotConfiguredError` import used by provider reload.
+
+**Completed Verification:**
+
+- `uv run pytest tests\test_default_advisory_provider_bootstrap.py tests\test_advisory_schema_m13_verification.py tests\test_admin_credentials.py tests\test_openai_compatible_provider.py tests\test_credential_store.py`
+- `uv run pytest`
+- `uv run ruff check src\app\api\application.py tests\test_default_advisory_provider_bootstrap.py`
+- `uv run mypy src\app\api\application.py tests\test_default_advisory_provider_bootstrap.py`
+- `npm.cmd run typecheck`
+- `npm.cmd run build`
+- `docker compose run --rm tradeforge uv run python -c "from src.app.api.application import app; print(app.title)"`
 
 ---
