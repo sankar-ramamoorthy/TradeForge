@@ -226,6 +226,16 @@ Explicit roadmap checkpoint completed M9 Updated*Done*.
 | TF-F056 | Done | M13 | Fix missing default advisory provider bootstrap after merge | `fix/tf-f056-default-advisory-provider-bootstrap` |
 | TF-F057 | Done | M13 | Add optional LiteLLM Docker Compose runtime service | `feature/tf-f057-litellm-compose-service` |
 | TF-F058 | Done | M13 | Allow frontend npm commands from repository root | `fix/tf-f058-root-npm-frontend-scripts` |
+| TF-F059 | Done | M13A | Formalize M13A provider governance roadmap | `docs/tf-f059-m13a-provider-governance-roadmap` |
+| TF-F060 | Done | M13A | Define provider governance control surface design | `docs/tf-f060-provider-governance-control-surface` |
+| TF-F061 | Done | M13A | Define capability routing governance model | `docs/tf-f061-capability-routing-governance` |
+| TF-F062 | Done | M13A | Define AI gateway and route alias model | `docs/tf-f062-ai-gateway-route-aliases` |
+| TF-F063 | Done | M13A | Define provider diagnostics and health history model | `docs/tf-f063-provider-diagnostics-health-history` |
+| TF-F064 | Done | M13A | Implement provider governance read APIs | `feature/tf-f064-provider-governance-read-apis` |
+| TF-F065 | Done | M13A | Implement credential validation and test workflow | `feature/tf-f065-credential-validation-test-workflow` |
+| TF-F066 | Done | M13A | Implement AI gateway route visibility | `feature/tf-f066-ai-gateway-route-visibility` |
+| TF-F067 | Done | M13A | Implement provider governance frontend surface and rail cleanup | `feature/tf-f067-provider-governance-surface` |
+| TF-F068 | Done | M13A | M13A verification and M14 readiness gate | `docs/tf-f068-m13a-readiness-gate` |
 
 ## TF-A001: Define AdvisoryObservation Domain Model
 
@@ -6706,5 +6716,523 @@ Added a root `package.json` that delegates common npm commands to the existing f
 - `uv run pytest`
 - `npm.cmd run typecheck`
 - `npm.cmd run build`
+
+---
+
+## TF-F059: Formalize M13A Provider Governance Roadmap
+
+**Status:** Done
+
+**Classification:** planning
+
+**Milestone:** M13A
+
+**Branch:** `docs/tf-f059-m13a-provider-governance-roadmap`
+
+**Affected Layer:** docs, knowledge-base
+
+**Linked ADRs:** ADR-0006, ADR-0032, ADR-0037, ADR-0038, ADR-0041, ADR-0042
+
+**Impacted Invariants:** Human Decision Sovereignty, AI Advisory Boundary, Derived State Must Remain Distinguishable, Replayability Is Foundational, UX Is Architectural, Architectural Simplicity
+
+**Source:** Processed M13A synthesis captured in `knowledge/processed/20260523-provider-governance-ai-gateway-configuration-synthesis.md` and supporting raw notes.
+
+**Problem:**
+Provider credentials, provider selection, capability routing, LiteLLM routing, health checks, diagnostics, fallback behavior, and contextual provenance have grown into a larger external-systems governance problem. Roadmap v2 did not yet contain M13A, and the local issue register did not break the work into trackable implementation issues.
+
+**Scope:**
+Add `M13A - Provider Governance And AI Gateway Configuration` to Roadmap v2 between M13 and M14. Add detailed issue-register entries for TF-F059 through TF-F068. Capture the planning pass in the knowledge-base raw folder for traceability.
+
+**Acceptance Criteria:**
+
+- Roadmap v2 includes M13A as a planned milestone.
+- M13A is framed as external systems governance and AI routing infrastructure.
+- The issue register includes TF-F059 through TF-F068 with titles, milestones, affected layers, ADRs, invariants, problem statements, scope, and acceptance criteria.
+- M13A explicitly preserves human decision sovereignty and the AI advisory boundary.
+- M13A distinguishes `Credential != Provider != Capability != Model`.
+- No runtime behavior changes are introduced by this issue.
+
+**Resolution Summary:**
+Added M13A to Roadmap v2, added detailed M13A issue entries to the local issue register, and captured the plan in the knowledge-base raw folder. Reverted an earlier accidental frontend rail change that was based on a narrower interpretation of provider configuration.
+
+---
+
+## TF-F060: Define Provider Governance Control Surface Design
+
+**Status:** Done
+
+**Classification:** design
+
+**Milestone:** M13A
+
+**Branch:** `docs/tf-f060-provider-governance-control-surface`
+
+**Affected Layer:** docs, frontend/design
+
+**Linked ADRs:** ADR-0032, ADR-0037, ADR-0038
+
+**Impacted Invariants:** UX Is Architectural, Workflow-Centric Architecture, Derived State Must Remain Distinguishable, Human Decision Sovereignty
+
+**Source:** M13A synthesis and source raw notes describing provider configuration as an operational control plane rather than a right-rail form.
+
+**Problem:**
+The current provider configuration surface is embedded in contextual workflow rails. That mixes contextual cognition, provider administration, credential management, capability routing, and infrastructure diagnostics in a cramped surface. This risks making provider governance look like a small settings form instead of an explicit external-systems control plane.
+
+**Scope:**
+Create a design note for the provider governance control surface. The design must define the intended modules: Overview, Credentials, Market Data Providers, Broker Providers, AI Gateway, Capability Routing, and Diagnostics. It must clarify that this surface is not a canonical decision workspace, even if the runtime routes to a page or module named Provider Configuration.
+
+**Acceptance Criteria:**
+
+- A design document defines the provider governance surface, navigation model, and major sections.
+- The design explicitly separates governance/admin concerns from contextual workflow cognition.
+- Contextual rails are specified as status, provenance, freshness, fallback, advisory warning, and configure-link surfaces only.
+- The design includes visible advisory/non-canonical boundary language.
+- The design does not introduce lifecycle actions, trade execution actions, or AI decision authority.
+
+**Out Of Scope:**
+
+- Implementing the frontend surface.
+- Implementing new API endpoints.
+- Changing provider routing behavior.
+
+**Resolution Summary:**
+Added `DOCS/provider-governance-control-surface.md`, defining Provider Governance as an external-systems control surface rather than a canonical workspace. The design specifies Overview, Credentials, Market Data Providers, Broker Providers, AI Gateway, Capability Routing, Diagnostics, contextual rail rules, navigation boundaries, and authority limits.
+
+**Completed Verification:**
+
+- `git diff --check`
+- `rg -n "Provider Governance Control Surface|Contextual Rail Rule|TF-F060" DOCS`
+
+---
+
+## TF-F061: Define Capability Routing Governance Model
+
+**Status:** Done
+
+**Classification:** design
+
+**Milestone:** M13A
+
+**Branch:** `docs/tf-f061-capability-routing-governance`
+
+**Affected Layer:** docs, app/services
+
+**Linked ADRs:** ADR-0032, ADR-0038
+
+**Impacted Invariants:** Derived State Must Remain Distinguishable, Replayability Is Foundational, Architectural Simplicity
+
+**Source:** M10D provider capability architecture and M13A synthesis.
+
+**Problem:**
+TradeForge already separates provider identity from provider capability, but governance of capability routes remains shallow. As provider count grows, operator-facing configuration must continue to reason in capabilities and advisory intent rather than raw vendors.
+
+**Scope:**
+Define the governance model for capability-first routing. Cover price snapshots, fundamentals, AI advisory, and future broker/paper trading as separate capabilities. Preserve deterministic primary plus ordered fallback routing as the default policy unless a future issue explicitly changes it.
+
+**Acceptance Criteria:**
+
+- The model documents provider identity, provider capability, configured provider, selected provider, and fallback route as distinct concepts.
+- The model preserves deterministic primary plus ordered fallback routing for M13A.
+- The model specifies what route/provenance data should be visible to operators.
+- The model identifies replay-relevant route data without declaring it canonical event-ledger truth.
+- The model states that provider capability outputs remain read-only, advisory, and non-authoritative.
+
+**Out Of Scope:**
+
+- Weighted routing policies.
+- Workspace-scoped routing policies.
+- Broker execution integration.
+
+**Resolution Summary:**
+Added `DOCS/capability-routing-governance-model.md`, defining capability-first provider routing for M13A. The model preserves deterministic preferred-plus-fallback selection, distinguishes provider identity from provider capability and selected provider, specifies operator visibility requirements, and records replay/provenance constraints without making route state canonical ledger truth.
+
+**Completed Verification:**
+
+- `git diff --check`
+- `rg -n "Capability Routing Governance Model|Default Routing Policy|TF-F061" DOCS`
+
+---
+
+## TF-F062: Define AI Gateway And Route Alias Model
+
+**Status:** Done
+
+**Classification:** design
+
+**Milestone:** M13A
+
+**Branch:** `docs/tf-f062-ai-gateway-route-aliases`
+
+**Affected Layer:** docs, infrastructure/advisory, services/advisory
+
+**Linked ADRs:** ADR-0006, ADR-0037, ADR-0041, ADR-0042
+
+**Impacted Invariants:** AI Advisory Boundary, Human Decision Sovereignty, Derived State Must Remain Distinguishable, Terminology Stability
+
+**Source:** M13A synthesis and LLM adapter strategy.
+
+**Problem:**
+LiteLLM is currently easy to treat as one provider with one credential and one model string. Architecturally, LiteLLM is a gateway and routing boundary that can map TradeForge advisory roles to multiple underlying providers and models. Hardcoding raw model names into workflow logic would weaken provider flexibility and replay interpretation.
+
+**Scope:**
+Define LiteLLM as an AI gateway and define TradeForge-facing route aliases. Representative aliases include `tf-fast`, `tf-reasoning`, `tf-long-context`, `tf-cheap`, and `tf-local`. Define how advisory tasks should refer to semantic roles rather than raw model names.
+
+**Acceptance Criteria:**
+
+- LiteLLM is documented as gateway, model router, and policy boundary.
+- AI route aliases are documented as TradeForge-facing operational roles, not canonical decision facts.
+- The model distinguishes route alias, gateway URL, underlying provider, model, fallback route, and advisory usage domain.
+- Advisory services must not depend on raw provider/model names in workflow logic once route aliases are implemented.
+- The document preserves AI advisory-only authority and excludes buy/sell, approval, and lifecycle-transition authority.
+
+**Out Of Scope:**
+
+- Implementing a generalized orchestration engine.
+- Adding new LLM providers directly to TradeForge.
+- Automatic model selection by hidden heuristics.
+
+**Resolution Summary:**
+Added `DOCS/ai-gateway-route-alias-model.md`, defining LiteLLM as an AI gateway and route boundary rather than an ordinary provider. The model defines route aliases, advisory task mappings, gateway visibility requirements, credential boundary rules, replay/provenance expectations, and authority limits.
+
+**Completed Verification:**
+
+- `git diff --check`
+- `rg -n "AI Gateway And Route Alias Model|tf-reasoning|TF-F062" DOCS`
+
+---
+
+## TF-F063: Define Provider Diagnostics And Health History Model
+
+**Status:** Done
+
+**Classification:** design
+
+**Milestone:** M13A
+
+**Branch:** `docs/tf-f063-provider-diagnostics-health-history`
+
+**Affected Layer:** docs, app, infrastructure
+
+**Linked ADRs:** ADR-0032, ADR-0037, ADR-0038, ADR-0042
+
+**Impacted Invariants:** Replayability Is Foundational, Derived State Must Remain Distinguishable, Historical Integrity, Architectural Simplicity
+
+**Source:** M13A synthesis open questions about provider health, route availability, validation, and replay implications.
+
+**Problem:**
+Provider and gateway failures are operationally meaningful, but the system does not yet distinguish ephemeral health state, retained diagnostic history, replay-visible route provenance, and canonical event-ledger truth. Without a model, later implementation may either lose useful diagnostics or over-promote provider state into canonical events.
+
+**Scope:**
+Define diagnostics and health-history semantics for provider unreachable, credential invalid, route unavailable, quota exceeded, fallback triggered, latency spike, validation succeeded, validation failed, and replay nondeterminism warning.
+
+**Acceptance Criteria:**
+
+- The model distinguishes ephemeral health, retained operational diagnostics, replay-visible context, and canonical event truth.
+- The model defines which diagnostic fields are operator-visible.
+- The model defines whether each diagnostic class is session-only, retained as operational history, or captured through advisory provenance.
+- Replay reconstruction must not call live providers to reconstruct historical health or route state.
+- The model explicitly avoids event-ledger writes for provider health unless a future ADR authorizes them.
+
+**Out Of Scope:**
+
+- Implementing storage for diagnostics.
+- Adding health check endpoints.
+- Changing event taxonomy.
+
+**Resolution Summary:**
+Added `DOCS/provider-diagnostics-health-history-model.md`, defining diagnostic state classes, provider/gateway diagnostic categories, retention rules, operator visibility, replay rules, and event taxonomy implications. The model keeps provider health and diagnostics operational by default and avoids promoting them into canonical event-ledger truth.
+
+**Completed Verification:**
+
+- `git diff --check`
+- `rg -n "Provider Diagnostics And Health History Model|Replay Nondeterminism Warning|TF-F063" DOCS`
+
+---
+
+## TF-F064: Implement Provider Governance Read APIs
+
+**Status:** Done
+
+**Classification:** feature
+
+**Milestone:** M13A
+
+**Branch:** `feature/tf-f064-provider-governance-read-apis`
+
+**Affected Layer:** app, services, security
+
+**Linked ADRs:** ADR-0032, ADR-0037, ADR-0038, ADR-0042
+
+**Impacted Invariants:** Derived State Must Remain Distinguishable, AI Advisory Boundary, Human Decision Sovereignty, Architectural Simplicity
+
+**Depends On:** TF-F060, TF-F061, TF-F062, TF-F063
+
+**Problem:**
+The frontend cannot render a real provider governance control surface from the current narrow rail-oriented endpoints alone. It needs a read model that combines provider registry, capability routing, credential status, health summary, advisory boundary metadata, and AI gateway status without exposing secrets.
+
+**Scope:**
+Add read-only provider governance API contracts and composition logic. The APIs expose configured providers, supported capabilities, current resolution, credential status, health/diagnostic summary, and AI gateway status. They must not return secret values.
+
+**Acceptance Criteria:**
+
+- API contracts expose provider governance overview data without returning secrets.
+- Capability route data includes primary, fallback, selected provider, and degraded/fallback state where available.
+- Credential data includes configured/missing/revoked/invalid/untested status without plaintext secrets.
+- AI gateway data includes reachability and configured route aliases where available.
+- Responses clearly distinguish operational/advisory state from canonical lifecycle state.
+- Existing lifecycle, replay, workspace, market context, and advisory endpoints continue to behave unchanged.
+
+**Out Of Scope:**
+
+- Credential writes.
+- Route writes.
+- Diagnostics persistence unless defined by TF-F063 and explicitly scoped.
+
+**Resolution Summary:**
+Implemented `GET /provider-governance` as a read-only operational governance
+API. The response composes provider descriptors, credential status without
+credential values, capability route resolution, diagnostic class metadata, and
+LiteLLM AI gateway route-alias metadata. The endpoint marks the read model as
+non-canonical, lifecycle-authority false, and event-ledger-writes false.
+
+**Completed Verification:**
+
+- `uv run pytest tests/test_provider_governance_api.py tests/test_fundamentals_overlay.py tests/test_admin_credentials.py tests/test_default_advisory_provider_bootstrap.py`
+- `uv run mypy src\app\api\routes.py tests\test_provider_governance_api.py`
+- `uv run ruff check tests\test_provider_governance_api.py`
+- `git diff --check`
+
+**Verification Note:**
+Full `uv run ruff check src\app\api\routes.py tests\test_provider_governance_api.py`
+still reports pre-existing long-line and FastAPI `Query(...)` default findings
+in `src/app/api/routes.py` outside the TF-F064 changes. TF-F064 import ordering
+was fixed with `ruff --fix`, and the new test file passes ruff.
+
+---
+
+## TF-F065: Implement Credential Validation And Test Workflow
+
+**Status:** Done
+
+**Classification:** feature
+
+**Milestone:** M13A
+
+**Branch:** `feature/tf-f065-credential-validation-test-workflow`
+
+**Affected Layer:** security, app, frontend
+
+**Linked ADRs:** ADR-0037, ADR-0038
+
+**Impacted Invariants:** Derived State Must Remain Distinguishable, Historical Integrity, Architectural Simplicity
+
+**Depends On:** TF-F060, TF-F063, TF-F064
+
+**Problem:**
+UI credential management can save, mask, rotate, and revoke credentials, but operators still lack explicit validation/test workflow, last validation timestamp, and clear invalid versus untested state. This can create false confidence that configured credentials are operationally usable.
+
+**Scope:**
+Add credential validation/test behavior for configured providers. Surface configured, missing, invalid, revoked, and untested states. Preserve the master-key rule: `TRADEFORGE_MASTER_KEY` remains OS environment configuration and cannot be set through UI.
+
+**Acceptance Criteria:**
+
+- Operators can trigger a validation/test action for supported provider credentials.
+- Validation records last validation timestamp and visible success/failure state.
+- Invalid credentials are distinguishable from missing, revoked, and untested credentials.
+- Validation failures show safe operator-facing failure reasons without leaking secrets.
+- Credential rotation and removal remain available and auditable.
+- Secrets are never returned in API responses or written to logs.
+
+**Out Of Scope:**
+
+- Automatic credential rotation.
+- External secrets managers.
+- Making credential status canonical event-ledger truth.
+
+**Resolution Summary:**
+Added explicit credential validation through
+`POST /admin/credentials/{provider_id}/validate`. Validation decrypts the
+saved credential with the OS-provided master key, verifies required fields,
+persists `last_validated_at` on success, and marks unreadable or malformed
+credentials as `invalid` without exposing secret values. Added `invalid` to
+credential status, surfaced `last_validated_at` in credential status responses,
+updated provider governance status mapping, and added a frontend API helper for
+triggering validation.
+
+**Completed Verification:**
+
+- `uv run pytest tests/test_admin_credentials.py tests/test_provider_governance_api.py tests/test_default_advisory_provider_bootstrap.py`
+- `uv run mypy src\app\api\admin_routes.py src\app\api\routes.py tests\test_admin_credentials.py tests\test_provider_governance_api.py`
+- `uv run ruff check src\app\api\admin_routes.py tests\test_admin_credentials.py tests\test_provider_governance_api.py`
+- `npm.cmd run typecheck`
+- `git diff --check`
+
+---
+
+## TF-F066: Implement AI Gateway Route Visibility
+
+**Status:** Done
+
+**Classification:** feature
+
+**Milestone:** M13A
+
+**Branch:** `feature/tf-f066-ai-gateway-route-visibility`
+
+**Affected Layer:** infrastructure/advisory, app, frontend
+
+**Linked ADRs:** ADR-0006, ADR-0037, ADR-0041, ADR-0042
+
+**Impacted Invariants:** AI Advisory Boundary, Human Decision Sovereignty, Derived State Must Remain Distinguishable, UX Is Architectural
+
+**Depends On:** TF-F062, TF-F064
+
+**Problem:**
+Operators can configure a LiteLLM credential, but the UI does not make clear that LiteLLM is a gateway with route aliases and underlying model/provider resolution. Advisory failures or degraded route behavior can therefore appear as generic AI errors.
+
+**Scope:**
+Expose LiteLLM gateway reachability, configured gateway URL, default advisory route, route aliases, underlying provider/model resolution where available, degraded/fallback state, and advisory usage domains.
+
+**Acceptance Criteria:**
+
+- Provider governance surfaces show LiteLLM as AI gateway, not ordinary data provider.
+- Route aliases are visible with advisory roles such as fast summary, reasoning, long-context analysis, cheap classification, and local/offline where configured.
+- Gateway reachability and route availability are visible without consuming generation tokens.
+- Underlying provider/model details are shown only as operational routing metadata, not workflow semantics.
+- Advisory services remain explicit operator-triggered assistance and cannot approve, execute, or transition lifecycle state.
+
+**Out Of Scope:**
+
+- Editing LiteLLM's external config file from TradeForge unless separately scoped.
+- Multi-agent orchestration.
+- Cost optimization engines.
+
+**Resolution Summary:**
+Extended provider governance AI gateway visibility and added
+`GET /provider-governance/ai-gateway`. The endpoint exposes LiteLLM as gateway
+metadata, safely showing gateway URL, default model/route target, inferred
+underlying provider, route aliases, advisory usage domains, route availability,
+and non-generative reachability state without returning API keys. Frontend API
+types and a fetch helper were added for the AI gateway visibility read model.
+
+**Completed Verification:**
+
+- `uv run pytest tests/test_provider_governance_api.py tests/test_default_advisory_provider_bootstrap.py`
+- `uv run mypy src\app\api\routes.py tests\test_provider_governance_api.py`
+- `uv run ruff check tests\test_provider_governance_api.py`
+- `npm.cmd run typecheck`
+
+---
+
+## TF-F067: Implement Provider Governance Frontend Surface And Rail Cleanup
+
+**Status:** Done
+
+**Classification:** feature
+
+**Milestone:** M13A
+
+**Branch:** `feature/tf-f067-provider-governance-surface`
+
+**Affected Layer:** frontend
+
+**Linked ADRs:** ADR-0021, ADR-0032, ADR-0037, ADR-0038, ADR-0042
+
+**Impacted Invariants:** UX Is Architectural, Workspaces Are Operational Environments, Workflow-Centric Architecture, Derived State Must Remain Distinguishable
+
+**Depends On:** TF-F060, TF-F064, TF-F065, TF-F066
+
+**Problem:**
+Contextual rails currently carry provider administration controls that compete with decision cognition. M13A requires a dedicated provider governance surface while preserving rails as contextual, provenance-oriented surfaces.
+
+**Scope:**
+Implement the provider governance frontend surface and simplify contextual rails. The surface should expose Overview, Credentials, Market Data Providers, Broker Providers, AI Gateway, Capability Routing, and Diagnostics as defined by TF-F060. Rails should show provider source, selected capability, health, freshness, fallback, advisory boundary, and a configure link.
+
+**Acceptance Criteria:**
+
+- A provider governance surface is reachable from the application shell/navigation without being represented as a canonical decision workspace.
+- Credential administration no longer lives as long-form right-rail workflow UI.
+- Contextual rails remain focused on decision context, provenance, freshness, fallback, health, and advisory warnings.
+- The surface renders credential status, capability routing, AI gateway status, and diagnostics from provider governance read APIs.
+- UI copy preserves advisory/non-canonical boundaries and does not imply provider data owns lifecycle truth.
+- Existing decision workspaces remain usable without configuring non-required providers.
+
+**Out Of Scope:**
+
+- Full visual redesign of all workspaces.
+- Autonomous provider selection policies.
+- Broker execution workflows.
+
+**Resolution Summary:**
+Added a dedicated Provider Governance frontend surface at
+`/workspaces/provider-governance`, reachable from shell navigation. The surface
+renders provider governance overview data, diagnostics, LiteLLM AI gateway
+route visibility, existing provider routing controls, credential management,
+and the credential validation action. Contextual rails now use a compact
+provider status rail with selected price/fundamentals providers, fallback
+summary, AI gateway status, and a configure link instead of long-form
+credential administration.
+
+**Completed Verification:**
+
+- `npm.cmd run typecheck`
+- `npm.cmd run build`
+- `uv run pytest tests/test_provider_governance_api.py tests/test_admin_credentials.py`
+
+---
+
+## TF-F068: M13A Verification And M14 Readiness Gate
+
+**Status:** Done
+
+**Classification:** verification
+
+**Milestone:** M13A
+
+**Branch:** `docs/tf-f068-m13a-readiness-gate`
+
+**Affected Layer:** docs, app, frontend, tests
+
+**Linked ADRs:** ADR-0006, ADR-0032, ADR-0037, ADR-0038, ADR-0041, ADR-0042
+
+**Impacted Invariants:** Human Decision Sovereignty, AI Advisory Boundary, Derived State Must Remain Distinguishable, Replayability Is Foundational, UX Is Architectural
+
+**Depends On:** TF-F060, TF-F061, TF-F062, TF-F063, TF-F064, TF-F065, TF-F066, TF-F067
+
+**Problem:**
+Before M14 behavioral intelligence work begins, provider governance must be verified as an operational support layer that does not create lifecycle authority, AI authority, or hidden canonical state.
+
+**Scope:**
+Run the M13A readiness gate. Verify docs, APIs, frontend surfaces, diagnostics, credential workflows, gateway route visibility, and rail cleanup against M13A acceptance meaning and system invariants.
+
+**Acceptance Criteria:**
+
+- M13A implementation issues are complete or explicitly deferred with rationale.
+- Provider governance does not mutate lifecycle state or write canonical decision facts.
+- AI gateway and route alias behavior remains advisory and operator-visible.
+- Credential and diagnostic APIs do not leak secrets.
+- Replay-facing provider/gateway provenance is either captured historically or explicitly marked unavailable; replay does not call live providers to reconstruct historical external-system state.
+- Frontend typecheck/build and focused backend tests pass.
+- Roadmap v2 and issue register are updated with M13A completion status when accepted.
+
+**Out Of Scope:**
+
+- Starting M14 implementation.
+- Expanding AI advisory beyond accepted M13A boundaries.
+
+**Resolution Summary:**
+Added `DOCS/m13a-readiness-gate.md` and accepted M13A as complete. Verified
+that provider governance remains operational/advisory, does not mutate
+lifecycle state, does not write canonical decision facts, does not leak
+secrets, preserves AI advisory boundaries, and moves long-form provider
+administration out of contextual rails.
+
+**Completed Verification:**
+
+- `uv run pytest tests/test_provider_governance_api.py tests/test_admin_credentials.py tests/test_fundamentals_overlay.py tests/test_default_advisory_provider_bootstrap.py`
+- `uv run mypy src\app\api\admin_routes.py src\app\api\routes.py src\security\credential.py tests\test_admin_credentials.py tests\test_provider_governance_api.py`
+- `npm.cmd run typecheck`
+- `npm.cmd run build`
+- `git diff --check`
 
 ---

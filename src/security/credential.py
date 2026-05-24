@@ -11,6 +11,7 @@ class CredentialStatus(StrEnum):
     ACTIVE = "active"
     REVOKED = "revoked"
     EXPIRED = "expired"
+    INVALID = "invalid"
     UNKNOWN = "unknown"
 
 

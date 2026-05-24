@@ -2,12 +2,13 @@
 from __future__ import annotations
 
 import os
+from datetime import UTC, datetime
 from pathlib import Path
 
 from fastapi.testclient import TestClient
 from src.app.api.application import create_app
 from src.security import CredentialStore, KeyManager
-from src.security.credential import CredentialStatus
+from src.security.credential import Credential, CredentialStatus
 
 
 def _make_app_with_store(tmp_path: Path) -> tuple[TestClient, CredentialStore]:
@@ -192,6 +193,84 @@ def test_update_sets_rotated_at_on_second_save(tmp_path: Path) -> None:
         )
     assert r1.json()["rotated_at"] is None  # first save: no rotated_at
     assert r2.json()["rotated_at"] is not None  # second save: rotated_at set
+
+
+def test_validate_credential_sets_last_validated_at(tmp_path: Path) -> None:
+    client, store = _make_app_with_store(tmp_path)
+    with _master_key():
+        client.put(
+            "/admin/credentials/polygon",
+            json={"fields": {"api_key": "pk_test_validation_key"}},
+        )
+        response = client.post("/admin/credentials/polygon/validate")
+        saved = store.get("polygon")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["configured"] is True
+    assert body["status"] == "active"
+    assert body["last_validated_at"] is not None
+    assert saved is not None
+    assert saved.status is CredentialStatus.ACTIVE
+    assert saved.last_validated_at is not None
+    assert "pk_test_validation_key" not in response.text
+
+
+def test_validate_missing_credential_returns_404(tmp_path: Path) -> None:
+    client, _ = _make_app_with_store(tmp_path)
+    with _master_key():
+        response = client.post("/admin/credentials/polygon/validate")
+
+    assert response.status_code == 404
+
+
+def test_validate_revoked_credential_returns_409(tmp_path: Path) -> None:
+    client, _ = _make_app_with_store(tmp_path)
+    with _master_key():
+        client.put(
+            "/admin/credentials/polygon",
+            json={"fields": {"api_key": "pk_test_validation_key"}},
+        )
+        client.delete("/admin/credentials/polygon")
+        response = client.post("/admin/credentials/polygon/validate")
+
+    assert response.status_code == 409
+
+
+def test_validate_unreadable_payload_marks_credential_invalid(tmp_path: Path) -> None:
+    client, store = _make_app_with_store(tmp_path)
+    original_key = KeyManager.generate_master_key()
+    runtime_key = KeyManager.generate_master_key()
+    store.save(
+        Credential(
+            provider_id="polygon",
+            credential_type="api_key",
+            encrypted_payload=KeyManager(original_key.encode("ascii")).encrypt_payload(
+                {"api_key": "pk_test_unreadable"}
+            ),
+            created_at=datetime.now(UTC),
+            rotated_at=None,
+            last_validated_at=None,
+            status=CredentialStatus.ACTIVE,
+            provenance={"set_by": "test", "source": "test"},
+        )
+    )
+
+    original_env = os.environ.get("TRADEFORGE_MASTER_KEY")
+    os.environ["TRADEFORGE_MASTER_KEY"] = runtime_key
+    try:
+        response = client.post("/admin/credentials/polygon/validate")
+        saved = store.get("polygon")
+    finally:
+        if original_env is not None:
+            os.environ["TRADEFORGE_MASTER_KEY"] = original_env
+        else:
+            os.environ.pop("TRADEFORGE_MASTER_KEY", None)
+
+    assert response.status_code == 200
+    assert response.json()["status"] == "invalid"
+    assert saved is not None
+    assert saved.status is CredentialStatus.INVALID
 
 
 class _no_master_key:

@@ -2283,6 +2283,115 @@ M13 excludes deterministic predictive scoring, autonomous trade recommendations,
 
 ---
 
+## M13A - Provider Governance And AI Gateway Configuration
+
+**Status:** Done
+
+## Semantic Intent
+
+Formalize external systems governance and AI routing infrastructure before
+behavioral intelligence and broader advisory expansion increase provider,
+credential, gateway, and diagnostic complexity.
+
+M13A stabilizes the operational control plane around external providers. It
+does not introduce a new decision workspace, lifecycle authority, autonomous
+execution path, or AI decision authority.
+
+## Architectural Significance
+
+M10C established the credential boundary. M10D established capability-aware
+provider architecture. M10E established contextual acquisition workflows. M11,
+M12, and M13 introduced AI advisory, advisory observations, and contextual
+interpretation.
+
+Together, those milestones created a larger operational gap: credential entry,
+provider selection, capability routing, LiteLLM routing, health checks,
+diagnostics, fallback state, and contextual provenance are too important to
+remain collapsed into contextual workflow rails.
+
+The core M13A distinction is:
+
+```text
+Credential != Provider != Capability != Model
+```
+
+LiteLLM must be treated as an AI gateway and routing boundary, not as a normal
+one-key provider. TradeForge should request semantic advisory roles and
+capabilities while gateway configuration maps those roles to concrete model
+providers outside workflow logic.
+
+## Canonical Concepts
+
+* [[Provider Boundary]]
+* [[Provider Provenance]]
+* [[AI Advisory Boundary]]
+* [[Derived State Must Remain Distinguishable]]
+* [[Human Decision Sovereignty]]
+* [[Replayability Is Foundational]]
+* [[UX Is Architectural]]
+
+## Scope
+
+M13A introduces or resolves:
+
+* provider governance control surface design
+* credential lifecycle visibility beyond basic save/revoke
+* provider health, validation, diagnostics, and degraded-state visibility
+* capability-first routing governance for price, fundamentals, AI advisory, and future broker/paper trading
+* LiteLLM as an AI gateway rather than an ordinary data provider
+* AI route aliases such as fast summary, reasoning, long-context analysis, cheap classification, and local/offline routes
+* contextual rail simplification so rails show provider status, provenance, freshness, fallback state, and configure links rather than long-form administration
+* replay and provenance questions for provider route, health, fallback, and gateway state
+
+## Explicit Exclusions
+
+M13A explicitly excludes:
+
+* autonomous trading
+* AI decision authority
+* AI plan approval
+* automated broker execution
+* broker automation expansion beyond governance modeling
+* a generalized AI orchestration engine
+* treating provider health, model output, or gateway state as canonical event-ledger truth
+* replacing the existing M9 market snapshot boundary or M10D provider capability registry
+
+## Recommended Issue Order
+
+1. `TF-F059` - Formalize M13A provider governance roadmap (**Done**)
+2. `TF-F060` - Define provider governance control surface design (**Done**)
+3. `TF-F061` - Define capability routing governance model (**Done**)
+4. `TF-F062` - Define AI gateway and route alias model (**Done**)
+5. `TF-F063` - Define provider diagnostics and health history model (**Done**)
+6. `TF-F064` - Implement provider governance read APIs (**Done**)
+7. `TF-F065` - Implement credential validation and test workflow (**Done**)
+8. `TF-F066` - Implement AI gateway route visibility (**Done**)
+9. `TF-F067` - Implement provider governance frontend surface and rail cleanup (**Done**)
+10. `TF-F068` - M13A verification and M14 readiness gate (**Done**)
+
+## Linked Runtime Issues
+
+* TF-F059: Formalize M13A provider governance roadmap (**Done**)
+* TF-F060: Define provider governance control surface design (**Done**)
+* TF-F061: Define capability routing governance model (**Done**)
+* TF-F062: Define AI gateway and route alias model (**Done**)
+* TF-F063: Define provider diagnostics and health history model (**Done**)
+* TF-F064: Implement provider governance read APIs (**Done**)
+* TF-F065: Implement credential validation and test workflow (**Done**)
+* TF-F066: Implement AI gateway route visibility (**Done**)
+* TF-F067: Implement provider governance frontend surface and rail cleanup (**Done**)
+* TF-F068: M13A verification and M14 readiness gate (**Done**)
+
+## Acceptance Meaning
+
+* Provider governance is modeled as an external systems control plane, not as a contextual rail form.
+* Credential status, provider health, capability routing, gateway routing, fallback behavior, and diagnostics are distinguishable operational concerns.
+* Contextual rails remain cognition-preserving surfaces focused on status, provenance, freshness, fallback, and advisory boundaries.
+* LiteLLM routing is represented through gateway and route-alias concepts rather than hardcoded raw model names in workflow logic.
+* External provider and AI gateway state remain advisory, non-canonical, and subordinate to human decision sovereignty.
+
+---
+
 ## M14 - Behavioral Intelligence And Cognitive Auditability
 
 **Status:** Planned

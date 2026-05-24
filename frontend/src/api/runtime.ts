@@ -273,6 +273,93 @@ export type ProviderConfiguration = {
   resolutions: CapabilityResolution[];
 };
 
+export type ProviderGovernanceRouteAlias = {
+  alias: string;
+  advisory_role: string;
+  advisory_usage_domain: string;
+  configured: boolean;
+  availability_status: "configured" | "not_configured" | "unknown";
+  route_target_model: string | null;
+  underlying_provider_id: string | null;
+  reachability: "not_checked" | "available" | "unavailable" | "unknown";
+};
+
+export type ProviderGovernanceAiGateway = {
+  gateway_id: "litellm";
+  configured: boolean;
+  status: "configured" | "not_configured" | "unavailable" | "unknown";
+  provider_id: string | null;
+  gateway_url: string | null;
+  default_model: string | null;
+  underlying_provider_id: string | null;
+  reachability: "not_checked" | "available" | "unavailable" | "unknown";
+  route_aliases: ProviderGovernanceRouteAlias[];
+  lifecycle_authority: false;
+  execution_authority: false;
+  event_ledger_authority: false;
+};
+
+export type ProviderGovernanceProvider = {
+  provider_id: string;
+  capabilities: string[];
+  registry_configured: boolean;
+  credential_required: boolean;
+  credential_status: string;
+  health_status: string;
+  authority: "operational";
+  is_canonical: false;
+};
+
+export type ProviderGovernanceDiagnosticSummary = {
+  status: "ok" | "degraded" | "not_configured";
+  retained_history_available: false;
+  event_ledger_authority: false;
+  diagnostic_classes: string[];
+};
+
+export type ProviderGovernance = {
+  authority: "operational";
+  is_canonical: false;
+  generated_at: string;
+  lifecycle_authority: false;
+  event_ledger_writes: false;
+  advisory_boundary: string[];
+  providers: ProviderGovernanceProvider[];
+  credentials: {
+    provider_id: string;
+    credential_required: boolean;
+    configured: boolean;
+    status: string;
+    credential_record_status: string | null;
+    rotated_at: string | null;
+    last_validated_at: string | null;
+    exposes_secret_values: false;
+  }[];
+  routes: CapabilityResolution[];
+  diagnostics: ProviderGovernanceDiagnosticSummary;
+  ai_gateway: ProviderGovernanceAiGateway;
+};
+
+export async function fetchProviderGovernance(
+  signal?: AbortSignal,
+): Promise<ProviderGovernance> {
+  const response = await fetch("/provider-governance", { signal });
+  if (!response.ok) {
+    throw new Error(`Provider governance request failed: ${response.status}`);
+  }
+  return response.json() as Promise<ProviderGovernance>;
+}
+
+export async function fetchProviderGovernanceAiGateway(
+  signal?: AbortSignal,
+): Promise<ProviderGovernanceAiGateway> {
+  const response = await fetch("/provider-governance/ai-gateway", { signal });
+  if (!response.ok) {
+    throw new Error(`AI gateway visibility request failed: ${response.status}`);
+  }
+  return response.json() as Promise<ProviderGovernanceAiGateway>;
+}
+
 export async function fetchProviderConfiguration(
   signal?: AbortSignal,
 ): Promise<ProviderConfiguration> {
@@ -338,6 +425,7 @@ export type CredentialStatus = {
   configured: boolean;
   status: string | null;
   rotated_at: string | null;
+  last_validated_at: string | null;
   fields: CredentialFieldStatus[];
   master_key_configured: boolean;
 };
@@ -386,6 +474,21 @@ export async function revokeCredential(
   if (!response.ok) {
     const detail = await response.text();
     throw new Error(`Credential revoke failed (${response.status}): ${detail}`);
+  }
+  return response.json() as Promise<CredentialStatus>;
+}
+
+export async function validateCredential(
+  provider_id: string,
+  signal?: AbortSignal,
+): Promise<CredentialStatus> {
+  const response = await fetch(`/admin/credentials/${provider_id}/validate`, {
+    method: "POST",
+    signal,
+  });
+  if (!response.ok) {
+    const detail = await response.text();
+    throw new Error(`Credential validation failed (${response.status}): ${detail}`);
   }
   return response.json() as Promise<CredentialStatus>;
 }

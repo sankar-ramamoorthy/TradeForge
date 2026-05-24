@@ -60,12 +60,18 @@ Advisory analytics on accumulated evidence:
 
 All advisory outputs are non-canonical. They cannot approve plans, execute trades, mutate lifecycle state, or write authoritative decision events. Human decision sovereignty is mandatory.
 
-### Credential management
+### Provider governance
 
-- Configure provider API keys from the **ProviderConfigurationPanel** in the browser — no terminal required after initial master key setup
+- Dedicated **Provider Governance** surface at `/workspaces/provider-governance` — separate operational control plane, not a workspace rail
+- Configure provider API keys from the browser — no terminal required after initial master key setup
 - Masked field display (last 4 characters of secrets shown)
+- Credential validation workflow — test a credential without saving, or validate an existing one on demand
 - Provider registry reloads automatically after credential changes — no restart required
 - Revoke credentials with audit trail preserved
+- LiteLLM surfaced as an AI gateway with named route aliases — not treated as an ordinary data provider
+- AI gateway route visibility: fast-summary, reasoning, long-context, and classification routes are distinguishable operational concerns
+- Capability routing governance: `Credential != Provider != Capability != Model`
+- Contextual rails show provider status, provenance, freshness, and a configure link — long-form administration lives in the governance surface
 
 ---
 
@@ -236,6 +242,7 @@ DOCS/
 | M11 | Done | AI advisory boundary, replay/review assistance, provenance |
 | M12 | Done | Advisory observation and cognitive evidence layer |
 | M13 | Done | Contextual interpretation and thesis influence |
+| M13A | Done | Provider governance, AI gateway configuration, credential validation, route visibility |
 | M14+ | Planned | Behavioral intelligence, cognitive replay, attention allocation, simulation |
 
 ---

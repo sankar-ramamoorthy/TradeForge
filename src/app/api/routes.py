@@ -20,6 +20,7 @@ from src.domain.advisory import (
     AdvisoryInterpretationQuery,
     AdvisoryObservation,
     AdvisoryObservationQuery,
+    AdvisoryProviderUnavailableError,
     AdvisorySourceKind,
     AdvisoryUncertaintyBand,
     CognitiveEvidence,
@@ -51,6 +52,7 @@ from src.domain.lifecycle.transitions import ALLOWED_LIFECYCLE_TRANSITIONS
 from src.domain.market.capability import ProviderCapability
 from src.domain.market.instrument import ExternalContextType, InstrumentKind
 from src.domain.market.registry import ProviderRegistry
+from src.domain.market.snapshot import MarketRegime
 from src.domain.personas import (
     PersonaContext,
     PersonaDecisionVelocity,
@@ -61,8 +63,17 @@ from src.domain.personas import (
     PersonaVersion,
 )
 from src.domain.replay import ProjectionAuthority, ReplayTimelineEntryKind
-from src.domain.advisory import AdvisoryProviderUnavailableError
-from src.domain.market.snapshot import MarketRegime
+from src.security.credential import Credential, CredentialStatus
+from src.security.credential_store import CredentialStore
+from src.security.key_manager import (
+    InvalidCredentialPayloadError,
+    KeyManager,
+    MasterKeyNotConfiguredError,
+)
+from src.security.litellm_credential import (
+    LiteLLMCredentialNotConfiguredError,
+    get_litellm_credential,
+)
 from src.services.advisory import (
     AdvisoryArtifactIngestionService,
     AdvisoryArtifactQueryService,
@@ -70,21 +81,20 @@ from src.services.advisory import (
     AdvisoryCandidateQueryService,
     AdvisoryInterpretationCaptureService,
     AdvisoryInterpretationQueryService,
-    CandidateScreeningAdvisoryService,
     AdvisoryObservationCaptureService,
     AdvisoryObservationQueryService,
     CandidateReviewQueueQuery,
     CandidateReviewQueueService,
+    CandidateScreeningAdvisoryService,
     ConfidenceRangeDistribution,
     ConflictSummary,
     ContextualWeightDistribution,
     InfluenceTimeline,
     InterpretationDraftService,
-    ProbabilisticCognitionSummary,
     ObservationGenerationAdvisoryService,
+    ProbabilisticCognitionSummary,
     RegimeContextWeightService,
     ReplayAdvisoryService,
-    ReviewAdvisoryService,
     ThesisDriftSignal,
     ThesisReviewAdvisoryService,
 )
@@ -126,6 +136,37 @@ advisory_router = APIRouter(prefix="/advisory", tags=["advisory"])
 
 _DISMISSED_CANDIDATE_QUERY = Query(default_factory=list)
 _COGNITIVE_SNAPSHOT_AT_QUERY = Query(default=None)
+
+_KNOWN_PROVIDER_CAPABILITIES: dict[str, tuple[str, ...]] = {
+    "yfinance": ("price",),
+    "polygon": ("price",),
+    "alpaca": ("price",),
+    "fmp": ("fundamentals",),
+    "alpha_vantage": ("fundamentals",),
+    "litellm": ("ai_advisory",),
+}
+_CREDENTIAL_REQUIRED_PROVIDER_IDS = frozenset(
+    {"polygon", "alpaca", "fmp", "alpha_vantage", "litellm"}
+)
+_AI_GATEWAY_ROUTE_ALIASES: tuple[tuple[str, str, str], ...] = (
+    (
+        "tf-fast",
+        "candidate screening and lightweight advisory summaries",
+        "advisory triage",
+    ),
+    (
+        "tf-reasoning",
+        "thesis review and advisory observation generation",
+        "reasoned interpretation",
+    ),
+    (
+        "tf-long-context",
+        "replay summary and long-context synthesis",
+        "replay synthesis",
+    ),
+    ("tf-cheap", "low-cost validation and classification", "lightweight checks"),
+    ("tf-local", "local or offline private drafting", "private drafting"),
+)
 
 
 class RuntimeStatusResponse(BaseModel):
@@ -1151,6 +1192,102 @@ class ProviderConfigurationResponse(BaseModel):
     resolutions: list[CapabilityResolutionResponse]
 
 
+class ProviderGovernanceCredentialResponse(BaseModel):
+    provider_id: str
+    credential_required: bool
+    configured: bool
+    status: Literal[
+        "configured",
+        "missing",
+        "revoked",
+        "expired",
+        "invalid",
+        "unknown",
+        "untested",
+    ]
+    credential_record_status: str | None
+    rotated_at: datetime | None
+    last_validated_at: datetime | None
+    exposes_secret_values: Literal[False]
+
+
+class ProviderGovernanceProviderResponse(BaseModel):
+    provider_id: str
+    capabilities: list[str]
+    registry_configured: bool
+    credential_required: bool
+    credential_status: str
+    health_status: Literal[
+        "available",
+        "missing_credential",
+        "revoked",
+        "expired",
+        "invalid",
+        "unknown",
+        "not_configured",
+    ]
+    authority: Literal["operational"]
+    is_canonical: Literal[False]
+
+
+class ProviderGovernanceRouteResponse(BaseModel):
+    capability: str
+    preferred_provider_id: str
+    fallback_provider_ids: list[str]
+    configured_provider_ids: list[str]
+    selected_provider_id: str | None
+    used_fallback: bool
+    is_available: bool
+    degraded: bool
+
+
+class ProviderGovernanceDiagnosticSummaryResponse(BaseModel):
+    status: Literal["ok", "degraded", "not_configured"]
+    retained_history_available: Literal[False]
+    event_ledger_authority: Literal[False]
+    diagnostic_classes: list[str]
+
+
+class ProviderGovernanceRouteAliasResponse(BaseModel):
+    alias: str
+    advisory_role: str
+    advisory_usage_domain: str
+    configured: bool
+    availability_status: Literal["configured", "not_configured", "unknown"]
+    route_target_model: str | None
+    underlying_provider_id: str | None
+    reachability: Literal["not_checked", "available", "unavailable", "unknown"]
+
+
+class ProviderGovernanceAIGatewayResponse(BaseModel):
+    gateway_id: Literal["litellm"]
+    configured: bool
+    status: Literal["configured", "not_configured", "unavailable", "unknown"]
+    provider_id: str | None
+    gateway_url: str | None
+    default_model: str | None
+    underlying_provider_id: str | None
+    reachability: Literal["not_checked", "available", "unavailable", "unknown"]
+    route_aliases: list[ProviderGovernanceRouteAliasResponse]
+    lifecycle_authority: Literal[False]
+    execution_authority: Literal[False]
+    event_ledger_authority: Literal[False]
+
+
+class ProviderGovernanceResponse(BaseModel):
+    authority: Literal["operational"]
+    is_canonical: Literal[False]
+    generated_at: datetime
+    lifecycle_authority: Literal[False]
+    event_ledger_writes: Literal[False]
+    advisory_boundary: list[str]
+    providers: list[ProviderGovernanceProviderResponse]
+    credentials: list[ProviderGovernanceCredentialResponse]
+    routes: list[ProviderGovernanceRouteResponse]
+    diagnostics: ProviderGovernanceDiagnosticSummaryResponse
+    ai_gateway: ProviderGovernanceAIGatewayResponse
+
+
 class ProviderPreferenceRequest(BaseModel):
     preferred_provider_id: str
     fallback_provider_ids: list[str] = []
@@ -1432,6 +1569,194 @@ def _provider_registry_from(request: Request) -> ProviderRegistry:
     if not isinstance(registry, ProviderRegistry):
         raise RuntimeError("provider registry is not configured")
     return registry
+
+
+def _credential_store_from_state(request: Request) -> CredentialStore | None:
+    store = getattr(request.app.state, "credential_store", None)
+    if isinstance(store, CredentialStore):
+        return store
+    return None
+
+
+def _credential_status_for(
+    provider_id: str,
+    credential: Credential | None,
+) -> ProviderGovernanceCredentialResponse:
+    credential_required = provider_id in _CREDENTIAL_REQUIRED_PROVIDER_IDS
+    if not credential_required:
+        return ProviderGovernanceCredentialResponse(
+            provider_id=provider_id,
+            credential_required=False,
+            configured=True,
+            status="configured",
+            credential_record_status=None,
+            rotated_at=None,
+            last_validated_at=None,
+            exposes_secret_values=False,
+        )
+    if credential is None:
+        return ProviderGovernanceCredentialResponse(
+            provider_id=provider_id,
+            credential_required=True,
+            configured=False,
+            status="missing",
+            credential_record_status=None,
+            rotated_at=None,
+            last_validated_at=None,
+            exposes_secret_values=False,
+        )
+    configured = credential.status is CredentialStatus.ACTIVE
+    status_label: Literal[
+        "configured",
+        "missing",
+        "revoked",
+        "expired",
+        "invalid",
+        "unknown",
+        "untested",
+    ]
+    if credential.status is CredentialStatus.ACTIVE:
+        status_label = (
+            "configured" if credential.last_validated_at is not None else "untested"
+        )
+    elif credential.status is CredentialStatus.REVOKED:
+        status_label = "revoked"
+    elif credential.status is CredentialStatus.EXPIRED:
+        status_label = "expired"
+    elif credential.status is CredentialStatus.INVALID:
+        status_label = "invalid"
+    else:
+        status_label = "unknown"
+    return ProviderGovernanceCredentialResponse(
+        provider_id=provider_id,
+        credential_required=True,
+        configured=configured,
+        status=status_label,
+        credential_record_status=credential.status.value,
+        rotated_at=credential.rotated_at,
+        last_validated_at=credential.last_validated_at,
+        exposes_secret_values=False,
+    )
+
+
+def _provider_health_status(
+    *,
+    registry_configured: bool,
+    credential: ProviderGovernanceCredentialResponse,
+) -> Literal[
+    "available",
+    "missing_credential",
+    "revoked",
+    "expired",
+    "invalid",
+    "unknown",
+    "not_configured",
+]:
+    if not registry_configured:
+        return "not_configured"
+    if not credential.credential_required:
+        return "available"
+    if credential.status == "missing":
+        return "missing_credential"
+    if credential.status == "revoked":
+        return "revoked"
+    if credential.status == "expired":
+        return "expired"
+    if credential.status == "invalid":
+        return "invalid"
+    if credential.status == "unknown":
+        return "unknown"
+    return "available"
+
+
+def _infer_underlying_provider_id(model_id: str | None) -> str | None:
+    if model_id is None or "/" not in model_id:
+        return None
+    provider_id = model_id.split("/", 1)[0].strip()
+    return provider_id or None
+
+
+def _litellm_gateway_metadata(
+    request: Request,
+) -> tuple[str | None, str | None, str | None]:
+    credential_store = _credential_store_from_state(request)
+    if credential_store is None:
+        return None, None, None
+    try:
+        payload = get_litellm_credential(
+            credential_store,
+            key_manager=KeyManager.from_environment(),
+        )
+    except (
+        KeyError,
+        InvalidCredentialPayloadError,
+        LiteLLMCredentialNotConfiguredError,
+        MasterKeyNotConfiguredError,
+        ValueError,
+    ):
+        return None, None, None
+    return (
+        payload.base_url,
+        payload.default_model,
+        _infer_underlying_provider_id(payload.default_model),
+    )
+
+
+def _build_ai_gateway_response(request: Request) -> ProviderGovernanceAIGatewayResponse:
+    credential_store = _credential_store_from_state(request)
+    credential = (
+        _credential_status_for(
+            "litellm",
+            credential_store.get("litellm") if credential_store is not None else None,
+        )
+        if credential_store is not None
+        else _credential_status_for("litellm", None)
+    )
+    ai_provider = getattr(request.app.state, "ai_advisory_provider", None)
+    gateway_url, default_model, underlying_provider_id = _litellm_gateway_metadata(
+        request
+    )
+    configured = ai_provider is not None
+    if configured:
+        status_label: Literal[
+            "configured", "not_configured", "unavailable", "unknown"
+        ] = "configured"
+    elif credential.status != "missing":
+        status_label = "unavailable"
+    else:
+        status_label = "not_configured"
+
+    alias_availability: Literal["configured", "not_configured", "unknown"] = (
+        "configured" if configured else "not_configured"
+    )
+    return ProviderGovernanceAIGatewayResponse(
+        gateway_id="litellm",
+        configured=configured,
+        status=status_label,
+        provider_id=getattr(ai_provider, "provider_id", None)
+        if ai_provider is not None
+        else None,
+        gateway_url=gateway_url,
+        default_model=default_model,
+        underlying_provider_id=underlying_provider_id,
+        reachability="not_checked",
+        route_aliases=[
+            ProviderGovernanceRouteAliasResponse(
+                alias=alias,
+                advisory_role=advisory_role,
+                advisory_usage_domain=advisory_usage_domain,
+                configured=configured,
+                availability_status=alias_availability,
+                route_target_model=default_model,
+                underlying_provider_id=underlying_provider_id,
+                reachability="not_checked",
+            )
+            for alias, advisory_role, advisory_usage_domain in _AI_GATEWAY_ROUTE_ALIASES
+        ],
+        lifecycle_authority=False,
+        execution_authority=False,
+        event_ledger_authority=False,
+    )
 
 
 def _fundamentals_service_from(request: Request) -> FundamentalsService:
@@ -3770,6 +4095,130 @@ def get_provider_configuration(request: Request) -> ProviderConfigurationRespons
             for resolution in (registry.resolve(capability),)
         ],
     )
+
+
+@runtime_router.get(
+    "/provider-governance",
+    response_model=ProviderGovernanceResponse,
+)
+def get_provider_governance(request: Request) -> ProviderGovernanceResponse:
+    """Return the current provider governance read model without secrets.
+
+    This is operational state for configuring external systems. It is not
+    lifecycle truth and does not write to the canonical event ledger.
+    """
+    registry = _provider_registry_from(request)
+    credential_store = _credential_store_from_state(request)
+    registry_provider_ids = {provider.provider_id for provider in registry.providers}
+    provider_ids = sorted(set(_KNOWN_PROVIDER_CAPABILITIES) | registry_provider_ids)
+    ai_provider = getattr(request.app.state, "ai_advisory_provider", None)
+
+    credential_statuses = {
+        provider_id: _credential_status_for(
+            provider_id,
+            credential_store.get(provider_id) if credential_store is not None else None,
+        )
+        for provider_id in provider_ids
+    }
+
+    providers = [
+        ProviderGovernanceProviderResponse(
+            provider_id=provider_id,
+            capabilities=list(
+                _KNOWN_PROVIDER_CAPABILITIES.get(
+                    provider_id,
+                    tuple(
+                        capability.value
+                        for provider in registry.providers
+                        if provider.provider_id == provider_id
+                        for capability in provider.capabilities
+                    ),
+                )
+            ),
+            registry_configured=(
+                provider_id in registry_provider_ids
+                or (provider_id == "litellm" and ai_provider is not None)
+            ),
+            credential_required=credential_statuses[provider_id].credential_required,
+            credential_status=credential_statuses[provider_id].status,
+            health_status=_provider_health_status(
+                registry_configured=(
+                    provider_id in registry_provider_ids
+                    or (provider_id == "litellm" and ai_provider is not None)
+                ),
+                credential=credential_statuses[provider_id],
+            ),
+            authority="operational",
+            is_canonical=False,
+        )
+        for provider_id in provider_ids
+    ]
+
+    routes = [
+        ProviderGovernanceRouteResponse(
+            capability=capability.value,
+            preferred_provider_id=resolution.preferred_provider_id,
+            fallback_provider_ids=list(resolution.fallback_provider_ids),
+            configured_provider_ids=list(resolution.configured_provider_ids),
+            selected_provider_id=resolution.selected_provider_id,
+            used_fallback=resolution.used_fallback,
+            is_available=resolution.is_available,
+            degraded=resolution.used_fallback or not resolution.is_available,
+        )
+        for capability in ProviderCapability
+        for resolution in (registry.resolve(capability),)
+    ]
+
+    diagnostic_classes = [
+        "Provider Unreachable",
+        "Credential Invalid",
+        "Route Unavailable",
+        "Quota Exceeded",
+        "Fallback Triggered",
+        "Latency Spike",
+        "Validation Succeeded",
+        "Validation Failed",
+        "Replay Nondeterminism Warning",
+    ]
+    diagnostics_status: Literal["ok", "degraded", "not_configured"] = (
+        "degraded" if any(route.degraded for route in routes) else "ok"
+    )
+    if not providers:
+        diagnostics_status = "not_configured"
+
+    return ProviderGovernanceResponse(
+        authority="operational",
+        is_canonical=False,
+        generated_at=datetime.now(UTC),
+        lifecycle_authority=False,
+        event_ledger_writes=False,
+        advisory_boundary=[
+            "Provider governance state supports operator awareness only.",
+            "External provider state is not canonical lifecycle truth.",
+            "AI gateway output remains advisory and requires operator acceptance.",
+        ],
+        providers=providers,
+        credentials=list(credential_statuses.values()),
+        routes=routes,
+        diagnostics=ProviderGovernanceDiagnosticSummaryResponse(
+            status=diagnostics_status,
+            retained_history_available=False,
+            event_ledger_authority=False,
+            diagnostic_classes=diagnostic_classes,
+        ),
+        ai_gateway=_build_ai_gateway_response(request),
+    )
+
+
+@runtime_router.get(
+    "/provider-governance/ai-gateway",
+    response_model=ProviderGovernanceAIGatewayResponse,
+)
+def get_provider_governance_ai_gateway(
+    request: Request,
+) -> ProviderGovernanceAIGatewayResponse:
+    """Return LiteLLM gateway route visibility without exposing API keys."""
+    return _build_ai_gateway_response(request)
 
 
 @workspace_router.put(
