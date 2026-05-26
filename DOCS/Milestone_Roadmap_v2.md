@@ -5,7 +5,7 @@ type: index
 status: canonical
 tags: [TradeForge, roadmap, milestones, architecture, cognition, workspaces]
 created: 2026-05-09
-updated: 2026-05-25
+updated: 2026-05-26
 supersedes: MILESTONE_ROADMAP_DEPRECATED.md
 ---
 
@@ -2457,9 +2457,10 @@ M13B introduces or resolves:
 * local debugging workflow for internal LiteLLM access
 * governed downstream LLM provider secret management
 * encrypted Groq, NVIDIA NIM, OpenAI, Anthropic, Google-style provider keys
-* runtime decryption only at the composition boundary
-* managed provider-secret injection into LiteLLM
+* runtime decryption only inside the trusted backend advisory boundary
+* stateless request-time provider credential composition for LiteLLM calls
 * explicit rotation and reload semantics
+* non-invasive LiteLLM readiness checks that do not probe model providers
 
 ## Explicit Exclusions
 
@@ -2483,6 +2484,8 @@ M13B explicitly excludes:
 * TF-F072: Global Advisory Model Selection (**Done**)
 * TF-F073: Internalize LiteLLM Gateway Network Boundary (**Done**)
 * TF-F074: Governed LLM Provider Secret Management (**Done**)
+* TF-F075: Implement Stateless LiteLLM Request-Time Credential Composition (**Done**)
+* TF-F076: Replace LiteLLM route-probing healthcheck with non-invasive readiness check (**Done**)
 
 ## Acceptance Meaning
 
@@ -2490,8 +2493,12 @@ M13B explicitly excludes:
 * LiteLLM is treated as managed internal infrastructure by default.
 * Advisory workflow code does not depend on hardcoded raw model names.
 * Downstream LLM vendor keys are governed by TradeForge credential storage.
-* Provider secrets are masked in UI/API responses and decrypted only at the
-  runtime composition boundary.
+* Provider secrets are masked in UI/API responses and decrypted only inside the
+  trusted backend advisory request path.
+* LiteLLM remains stateless for managed local advisory runtime operation:
+  TradeForge resolves explicit provider/model selection and supplies the
+  required provider credential per request.
+* LiteLLM readiness checks do not perform provider/model route probing.
 * AI gateway routing and provider-secret state remain operational,
   non-canonical, and subordinate to human decision sovereignty.
 

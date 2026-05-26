@@ -71,7 +71,7 @@ All advisory outputs are non-canonical. They cannot approve plans, execute trade
 - LiteLLM surfaced as an AI gateway with named route aliases — not treated as an ordinary data provider
 - AI gateway route visibility: fast-summary, reasoning, long-context, and classification routes are distinguishable operational concerns
 - Advisory route selection and smoke tests are exposed through Provider Governance and remain non-canonical
-- Downstream LLM provider secrets are governed through the same encrypted boundary and injected only at runtime composition
+- Downstream LLM provider secrets are governed through the same encrypted boundary and resolved only for the individual advisory request that needs them
 - Capability routing governance: `Credential != Provider != Capability != Model`
 - Contextual rails show provider status, provenance, freshness, and a configure link — long-form administration lives in the governance surface
 
@@ -152,18 +152,20 @@ uv run python scripts/manage_credentials.py generate-master-key
 uv run python scripts/manage_credentials.py register fmp --api-key "<key>"
 uv run python scripts/manage_credentials.py register litellm \
   --base-url "http://litellm:4000" \
-  --api-key "<key>" \
-  --default-model "tradeforge-groq-70b"
+  --api-key "<key>"
 ```
 
-Optionally add `--fallback-model "<route>"`. Provider Governance can discover
-LiteLLM models and update the selected advisory primary/fallback route through
-TradeForge without creating canonical event-ledger facts.
+Provider Governance stores advisory model selection separately from the LiteLLM
+gateway credential. Select explicit provider/model pairs through TradeForge
+without creating canonical event-ledger facts.
 
 Downstream LLM provider keys can also be stored through the same encrypted
 credential boundary using provider IDs such as `llm_groq`, `llm_nvidia_nim`,
 `llm_openai`, `llm_anthropic`, and `llm_google`. TradeForge masks these values
-in API/UI responses and decrypts them only at the runtime composition boundary.
+in API/UI responses and decrypts them only inside the trusted backend advisory
+request path. LiteLLM receives the required provider credential per
+`/chat/completions` request; downstream provider keys are not configured in
+LiteLLM environment variables or static config.
 
 See [`HOW-TO-SETUP-KEYS.md`](HOW-TO-SETUP-KEYS.md) for full credential setup.
 
@@ -261,7 +263,7 @@ DOCS/
 | M12 | Done | Advisory observation and cognitive evidence layer |
 | M13 | Done | Contextual interpretation and thesis influence |
 | M13A | Done | Provider governance, AI gateway configuration, credential validation, route visibility |
-| M13B | Done | Managed advisory runtime, route selection, and governed provider secrets |
+| M13B | Done | Managed advisory runtime, route selection, governed provider secrets, and stateless LiteLLM request-time composition |
 | M14+ | Planned | Behavioral intelligence, cognitive replay, attention allocation, simulation |
 
 ---

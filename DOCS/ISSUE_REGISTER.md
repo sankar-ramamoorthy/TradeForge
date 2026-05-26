@@ -20,7 +20,7 @@ Each issue records:
 
 GitHub issues may mirror these records, but this file remains the local planning source of truth.
 
-Roadmap v2 is the active milestone direction. This register now tracks runtime implementation through the current M13B/M14 boundary while preserving the earlier MVP record for reference.
+Roadmap v2 is the active milestone direction. This register now tracks runtime implementation through completed M13B, with M14 behavioral intelligence as the next planned milestone, while preserving the earlier MVP record for reference.
 
 
 ---
