@@ -75,14 +75,45 @@ def test_register_litellm_documented_invocation_works(tmp_path: Path) -> None:
             "http://localhost:4000",
             "--api-key",
             "secret",
-            "--default-model",
-            "configured-model",
             "--store-path",
             str(store_path),
         ],
         cwd=Path.cwd(),
         capture_output=True,
         check=False,
+        text=True,
+        env=env,
+    )
+
+    assert result.returncode == 0
+    assert store_path.exists()
+
+
+def test_register_llm_provider_secret_invocation_works(tmp_path: Path) -> None:
+    key_result = subprocess.run(
+        [sys.executable, "scripts/manage_credentials.py", "generate-master-key"],
+        cwd=Path.cwd(),
+        capture_output=True,
+        check=True,
+        text=True,
+    )
+    env = os.environ.copy()
+    env["TRADEFORGE_MASTER_KEY"] = key_result.stdout.strip()
+    store_path = tmp_path / ".keys.enc"
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            "scripts/manage_credentials.py",
+            "register",
+            "llm_groq",
+            "--api-key",
+            "secret",
+            "--store-path",
+            str(store_path),
+        ],
+        cwd=Path.cwd(),
+        capture_output=True,
         text=True,
         env=env,
     )

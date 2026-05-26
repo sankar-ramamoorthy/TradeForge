@@ -5,7 +5,7 @@ type: index
 status: canonical
 tags: [TradeForge, roadmap, milestones, architecture, cognition, workspaces]
 created: 2026-05-09
-updated: 2026-05-13
+updated: 2026-05-25
 supersedes: MILESTONE_ROADMAP_DEPRECATED.md
 ---
 
@@ -2368,6 +2368,7 @@ M13A explicitly excludes:
 8. `TF-F066` - Implement AI gateway route visibility (**Done**)
 9. `TF-F067` - Implement provider governance frontend surface and rail cleanup (**Done**)
 10. `TF-F068` - M13A verification and M14 readiness gate (**Done**)
+11. `TF-F071` - Fix advisory thesis review event store loading (**Done, corrective feedback issue**)
 
 ## Linked Runtime Issues
 
@@ -2381,6 +2382,7 @@ M13A explicitly excludes:
 * TF-F066: Implement AI gateway route visibility (**Done**)
 * TF-F067: Implement provider governance frontend surface and rail cleanup (**Done**)
 * TF-F068: M13A verification and M14 readiness gate (**Done**)
+* TF-F071: Fix advisory thesis review event store loading (**Done, corrective feedback issue**)
 
 ## Acceptance Meaning
 
@@ -2389,6 +2391,109 @@ M13A explicitly excludes:
 * Contextual rails remain cognition-preserving surfaces focused on status, provenance, freshness, fallback, and advisory boundaries.
 * LiteLLM routing is represented through gateway and route-alias concepts rather than hardcoded raw model names in workflow logic.
 * External provider and AI gateway state remain advisory, non-canonical, and subordinate to human decision sovereignty.
+
+---
+
+## M13B - AI Gateway Governance And Managed Advisory Runtime
+
+**Status:** Done
+
+## Semantic Intent
+
+Establish TradeForge as the governed operator-facing owner of the managed AI
+advisory runtime.
+
+M13B turns the M13A AI gateway foundation into a managed operational boundary:
+operators choose advisory routes through TradeForge, TradeForge mediates access
+to LiteLLM, and downstream LLM provider secrets are governed through the
+TradeForge credential boundary.
+
+## Architectural Significance
+
+M13A proved LiteLLM advisory invocation, provider governance visibility, smoke
+testing, route stabilization, and diagnostics. It also left an intentional
+boundary: TradeForge stored the LiteLLM gateway credential, while downstream
+LLM provider keys lived in LiteLLM configuration or operator environment.
+
+M13B changes that boundary for the managed advisory runtime. TradeForge becomes
+the governed owner of downstream LLM provider secrets and the sole
+operator-facing advisory gateway.
+
+The core M13B distinction is:
+
+```text
+Operator
+  -> TradeForge Provider Governance
+  -> encrypted LLM provider credential governance
+  -> global advisory model selection
+  -> TradeForge advisory boundary
+  -> internal LiteLLM runtime
+  -> vendor model providers
+```
+
+## Canonical Concepts
+
+* [[AI Advisory Boundary]]
+* [[Human Decision Sovereignty]]
+* [[Provider Boundary]]
+* [[Provider Provenance]]
+* [[Derived State Must Remain Distinguishable]]
+* [[Replayability Is Foundational]]
+* [[Operational Credential Boundary]]
+
+## Scope
+
+M13B introduces or resolves:
+
+* global advisory model and route selection
+* LiteLLM model discovery through TradeForge
+* operator-selected primary advisory model or route
+* optional fallback advisory model or route
+* removal of hardcoded advisory model names from workflow logic
+* advisory-wide use of the selected configuration
+* non-canonical smoke testing for the selected route
+* internal-only LiteLLM runtime exposure by default
+* TradeForge-mediated advisory access to LiteLLM
+* local debugging workflow for internal LiteLLM access
+* governed downstream LLM provider secret management
+* encrypted Groq, NVIDIA NIM, OpenAI, Anthropic, Google-style provider keys
+* runtime decryption only at the composition boundary
+* managed provider-secret injection into LiteLLM
+* explicit rotation and reload semantics
+
+## Explicit Exclusions
+
+M13B explicitly excludes:
+
+* autonomous trading
+* AI decision authority
+* AI plan approval
+* lifecycle transitions from AI output
+* direct vendor SDK bypass from advisory workflow code
+* generalized AI orchestration
+* multi-agent runtime governance
+* automatic hidden model selection
+* dynamic per-task routing policies
+* dynamic LiteLLM YAML editing unless separately scoped
+* Kubernetes secrets or external vault integration
+* broker execution expansion
+
+## Linked Runtime Issues
+
+* TF-F072: Global Advisory Model Selection (**Done**)
+* TF-F073: Internalize LiteLLM Gateway Network Boundary (**Done**)
+* TF-F074: Governed LLM Provider Secret Management (**Done**)
+
+## Acceptance Meaning
+
+* TradeForge is the operator-facing advisory gateway.
+* LiteLLM is treated as managed internal infrastructure by default.
+* Advisory workflow code does not depend on hardcoded raw model names.
+* Downstream LLM vendor keys are governed by TradeForge credential storage.
+* Provider secrets are masked in UI/API responses and decrypted only at the
+  runtime composition boundary.
+* AI gateway routing and provider-secret state remain operational,
+  non-canonical, and subordinate to human decision sovereignty.
 
 ---
 

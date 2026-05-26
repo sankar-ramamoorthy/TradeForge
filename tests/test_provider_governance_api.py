@@ -1,10 +1,19 @@
 from __future__ import annotations
 
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
 from src.app.api.application import create_app
+from src.domain.advisory import (
+    AdvisoryArtifactKind,
+    AdvisoryAuthority,
+    AdvisoryProvenance,
+    AdvisoryRequest,
+    AdvisoryResponse,
+    AdvisoryUncertainty,
+)
 from src.domain.events import EventEnvelope, EventStore
 from src.domain.market.capability import (
     CapabilityPreference,
@@ -13,10 +22,13 @@ from src.domain.market.capability import (
 )
 from src.domain.market.registry import ProviderRegistry
 from src.security import (
+    Credential,
+    CredentialStatus,
     CredentialStore,
     KeyManager,
     LiteLLMCredentialPayload,
     create_litellm_credential,
+    get_advisory_model_selection_config,
 )
 
 
@@ -97,6 +109,127 @@ def test_provider_governance_never_returns_credential_values(
     assert polygon["exposes_secret_values"] is False
 
 
+def test_provider_governance_reports_llm_provider_secret_without_value(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    master_key = KeyManager.generate_master_key()
+    monkeypatch.setenv("TRADEFORGE_MASTER_KEY", master_key)
+    key_manager = KeyManager(master_key.encode("ascii"))
+    store = CredentialStore(tmp_path / ".keys.enc")
+    store.save(
+        Credential(
+            provider_id="llm_groq",
+            credential_type="api_key",
+            encrypted_payload=key_manager.encrypt_payload(
+                {"api_key": "groq-secret-value"}
+            ),
+            created_at=datetime(2026, 5, 25, tzinfo=UTC),
+            rotated_at=None,
+            last_validated_at=None,
+            status=CredentialStatus.ACTIVE,
+            provenance={"set_by": "operator", "source": "test"},
+        )
+    )
+    client = TestClient(create_app(credential_store=store))
+
+    response = client.get("/provider-governance")
+
+    assert response.status_code == 200
+    assert "groq-secret-value" not in response.text
+    body = response.json()
+    credential = next(
+        item for item in body["credentials"] if item["provider_id"] == "llm_groq"
+    )
+    provider = next(
+        item for item in body["providers"] if item["provider_id"] == "llm_groq"
+    )
+    assert credential["configured"] is True
+    assert credential["exposes_secret_values"] is False
+    assert provider["capabilities"] == ["llm_provider_secret"]
+
+
+def test_ai_gateway_provider_secret_injection_reports_status_without_secret(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    master_key = KeyManager.generate_master_key()
+    monkeypatch.setenv("TRADEFORGE_MASTER_KEY", master_key)
+    key_manager = KeyManager(master_key.encode("ascii"))
+    store = CredentialStore(tmp_path / ".keys.enc")
+    store.save(
+        Credential(
+            provider_id="llm_groq",
+            credential_type="api_key",
+            encrypted_payload=key_manager.encrypt_payload(
+                {"api_key": "groq-secret-value"}
+            ),
+            created_at=datetime(2026, 5, 25, tzinfo=UTC),
+            rotated_at=None,
+            last_validated_at=None,
+            status=CredentialStatus.ACTIVE,
+            provenance={"set_by": "operator", "source": "test"},
+        )
+    )
+    client = TestClient(create_app(credential_store=store))
+
+    response = client.get(
+        "/provider-governance/ai-gateway/provider-secret-injection"
+    )
+
+    assert response.status_code == 200
+    assert "groq-secret-value" not in response.text
+    body = response.json()
+    assert body["authority"] == "operational"
+    assert body["exposes_secret_values"] is False
+    assert body["runtime_decryption_boundary"] == "composition"
+    assert body["event_ledger_writes"] is False
+    assert body["injectable_environment_variables"] == ["GROQ_API_KEY"]
+    groq = next(
+        item for item in body["provider_secrets"] if item["provider_id"] == "llm_groq"
+    )
+    assert groq["configured"] is True
+    assert groq["available_for_runtime_injection"] is True
+
+
+def test_ai_gateway_provider_secret_injection_is_stateless_request_time(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    master_key = KeyManager.generate_master_key()
+    monkeypatch.setenv("TRADEFORGE_MASTER_KEY", master_key)
+    key_manager = KeyManager(master_key.encode("ascii"))
+    store = CredentialStore(tmp_path / ".keys.enc")
+    store.save(
+        Credential(
+            provider_id="llm_groq",
+            credential_type="api_key",
+            encrypted_payload=key_manager.encrypt_payload(
+                {"api_key": "groq-secret-value"}
+            ),
+            created_at=datetime(2026, 5, 25, tzinfo=UTC),
+            rotated_at=None,
+            last_validated_at=None,
+            status=CredentialStatus.ACTIVE,
+            provenance={"set_by": "operator", "source": "test"},
+        )
+    )
+    client = TestClient(create_app(credential_store=store))
+
+    response = client.get(
+        "/provider-governance/ai-gateway/provider-secret-injection"
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["injectable_environment_variables"] == ["GROQ_API_KEY"]
+    groq = next(
+        item for item in body["provider_secrets"] if item["provider_id"] == "llm_groq"
+    )
+    assert groq["configured"] is True
+    assert groq["available_for_runtime_injection"] is True
+
+
 def test_provider_governance_reports_litellm_gateway_aliases(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -125,7 +258,7 @@ def test_provider_governance_reports_litellm_gateway_aliases(
     assert gateway["status"] == "configured"
     assert gateway["gateway_url"] == "http://localhost:4000"
     assert gateway["default_model"] == "configured-model"
-    assert gateway["underlying_provider_id"] is None
+    assert gateway["underlying_provider_id"] == "legacy"
     assert gateway["reachability"] == "not_checked"
     assert "litellm-secret" not in response.text
     aliases = {route["alias"] for route in gateway["route_aliases"]}
@@ -167,7 +300,8 @@ def test_ai_gateway_visibility_endpoint_exposes_route_target_provider(
     assert gateway["gateway_id"] == "litellm"
     assert gateway["gateway_url"] == "http://localhost:4000"
     assert gateway["default_model"] == "groq/llama-3.1-70b-versatile"
-    assert gateway["underlying_provider_id"] == "groq"
+    assert gateway["underlying_provider_id"] == "llm_groq"
+    assert gateway["primary_provider_id"] == "llm_groq"
     assert gateway["reachability"] == "not_checked"
     assert "litellm-secret" not in response.text
     alias = next(
@@ -177,12 +311,133 @@ def test_ai_gateway_visibility_endpoint_exposes_route_target_provider(
     )
     assert alias["advisory_usage_domain"] == "reasoned interpretation"
     assert alias["route_target_model"] == "groq/llama-3.1-70b-versatile"
-    assert alias["underlying_provider_id"] == "groq"
+    assert alias["underlying_provider_id"] == "llm_groq"
+    assert alias["route_target_provider_id"] == "llm_groq"
     assert alias["availability_status"] == "configured"
 
 
-def test_ai_gateway_visibility_endpoint_reports_not_configured() -> None:
-    client = TestClient(create_app())
+def test_ai_gateway_model_selection_reports_configured_models_without_probe(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    master_key = KeyManager.generate_master_key()
+    monkeypatch.setenv("TRADEFORGE_MASTER_KEY", master_key)
+    store = CredentialStore(tmp_path / ".keys.enc")
+    store.save(
+        create_litellm_credential(
+            LiteLLMCredentialPayload(
+                base_url="http://localhost:4000",
+                api_key="litellm-secret",
+                default_model="primary-model",
+                fallback_model="fallback-model",
+            ),
+            key_manager=KeyManager(master_key.encode("ascii")),
+        )
+    )
+    client = TestClient(
+        create_app(credential_store=store, ai_advisory_provider=_FakeAdvisoryProvider())
+    )
+
+    response = client.get("/provider-governance/ai-gateway/model-selection")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["authority"] == "operational"
+    assert body["is_canonical"] is False
+    assert body["event_ledger_writes"] is False
+    assert body["discovery_status"] == "available"
+    assert body["available_models"] == ["fallback-model", "primary-model"]
+    assert body["selected_primary_model"] == "primary-model"
+    assert body["selected_fallback_model"] == "fallback-model"
+
+
+def test_ai_gateway_model_selection_updates_litellm_credential_without_event_write(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    master_key = KeyManager.generate_master_key()
+    monkeypatch.setenv("TRADEFORGE_MASTER_KEY", master_key)
+    event_store = _CountingEventStore()
+    store = CredentialStore(tmp_path / ".keys.enc")
+    store.save(
+        create_litellm_credential(
+            LiteLLMCredentialPayload(
+                base_url="http://localhost:4000",
+                api_key="litellm-secret",
+                default_model="primary-model",
+            ),
+            key_manager=KeyManager(master_key.encode("ascii")),
+        )
+    )
+    client = TestClient(
+        create_app(
+            credential_store=store,
+            event_store=event_store,
+            ai_advisory_provider=_FakeAdvisoryProvider(),
+        )
+    )
+
+    response = client.put(
+        "/provider-governance/ai-gateway/model-selection",
+        json={
+            "primary_provider_id": "llm_groq",
+            "primary_model": "third-model",
+            "fallback_provider_id": "llm_groq",
+            "fallback_model": "fallback-model",
+        },
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["selected_primary_model"] == "third-model"
+    assert body["selected_fallback_model"] == "fallback-model"
+    assert event_store.append_calls == 0
+    stored = get_advisory_model_selection_config(
+        store,
+        key_manager=KeyManager(master_key.encode("ascii")),
+    )
+    assert stored is not None
+    assert stored.primary_provider_id == "llm_groq"
+    assert stored.primary_model == "third-model"
+    assert stored.fallback_provider_id == "llm_groq"
+    assert stored.fallback_model == "fallback-model"
+
+
+def test_ai_gateway_model_selection_requires_explicit_provider_identity(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    master_key = KeyManager.generate_master_key()
+    monkeypatch.setenv("TRADEFORGE_MASTER_KEY", master_key)
+    store = CredentialStore(tmp_path / ".keys.enc")
+    store.save(
+        create_litellm_credential(
+            LiteLLMCredentialPayload(
+                base_url="http://localhost:4000",
+                api_key="litellm-secret",
+                default_model="primary-model",
+            ),
+            key_manager=KeyManager(master_key.encode("ascii")),
+        )
+    )
+    client = TestClient(
+        create_app(credential_store=store, ai_advisory_provider=_FakeAdvisoryProvider())
+    )
+
+    response = client.put(
+        "/provider-governance/ai-gateway/model-selection",
+        json={"primary_model": "groq/llama-3.1-70b-versatile", "fallback_model": None},
+    )
+
+    assert response.status_code == 422
+
+
+def test_ai_gateway_visibility_endpoint_reports_not_configured(
+    tmp_path: Path,
+) -> None:
+    client = TestClient(
+        create_app(credential_store=CredentialStore(tmp_path / ".keys.enc"))
+    )
 
     response = client.get("/provider-governance/ai-gateway")
 
@@ -208,6 +463,51 @@ def test_provider_governance_does_not_mutate_event_store() -> None:
     assert event_store.append_calls == 0
 
 
+def test_ai_gateway_smoke_test_uses_advisory_provider_without_event_write() -> None:
+    event_store = _CountingEventStore()
+    provider = _FakeAdvisoryProvider()
+    client = TestClient(
+        create_app(event_store=event_store, ai_advisory_provider=provider)
+    )
+
+    response = client.post("/provider-governance/ai-gateway/smoke-test", json={})
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["status"] == "available"
+    assert body["authority"] == "operational"
+    assert body["is_canonical"] is False
+    assert body["lifecycle_authority"] is False
+    assert body["execution_authority"] is False
+    assert body["event_ledger_writes"] is False
+    assert body["advisory_response_authority"] == "advisory"
+    assert body["provider_id"] == "litellm"
+    assert body["model_id"] == "tradeforge-ollama"
+    assert provider.request_count == 1
+    assert event_store.append_calls == 0
+
+
+def test_ai_gateway_smoke_test_reports_not_configured_without_event_write(
+    tmp_path: Path,
+) -> None:
+    event_store = _CountingEventStore()
+    client = TestClient(
+        create_app(
+            event_store=event_store,
+            credential_store=CredentialStore(tmp_path / ".keys.enc"),
+        )
+    )
+
+    response = client.post("/provider-governance/ai-gateway/smoke-test", json={})
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["status"] == "not_configured"
+    assert body["provider_id"] is None
+    assert body["advisory_response_authority"] is None
+    assert event_store.append_calls == 0
+
+
 class _CountingEventStore(EventStore):
     def __init__(self) -> None:
         self.append_calls = 0
@@ -217,3 +517,38 @@ class _CountingEventStore(EventStore):
 
     def read_events(self) -> tuple[EventEnvelope, ...]:
         return ()
+
+
+class _FakeAdvisoryProvider:
+    provider_id = "litellm"
+    provider_version = "fake-test-provider"
+
+    def __init__(self) -> None:
+        self.request_count = 0
+
+    def list_models(self) -> tuple[str, ...]:
+        return ("primary-model", "fallback-model", "third-model")
+
+    def generate(self, request: AdvisoryRequest) -> AdvisoryResponse:
+        self.request_count += 1
+        assert request.artifact_kind is AdvisoryArtifactKind.CONTEXT_SUMMARY
+        assert request.persona_id == "provider-governance"
+        assert request.workspace_id == "provider-governance"
+        return AdvisoryResponse(
+            request_id=request.request_id,
+            artifact_kind=request.artifact_kind,
+            content="advisory route smoke test ok",
+            provenance=AdvisoryProvenance(
+                provider_id=self.provider_id,
+                provider_version=self.provider_version,
+                model_id="tradeforge-ollama",
+                generated_at=datetime.now(UTC),
+                prompt_version="test",
+            ),
+            uncertainty=AdvisoryUncertainty(
+                confidence=0.5,
+                caveats=("Operational smoke test only.",),
+            ),
+            source_references=request.source_references,
+            authority=AdvisoryAuthority.ADVISORY,
+        )

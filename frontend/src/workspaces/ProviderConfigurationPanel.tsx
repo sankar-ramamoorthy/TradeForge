@@ -12,7 +12,18 @@ import {
   type ProviderConfiguration,
 } from "../api/runtime";
 
-const CREDENTIAL_PROVIDERS = ["polygon", "alpaca", "fmp", "alpha_vantage", "litellm"] as const;
+const CREDENTIAL_PROVIDERS = [
+  "polygon",
+  "alpaca",
+  "fmp",
+  "alpha_vantage",
+  "litellm",
+  "llm_groq",
+  "llm_nvidia_nim",
+  "llm_openai",
+  "llm_anthropic",
+  "llm_google",
+] as const;
 type CredentialProvider = (typeof CREDENTIAL_PROVIDERS)[number];
 
 export function ProviderConfigurationPanel() {
@@ -58,7 +69,14 @@ export function ProviderConfigurationPanel() {
   const handleSave = async (providerId: CredentialProvider) => {
     setSaving(true);
     try {
-      const updated = await updateCredential(providerId, formValues);
+      const schema = PROVIDER_CREDENTIAL_SCHEMAS[providerId] ?? [];
+      const filteredFields = Object.fromEntries(
+        Object.entries(formValues).filter(([name, value]) => {
+          const field = schema.find((item) => item.name === name);
+          return !field?.optional || value.trim() !== "";
+        }),
+      );
+      const updated = await updateCredential(providerId, filteredFields);
       setCredList((prev) =>
         prev
           ? {
@@ -296,7 +314,7 @@ export function ProviderConfigurationPanel() {
                             fieldDef.secret ? "••••••••" : `Enter ${fieldDef.label}`
                           }
                           autoComplete={fieldDef.secret ? "new-password" : "off"}
-                          required
+                          required={!fieldDef.optional}
                         />
                       </label>
                     ))}

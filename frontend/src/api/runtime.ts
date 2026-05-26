@@ -116,6 +116,38 @@ export type RuntimeSession = {
   owns_event_truth: false;
 };
 
+async function readOperationalJson<T>(
+  response: Response,
+  label: string,
+): Promise<T> {
+  const contentType = response.headers.get("content-type") ?? "";
+  const body = await response.text();
+  const isJson = contentType.toLowerCase().includes("application/json");
+
+  if (!isJson) {
+    throw new Error(
+      `${label} returned a non-JSON response. Check the local dev proxy and API route configuration.`,
+    );
+  }
+
+  let parsed: unknown;
+  try {
+    parsed = body ? JSON.parse(body) : null;
+  } catch {
+    throw new Error(`${label} returned malformed JSON.`);
+  }
+
+  if (!response.ok) {
+    const detail =
+      typeof parsed === "object" && parsed !== null && "detail" in parsed
+        ? String((parsed as { detail: unknown }).detail)
+        : `HTTP ${response.status}`;
+    throw new Error(`${label} failed: ${detail}`);
+  }
+
+  return parsed as T;
+}
+
 export async function fetchRuntimeStatus(
   signal?: AbortSignal
 ): Promise<RuntimeStatus> {
@@ -280,6 +312,9 @@ export type ProviderGovernanceRouteAlias = {
   configured: boolean;
   availability_status: "configured" | "not_configured" | "unknown";
   route_target_model: string | null;
+  fallback_model: string | null;
+  route_target_provider_id: string | null;
+  fallback_provider_id: string | null;
   underlying_provider_id: string | null;
   reachability: "not_checked" | "available" | "unavailable" | "unknown";
 };
@@ -291,6 +326,9 @@ export type ProviderGovernanceAiGateway = {
   provider_id: string | null;
   gateway_url: string | null;
   default_model: string | null;
+  fallback_model: string | null;
+  primary_provider_id: string | null;
+  fallback_provider_id: string | null;
   underlying_provider_id: string | null;
   reachability: "not_checked" | "available" | "unavailable" | "unknown";
   route_aliases: ProviderGovernanceRouteAlias[];
@@ -360,6 +398,93 @@ export async function fetchProviderGovernanceAiGateway(
   return response.json() as Promise<ProviderGovernanceAiGateway>;
 }
 
+export type AdvisoryModelSelection = {
+  gateway_id: "litellm";
+  configured: boolean;
+  discovery_status: "available" | "unavailable" | "not_configured";
+  available_models: string[];
+  selected_primary_model: string | null;
+  selected_fallback_model: string | null;
+  selected_primary_provider_id: string | null;
+  selected_fallback_provider_id: string | null;
+  gateway_url: string | null;
+  authority: "operational";
+  is_canonical: false;
+  lifecycle_authority: false;
+  execution_authority: false;
+  event_ledger_writes: false;
+};
+
+export async function fetchAdvisoryModelSelection(
+  signal?: AbortSignal,
+): Promise<AdvisoryModelSelection> {
+  const response = await fetch(
+    "/provider-governance/ai-gateway/model-selection",
+    { signal },
+  );
+  return readOperationalJson<AdvisoryModelSelection>(
+    response,
+    "Advisory model selection request",
+  );
+}
+
+export async function updateAdvisoryModelSelection(
+  selection: {
+    primary_provider_id: string;
+    primary_model: string;
+    fallback_provider_id: string | null;
+    fallback_model: string | null;
+  },
+  signal?: AbortSignal,
+): Promise<AdvisoryModelSelection> {
+  const response = await fetch(
+    "/provider-governance/ai-gateway/model-selection",
+    {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(selection),
+      signal,
+    },
+  );
+  return readOperationalJson<AdvisoryModelSelection>(
+    response,
+    "Advisory model selection update",
+  );
+}
+
+export type LLMProviderSecretInjection = {
+  gateway_id: "litellm";
+  authority: "operational";
+  is_canonical: false;
+  exposes_secret_values: false;
+  runtime_decryption_boundary: "composition";
+  reload_semantics: "credential_write_triggers_provider_reload";
+  injectable_environment_variables: string[];
+  provider_secrets: {
+    provider_id: string;
+    display_name: string;
+    litellm_environment_variable: string;
+    configured: boolean;
+    available_for_runtime_injection: boolean;
+  }[];
+  lifecycle_authority: false;
+  execution_authority: false;
+  event_ledger_writes: false;
+};
+
+export async function fetchLLMProviderSecretInjection(
+  signal?: AbortSignal,
+): Promise<LLMProviderSecretInjection> {
+  const response = await fetch(
+    "/provider-governance/ai-gateway/provider-secret-injection",
+    { signal },
+  );
+  return readOperationalJson<LLMProviderSecretInjection>(
+    response,
+    "LLM provider secret injection request",
+  );
+}
+
 export async function fetchProviderConfiguration(
   signal?: AbortSignal,
 ): Promise<ProviderConfiguration> {
@@ -396,6 +521,7 @@ export type ProviderCredentialField = {
   name: string;
   label: string;
   secret: boolean;
+  optional?: boolean;
 };
 
 export const PROVIDER_CREDENTIAL_SCHEMAS: Record<string, ProviderCredentialField[]> = {
@@ -407,10 +533,14 @@ export const PROVIDER_CREDENTIAL_SCHEMAS: Record<string, ProviderCredentialField
   ],
   fmp: [{ name: "api_key", label: "API Key", secret: true }],
   alpha_vantage: [{ name: "api_key", label: "API Key", secret: true }],
+  llm_groq: [{ name: "api_key", label: "API Key", secret: true }],
+  llm_nvidia_nim: [{ name: "api_key", label: "API Key", secret: true }],
+  llm_openai: [{ name: "api_key", label: "API Key", secret: true }],
+  llm_anthropic: [{ name: "api_key", label: "API Key", secret: true }],
+  llm_google: [{ name: "api_key", label: "API Key", secret: true }],
   litellm: [
     { name: "base_url", label: "Base URL", secret: false },
     { name: "api_key", label: "API Key", secret: true },
-    { name: "default_model", label: "Default Model", secret: false },
   ],
 };
 
@@ -592,6 +722,45 @@ export type AdvisoryInterpretationList = {
   interpretations: AdvisoryInterpretation[];
 };
 
+export type AdvisoryGeneratedResponse = {
+  request_id: string;
+  artifact_kind: string;
+  content: string;
+  source_references: {
+    source_kind: string;
+    source_id: string;
+    description: string | null;
+  }[];
+  caveats: string[];
+  confidence: number;
+  provenance: {
+    provider_id: string;
+    provider_version: string;
+    model_id: string;
+    generated_at: string;
+    prompt_version: string | null;
+  };
+  authority: "advisory";
+  is_canonical: false;
+  requires_operator_acceptance: true;
+};
+
+export type AdvisoryRouteSmokeTestResponse = {
+  gateway_id: "litellm";
+  status: "available" | "unavailable" | "not_configured";
+  diagnostic_message: string;
+  provider_id: string | null;
+  model_id: string | null;
+  generated_at: string | null;
+  content_preview: string | null;
+  authority: "operational";
+  is_canonical: false;
+  lifecycle_authority: false;
+  execution_authority: false;
+  event_ledger_writes: false;
+  advisory_response_authority: "advisory" | null;
+};
+
 export type AdvisoryCandidate = {
   candidate_id: string;
   symbol: string;
@@ -654,11 +823,10 @@ export async function fetchCandidateReviewQueue(
     { signal },
   );
 
-  if (!response.ok) {
-    throw new Error(`Candidate review queue request failed: ${response.status}`);
-  }
-
-  return response.json() as Promise<CandidateReviewQueue>;
+  return readOperationalJson<CandidateReviewQueue>(
+    response,
+    "Candidate review queue request",
+  );
 }
 
 export async function fetchAdvisoryInterpretations(
@@ -680,11 +848,48 @@ export async function fetchAdvisoryInterpretations(
     { signal },
   );
 
-  if (!response.ok) {
-    throw new Error(`Advisory interpretations request failed: ${response.status}`);
-  }
+  return readOperationalJson<AdvisoryInterpretationList>(
+    response,
+    "Advisory interpretations request",
+  );
+}
 
-  return response.json() as Promise<AdvisoryInterpretationList>;
+export async function generateThesisReview(
+  params: {
+    decision_id: string;
+    persona_id: string;
+    workspace_id: string;
+    operator_question?: string;
+  },
+  signal?: AbortSignal,
+): Promise<AdvisoryGeneratedResponse> {
+  const response = await fetch("/advisory/thesis-review", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(params),
+    signal,
+  });
+
+  return readOperationalJson<AdvisoryGeneratedResponse>(
+    response,
+    "Advisory thesis review request",
+  );
+}
+
+export async function smokeTestAdvisoryRoute(
+  signal?: AbortSignal,
+): Promise<AdvisoryRouteSmokeTestResponse> {
+  const response = await fetch("/provider-governance/ai-gateway/smoke-test", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({}),
+    signal,
+  });
+
+  return readOperationalJson<AdvisoryRouteSmokeTestResponse>(
+    response,
+    "Advisory route smoke test",
+  );
 }
 
 export async function fetchContextualSummary(

@@ -16,6 +16,9 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      litellm:
+        condition: service_healthy
+        required: false
     restart: unless-stopped
     command:
       [
@@ -35,6 +38,7 @@ services:
       - "5432:5432"
     volumes:
       - tradeforge-postgres-data:/var/lib/postgresql/data
+      - ./scripts/postgres-init:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U tradeforge -d tradeforge"]
       interval: 5s
@@ -43,18 +47,27 @@ services:
     restart: unless-stopped
 
   litellm:
-    image: docker.litellm.ai/berriai/litellm:main-latest
+    image: docker.litellm.ai/berriai/litellm:v1.72.6-stable
     profiles:
       - advisory
     environment:
       LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY:-sk-tradeforge-local-dev}
-      GROQ_API_KEY: ${GROQ_API_KEY:-}
-      NVIDIA_NIM_API_KEY: ${NVIDIA_NIM_API_KEY:-}
-      OLLAMA_API_BASE: ${OLLAMA_API_BASE:-http://host.docker.internal:11434}
-    ports:
-      - "4000:4000"
+    expose:
+      - "4000"
     volumes:
       - ./litellm_config.yaml:/app/config.yaml:ro
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          python3 -c "import urllib.request,os;
+          urllib.request.urlopen(urllib.request.Request(
+          'http://localhost:4000/health/readiness',
+          headers={'Authorization':'Bearer '+os.environ['LITELLM_MASTER_KEY']}))"
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 60s
     restart: unless-stopped
     command:
       [

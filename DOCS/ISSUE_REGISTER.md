@@ -20,8 +20,7 @@ Each issue records:
 
 GitHub issues may mirror these records, but this file remains the local planning source of truth.
 
-Roadmap v2 is the active milestone direction. This register is intentionally scoped through M8 for the fast MVP v1 path. 
-Explicit roadmap checkpoint completed M9 Updated*Done*.
+Roadmap v2 is the active milestone direction. This register now tracks runtime implementation through the current M13B/M14 boundary while preserving the earlier MVP record for reference.
 
 
 ---
@@ -236,6 +235,14 @@ Explicit roadmap checkpoint completed M9 Updated*Done*.
 | TF-F066 | Done | M13A | Implement AI gateway route visibility | `feature/tf-f066-ai-gateway-route-visibility` |
 | TF-F067 | Done | M13A | Implement provider governance frontend surface and rail cleanup | `feature/tf-f067-provider-governance-surface` |
 | TF-F068 | Done | M13A | M13A verification and M14 readiness gate | `docs/tf-f068-m13a-readiness-gate` |
+| TF-F069 | Done | M14 | Provider governance UI broken — JSON parse failure on load | `fix/tf-f069-provider-governance-json-parse` |
+| TF-F070 | Done | M13A | Advisory Route Diagnostics And Explicit Advisory Invocation | `feature/tf-f070-advisory-route-diagnostics` |
+| TF-F071 | Done | M13A | Fix Advisory Thesis Review Event Store Loading | `fix/tf-f071-advisory-thesis-review-event-read` |
+| TF-F072 | Done | M13B | Global Advisory Model Selection | `feature/tf-f072-global-advisory-model-selection` |
+| TF-F073 | Done | M13B | Internalize LiteLLM Gateway Network Boundary | `feature/tf-f073-internalize-litellm-gateway-boundary` |
+| TF-F074 | Done | M13B | Governed LLM Provider Secret Management | `feature/tf-f074-governed-llm-provider-secrets` |
+| TF-F075 | Done | M13B | Implement Stateless LiteLLM Request-Time Credential Composition | `feature/tf-f075-litellm-secret-injection` |
+| TF-F076 | Done | M13B | Replace LiteLLM route-probing healthcheck with non-invasive readiness check | `fix/tf-f076-litellm-readiness-healthcheck` |
 
 ## TF-A001: Define AdvisoryObservation Domain Model
 
@@ -2802,11 +2809,9 @@ Added an explicit fallback `None` return path to `_decision_item_spec()` so the 
 
 ---
 
-Explicit roadmap checkpoint completed M9 Updated*Done*.
-M10A COMPLETE 2026-05-14. All 15 issues done: M10AIS01-15.
-TF-F001, TF-F002, TF-F003 — Post-M10A feedback issues from first operational walkthrough (2026-05-14). TF-F#### series = field-observed / feedback-originated issues, distinct from roadmap TF-#### series. Milestone TBD.
-Post-MVP Roadmap v2 implementation begins with M9 market-context infrastructure and provider-boundary work. 
-M9 remains constrained to read-only advisory context and must not introduce broker execution authority, autonomous AI decision systems, or non-replayable runtime behavior.
+Current planning now extends through M13B. M14 behavioral intelligence is the next planned milestone.
+TF-F#### series = field-observed / feedback-originated issues, distinct from roadmap TF-#### series.
+Historical MVP and M10A notes are retained above for traceability.
 
 
 ---
@@ -7234,5 +7239,723 @@ administration out of contextual rails.
 - `npm.cmd run typecheck`
 - `npm.cmd run build`
 - `git diff --check`
+
+---
+
+## TF-F069: Provider Governance UI Broken — JSON Parse Failure On Load
+
+**Status:** Done
+
+**Classification:** bug
+
+**Milestone:** M14
+
+**Branch:** `fix/tf-f069-provider-governance-json-parse`
+
+**Affected Layer:** frontend, api
+
+**Linked ADRs:** ADR-0032, ADR-0037, ADR-0038
+
+**Impacted Invariants:** UX Is Architectural
+
+**Depends On:** TF-F067
+
+**Problem:**
+The Provider Governance section of the UI fails to render on load. The user sees only three lines (skeleton/empty state) with no content. The browser console reports:
+
+```
+JSON.parse: unexpected character at line 1 column 1 of the JSON data
+```
+
+This indicates the frontend is receiving a non-JSON response (likely an HTML error page, empty body, or plain-text error) from the provider governance API endpoint instead of a valid JSON payload. The root cause is unknown — candidates include the API route not being mounted, returning a 404 HTML page, the backend throwing an unhandled exception before JSON serialization, or a misconfigured Content-Type header.
+
+**Scope:**
+
+- Identify which provider governance API endpoint is returning non-JSON.
+- Confirm whether the backend route is mounted and reachable.
+- Fix the API to return valid JSON in all cases (success and error).
+- Ensure the frontend handles API errors gracefully with a visible error state rather than a silent empty/skeleton render.
+
+**Acceptance Criteria:**
+
+- The Provider Governance section loads and displays content without a JSON parse error.
+- The browser console is free of JSON parse errors on the Provider Governance route.
+- If the API returns an error, the frontend displays an explicit error message rather than an empty skeleton.
+- Backend returns `Content-Type: application/json` for all provider governance endpoints.
+- Existing provider governance tests continue to pass.
+
+**Out Of Scope:**
+
+- Redesigning the provider governance UI layout.
+- Adding new provider governance features.
+
+**Resolution Summary:**
+Root cause: `/provider-governance` and `/admin` were missing from `frontend/vite.config.ts`.
+Vite served the React SPA shell (HTML) instead of proxying to the backend; `.json()` threw on
+the HTML response. Fix: added both proxy entries. No backend changes, no ADR required.
+
+**Verified:**
+
+- Provider Governance workspace loads content without JSON parse error.
+- `frontend/vite.config.ts` proxy table extended with `/provider-governance` and `/admin`.
+- Raw KB capture: `knowledge-base/TradeForge/raw/TF-F069-provider-governance-json-parse.md`
+- Processed note: `knowledge-base/TradeForge/knowledge/processed/TF-F069-provider-governance-json-parse.md`
+
+---
+
+## TF-F070: Advisory Route Diagnostics And Explicit Advisory Invocation
+
+**Status:** Done
+
+**Classification:** enhancement / operational
+
+**Milestone:** M13A
+
+**Branch:** `feature/tf-f070-advisory-route-diagnostics`
+
+**Affected Layer:** frontend, app, infrastructure/advisory
+
+**Linked ADRs:** ADR-0001, ADR-0003, ADR-0032, ADR-0037, ADR-0038, ADR-0041, ADR-0042
+
+**Impacted Invariants:** AI Advisory Boundary, Human Decision Sovereignty, Derived State Must Remain Distinguishable, Replayability Is Foundational, UX Is Architectural, Architectural Simplicity
+
+**Depends On:** TF-F051, TF-F052, TF-F064, TF-F066, TF-F067, TF-F069
+
+**Source:** `knowledge/raw/brainstorm-20260524-litellm-advisory-routing-test-gap.md` and `knowledge/raw/TF-F069 Provider governance page not working.md`.
+
+**Problem:**
+Operators cannot clearly determine whether advisory routes are functioning, whether LiteLLM is reachable, whether advisory generation was actually invoked, or whether failures come from frontend proxying, TradeForge API handling, LiteLLM routing, or the underlying model provider. During local Vite development, `/advisory/*` routes are not proxied to the backend, causing HTML responses to be parsed as JSON and surfacing misleading `JSON.parse: unexpected character at line 1 column 1` errors in advisory panels.
+
+The current Plan Review Workspace can imply advisory interpretation may happen automatically after thesis creation, while the architecture intends explicit operator-invoked advisory actions. Operational diagnostics must make advisory invocation visible without adding background generation, lifecycle authority, or canonical event writes.
+
+**Diagnosis:**
+Direct testing confirmed local Ollama works, LiteLLM exposes configured model aliases, and the `tradeforge-ollama` route can complete a chat request through LiteLLM. TradeForge logs for the ANET workflow showed lifecycle and workspace requests, but no `/advisory/thesis-review`, `/advisory/generate-observations`, `/advisory/replay-summary`, or equivalent AI generation call. LiteLLM logs showed no matching `/v1/chat/completions` call from that workflow. The observed JSON parse failure is therefore likely a frontend local-dev routing problem for `/advisory/*`, not proof that LiteLLM or Ollama failed.
+
+**Scope:**
+
+- Add `/advisory` to the Vite local-development proxy table.
+- Improve advisory API failure handling so non-JSON or proxy failures render operator-facing diagnostics instead of raw JSON parse errors.
+- Add an explicit "Generate Advisory Review" action in the Plan Review Workspace that invokes the existing thesis-review advisory path on operator command.
+- Surface advisory invocation state in the Plan Review Workspace, including not invoked, running, succeeded, and failed states.
+- Add a minimal non-canonical advisory route smoke test in the provider governance / AI gateway surface that verifies the configured advisory route can receive a tiny diagnostic prompt.
+- Keep smoke-test results as operational metadata only; do not create canonical event-ledger facts.
+
+**Out Of Scope:**
+
+- Autonomous advisory generation.
+- Persistent AI memory.
+- A generalized orchestration engine.
+- Multi-agent workflows.
+- Automatic lifecycle intervention.
+- Hidden background advisory calls.
+- New lifecycle stages or lifecycle transition behavior.
+- Editing external LiteLLM configuration from TradeForge.
+
+**Acceptance Criteria:**
+
+- `/advisory/*` routes proxy correctly during Vite local development.
+- Advisory API failures display operational diagnostics instead of raw JSON parse errors.
+- Plan Review Workspace includes an explicit operator-invoked advisory review action.
+- Advisory invocation does not automatically occur during lifecycle transitions.
+- Provider governance UI can perform a non-canonical advisory route smoke test.
+- Smoke tests do not create canonical ledger events.
+- Advisory diagnostics remain operational metadata only.
+- Advisory output remains visibly non-canonical and cannot approve, execute, or transition lifecycle state.
+- Focused backend tests cover provider governance smoke-test behavior, and frontend typecheck/build cover the explicit advisory invocation and diagnostic API contracts.
+
+**ADR Checkpoint:**
+No ADR is expected for the first implementation if it remains within existing AI advisory, provider governance, and operational diagnostic boundaries. ADR evaluation must be revisited if implementation introduces durable diagnostic history, new event types, automatic advisory invocation, lifecycle changes, or a new orchestration boundary.
+
+**Resolution Summary:**
+Added local-development proxy coverage for `/advisory`, `/provider-governance`,
+and `/admin` so frontend requests reach the FastAPI runtime instead of parsing
+the Vite HTML shell. Added operational JSON parsing for advisory fetches so
+non-JSON and malformed responses produce explicit operator diagnostics.
+
+Plan Review now exposes an explicit operator-triggered "Generate Advisory
+Review" action that calls the existing `/advisory/thesis-review` route and
+surfaces invocation state as not invoked, running, succeeded, or failed. The
+action remains non-canonical and does not create lifecycle transitions.
+
+Provider Governance now includes a non-canonical AI gateway smoke test backed
+by `POST /provider-governance/ai-gateway/smoke-test`. The endpoint performs a
+minimal advisory provider call when configured, reports unavailable or
+not-configured states as operational metadata, and does not write canonical
+event-ledger facts.
+
+Provider credential reload now refreshes the in-process LiteLLM advisory
+provider so a saved LiteLLM credential can become active without restarting the
+backend.
+
+**Completed Verification:**
+
+- `uv run pytest tests/test_provider_governance_api.py tests/test_default_advisory_provider_bootstrap.py`
+- `uv run mypy src\app\api\routes.py tests\test_provider_governance_api.py`
+- `npm.cmd run typecheck`
+- `npm.cmd run build`
+- `git diff --check`
+
+**Verification Note:**
+`uv run ruff check src\app\api\routes.py tests\test_provider_governance_api.py`
+still reports existing line-length and FastAPI `Query(...)` default findings in
+`src/app/api/routes.py`. The new TF-F070 long-line finding was fixed; the
+remaining ruff findings are outside this issue's change scope.
+
+---
+
+## TF-F071: Fix Advisory Thesis Review Event Store Loading
+
+**Status:** Done
+
+**Classification:** bug
+
+**Milestone:** M13A
+
+**Branch:** `fix/tf-f071-advisory-thesis-review-event-read`
+
+**Affected Layer:** app
+
+**Linked ADRs:** ADR-0001, ADR-0006, ADR-0018, ADR-0020, ADR-0041, ADR-0042
+
+**Impacted Invariants:** Event Ledger Canonical Truth, Replayability Is Foundational, AI Advisory Boundary, Derived State Must Remain Distinguishable, Human Decision Sovereignty
+
+**Depends On:** TF-F070
+
+**Source:** `knowledge/raw/Generate-advisory-resulting-in error.md`
+
+**Problem:**
+After TF-F070 made advisory invocation explicit and fixed local routing, the
+`POST /advisory/thesis-review` endpoint is reached successfully but crashes
+before invoking LiteLLM. Runtime logs show:
+
+```text
+AttributeError: 'PostgresEventStore' object has no attribute 'load'
+```
+
+The route assumes an obsolete event-store method while the canonical
+`EventStore` port exposes `read_events()` for deterministic replay reads.
+
+**Scope:**
+
+- Align advisory thesis review context reconstruction with the canonical
+  event-store read interface.
+- Filter event history to the requested decision before selecting the latest
+  thesis artifact.
+- Preserve advisory-only behavior with no canonical event writes.
+- Add regression coverage for an event store that implements `read_events()`
+  but not `load()`.
+
+**Acceptance Criteria:**
+
+- `POST /advisory/thesis-review` no longer crashes when the runtime uses
+  `PostgresEventStore`.
+- The route reconstructs thesis context through the canonical event-store port.
+- The route returns advisory output when a thesis artifact exists for the
+  requested decision.
+- Missing thesis artifacts still return a controlled `404`.
+- Advisory generation does not append lifecycle events or canonical ledger
+  facts.
+- Focused backend tests pass.
+
+**Out Of Scope:**
+
+- New advisory orchestration behavior.
+- New event types or event schema changes.
+- Automatic advisory generation.
+- Provider, LiteLLM, or credential changes.
+
+**ADR Checkpoint:**
+No ADR is required. The fix uses the existing event-store port and reinforces
+existing advisory and replay boundaries without changing lifecycle state,
+event schema, domain model structure, or bounded contexts.
+
+**Resolution Summary:**
+Replaced the advisory thesis-review route's obsolete `event_store.load(...)`
+call with the canonical `read_events()` event-store port. The route now filters
+event history to the requested decision, reconstructs the latest structured
+thesis artifact from event payloads, and invokes the advisory provider without
+writing canonical events or mutating lifecycle state.
+
+Added regression coverage for an event store that implements `append()` and
+`read_events()` only, matching the domain port and `PostgresEventStore`
+behavior. The test verifies successful advisory generation, controlled `404`
+for missing thesis artifacts, and zero event appends.
+
+**Completed Verification:**
+
+- `uv run pytest tests/test_advisory_thesis_review_api.py tests/test_provider_governance_api.py tests/test_default_advisory_provider_bootstrap.py`
+- `uv run mypy src\app\api\routes.py tests\test_advisory_thesis_review_api.py`
+- `uv run ruff check tests\test_advisory_thesis_review_api.py`
+- `npm.cmd run typecheck`
+- `npm.cmd run build`
+- `git diff --check`
+
+---
+
+## TF-F072: Global Advisory Model Selection
+
+**Status:** Done
+
+**Classification:** feature / governance
+
+**Milestone:** M13B
+
+**Branch:** `feature/tf-f072-global-advisory-model-selection`
+
+**Affected Layer:** app, services/advisory, infrastructure/advisory, frontend
+
+**Linked ADRs:** ADR-0006, ADR-0037, ADR-0041, ADR-0042, ADR-0043
+
+**Impacted Invariants:** AI Advisory Boundary, Human Decision Sovereignty, Derived State Must Remain Distinguishable, Replayability Is Foundational, UX Is Architectural, Architectural Simplicity
+
+**Depends On:** TF-F062, TF-F066, TF-F067, TF-F070, TF-F071
+
+**Source:** `knowledge/raw/archived/brainstorm-20260525-m13b-ai-gateway-governance.md`; processed synthesis `knowledge/processed/20260525-m13b-ai-gateway-governance-synthesis.md`.
+
+**Problem:**
+Advisory generation can be invoked through LiteLLM, but operator control over
+the selected advisory model or route remains indirect. Workflow logic and
+runtime configuration can still depend on raw model names or static gateway
+defaults, making it hard to choose a primary advisory model, define a fallback,
+or smoke-test the selected route through the TradeForge governance surface.
+
+**Scope:**
+
+- Discover available LiteLLM models/routes through TradeForge.
+- Let the operator choose one primary advisory model or route.
+- Let the operator choose one optional fallback model or route.
+- Store the selected advisory configuration through the governed runtime
+  configuration or credential boundary defined by M13B.
+- Apply the selected configuration advisory-wide.
+- Remove hardcoded advisory model names from workflow logic.
+- Smoke-test the selected route through TradeForge.
+- Surface selected-route state in Provider Governance without treating it as
+  canonical decision truth.
+
+**Acceptance Criteria:**
+
+- Provider Governance lists available LiteLLM models/routes through TradeForge.
+- The operator can select a primary advisory model/route and optional fallback.
+- Advisory calls use the selected primary/fallback configuration consistently.
+- Existing advisory tasks do not hardcode raw model names in workflow logic.
+- The selected route can be smoke-tested through TradeForge.
+- Smoke-test results remain operational metadata and do not append canonical
+  event-ledger facts.
+- Route provenance needed for advisory artifact interpretation is captured when
+  advisory output is persisted or shown.
+- AI output remains advisory and cannot approve, execute, or transition
+  lifecycle state.
+
+**Out Of Scope:**
+
+- Per-task dynamic routing policies.
+- Automatic hidden model choice.
+- Cost optimization engines.
+- Multi-agent orchestration.
+- Direct Anthropic, OpenAI, Google, Groq, or NVIDIA SDK bypass.
+- Editing LiteLLM YAML directly unless separately scoped.
+
+**Resolution Summary:**
+Added global advisory model selection through Provider Governance. The existing
+encrypted `litellm` credential now supports optional `fallback_model` while
+preserving `default_model` as the selected primary route. The OpenAI-compatible
+advisory provider can discover LiteLLM models, uses the selected primary route
+for all advisory calls, and falls back only when the primary route is
+unavailable.
+
+Added `GET /provider-governance/ai-gateway/model-selection` and
+`PUT /provider-governance/ai-gateway/model-selection`. Updates are operational
+configuration changes stored in `.keys.enc`; they reload the in-process
+advisory provider and do not append canonical event-ledger facts. The Provider
+Governance frontend surface now lets operators choose primary and fallback
+routes from discovered LiteLLM models.
+
+**Completed Verification:**
+
+- `uv run pytest tests/test_credential_store.py tests/test_admin_credentials.py tests/test_openai_compatible_provider.py tests/test_provider_governance_api.py tests/test_default_advisory_provider_bootstrap.py`
+- `uv run mypy src\security\litellm_credential.py src\infrastructure\advisory\openai_compatible_provider.py src\app\api\routes.py src\app\api\admin_routes.py tests\test_credential_store.py tests\test_openai_compatible_provider.py tests\test_provider_governance_api.py`
+- `uv run ruff check src\security\litellm_credential.py src\infrastructure\advisory\openai_compatible_provider.py tests\test_credential_store.py tests\test_openai_compatible_provider.py tests\test_provider_governance_api.py scripts\manage_credentials.py`
+- `npm.cmd run typecheck`
+- `npm.cmd run build`
+
+---
+
+## TF-F073: Internalize LiteLLM Gateway Network Boundary
+
+**Status:** Done
+
+**Classification:** enhancement / infrastructure governance
+
+**Milestone:** M13B
+
+**Branch:** `feature/tf-f073-internalize-litellm-gateway-boundary`
+
+**Affected Layer:** infrastructure, app, docs, tests
+
+**Linked ADRs:** ADR-0006, ADR-0011, ADR-0037, ADR-0041, ADR-0042, ADR-0043
+
+**Impacted Invariants:** AI Advisory Boundary, Human Decision Sovereignty, Derived State Must Remain Distinguishable, Replayability Is Foundational, Architectural Simplicity
+
+**Depends On:** TF-F057, TF-F066, TF-F067, TF-F070, TF-F072
+
+**Source:** `knowledge/raw/archived/brainstorm-20260525-m13b-ai-gateway-governance.md`; processed synthesis `knowledge/processed/20260525-m13b-ai-gateway-governance-synthesis.md`.
+
+**Problem:**
+The optional LiteLLM Compose service was introduced as a reachable local service
+on host port `4000`. That was useful for initial validation, but it weakens the
+intended advisory boundary because browser or host workflows can call LiteLLM
+outside TradeForge. The managed advisory runtime requires TradeForge to be the
+sole operator-facing gateway while LiteLLM runs as internal infrastructure.
+
+**Scope:**
+
+- Remove public host exposure for LiteLLM by default.
+- Make LiteLLM reachable through Docker-internal networking by TradeForge.
+- Require browser and operator workflows to access advisory behavior through
+  TradeForge.
+- Update advisory configuration defaults for containerized runtime access.
+- Keep Provider Governance and AI gateway smoke tests working through
+  TradeForge.
+- Document the local debugging workflow when direct LiteLLM inspection is
+  needed.
+- Preserve LiteLLM as managed advisory gateway infrastructure, not a canonical
+  decision system.
+
+**Acceptance Criteria:**
+
+- LiteLLM is not exposed on `localhost:4000` by default.
+- Browser access cannot bypass TradeForge to invoke LiteLLM in the default
+  Compose runtime.
+- TradeForge advisory workflows continue functioning through internal network
+  access.
+- Provider Governance route visibility and smoke tests continue working through
+  TradeForge.
+- Local debugging instructions explain any explicit opt-in direct LiteLLM access
+  path.
+- Docker and runtime documentation describe LiteLLM as managed internal
+  advisory infrastructure.
+- No lifecycle, event ledger, or advisory authority semantics change.
+
+**Out Of Scope:**
+
+- Dynamic model registry implementation beyond TF-F072 requirements.
+- Automated route orchestration.
+- Per-task routing policies.
+- Direct vendor SDK bypass.
+- Distributed inference infrastructure.
+- Kubernetes networking, vault integration, or production platform hardening.
+
+**Resolution Summary:**
+Internalized the default LiteLLM Compose boundary by removing the host
+`4000:4000` publication from `docker-compose.yml` and using Docker-internal
+`expose: "4000"` instead. TradeForge-mediated advisory access continues through
+the configured gateway URL, with managed runtime docs pointing at
+`http://litellm:4000`.
+
+Added `docker-compose.litellm-debug.yml` as an explicit local debugging
+override that publishes `4000:4000` only when intentionally included. Updated
+README and credential setup documentation to describe TradeForge as the normal
+operator-facing advisory boundary and the override as temporary inspection
+workflow.
+
+**Completed Verification:**
+
+- `uv run pytest tests/test_postgres_compose.py tests/test_provider_governance_api.py tests/test_default_advisory_provider_bootstrap.py`
+- `docker compose config`
+- `docker compose --profile advisory config`
+- `docker compose --profile advisory -f docker-compose.yml -f docker-compose.litellm-debug.yml config`
+
+---
+
+## TF-F074: Governed LLM Provider Secret Management
+
+**Status:** Done
+
+**Classification:** feature / security governance
+
+**Milestone:** M13B
+
+**Branch:** `feature/tf-f074-governed-llm-provider-secrets`
+
+**Affected Layer:** security, app, infrastructure/advisory, frontend, docs, tests
+
+**Linked ADRs:** ADR-0006, ADR-0037, ADR-0041, ADR-0042, ADR-0043
+
+**Impacted Invariants:** AI Advisory Boundary, Human Decision Sovereignty, Derived State Must Remain Distinguishable, Replayability Is Foundational, Architectural Simplicity
+
+**Depends On:** TF-F045, TF-F055, TF-F065, TF-F066, TF-F067, TF-F072, TF-F073
+
+**Source:** `knowledge/raw/archived/brainstorm-20260525-m13b-ai-gateway-governance.md`; processed synthesis `knowledge/processed/20260525-m13b-ai-gateway-governance-synthesis.md`.
+
+**Problem:**
+M13A treated TradeForge as the owner of the LiteLLM gateway credential while
+downstream LLM vendor keys remained in LiteLLM configuration or operator
+environment. For the managed advisory runtime, that split leaves provider
+secret lifecycle, masking, rotation, reload, and provenance outside the
+TradeForge governance surface.
+
+**Scope:**
+
+- Extend governed credential handling to downstream LLM provider keys such as
+  Groq, NVIDIA NIM, OpenAI, Anthropic, Google, and similar providers.
+- Store provider secrets encrypted at rest in `.keys.enc`.
+- Mask secrets in API and UI responses.
+- Keep `TRADEFORGE_MASTER_KEY` as OS environment configuration only.
+- Decrypt provider secrets only at the runtime composition boundary.
+- Define managed injection of provider secrets into the LiteLLM runtime.
+- Define rotation and reload semantics for changed provider secrets.
+- Ensure plaintext secrets are never logged, returned, committed, or stored in
+  static LiteLLM config.
+
+**Acceptance Criteria:**
+
+- TradeForge can persist supported downstream LLM provider keys in `.keys.enc`.
+- Provider Governance shows configured/missing/invalid/revoked/untested states
+  without returning plaintext secrets.
+- API responses mask secret fields consistently.
+- Runtime composition can decrypt provider secrets and inject them into managed
+  LiteLLM without exposing them to workflow logic.
+- Credential rotation semantics are documented and tested.
+- Reload semantics are explicit for both TradeForge advisory provider state and
+  LiteLLM runtime injection.
+- Existing market-data credential behavior remains intact.
+- Advisory workflows remain non-canonical and cannot write lifecycle events or
+  execute trades.
+
+**Out Of Scope:**
+
+- Storing `TRADEFORGE_MASTER_KEY` in UI, `.env`, Git, or `.keys.enc`.
+- External vault, cloud secrets manager, or Kubernetes secrets integration.
+- Direct vendor SDK adapters for advisory workflow code.
+- Generalized orchestration or multi-agent runtime management.
+- Broker credential changes.
+- Changing event taxonomy or lifecycle authority.
+
+**Resolution Summary:**
+Added governed downstream LLM provider credential schemas for `llm_groq`,
+`llm_nvidia_nim`, `llm_openai`, `llm_anthropic`, and `llm_google`. These keys
+use the existing encrypted `.keys.enc` credential boundary, are masked in API
+and UI responses, and can be managed through the admin credential API,
+Provider Governance frontend, and credential CLI.
+
+Added a composition-boundary LiteLLM provider environment projection that
+decrypts active downstream LLM provider secrets only during app composition or
+provider reload. Provider Governance now exposes
+`GET /provider-governance/ai-gateway/provider-secret-injection`, which reports
+configured/injected status and target LiteLLM environment variable names without
+returning secret values. LiteLLM config now references Groq, NVIDIA NIM,
+OpenAI, Anthropic, and Google environment variables without embedding secrets.
+
+**Completed Verification:**
+
+- `uv run pytest tests/test_llm_provider_secrets.py tests/test_admin_credentials.py tests/test_provider_governance_api.py tests/test_postgres_compose.py tests/test_manage_credentials_script.py tests/test_credential_store.py`
+- `uv run mypy src\security src\app\api\application.py src\app\api\admin_routes.py src\app\api\routes.py tests\test_llm_provider_secrets.py tests\test_admin_credentials.py tests\test_provider_governance_api.py`
+- `uv run ruff check src\security src\app\api\application.py src\app\api\admin_routes.py tests\test_llm_provider_secrets.py tests\test_admin_credentials.py tests\test_provider_governance_api.py tests\test_manage_credentials_script.py tests\test_postgres_compose.py scripts\manage_credentials.py`
+- `npm.cmd run typecheck`
+- `npm.cmd run build`
+- `docker compose --profile advisory config`
+
+---
+
+## TF-F075: Implement Stateless LiteLLM Request-Time Credential Composition
+
+**Status:** Done
+
+**Classification:** corrective / security governance / infrastructure
+
+**Milestone:** M13B (corrective against TF-F074)
+
+**Branch:** `feature/tf-f075-litellm-secret-injection`
+
+**Affected Layer:** infrastructure/advisory, app, docs, tests
+
+**Linked ADRs:** ADR-0043
+
+**Impacted Invariants:** AI Advisory Boundary, Derived State Must Remain Distinguishable, Architectural Simplicity
+
+**Depends On:** TF-F074, ADR-0043
+
+**Source:** `knowledge/raw/brainstorm-20260525-tf-f074-litellm-secret-injection-gap.md`; `knowledge/processed/20260526-tf-f075-stateless-litellm-request-time-injection-synthesis.md`; final TF-F075 stateless LiteLLM plan (2026-05-26)
+
+**Problem:**
+TF-F075 initially attempted to solve governed downstream LLM provider secrets by
+pushing decrypted keys into LiteLLM with `/config/update`. Validation showed
+that path required LiteLLM DB-backed mutable config and coupled TradeForge to a
+separate `litellm_proxy` schema. The design also left model strings too
+authoritative after explicit provider IDs existed.
+
+The corrected M13B boundary is stateless LiteLLM: TradeForge owns provider
+credentials and advisory model selection, resolves the explicit provider ID at
+request time, and composes each LiteLLM `/chat/completions` request with only
+the secret material required for that request.
+
+**Scope:**
+
+- Split LiteLLM gateway credentials from advisory model selection.
+- Persist model selection as explicit provider/model pairs.
+- Add request-time `LLMProviderCredentialResolver` and
+  `LiteLLMRequestComposer`.
+- Remove `LiteLLMGatewayAdminClient`, `/config/update`, LiteLLM DB vars,
+  provider API key env vars, and `litellm_proxy` init SQL.
+- Keep LiteLLM internal-only and pin it to an explicit image tag.
+- Update governance API/UI labels from injected state to runtime availability.
+
+**Acceptance Criteria:**
+
+- LiteLLM has no TradeForge-managed DB, no `STORE_MODEL_IN_DB`, and no
+  `/config/update` dependency.
+- LiteLLM service receives no downstream provider API keys in environment.
+- LiteLLM remains internal-only by default with `expose: "4000"`.
+- Advisory model selection stores explicit `primary_provider_id`,
+  `primary_model`, optional `fallback_provider_id`, and optional
+  `fallback_model`.
+- Legacy `litellm.default_model` / `fallback_model` values are read only as
+  compatibility fallback; saving writes explicit provider IDs.
+- Saved model strings alone cannot determine credential authority.
+- Missing, revoked, invalid, or absent required provider credentials make the
+  advisory provider unavailable without logging or returning plaintext secrets.
+
+**Out Of Scope:**
+
+- Changes to `.keys.enc` format or `TRADEFORGE_MASTER_KEY` model.
+- Kubernetes secrets or external vault integration.
+- Frontend label changes beyond corrected flag semantics.
+
+**Rejected History:**
+
+Option A added `LiteLLMGatewayAdminClient`,
+`scripts/postgres-init/02-litellm-db.sql`, LiteLLM `DATABASE_URL`,
+`STORE_MODEL_IN_DB=True`, and provider API key environment variables so
+TradeForge could call LiteLLM `POST /config/update`. That implementation is
+preserved here as rejected history. It was rejected because it required LiteLLM
+DB-backed mutable config, introduced migration/version coupling, and put a
+gateway-owned config database in the credential authority path.
+
+**Resolution Summary:**
+
+Added `AdvisoryModelSelectionConfig` stored separately from the `litellm`
+gateway credential. The `litellm` credential now represents gateway
+`base_url` and master `api_key`; legacy `default_model` and `fallback_model`
+fields remain readable only for compatibility. Saving through
+`PUT /provider-governance/ai-gateway/model-selection` writes explicit provider
+IDs.
+
+Added `LLMProviderCredentialResolver` and `LiteLLMRequestComposer`. Groq,
+NVIDIA NIM, OpenAI, Anthropic, and Google resolve through encrypted provider
+credentials. Ollama resolves as a keyless internal provider with configured API
+base. `OpenAICompatibleAdvisoryProvider` composes primary and fallback
+LiteLLM requests independently and reports advisory unavailable when required
+credentials are missing, revoked, or invalid.
+
+Removed startup/reload gateway secret push state, the LiteLLM admin client,
+LiteLLM DB vars, provider key env vars, and `02-litellm-db.sql`. The Compose
+LiteLLM image is pinned to `docker.litellm.ai/berriai/litellm:v1.72.6-stable`
+and remains internal-only with `expose: "4000"`.
+
+**Completed Verification:**
+
+- `uv run pytest tests/test_default_advisory_provider_bootstrap.py tests/test_openai_compatible_provider.py tests/test_provider_governance_api.py tests/test_credential_store.py tests/test_postgres_compose.py`
+- `uv run mypy src/infrastructure/advisory/litellm_request_composer.py src/infrastructure/advisory/openai_compatible_provider.py src/security/advisory_model_selection.py src/app/api/application.py src/app/api/routes.py`
+- `uv run ruff check src/infrastructure/advisory/litellm_request_composer.py src/infrastructure/advisory/openai_compatible_provider.py src/security/advisory_model_selection.py src/app/api/application.py src/app/api/routes.py tests/test_provider_governance_api.py tests/test_postgres_compose.py`
+- `npm.cmd run typecheck`
+- `npm.cmd run build`
+- `docker compose --profile advisory config`
+- Targeted backend slice passes.
+- docker-compose advisory config preserves internal-only LiteLLM exposure.
+- LiteLLM healthcheck probes authenticate correctly.
+- Request-time composition replaces LiteLLM config mutation.
+
+---
+
+## TF-F076: Replace LiteLLM route-probing healthcheck with non-invasive readiness check
+
+**Status:** Done
+
+**Classification:** corrective / operational infrastructure
+
+**Milestone:** M13B
+
+**Branch:** `fix/tf-f076-litellm-readiness-healthcheck`
+
+**Affected Layer:** infrastructure, docs, tests
+
+**Linked ADRs:** ADR-0043
+
+**Impacted Invariants:** AI Advisory Boundary, Derived State Must Remain Distinguishable, Replayability Is Foundational, Architectural Simplicity
+
+**Depends On:** TF-F073, TF-F075, ADR-0043
+
+**Source:** `knowledge/raw/brainstorm-20260526-litellm-independent-provider-attempts.md`; `knowledge/raw/logs from litellm container.txt`; LiteLLM health documentation for `/health` and `/health/readiness`.
+
+**Problem:**
+Field logs showed LiteLLM attempting Groq, Gemini, OpenAI, and Anthropic routes
+while the managed advisory runtime was otherwise validating the selected NVIDIA
+NIM path. LiteLLM documentation distinguishes `/health` as comprehensive model
+health monitoring that makes real LLM API calls, while `/health/readiness`
+checks whether the proxy is ready to accept requests. The Compose healthcheck
+used `/health`, so Docker liveness/readiness could trigger provider route
+probes even when TradeForge had not made an advisory request.
+
+**Scope:**
+
+- Replace the LiteLLM Docker healthcheck endpoint with `/health/readiness`.
+- Preserve LiteLLM as internal-only Compose infrastructure.
+- Preserve `LITELLM_MASTER_KEY` authentication in the healthcheck.
+- Keep stateless LiteLLM configuration and request-time credential
+  composition intact.
+- Add static tests that prevent Compose from regressing to model-probing
+  `/health`.
+- Record lightweight diagnostic and planning artifacts for the feedback loop.
+
+**Acceptance Criteria:**
+
+- LiteLLM Compose healthcheck calls `/health/readiness`.
+- LiteLLM Compose healthcheck does not call model-probing `/health`.
+- LiteLLM remains internal-only by default with `expose: "4000"`.
+- LiteLLM service receives no downstream provider API keys such as
+  `GROQ_API_KEY`, `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, or
+  `GOOGLE_API_KEY`.
+- `LITELLM_MASTER_KEY` remains configured for the LiteLLM service.
+- `litellm_config.yaml` wildcard routes are unchanged in this issue.
+- No public API, domain model, event schema, credential schema, or frontend
+  interface changes are made.
+
+**Out Of Scope:**
+
+- Changing LiteLLM wildcard route definitions.
+- Adding downstream provider keys to LiteLLM environment.
+- Reintroducing LiteLLM DB-backed mutable configuration.
+- Provider model selection or fallback policy changes.
+- Public API, frontend, domain, lifecycle, event schema, or credential schema
+  changes.
+
+**ADR Checkpoint:**
+No new ADR is required. The change reinforces ADR-0043 by keeping LiteLLM as
+managed internal advisory infrastructure while preventing Docker readiness from
+performing provider/model validation outside explicit TradeForge-mediated
+diagnostics or advisory requests.
+
+**Resolution Summary:**
+Replaced the LiteLLM Docker healthcheck URL from `/health` to
+`/health/readiness`. The healthcheck remains authenticated with
+`LITELLM_MASTER_KEY`, LiteLLM remains internal-only, and no downstream provider
+API keys were added to Compose.
+
+Added regression coverage in `tests/test_postgres_compose.py` to assert the
+readiness endpoint is used, the model-probing health endpoint is not used, and
+provider API keys remain absent from the LiteLLM service environment.
+
+**Completed Verification:**
+
+- `uv run pytest tests/test_postgres_compose.py`
+- `docker compose --profile advisory config`
+- `docker compose --profile advisory up -d`
+- LiteLLM idle log window showed repeated `GET /health/readiness` checks and
+  no provider fallback errors.
+- `POST /provider-governance/ai-gateway/smoke-test` returned `status:
+  available` through the TradeForge API using
+  `nvidia_nim/meta/llama-3.1-70b-instruct`.
+- Post-smoke LiteLLM logs showed the explicit `/chat/completions` request and
+  no Groq, Gemini, OpenAI, or Anthropic fallback attempts.
 
 ---

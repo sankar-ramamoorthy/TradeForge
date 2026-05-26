@@ -599,6 +599,41 @@ p {
   font-size: 0.78rem;
 }
 
+.provider-governance-action {
+  display: grid;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+.provider-model-selection {
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.provider-secret-injection-list {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.provider-model-selection label {
+  display: grid;
+  gap: 4px;
+  color: var(--color-muted);
+  font-size: 0.78rem;
+}
+
+.provider-model-selection select {
+  min-width: 0;
+  width: 100%;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  padding: 8px 10px;
+}
+
 .provider-governance-link {
   display: inline-flex;
   align-items: center;

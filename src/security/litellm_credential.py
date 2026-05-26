@@ -8,7 +8,7 @@ from src.security.credential_store import CredentialStore
 from src.security.key_manager import KeyManager
 
 LITELLM_PROVIDER_ID = "litellm"
-LITELLM_CREDENTIAL_TYPE = "base_url+api_key+default_model"
+LITELLM_CREDENTIAL_TYPE = "base_url+api_key"
 
 
 class LiteLLMCredentialNotConfiguredError(RuntimeError):
@@ -19,22 +19,29 @@ class LiteLLMCredentialNotConfiguredError(RuntimeError):
 class LiteLLMCredentialPayload:
     base_url: str
     api_key: str
-    default_model: str
+    default_model: str | None = None
+    fallback_model: str | None = None
 
     def __post_init__(self) -> None:
         if not self.base_url.strip():
             raise ValueError("base_url must not be empty")
         if not self.api_key.strip():
             raise ValueError("api_key must not be empty")
-        if not self.default_model.strip():
-            raise ValueError("default_model must not be empty")
+        if self.default_model is not None and not self.default_model.strip():
+            raise ValueError("default_model must not be blank when provided")
+        if self.fallback_model is not None and not self.fallback_model.strip():
+            raise ValueError("fallback_model must not be blank when provided")
 
     def as_payload(self) -> dict[str, str]:
-        return {
+        payload = {
             "api_key": self.api_key,
             "base_url": self.base_url,
-            "default_model": self.default_model,
         }
+        if self.default_model is not None:
+            payload["default_model"] = self.default_model
+        if self.fallback_model is not None:
+            payload["fallback_model"] = self.fallback_model
+        return payload
 
 
 def create_litellm_credential(
@@ -70,7 +77,7 @@ def get_litellm_credential(
     payload = key_manager.decrypt_payload(credential.encrypted_payload)
     missing_fields = {
         field
-        for field in ("base_url", "api_key", "default_model")
+        for field in ("base_url", "api_key")
         if field not in payload
     }
     if missing_fields:
@@ -82,5 +89,6 @@ def get_litellm_credential(
     return LiteLLMCredentialPayload(
         base_url=payload["base_url"],
         api_key=payload["api_key"],
-        default_model=payload["default_model"],
+        default_model=payload.get("default_model") or None,
+        fallback_model=payload.get("fallback_model") or None,
     )

@@ -70,6 +70,8 @@ All advisory outputs are non-canonical. They cannot approve plans, execute trade
 - Revoke credentials with audit trail preserved
 - LiteLLM surfaced as an AI gateway with named route aliases — not treated as an ordinary data provider
 - AI gateway route visibility: fast-summary, reasoning, long-context, and classification routes are distinguishable operational concerns
+- Advisory route selection and smoke tests are exposed through Provider Governance and remain non-canonical
+- Downstream LLM provider secrets are governed through the same encrypted boundary and injected only at runtime composition
 - Capability routing governance: `Credential != Provider != Capability != Model`
 - Contextual rails show provider status, provenance, freshness, and a configure link — long-form administration lives in the governance surface
 
@@ -149,10 +151,19 @@ uv run python scripts/manage_credentials.py generate-master-key
 ```bash
 uv run python scripts/manage_credentials.py register fmp --api-key "<key>"
 uv run python scripts/manage_credentials.py register litellm \
-  --base-url "http://localhost:4000" \
+  --base-url "http://litellm:4000" \
   --api-key "<key>" \
   --default-model "tradeforge-groq-70b"
 ```
+
+Optionally add `--fallback-model "<route>"`. Provider Governance can discover
+LiteLLM models and update the selected advisory primary/fallback route through
+TradeForge without creating canonical event-ledger facts.
+
+Downstream LLM provider keys can also be stored through the same encrypted
+credential boundary using provider IDs such as `llm_groq`, `llm_nvidia_nim`,
+`llm_openai`, `llm_anthropic`, and `llm_google`. TradeForge masks these values
+in API/UI responses and decrypts them only at the runtime composition boundary.
 
 See [`HOW-TO-SETUP-KEYS.md`](HOW-TO-SETUP-KEYS.md) for full credential setup.
 
@@ -175,7 +186,14 @@ To run LiteLLM through Docker Compose:
 docker compose --profile advisory up -d litellm
 ```
 
-Use `http://localhost:4000` as the LiteLLM base URL when the backend runs on the host. Use `http://litellm:4000` when the TradeForge backend also runs inside Docker Compose.
+Use `http://litellm:4000` as the LiteLLM base URL when TradeForge runs inside
+Docker Compose. LiteLLM is not exposed on `localhost:4000` by default; browser
+and operator workflows should go through TradeForge. For temporary local
+inspection, start with the explicit debug override:
+
+```bash
+docker compose --profile advisory -f docker-compose.yml -f docker-compose.litellm-debug.yml up -d litellm
+```
 
 Without a LiteLLM credential: lifecycle, market context, replay, and manual advisory artifact workflows all work normally. AI generation endpoints report `not_configured`.
 
@@ -243,6 +261,7 @@ DOCS/
 | M12 | Done | Advisory observation and cognitive evidence layer |
 | M13 | Done | Contextual interpretation and thesis influence |
 | M13A | Done | Provider governance, AI gateway configuration, credential validation, route visibility |
+| M13B | Done | Managed advisory runtime, route selection, and governed provider secrets |
 | M14+ | Planned | Behavioral intelligence, cognitive replay, attention allocation, simulation |
 
 ---

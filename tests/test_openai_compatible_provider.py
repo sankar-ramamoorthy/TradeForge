@@ -2,10 +2,9 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, call, patch
 
 import pytest
-
 from src.domain.advisory.contracts import (
     AdvisoryArtifactKind,
     AdvisoryAuthority,
@@ -14,9 +13,13 @@ from src.domain.advisory.contracts import (
     AdvisorySourceKind,
     AdvisorySourceReference,
 )
+from src.infrastructure.advisory.litellm_request_composer import (
+    LLMProviderCredentialResolver,
+)
 from src.infrastructure.advisory.openai_compatible_provider import (
     OpenAICompatibleAdvisoryProvider,
 )
+from src.security.advisory_model_selection import AdvisoryModelSelectionConfig
 from src.security.litellm_credential import LiteLLMCredentialPayload
 
 
@@ -28,7 +31,9 @@ def _credential() -> LiteLLMCredentialPayload:
     )
 
 
-def _request(kind: AdvisoryArtifactKind = AdvisoryArtifactKind.REPLAY_SUMMARY) -> AdvisoryRequest:
+def _request(
+    kind: AdvisoryArtifactKind = AdvisoryArtifactKind.REPLAY_SUMMARY,
+) -> AdvisoryRequest:
     return AdvisoryRequest(
         request_id="req-001",
         artifact_kind=kind,
@@ -47,7 +52,10 @@ def _request(kind: AdvisoryArtifactKind = AdvisoryArtifactKind.REPLAY_SUMMARY) -
     )
 
 
-def _mock_completion(content: str, model: str = "groq/llama-3.1-8b-instant") -> MagicMock:
+def _mock_completion(
+    content: str,
+    model: str = "groq/llama-3.1-8b-instant",
+) -> MagicMock:
     choice = MagicMock()
     choice.message.content = content
     completion = MagicMock()
@@ -66,7 +74,11 @@ def test_generate_returns_advisory_response() -> None:
     provider = OpenAICompatibleAdvisoryProvider(_credential())
     mock_completion = _mock_completion("A summary of the replay.")
 
-    with patch.object(provider._client.chat.completions, "create", return_value=mock_completion):
+    with patch.object(
+        provider._client.chat.completions,
+        "create",
+        return_value=mock_completion,
+    ):
         response = provider.generate(_request())
 
     assert response.request_id == "req-001"
@@ -85,7 +97,11 @@ def test_generate_preserves_source_references() -> None:
     provider = OpenAICompatibleAdvisoryProvider(_credential())
     request = _request()
 
-    with patch.object(provider._client.chat.completions, "create", return_value=_mock_completion("content")):
+    with patch.object(
+        provider._client.chat.completions,
+        "create",
+        return_value=_mock_completion("content"),
+    ):
         response = provider.generate(request)
 
     assert response.source_references == request.source_references
@@ -106,7 +122,11 @@ def test_generate_all_artifact_kinds(kind: AdvisoryArtifactKind) -> None:
     provider = OpenAICompatibleAdvisoryProvider(_credential())
     request = _request(kind)
 
-    with patch.object(provider._client.chat.completions, "create", return_value=_mock_completion("output")):
+    with patch.object(
+        provider._client.chat.completions,
+        "create",
+        return_value=_mock_completion("output"),
+    ):
         response = provider.generate(request)
 
     assert response.artifact_kind is kind
@@ -125,6 +145,86 @@ def test_generate_raises_on_api_connection_error() -> None:
     ):
         with pytest.raises(AdvisoryProviderUnavailableError):
             provider.generate(_request())
+
+
+def test_generate_uses_fallback_model_when_primary_unavailable() -> None:
+    from openai import APIConnectionError
+
+    provider = OpenAICompatibleAdvisoryProvider(
+        LiteLLMCredentialPayload(
+            base_url="http://localhost:4000",
+            api_key="test-key",
+            default_model="primary-model",
+            fallback_model="fallback-model",
+        )
+    )
+    fallback_completion = _mock_completion("fallback content", model="fallback-model")
+
+    with patch.object(
+        provider._client.chat.completions,
+        "create",
+        side_effect=[
+            APIConnectionError(request=MagicMock()),
+            fallback_completion,
+        ],
+    ) as create:
+        response = provider.generate(_request())
+
+    assert response.content == "fallback content"
+    assert response.provenance.model_id == "fallback-model"
+    assert create.call_args_list[0] == call(
+        model="primary-model",
+        messages=create.call_args_list[0].kwargs["messages"],
+        temperature=0.3,
+        max_tokens=1500,
+    )
+    assert create.call_args_list[1].kwargs["model"] == "fallback-model"
+
+
+def test_generate_uses_explicit_provider_identity_for_request_secret() -> None:
+    class Resolver:
+        def resolve(self, provider_id: str):
+            assert provider_id == "llm_groq"
+            return LLMProviderCredentialResolver(
+                None,
+                key_manager=None,
+            ).resolve("legacy")
+
+    provider = OpenAICompatibleAdvisoryProvider(
+        LiteLLMCredentialPayload(
+            base_url="http://localhost:4000",
+            api_key="litellm-key",
+        ),
+        model_selection=AdvisoryModelSelectionConfig(
+            primary_provider_id="llm_groq",
+            primary_model="llama-3.1-8b-instant",
+        ),
+        provider_credential_resolver=Resolver(),  # type: ignore[arg-type]
+    )
+
+    with patch.object(
+        provider._client.chat.completions,
+        "create",
+        return_value=_mock_completion("content", model="llama-3.1-8b-instant"),
+    ) as create:
+        provider.generate(_request())
+
+    assert create.call_args.kwargs["model"] == "llama-3.1-8b-instant"
+
+
+def test_list_models_returns_gateway_model_ids() -> None:
+    provider = OpenAICompatibleAdvisoryProvider(_credential())
+    model_a = MagicMock()
+    model_a.id = "model-a"
+    model_b = MagicMock()
+    model_b.id = "model-b"
+    model_without_id = MagicMock()
+    model_without_id.id = None
+    model_list = MagicMock()
+    model_list.data = [model_a, model_b, model_without_id]
+
+    with patch.object(provider._client.models, "list", return_value=model_list):
+        assert provider.list_models() == ("model-a", "model-b")
 
 
 def test_generate_raises_on_empty_content() -> None:
