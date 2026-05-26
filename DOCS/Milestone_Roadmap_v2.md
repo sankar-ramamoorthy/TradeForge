@@ -2506,7 +2506,7 @@ M13B explicitly excludes:
 
 ## M14 - Behavioral Intelligence And Cognitive Auditability
 
-**Status:** Planned
+**Status:** In Progress
 
 ## Semantic Intent
 
@@ -2532,7 +2532,7 @@ M14 introduces recurring behavioral pattern detection, process violation trackin
 
 ## Linked Runtime Issues
 
-* TF-C001: Detect recurring sizing violations
+* TF-C001: Detect recurring sizing violations (**Done**)
 * TF-C002: Detect impulsive execution patterns
 * TF-C003: Implement process deviation overlays
 * TF-C004: Implement behavioral clustering

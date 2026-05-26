@@ -34,6 +34,7 @@ from src.domain.advisory import (
     ObservationKind,
     ThesisInfluence,
 )
+from src.domain.behavioral import BehavioralSignalSeverity, BehavioralSignalType
 from src.domain.cognition import (
     ANNOTATION_TYPES,
     SCENARIO_BRANCH_TYPES,
@@ -109,6 +110,7 @@ from src.services.advisory import (
     ThesisReviewAdvisoryService,
 )
 from src.services.advisory.service import AIAdvisoryService
+from src.services.behavioral import BehavioralSignalReadService
 from src.services.lifecycle import (
     LifecycleOrchestrationService,
     LifecycleTransitionRequest,
@@ -143,6 +145,7 @@ workspace_router = APIRouter(prefix="/workspaces", tags=["workspaces"])
 provenance_router = APIRouter(prefix="/provenance", tags=["provenance"])
 market_router = APIRouter(prefix="/market", tags=["market"])
 advisory_router = APIRouter(prefix="/advisory", tags=["advisory"])
+behavioral_router = APIRouter(prefix="/behavioral", tags=["behavioral"])
 
 _DISMISSED_CANDIDATE_QUERY = Query(default_factory=list)
 _COGNITIVE_SNAPSHOT_AT_QUERY = Query(default=None)
@@ -394,6 +397,37 @@ class CandidateReviewQueueResponse(BaseModel):
     ordering: Literal["captured_at_desc_then_candidate_id_asc"]
     total_count: int
     candidates: list[AdvisoryCandidateResponse]
+
+
+class BehavioralSignalSourceEventResponse(BaseModel):
+    source_sequence: int
+    event_type: str
+    timestamp: datetime
+
+
+class BehavioralSignalResponse(BaseModel):
+    signal_id: str
+    signal_type: BehavioralSignalType
+    severity: BehavioralSignalSeverity
+    persona_id: str
+    workspace_id: str | None
+    decision_id: str
+    summary: str
+    rationale: str
+    recurrence_count: int
+    recurring: bool
+    detected_at: datetime
+    source_event_refs: list[BehavioralSignalSourceEventResponse]
+    authority: Literal["derived"]
+    is_canonical: Literal[False]
+
+
+class BehavioralSignalListResponse(BaseModel):
+    authority: Literal["derived"]
+    is_canonical: Literal[False]
+    total_count: int
+    recurring_count: int
+    signals: list[BehavioralSignalResponse]
 
 
 class AdvisoryArtifactSourceReferencePayload(BaseModel):
@@ -1548,6 +1582,15 @@ def _candidate_review_queue_service_from(
     service = getattr(request.app.state, "candidate_review_queue_service", None)
     if not isinstance(service, CandidateReviewQueueService):
         raise RuntimeError("candidate review queue service is not configured")
+    return service
+
+
+def _behavioral_signal_read_service_from(
+    request: Request,
+) -> BehavioralSignalReadService:
+    service = getattr(request.app.state, "behavioral_signal_read_service", None)
+    if not isinstance(service, BehavioralSignalReadService):
+        raise RuntimeError("behavioral signal read service is not configured")
     return service
 
 
@@ -5014,6 +5057,53 @@ def get_candidate_review_queue(
     )
 
 
+@behavioral_router.get("/signals", response_model=BehavioralSignalListResponse)
+def get_behavioral_signals(
+    request: Request,
+    persona_id: str | None = Query(default=None, min_length=1),
+    workspace_id: str | None = Query(default=None, min_length=1),
+    decision_id: str | None = Query(default=None, min_length=1),
+) -> BehavioralSignalListResponse:
+    """Return deterministic, derived behavioral signals from event history."""
+    view = _behavioral_signal_read_service_from(request).list_signals(
+        persona_id=persona_id,
+        workspace_id=workspace_id,
+        decision_id=decision_id,
+    )
+    return BehavioralSignalListResponse(
+        authority="derived",
+        is_canonical=False,
+        total_count=view.total_count,
+        recurring_count=view.recurring_count,
+        signals=[
+            BehavioralSignalResponse(
+                signal_id=signal.signal_id,
+                signal_type=signal.signal_type,
+                severity=signal.severity,
+                persona_id=signal.persona_id,
+                workspace_id=signal.workspace_id,
+                decision_id=signal.decision_id,
+                summary=signal.summary,
+                rationale=signal.rationale,
+                recurrence_count=signal.recurrence_count,
+                recurring=signal.recurring,
+                detected_at=signal.detected_at,
+                source_event_refs=[
+                    BehavioralSignalSourceEventResponse(
+                        source_sequence=source.source_sequence,
+                        event_type=source.event_type,
+                        timestamp=source.timestamp,
+                    )
+                    for source in signal.source_event_refs
+                ],
+                authority="derived",
+                is_canonical=False,
+            )
+            for signal in view.signals
+        ],
+    )
+
+
 @advisory_router.get(
     "/candidates/{candidate_id}",
     response_model=AdvisoryCandidateResponse,
@@ -5969,5 +6059,6 @@ runtime_router.include_router(lifecycle_router)
 runtime_router.include_router(replay_router)
 runtime_router.include_router(workspace_router)
 runtime_router.include_router(provenance_router)
+runtime_router.include_router(behavioral_router)
 runtime_router.include_router(advisory_router)
 runtime_router.include_router(market_router)
