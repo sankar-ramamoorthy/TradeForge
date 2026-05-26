@@ -20,7 +20,7 @@ Each issue records:
 
 GitHub issues may mirror these records, but this file remains the local planning source of truth.
 
-Roadmap v2 is the active milestone direction. This register now tracks runtime implementation through active M14, with TF-C001 complete and TF-C002 through TF-C010 planned, while preserving the earlier MVP record for reference.
+Roadmap v2 is the active milestone direction. This register now tracks runtime implementation through completed M14 while preserving the earlier MVP record for reference.
 
 
 ---
@@ -244,15 +244,15 @@ Roadmap v2 is the active milestone direction. This register now tracks runtime i
 | TF-F075 | Done | M13B | Implement Stateless LiteLLM Request-Time Credential Composition | `feature/tf-f075-litellm-secret-injection` |
 | TF-F076 | Done | M13B | Replace LiteLLM route-probing healthcheck with non-invasive readiness check | `fix/tf-f076-litellm-readiness-healthcheck` |
 | TF-C001 | Done | M14 | Detect recurring sizing violations | `feature/tf-c001-recurring-sizing-violations` |
-| TF-C002 | Planned | M14 | Detect impulsive execution patterns | `feature/tf-c002-impulsive-execution-patterns` |
-| TF-C003 | Planned | M14 | Implement process deviation overlays | `feature/tf-c003-process-deviation-overlays` |
-| TF-C004 | Planned | M14 | Implement behavioral clustering | `feature/tf-c004-behavioral-clustering` |
-| TF-C005 | Planned | M14 | Implement recurring mistake analysis | `feature/tf-c005-recurring-mistake-analysis` |
-| TF-C006 | Planned | M14 | Implement discipline deterioration signals | `feature/tf-c006-discipline-deterioration-signals` |
-| TF-C007 | Planned | M14 | Implement thesis attachment analysis | `feature/tf-c007-thesis-attachment-analysis` |
-| TF-C008 | Planned | M14 | Implement emotional reflection overlays | `feature/tf-c008-emotional-reflection-overlays` |
-| TF-C009 | Planned | M14 | Implement operator behavior timelines | `feature/tf-c009-operator-behavior-timelines` |
-| TF-C010 | Planned | M14 | Implement decision-quality review metrics | `feature/tf-c010-decision-quality-review-metrics` |
+| TF-C002 | Done | M14 | Detect impulsive execution patterns | `feature/tf-c002-impulsive-execution-patterns` |
+| TF-C003 | Done | M14 | Implement process deviation overlays | `feature/tf-c003-process-deviation-overlays` |
+| TF-C004 | Done | M14 | Implement behavioral clustering | `feature/tf-c004-behavioral-clustering` |
+| TF-C005 | Done | M14 | Implement recurring mistake analysis | `feature/tf-c005-recurring-mistake-analysis` |
+| TF-C006 | Done | M14 | Implement discipline deterioration signals | `feature/tf-c006-discipline-deterioration-signals` |
+| TF-C007 | Done | M14 | Implement thesis attachment analysis | `feature/tf-c007-thesis-attachment-analysis` |
+| TF-C008 | Done | M14 | Implement emotional reflection overlays | `feature/tf-c008-emotional-reflection-overlays` |
+| TF-C009 | Done | M14 | Implement operator behavior timelines | `feature/tf-c009-operator-behavior-timelines` |
+| TF-C010 | Done | M14 | Implement decision-quality review metrics | `feature/tf-c010-decision-quality-review-metrics` |
 
 ## TF-C001: Detect Recurring Sizing Violations
 
@@ -336,7 +336,7 @@ counts, severity, timestamps, and source event references.
 
 ## TF-C002: Detect Impulsive Execution Patterns
 
-**Status:** Planned
+**Status:** Done
 
 **Classification:** feature / behavioral intelligence
 
@@ -363,11 +363,22 @@ quickly or ignores explicit plan assumptions.
 - Source event references explain every signal.
 - No lifecycle transition, approval gate, or execution authority is introduced.
 
+**Resolution Summary:**
+Extended the deterministic behavioral signal detector with
+`impulsive_execution` signals derived from approval, arming, execution timing,
+structured plan context, and operator-authored review language. Signals remain
+derived, source-linked, and read-only.
+
+**Completed Verification:**
+
+- `uv run pytest tests\test_behavioral_signals.py`
+- `uv run mypy src\domain\behavioral src\services\behavioral src\app\api\routes.py tests\test_behavioral_signals.py`
+
 ---
 
 ## TF-C003: Implement Process Deviation Overlays
 
-**Status:** Planned
+**Status:** Done
 
 **Classification:** feature / behavioral UX
 
@@ -392,11 +403,21 @@ surfaces show process deviations with source context and authority boundaries.
 - Source events are inspectable from the overlay context.
 - The UI does not become a dashboard-style analytics surface.
 
+**Resolution Summary:**
+Added review and replay behavioral panels that display derived signals,
+clusters, mistakes, emotional reflection terms, behavior timeline entries, and
+quality metrics with explicit derived/non-canonical authority labels.
+
+**Completed Verification:**
+
+- `npm.cmd run typecheck`
+- `npm.cmd run build`
+
 ---
 
 ## TF-C004: Implement Behavioral Clustering
 
-**Status:** Planned
+**Status:** Done
 
 **Classification:** feature / behavioral intelligence
 
@@ -416,11 +437,21 @@ surfaces show process deviations with source context and authority boundaries.
 - Cluster outputs remain advisory or derived, never canonical truth.
 - Persona scope is preserved.
 
+**Resolution Summary:**
+Added deterministic behavioral clusters grouped by persona, workspace, and
+signal type. Cluster output preserves source signal IDs, severity, and
+derived/non-canonical authority metadata.
+
+**Completed Verification:**
+
+- `uv run pytest tests\test_behavioral_signals.py`
+- `uv run mypy src\domain\behavioral src\services\behavioral src\app\api\routes.py tests\test_behavioral_signals.py`
+
 ---
 
 ## TF-C005: Implement Recurring Mistake Analysis
 
-**Status:** Planned
+**Status:** Done
 
 **Classification:** feature / behavioral intelligence
 
@@ -441,11 +472,22 @@ surfaces show process deviations with source context and authority boundaries.
 - The analysis separates decision process from trade outcome.
 - Outputs remain replayable and source-linked.
 
+**Resolution Summary:**
+Added recurring mistake analysis over deterministic behavioral signals and
+structured review reflections. The analysis reports process categories,
+decision counts, signal counts, review quality averages, source signal IDs, and
+source event references without scoring trades or outcomes.
+
+**Completed Verification:**
+
+- `uv run pytest tests\test_behavioral_signals.py`
+- `uv run mypy src\domain\behavioral src\services\behavioral src\app\api\routes.py tests\test_behavioral_signals.py`
+
 ---
 
 ## TF-C006: Implement Discipline Deterioration Signals
 
-**Status:** Planned
+**Status:** Done
 
 **Classification:** feature / behavioral intelligence
 
@@ -465,11 +507,21 @@ surfaces show process deviations with source context and authority boundaries.
 - Time windows and recurrence logic are explicit and deterministic.
 - Signals remain derived and non-canonical.
 
+**Resolution Summary:**
+Added discipline deterioration signals that compare recent deterministic
+process signals against an earlier baseline window. The logic uses explicit
+window counts and never depends on P&L or live external state.
+
+**Completed Verification:**
+
+- `uv run pytest tests\test_behavioral_signals.py`
+- `uv run mypy src\domain\behavioral src\services\behavioral src\app\api\routes.py tests\test_behavioral_signals.py`
+
 ---
 
 ## TF-C007: Implement Thesis Attachment Analysis
 
-**Status:** Planned
+**Status:** Done
 
 **Classification:** feature / behavioral intelligence
 
@@ -490,11 +542,22 @@ surfaces show process deviations with source context and authority boundaries.
 - The system does not infer emotional state as fact.
 - Results remain review context, not lifecycle authority.
 
+**Resolution Summary:**
+Added thesis attachment analysis from thesis revisions, confidence changes,
+invalidation-condition review coverage, and operator-authored reflection text.
+The result is derived review context and does not label operator emotion as
+fact or alter lifecycle authority.
+
+**Completed Verification:**
+
+- `uv run pytest tests\test_behavioral_signals.py`
+- `uv run mypy src\domain\behavioral src\services\behavioral src\app\api\routes.py tests\test_behavioral_signals.py`
+
 ---
 
 ## TF-C008: Implement Emotional Reflection Overlays
 
-**Status:** Planned
+**Status:** Done
 
 **Classification:** feature / behavioral review
 
@@ -515,11 +578,21 @@ surfaces show process deviations with source context and authority boundaries.
 - AI-generated emotional interpretation remains advisory and non-canonical.
 - Overlays are review aids, not labels of operator truth.
 
+**Resolution Summary:**
+Added emotional reflection overlays based only on operator-authored review text.
+The API and frontend present detected terms as derived review context, not as
+operator-truth labels or AI-generated emotional facts.
+
+**Completed Verification:**
+
+- `uv run pytest tests\test_behavioral_signals.py`
+- `npm.cmd run build`
+
 ---
 
 ## TF-C009: Implement Operator Behavior Timelines
 
-**Status:** Planned
+**Status:** Done
 
 **Classification:** feature / behavioral replay
 
@@ -540,11 +613,21 @@ surfaces show process deviations with source context and authority boundaries.
 - Timelines reconstruct without live APIs, current AI output, or mutable UI
   state.
 
+**Resolution Summary:**
+Added behavior timeline projection entries built chronologically from
+deterministic behavioral signals. Entries preserve timestamps, source signal
+IDs, source event references, and derived/non-canonical authority metadata.
+
+**Completed Verification:**
+
+- `uv run pytest tests\test_behavioral_signals.py`
+- `npm.cmd run build`
+
 ---
 
 ## TF-C010: Implement Decision-Quality Review Metrics
 
-**Status:** Planned
+**Status:** Done
 
 **Classification:** feature / behavioral review
 
@@ -564,6 +647,18 @@ surfaces show process deviations with source context and authority boundaries.
 - Metrics remain reflective review context, not trading scores or approval
   gates.
 - Metric calculations are deterministic and source-linked.
+
+**Resolution Summary:**
+Added decision-quality review metrics that keep decision quality, execution
+quality, and bounded outcome context separate. Metrics are deterministic,
+source-linked, reflective review context and do not become approval gates or
+trading scores.
+
+**Completed Verification:**
+
+- `uv run pytest tests\test_behavioral_signals.py`
+- `uv run mypy src\domain\behavioral src\services\behavioral src\app\api\routes.py tests\test_behavioral_signals.py`
+- `npm.cmd run build`
 
 ---
 
@@ -3132,7 +3227,7 @@ Added an explicit fallback `None` return path to `_decision_item_spec()` so the 
 
 ---
 
-Current planning now extends through active M14. TF-C001 is complete, and TF-C002 through TF-C010 remain planned behavioral intelligence work.
+Current planning now extends through completed M14. TF-C001 through TF-C010 are complete behavioral intelligence work.
 TF-F#### series = field-observed / feedback-originated issues, distinct from roadmap TF-#### series.
 Historical MVP and M10A notes are retained above for traceability.
 

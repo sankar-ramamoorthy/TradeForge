@@ -1241,6 +1241,170 @@ export async function fetchReviewReflection(
   return response.json() as Promise<ReviewReflectionArtifact>;
 }
 
+export type BehavioralSignal = {
+  signal_id: string;
+  signal_type: "sizing_violation" | "impulsive_execution";
+  severity: "low" | "medium" | "high";
+  persona_id: string;
+  workspace_id: string | null;
+  decision_id: string;
+  summary: string;
+  rationale: string;
+  recurrence_count: number;
+  recurring: boolean;
+  detected_at: string;
+  source_event_refs: { source_sequence: number; event_type: string; timestamp: string }[];
+  authority: "derived";
+  is_canonical: false;
+};
+
+export type BehavioralSignalList = {
+  authority: "derived";
+  is_canonical: false;
+  total_count: number;
+  recurring_count: number;
+  signals: BehavioralSignal[];
+};
+
+export type BehavioralClusterList = {
+  authority: "derived";
+  is_canonical: false;
+  total_count: number;
+  clusters: {
+    cluster_id: string;
+    signal_type: string;
+    signal_count: number;
+    severity: string;
+    summary: string;
+    source_signal_ids: string[];
+  }[];
+};
+
+export type RecurringMistakeList = {
+  authority: "derived";
+  is_canonical: false;
+  total_count: number;
+  mistakes: {
+    mistake_id: string;
+    category: string;
+    decision_count: number;
+    signal_count: number;
+    decision_quality_average: number | null;
+    execution_quality_average: number | null;
+    summary: string;
+  }[];
+};
+
+export type EmotionalReflectionList = {
+  authority: "derived";
+  is_canonical: false;
+  total_count: number;
+  overlays: {
+    overlay_id: string;
+    decision_id: string;
+    source: "operator_review_text";
+    emotional_terms: string[];
+    summary: string;
+  }[];
+};
+
+export type BehaviorTimeline = {
+  authority: "derived";
+  is_canonical: false;
+  total_count: number;
+  entries: {
+    entry_id: string;
+    timestamp: string;
+    decision_id: string;
+    entry_type: string;
+    summary: string;
+    source_signal_ids: string[];
+  }[];
+};
+
+export type DecisionQualityMetrics = {
+  authority: "derived";
+  is_canonical: false;
+  total_count: number;
+  average_decision_quality: number | null;
+  average_execution_quality: number | null;
+  metrics: {
+    metric_id: string;
+    decision_id: string;
+    decision_quality: number;
+    execution_quality: number;
+    outcome_quality: number | null;
+    process_signal_count: number;
+    summary: string;
+  }[];
+};
+
+function buildBehavioralQuery(params: {
+  persona_id?: string;
+  workspace_id?: string;
+  decision_id?: string;
+}): string {
+  const urlParams = new URLSearchParams();
+  if (params.persona_id) urlParams.set("persona_id", params.persona_id);
+  if (params.workspace_id) urlParams.set("workspace_id", params.workspace_id);
+  if (params.decision_id) urlParams.set("decision_id", params.decision_id);
+  return urlParams.toString();
+}
+
+export async function fetchBehavioralSignals(
+  params: { persona_id?: string; workspace_id?: string; decision_id?: string },
+  signal?: AbortSignal,
+): Promise<BehavioralSignalList> {
+  const query = buildBehavioralQuery(params);
+  const response = await fetch(`/behavioral/signals${query ? `?${query}` : ""}`, { signal });
+  return readOperationalJson<BehavioralSignalList>(response, "Behavioral signals request");
+}
+
+export async function fetchBehavioralClusters(
+  params: { persona_id?: string; workspace_id?: string; decision_id?: string },
+  signal?: AbortSignal,
+): Promise<BehavioralClusterList> {
+  const query = buildBehavioralQuery(params);
+  const response = await fetch(`/behavioral/clusters${query ? `?${query}` : ""}`, { signal });
+  return readOperationalJson<BehavioralClusterList>(response, "Behavioral clusters request");
+}
+
+export async function fetchRecurringMistakes(
+  params: { persona_id?: string; workspace_id?: string; decision_id?: string },
+  signal?: AbortSignal,
+): Promise<RecurringMistakeList> {
+  const query = buildBehavioralQuery(params);
+  const response = await fetch(`/behavioral/recurring-mistakes${query ? `?${query}` : ""}`, { signal });
+  return readOperationalJson<RecurringMistakeList>(response, "Recurring mistakes request");
+}
+
+export async function fetchEmotionalReflections(
+  params: { persona_id?: string; workspace_id?: string; decision_id?: string },
+  signal?: AbortSignal,
+): Promise<EmotionalReflectionList> {
+  const query = buildBehavioralQuery(params);
+  const response = await fetch(`/behavioral/emotional-reflections${query ? `?${query}` : ""}`, { signal });
+  return readOperationalJson<EmotionalReflectionList>(response, "Emotional reflections request");
+}
+
+export async function fetchBehaviorTimeline(
+  params: { persona_id?: string; workspace_id?: string; decision_id?: string },
+  signal?: AbortSignal,
+): Promise<BehaviorTimeline> {
+  const query = buildBehavioralQuery(params);
+  const response = await fetch(`/behavioral/timeline${query ? `?${query}` : ""}`, { signal });
+  return readOperationalJson<BehaviorTimeline>(response, "Behavior timeline request");
+}
+
+export async function fetchDecisionQualityMetrics(
+  params: { persona_id?: string; workspace_id?: string; decision_id?: string },
+  signal?: AbortSignal,
+): Promise<DecisionQualityMetrics> {
+  const query = buildBehavioralQuery(params);
+  const response = await fetch(`/behavioral/quality-metrics${query ? `?${query}` : ""}`, { signal });
+  return readOperationalJson<DecisionQualityMetrics>(response, "Decision quality metrics request");
+}
+
 export type ScenarioBranchType =
   | "primary"
   | "alternative"

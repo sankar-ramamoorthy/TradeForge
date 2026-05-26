@@ -6,8 +6,10 @@ import {
   fetchWorkspaceProjection,
   fetchCognitiveSnapshot,
   fetchAnnotations,
+  fetchBehaviorTimeline,
   type Annotation,
   type AnnotationList,
+  type BehaviorTimeline,
   type CognitiveSnapshot,
   type ReplayTimeline,
   type ReplayTimelineEntry,
@@ -432,6 +434,35 @@ function AnnotationBadge({ annotation }: { annotation: Annotation }) {
   );
 }
 
+function BehaviorTimelinePanel({ timeline }: { timeline: BehaviorTimeline | null }) {
+  if (!timeline || timeline.total_count === 0) return null;
+  return (
+    <div className="behavioral-review-panel" aria-label="Operator behavior timeline">
+      <div className="behavioral-panel-header">
+        <div>
+          <p className="eyebrow">Behavior Timeline</p>
+          <p className="behavioral-authority-note">
+            Chronological derived signals reconstructed from event history.
+          </p>
+        </div>
+        <span className="field-authority-badge authority-derived">Derived</span>
+      </div>
+      <ol className="behavior-timeline-list">
+        {timeline.entries.map((entry) => (
+          <li className="behavior-timeline-entry" key={entry.entry_id}>
+            <span className="behavioral-signal-type">{entry.entry_type.replace(/_/g, " ")}</span>
+            <p>{entry.summary}</p>
+            <p className="behavioral-source-note">
+              {new Date(entry.timestamp).toLocaleString()} · {entry.source_signal_ids.length} source signal
+              {entry.source_signal_ids.length !== 1 ? "s" : ""}
+            </p>
+          </li>
+        ))}
+      </ol>
+    </div>
+  );
+}
+
 function TimelineEntryRow({
   entry,
   isSelected,
@@ -532,6 +563,7 @@ export function ReplayWorkspace({ context }: ReplayWorkspaceProps) {
   const [cognitiveSnapshot, setCognitiveSnapshot] = useState<CognitiveSnapshot | null>(null);
   const [selectedEntryTimestamp, setSelectedEntryTimestamp] = useState<string | null>(null);
   const [annotationList, setAnnotationList] = useState<AnnotationList | null>(null);
+  const [behaviorTimeline, setBehaviorTimeline] = useState<BehaviorTimeline | null>(null);
   const [annotatingEntry, setAnnotatingEntry] = useState<{ sequence: number; eventType: string } | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
 
@@ -570,6 +602,18 @@ export function ReplayWorkspace({ context }: ReplayWorkspaceProps) {
         });
       fetchAnnotations(context.decision_id, controller.signal)
         .then(setAnnotationList)
+        .catch((err: unknown) => {
+          if (err instanceof DOMException && err.name === "AbortError") return;
+        });
+      fetchBehaviorTimeline(
+        {
+          persona_id: context.persona_id,
+          workspace_id: context.workspace_id,
+          decision_id: context.decision_id,
+        },
+        controller.signal,
+      )
+        .then(setBehaviorTimeline)
         .catch((err: unknown) => {
           if (err instanceof DOMException && err.name === "AbortError") return;
         });
@@ -736,6 +780,8 @@ export function ReplayWorkspace({ context }: ReplayWorkspaceProps) {
           </p>
         </div>
       ) : null}
+
+      <BehaviorTimelinePanel timeline={behaviorTimeline} />
 
       <AdvisoryInterpretationPanel
         context={context}
