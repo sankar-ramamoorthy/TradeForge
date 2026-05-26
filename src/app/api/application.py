@@ -75,6 +75,7 @@ from src.services.advisory import (
     CandidateReviewQueueService,
     InterpretationDraftService,
 )
+from src.services.behavioral import BehavioralSignalReadService
 from src.services.lifecycle import LifecycleOrchestrationService
 from src.services.market.contextual_summary import ContextualSummaryService
 from src.services.market.fundamentals_service import FundamentalsService
@@ -352,6 +353,7 @@ def create_app(
         AdvisoryArtifactIngestionService | None
     ) = None,
     advisory_artifact_query_service: AdvisoryArtifactQueryService | None = None,
+    behavioral_signal_read_service: BehavioralSignalReadService | None = None,
 ) -> FastAPI:
     shared_event_store = event_store or _default_event_store()
     app = FastAPI(
@@ -384,6 +386,11 @@ def create_app(
         operational_attention_queue_read_service
         if operational_attention_queue_read_service is not None
         else OperationalAttentionQueueReadService(shared_event_store)
+    )
+    app.state.behavioral_signal_read_service = (
+        behavioral_signal_read_service
+        if behavioral_signal_read_service is not None
+        else BehavioralSignalReadService(shared_event_store)
     )
     app.state.session_provider = (
         session_provider

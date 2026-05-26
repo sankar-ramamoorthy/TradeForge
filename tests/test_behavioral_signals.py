@@ -1,0 +1,376 @@
+from __future__ import annotations
+
+from datetime import UTC, datetime, timedelta
+from typing import Any
+
+from fastapi.testclient import TestClient
+from src.app.api import create_app
+from src.domain.behavioral import (
+    BehavioralAnalysisProjector,
+    BehavioralSignalSeverity,
+    BehavioralSignalType,
+    SizingViolationDetector,
+)
+from src.domain.events import EntityReference, EventEnvelope
+from src.infrastructure.event_store.in_memory import InMemoryEventStore
+
+PERSONA_ID = "persona.swing"
+WORKSPACE_ID = "workspace.review"
+
+
+def _event(
+    event_type: str,
+    decision_id: str,
+    offset_minutes: int,
+    payload: dict[str, Any],
+) -> EventEnvelope:
+    return EventEnvelope(
+        event_type=event_type,
+        timestamp=datetime(2026, 5, 26, 14, 0, tzinfo=UTC)
+        + timedelta(minutes=offset_minutes),
+        persona_id=PERSONA_ID,
+        workspace_id=WORKSPACE_ID,
+        entity_references=(
+            EntityReference(entity_type="decision", entity_id=decision_id),
+        ),
+        payload=payload,
+        provenance={"actor": "human"},
+    )
+
+
+def _plan_event(decision_id: str, offset_minutes: int) -> EventEnvelope:
+    return _event(
+        "decision.plan_created",
+        decision_id,
+        offset_minutes,
+        {
+            "plan": {
+                "entry_rationale": "Buy confirmed breakout.",
+                "stop_rationale": "Stop below invalidation.",
+                "target_rationale": "Target prior resistance.",
+                "sizing_rationale": "Risk one percent of portfolio at the stop.",
+                "execution_assumptions": ["Liquidity remains available"],
+                "playbook_alignment": "swing-breakout",
+            }
+        },
+    )
+
+
+def _review_event(
+    decision_id: str,
+    offset_minutes: int,
+    *,
+    discipline_observations: str,
+    execution_quality: int = 2,
+    behavioral_observations: str = "",
+) -> EventEnvelope:
+    return _event(
+        "review.review_completed",
+        decision_id,
+        offset_minutes,
+        {
+            "review": {
+                "thesis_vs_outcome": "The setup was reviewable.",
+                "decision_quality": 3,
+                "execution_quality": execution_quality,
+                "discipline_observations": discipline_observations,
+                "lessons_learned": ["Respect the original risk plan."],
+                "behavioral_observations": behavioral_observations,
+            }
+        },
+    )
+
+
+def _thesis_event(
+    decision_id: str,
+    offset_minutes: int,
+    *,
+    confidence_level: int = 3,
+    invalidation_conditions: list[str] | None = None,
+    event_type: str = "decision.thesis_created",
+) -> EventEnvelope:
+    return _event(
+        event_type,
+        decision_id,
+        offset_minutes,
+        {
+            "thesis": {
+                "narrative": "Breakout can follow through.",
+                "catalysts": ["volume expansion"],
+                "assumptions": ["market breadth confirms"],
+                "invalidation_conditions": invalidation_conditions
+                or ["Close below breakout level"],
+                "confidence_level": confidence_level,
+                "regime_alignment": "risk-on",
+            }
+        },
+    )
+
+
+def _approval_event(decision_id: str, offset_minutes: int) -> EventEnvelope:
+    return _event("decision.plan_approved", decision_id, offset_minutes, {})
+
+
+def _armed_event(decision_id: str, offset_minutes: int) -> EventEnvelope:
+    return _event("decision.plan_armed", decision_id, offset_minutes, {})
+
+
+def _execution_event(decision_id: str, offset_minutes: int) -> EventEnvelope:
+    return _event("execution.order_submitted", decision_id, offset_minutes, {})
+
+
+def test_sizing_violation_detector_marks_recurring_signals() -> None:
+    signals = SizingViolationDetector().detect(
+        (
+            _plan_event("decision-1", 0),
+            _review_event(
+                "decision-1",
+                1,
+                discipline_observations=(
+                    "Sizing violation: exceeded planned risk and position "
+                    "size was too large."
+                ),
+            ),
+            _plan_event("decision-2", 2),
+            _review_event(
+                "decision-2",
+                3,
+                discipline_observations=(
+                    "Again ignored sizing guardrails and risked too much."
+                ),
+                execution_quality=1,
+            ),
+        )
+    )
+
+    assert signals.authority == "derived"
+    assert signals.is_canonical is False
+    assert signals.total_count == 2
+    assert signals.recurring_count == 2
+    assert all(signal.recurring for signal in signals.signals)
+    assert all(signal.recurrence_count == 2 for signal in signals.signals)
+    assert signals.signals[1].severity is BehavioralSignalSeverity.HIGH
+    assert tuple(ref.event_type for ref in signals.signals[0].source_event_refs) == (
+        "decision.plan_created",
+        "review.review_completed",
+    )
+
+
+def test_sizing_violation_detector_ignores_clean_sizing_review() -> None:
+    signals = SizingViolationDetector().detect(
+        (
+            _plan_event("decision-1", 0),
+            _review_event(
+                "decision-1",
+                1,
+                discipline_observations=(
+                    "Sizing stayed inside the planned risk and position size "
+                    "was followed correctly."
+                ),
+                execution_quality=5,
+            ),
+        )
+    )
+
+    assert signals.total_count == 0
+    assert signals.signals == ()
+
+
+def test_behavioral_signal_api_returns_derived_read_model_without_writes() -> None:
+    store = InMemoryEventStore()
+    store.append(_plan_event("decision-1", 0))
+    store.append(
+        _review_event(
+            "decision-1",
+            1,
+            discipline_observations="Sizing violation: exceeded planned risk.",
+        )
+    )
+    before_count = len(store.read_events())
+    client = TestClient(create_app(event_store=store))
+
+    response = client.get(
+        "/behavioral/signals",
+        params={"persona_id": PERSONA_ID, "workspace_id": WORKSPACE_ID},
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["authority"] == "derived"
+    assert data["is_canonical"] is False
+    assert data["total_count"] == 1
+    assert data["signals"][0]["signal_type"] == "sizing_violation"
+    assert data["signals"][0]["decision_id"] == "decision-1"
+    assert data["signals"][0]["source_event_refs"][0]["event_type"] == (
+        "decision.plan_created"
+    )
+    assert len(store.read_events()) == before_count
+
+
+def test_behavioral_signal_api_filters_by_decision_id() -> None:
+    store = InMemoryEventStore()
+    store.append(_plan_event("decision-1", 0))
+    store.append(
+        _review_event(
+            "decision-1",
+            1,
+            discipline_observations="Sizing violation: exceeded planned risk.",
+        )
+    )
+    store.append(_plan_event("decision-2", 2))
+    store.append(
+        _review_event(
+            "decision-2",
+            3,
+            discipline_observations="Sizing violation: position size was too large.",
+        )
+    )
+    client = TestClient(create_app(event_store=store))
+
+    response = client.get(
+        "/behavioral/signals",
+        params={"decision_id": "decision-2"},
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["total_count"] == 1
+    assert data["signals"][0]["decision_id"] == "decision-2"
+
+
+def test_impulsive_execution_detector_uses_timing_and_plan_context() -> None:
+    signals = SizingViolationDetector().detect(
+        (
+            _plan_event("decision-1", 0),
+            _approval_event("decision-1", 1),
+            _armed_event("decision-1", 2),
+            _execution_event("decision-1", 3),
+        )
+    )
+
+    assert signals.total_count == 1
+    assert signals.signals[0].signal_type is BehavioralSignalType.IMPULSIVE_EXECUTION
+    assert signals.signals[0].authority == "derived"
+    assert signals.signals[0].is_canonical is False
+    assert tuple(ref.event_type for ref in signals.signals[0].source_event_refs) == (
+        "decision.plan_created",
+        "decision.plan_approved",
+        "decision.plan_armed",
+        "execution.order_submitted",
+    )
+
+
+def test_behavioral_analysis_projector_builds_m14_review_models() -> None:
+    events = (
+        _thesis_event("decision-1", 0, confidence_level=3),
+        _thesis_event(
+            "decision-1",
+            1,
+            confidence_level=5,
+            event_type="decision.thesis_revised",
+        ),
+        _plan_event("decision-1", 2),
+        _approval_event("decision-1", 3),
+        _execution_event("decision-1", 4),
+        _review_event(
+            "decision-1",
+            5,
+            discipline_observations=(
+                "Sizing violation: exceeded risk. I was stubborn and attached."
+            ),
+            behavioral_observations="FOMO and anxiety were present.",
+            execution_quality=1,
+        ),
+        _plan_event("decision-2", 6),
+        _approval_event("decision-2", 7),
+        _execution_event("decision-2", 8),
+        _review_event(
+            "decision-2",
+            9,
+            discipline_observations="Sizing violation: position size was too large.",
+            execution_quality=2,
+        ),
+        _plan_event("decision-3", 10),
+        _approval_event("decision-3", 11),
+        _execution_event("decision-3", 12),
+        _review_event(
+            "decision-3",
+            13,
+            discipline_observations="Sizing violation: risked too much.",
+            execution_quality=1,
+        ),
+        _plan_event("decision-4", 14),
+        _approval_event("decision-4", 15),
+        _execution_event("decision-4", 16),
+        _review_event(
+            "decision-4",
+            17,
+            discipline_observations="Sizing violation: doubled risk.",
+            execution_quality=1,
+        ),
+    )
+    projector = BehavioralAnalysisProjector()
+
+    clusters = projector.clusters(events)
+    mistakes = projector.recurring_mistakes(events)
+    deterioration = projector.deterioration(events)
+    thesis_attachment = projector.thesis_attachment(events, decision_id="decision-1")
+    emotional = projector.emotional_reflections(events, decision_id="decision-1")
+    timeline = projector.behavior_timeline(events)
+    metrics = projector.quality_metrics(events)
+
+    assert clusters.total_count >= 2
+    assert mistakes.total_count >= 2
+    assert deterioration.total_count >= 1
+    assert thesis_attachment.analyses[0].attachment_detected is True
+    assert emotional.overlays[0].emotional_terms == (
+        "anxiety",
+        "attached",
+        "fomo",
+        "stubborn",
+    )
+    assert timeline.total_count >= 4
+    assert metrics.total_count == 4
+    assert metrics.average_execution_quality == 1.25
+
+
+def test_behavioral_m14_api_endpoints_are_read_only() -> None:
+    store = InMemoryEventStore()
+    for event in (
+        _plan_event("decision-1", 0),
+        _approval_event("decision-1", 1),
+        _execution_event("decision-1", 2),
+        _review_event(
+            "decision-1",
+            3,
+            discipline_observations="Sizing violation: exceeded planned risk.",
+            execution_quality=1,
+        ),
+        _plan_event("decision-2", 4),
+        _approval_event("decision-2", 5),
+        _execution_event("decision-2", 6),
+        _review_event(
+            "decision-2",
+            7,
+            discipline_observations="Sizing violation: risked too much.",
+            execution_quality=2,
+        ),
+    ):
+        store.append(event)
+    before_count = len(store.read_events())
+    client = TestClient(create_app(event_store=store))
+
+    for path in (
+        "/behavioral/clusters",
+        "/behavioral/recurring-mistakes",
+        "/behavioral/deterioration",
+        "/behavioral/thesis-attachment",
+        "/behavioral/emotional-reflections",
+        "/behavioral/timeline",
+        "/behavioral/quality-metrics",
+    ):
+        response = client.get(path, params={"persona_id": PERSONA_ID})
+        assert response.status_code == 200
+        assert response.json()["authority"] == "derived"
+
+    assert len(store.read_events()) == before_count

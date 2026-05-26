@@ -7,6 +7,16 @@ import {
   fetchThesisArtifact,
   fetchPlanArtifact,
   fetchReviewReflection,
+  fetchBehavioralClusters,
+  fetchBehavioralSignals,
+  fetchDecisionQualityMetrics,
+  fetchEmotionalReflections,
+  fetchRecurringMistakes,
+  type BehavioralClusterList,
+  type BehavioralSignalList,
+  type DecisionQualityMetrics,
+  type EmotionalReflectionList,
+  type RecurringMistakeList,
   type ReviewReflectionArtifact,
   type ThesisArtifact,
   type TradePlanArtifact,
@@ -153,6 +163,86 @@ function ReviewReflectionPanel({ reflection }: { reflection: ReviewReflectionArt
   );
 }
 
+function BehavioralReviewPanel({
+  signals,
+  clusters,
+  mistakes,
+  emotional,
+  metrics,
+}: {
+  signals: BehavioralSignalList | null;
+  clusters: BehavioralClusterList | null;
+  mistakes: RecurringMistakeList | null;
+  emotional: EmotionalReflectionList | null;
+  metrics: DecisionQualityMetrics | null;
+}) {
+  if (!signals && !clusters && !mistakes && !emotional && !metrics) return null;
+  return (
+    <div className="behavioral-review-panel" aria-label="Derived behavioral review context">
+      <div className="behavioral-panel-header">
+        <div>
+          <p className="eyebrow">Behavioral Audit</p>
+          <p className="behavioral-authority-note">
+            Derived review context from event history. Not canonical truth or lifecycle authority.
+          </p>
+        </div>
+        <span className="field-authority-badge authority-derived">Derived</span>
+      </div>
+
+      {metrics && metrics.total_count > 0 ? (
+        <div className="behavioral-metric-row">
+          <div>
+            <p className="thesis-context-label">Decision Quality</p>
+            <p className="review-quality-value">{metrics.average_decision_quality ?? "n/a"}/5</p>
+          </div>
+          <div>
+            <p className="thesis-context-label">Execution Quality</p>
+            <p className="review-quality-value">{metrics.average_execution_quality ?? "n/a"}/5</p>
+          </div>
+          <div>
+            <p className="thesis-context-label">Process Signals</p>
+            <p className="review-quality-value">
+              {metrics.metrics.reduce((sum, metric) => sum + metric.process_signal_count, 0)}
+            </p>
+          </div>
+        </div>
+      ) : null}
+
+      {signals && signals.total_count > 0 ? (
+        <div className="behavioral-signal-list">
+          {signals.signals.map((signal) => (
+            <div className="behavioral-signal-item" data-severity={signal.severity} key={signal.signal_id}>
+              <span className="behavioral-signal-type">{signal.signal_type.replace(/_/g, " ")}</span>
+              <p>{signal.summary}</p>
+              <p className="behavioral-source-note">
+                {signal.source_event_refs.length} source event{signal.source_event_refs.length !== 1 ? "s" : ""}
+                {signal.recurring ? ` · recurring ${signal.recurrence_count} times` : ""}
+              </p>
+            </div>
+          ))}
+        </div>
+      ) : null}
+
+      <div className="behavioral-summary-grid">
+        <div>
+          <p className="thesis-context-label">Clusters</p>
+          <p className="behavioral-count">{clusters?.total_count ?? 0}</p>
+        </div>
+        <div>
+          <p className="thesis-context-label">Recurring Mistakes</p>
+          <p className="behavioral-count">{mistakes?.total_count ?? 0}</p>
+        </div>
+        <div>
+          <p className="thesis-context-label">Emotional Reflection Terms</p>
+          <p className="behavioral-count">
+            {emotional?.overlays.reduce((sum, overlay) => sum + overlay.emotional_terms.length, 0) ?? 0}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 type ReviewWorkspaceProps = {
   context: Required<WorkspaceContext>;
   onNavigate: (event: MouseEvent<HTMLAnchorElement>, href: string) => void;
@@ -164,6 +254,11 @@ export function ReviewWorkspace({ context, onStageLoaded }: ReviewWorkspaceProps
   const [thesis, setThesis] = useState<ThesisArtifact | null>(null);
   const [plan, setPlan] = useState<TradePlanArtifact | null>(null);
   const [reflection, setReflection] = useState<ReviewReflectionArtifact | null>(null);
+  const [behavioralSignals, setBehavioralSignals] = useState<BehavioralSignalList | null>(null);
+  const [behavioralClusters, setBehavioralClusters] = useState<BehavioralClusterList | null>(null);
+  const [recurringMistakes, setRecurringMistakes] = useState<RecurringMistakeList | null>(null);
+  const [emotionalReflections, setEmotionalReflections] = useState<EmotionalReflectionList | null>(null);
+  const [qualityMetrics, setQualityMetrics] = useState<DecisionQualityMetrics | null>(null);
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [, setTransitionState] = useState<TransitionState>("idle");
@@ -208,6 +303,16 @@ export function ReviewWorkspace({ context, onStageLoaded }: ReviewWorkspaceProps
           .catch((err: unknown) => {
             if (err instanceof DOMException && err.name === "AbortError") return;
           });
+        const behavioralParams = {
+          persona_id: context.persona_id,
+          workspace_id: context.workspace_id,
+          decision_id: context.decision_id,
+        };
+        fetchBehavioralSignals(behavioralParams, signal).then(setBehavioralSignals).catch(() => {});
+        fetchBehavioralClusters(behavioralParams, signal).then(setBehavioralClusters).catch(() => {});
+        fetchRecurringMistakes(behavioralParams, signal).then(setRecurringMistakes).catch(() => {});
+        fetchEmotionalReflections(behavioralParams, signal).then(setEmotionalReflections).catch(() => {});
+        fetchDecisionQualityMetrics(behavioralParams, signal).then(setQualityMetrics).catch(() => {});
       }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -277,6 +382,14 @@ export function ReviewWorkspace({ context, onStageLoaded }: ReviewWorkspaceProps
           <ReviewFoundationPanel plan={plan} thesis={thesis} />
 
           {reflection ? <ReviewReflectionPanel reflection={reflection} /> : null}
+
+          <BehavioralReviewPanel
+            clusters={behavioralClusters}
+            emotional={emotionalReflections}
+            metrics={qualityMetrics}
+            mistakes={recurringMistakes}
+            signals={behavioralSignals}
+          />
 
           {showReviewModal && context.decision_id ? (
             <ReviewReflectionModal

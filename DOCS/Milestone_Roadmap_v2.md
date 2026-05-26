@@ -2506,7 +2506,7 @@ M13B explicitly excludes:
 
 ## M14 - Behavioral Intelligence And Cognitive Auditability
 
-**Status:** Planned
+**Status:** Done
 
 ## Semantic Intent
 
@@ -2532,16 +2532,16 @@ M14 introduces recurring behavioral pattern detection, process violation trackin
 
 ## Linked Runtime Issues
 
-* TF-C001: Detect recurring sizing violations
-* TF-C002: Detect impulsive execution patterns
-* TF-C003: Implement process deviation overlays
-* TF-C004: Implement behavioral clustering
-* TF-C005: Implement recurring mistake analysis
-* TF-C006: Implement discipline deterioration signals
-* TF-C007: Implement thesis attachment analysis
-* TF-C008: Implement emotional reflection overlays
-* TF-C009: Implement operator behavior timelines
-* TF-C010: Implement decision-quality review metrics
+* TF-C001: Detect recurring sizing violations (**Done**)
+* TF-C002: Detect impulsive execution patterns (**Done**)
+* TF-C003: Implement process deviation overlays (**Done**)
+* TF-C004: Implement behavioral clustering (**Done**)
+* TF-C005: Implement recurring mistake analysis (**Done**)
+* TF-C006: Implement discipline deterioration signals (**Done**)
+* TF-C007: Implement thesis attachment analysis (**Done**)
+* TF-C008: Implement emotional reflection overlays (**Done**)
+* TF-C009: Implement operator behavior timelines (**Done**)
+* TF-C010: Implement decision-quality review metrics (**Done**)
 
 ## Acceptance Meaning
 
