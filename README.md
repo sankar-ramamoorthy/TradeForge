@@ -264,7 +264,7 @@ DOCS/
 | M13 | Done | Contextual interpretation and thesis influence |
 | M13A | Done | Provider governance, AI gateway configuration, credential validation, route visibility |
 | M13B | Done | Managed advisory runtime, route selection, governed provider secrets, and stateless LiteLLM request-time composition |
-| M14 | In Progress | Behavioral intelligence and cognitive auditability; TF-C001 behavioral signal foundation complete |
+| M14 | Done | Behavioral intelligence and cognitive auditability |
 | M15+ | Planned | Cognitive replay, attention allocation, simulation, adaptive research |
 
 ---
