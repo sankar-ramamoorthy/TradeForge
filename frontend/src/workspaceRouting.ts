@@ -5,6 +5,7 @@ import {
   History,
   LibraryBig,
   Lightbulb,
+  Settings,
   type LucideIcon,
   ShieldCheck,
 } from "lucide-react";
@@ -26,7 +27,8 @@ export type WorkspaceRouteId =
   | "plan-review"
   | "active-position"
   | "replay"
-  | "review";
+  | "review"
+  | "provider-governance";
 
 export type WorkspaceContext = Partial<Record<WorkspaceContextKey, string>>;
 
@@ -114,6 +116,17 @@ export const WORKSPACE_ROUTES: readonly WorkspaceRouteDefinition[] = [
     contextSurface: "Review artifacts, rule adherence, replay highlights, and lessons.",
     authorityBoundary: "Review completion must be event-backed through runtime services.",
     Icon: Compass,
+  },
+  {
+    id: "provider-governance",
+    name: "Provider Governance",
+    path: "/workspaces/provider-governance",
+    operationalQuestion: "Which external systems are configured and healthy?",
+    contextSurface:
+      "Credentials, capability routes, AI gateway routing, and diagnostics.",
+    authorityBoundary:
+      "External-system state is operational support, not decision truth.",
+    Icon: Settings,
   },
 ] as const;
 

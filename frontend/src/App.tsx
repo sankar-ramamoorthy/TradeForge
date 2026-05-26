@@ -44,7 +44,8 @@ import { ActivePositionWorkspace } from "./workspaces/ActivePositionWorkspace";
 import { AttentionSummaryPanel } from "./workspaces/AttentionSummaryPanel";
 import { ContextualBriefingPanel } from "./workspaces/ContextualBriefingPanel";
 import { MarketContextPanel } from "./workspaces/MarketContextPanel";
-import { ProviderConfigurationPanel } from "./workspaces/ProviderConfigurationPanel";
+import { ProviderGovernanceWorkspace } from "./workspaces/ProviderGovernanceWorkspace";
+import { ProviderStatusRail } from "./workspaces/ProviderStatusRail";
 import { ContextWorkbenchWorkspace } from "./workspaces/ContextWorkbenchWorkspace";
 import { OperatingWorkspace } from "./workspaces/OperatingWorkspace";
 import { OpportunityWorkspace } from "./workspaces/OpportunityWorkspace";
@@ -367,7 +368,7 @@ export default function App() {
       activeRoute.id === "active-position" ? (
       <>
         <MarketContextPanel />
-        <ProviderConfigurationPanel />
+        <ProviderStatusRail onNavigate={handleNavigateProgrammatic} />
       </>
     ) : undefined;
 
@@ -467,6 +468,8 @@ export default function App() {
           />
         ) : activeRoute.id === "context-workbench" ? (
           <ContextWorkbenchWorkspace context={context} />
+        ) : activeRoute.id === "provider-governance" ? (
+          <ProviderGovernanceWorkspace />
         ) : activeRoute.id === "plan-review" ? (
           <PlanReviewWorkspace
             context={context}

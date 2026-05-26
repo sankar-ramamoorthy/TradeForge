@@ -560,6 +560,187 @@ p {
   font-size: 0.875rem;
 }
 
+.provider-status-rail,
+.provider-governance-section,
+.provider-configuration-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-surface);
+  background: var(--color-surface-muted);
+  padding: 14px;
+}
+
+.provider-status-list,
+.provider-alias-list,
+.credential-provider-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.provider-status-item,
+.provider-alias-row,
+.credential-provider-row {
+  display: grid;
+  gap: 4px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+  background: var(--color-surface);
+  padding: 10px;
+}
+
+.provider-status-item span,
+.provider-alias-row span,
+.provider-status-item small,
+.provider-alias-row small {
+  color: var(--color-muted);
+  font-size: 0.78rem;
+}
+
+.provider-governance-action {
+  display: grid;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+.provider-model-selection {
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.provider-secret-injection-list {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.provider-model-selection label {
+  display: grid;
+  gap: 4px;
+  color: var(--color-muted);
+  font-size: 0.78rem;
+}
+
+.provider-model-selection select {
+  min-width: 0;
+  width: 100%;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  padding: 8px 10px;
+}
+
+.provider-governance-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 36px;
+  border: 1px solid var(--color-border-active);
+  border-radius: var(--radius-control);
+  background: var(--color-surface);
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.provider-governance-link svg {
+  width: 16px;
+  height: 16px;
+}
+
+.provider-governance-surface {
+  gap: 18px;
+}
+
+.provider-governance-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.provider-governance-kpis,
+.provider-gateway-details {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+}
+
+.provider-governance-kpis div,
+.provider-gateway-details div {
+  display: grid;
+  gap: 2px;
+}
+
+.provider-governance-kpis dt,
+.provider-gateway-details dt {
+  color: var(--color-muted);
+  font-size: 0.75rem;
+}
+
+.provider-governance-kpis dd,
+.provider-gateway-details dd {
+  margin: 0;
+  color: var(--color-text);
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.diagnostic-class-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.diagnostic-class-list span,
+.credential-badge {
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  padding: 3px 8px;
+  color: var(--color-muted);
+  font-size: 0.75rem;
+}
+
+.credential-provider-header,
+.credential-masked-fields,
+.credential-inline-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.credential-field-label {
+  display: grid;
+  gap: 4px;
+  min-width: 180px;
+}
+
+.credential-field-label input,
+.provider-configuration-panel select {
+  min-height: 34px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+  background: var(--color-bg);
+  color: var(--color-text);
+  padding: 6px 8px;
+}
+
+.credential-toggle-btn,
+.credential-revoke-btn,
+.credential-save-btn {
+  min-height: 32px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+  background: var(--color-surface);
+  color: var(--color-text);
+  cursor: pointer;
+  padding: 0 10px;
+}
+
 .market-snapshot {
   padding: 10px 12px;
   border: 1px solid var(--color-border);

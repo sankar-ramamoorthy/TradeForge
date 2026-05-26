@@ -24,6 +24,9 @@ from src.infrastructure.advisory.in_memory_interpretation_store import (
 from src.infrastructure.advisory.in_memory_observation_store import (
     InMemoryAdvisoryObservationStore,
 )
+from src.infrastructure.advisory.litellm_request_composer import (
+    LLMProviderCredentialResolver,
+)
 from src.infrastructure.advisory.openai_compatible_provider import (
     OpenAICompatibleAdvisoryProvider,
 )
@@ -55,6 +58,7 @@ from src.security import (
     KeyManager,
     MasterKeyNotConfiguredError,
 )
+from src.security.advisory_model_selection import get_advisory_model_selection_config
 from src.security.litellm_credential import (
     LiteLLMCredentialNotConfiguredError,
     get_litellm_credential,
@@ -218,7 +222,32 @@ def _default_advisory_provider(
     ):
         return None
 
-    return OpenAICompatibleAdvisoryProvider(credential)
+    try:
+        key_manager = KeyManager.from_environment()
+        model_selection = get_advisory_model_selection_config(
+            credential_store,
+            key_manager=key_manager,
+        )
+    except (
+        InvalidCredentialPayloadError,
+        KeyError,
+        LiteLLMCredentialNotConfiguredError,
+        MasterKeyNotConfiguredError,
+        ValueError,
+    ):
+        return None
+
+    if model_selection is None:
+        return None
+
+    return OpenAICompatibleAdvisoryProvider(
+        credential,
+        model_selection=model_selection,
+        provider_credential_resolver=LLMProviderCredentialResolver(
+            credential_store,
+            key_manager=key_manager,
+        ),
+    )
 
 
 class ProviderBootstrapService:
@@ -277,6 +306,9 @@ class ProviderBootstrapService:
         self._app.state.fundamentals_service = FundamentalsService(
             provider_registry,
             fundamentals_providers,
+        )
+        self._app.state.ai_advisory_provider = _default_advisory_provider(
+            credential_store
         )
 
 

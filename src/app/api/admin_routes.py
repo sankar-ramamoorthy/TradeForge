@@ -5,7 +5,11 @@ from pathlib import Path
 
 from fastapi import APIRouter, HTTPException, Request, status
 from pydantic import BaseModel, Field
-from src.security import CredentialStore, KeyManager
+from src.security import (
+    LLM_PROVIDER_SECRET_SCHEMAS,
+    CredentialStore,
+    KeyManager,
+)
 from src.security.credential import Credential, CredentialStatus
 from src.security.key_manager import MasterKeyNotConfiguredError
 
@@ -19,7 +23,11 @@ _PROVIDER_FIELD_NAMES: dict[str, list[str]] = {
     "alpaca": ["api_key", "secret_key"],
     "fmp": ["api_key"],
     "alpha_vantage": ["api_key"],
-    "litellm": ["base_url", "api_key", "default_model"],
+    "litellm": ["base_url", "api_key"],
+    **{
+        schema.provider_id: ["api_key"]
+        for schema in LLM_PROVIDER_SECRET_SCHEMAS
+    },
 }
 
 _SECRET_FIELDS = frozenset({"api_key", "secret_key"})
@@ -72,6 +80,7 @@ class CredentialStatusResponse(BaseModel):
     configured: bool
     status: str | None
     rotated_at: str | None
+    last_validated_at: str | None
     fields: list[CredentialFieldResponse]
     master_key_configured: bool
 
@@ -104,6 +113,7 @@ def _build_status(
             configured=True,
             status="active",
             rotated_at=None,
+            last_validated_at=None,
             fields=[],
             master_key_configured=key_manager is not None,
         )
@@ -114,6 +124,7 @@ def _build_status(
             configured=False,
             status=None,
             rotated_at=None,
+            last_validated_at=None,
             fields=[
                 CredentialFieldResponse(name=n, masked_value=None, display_value=None)
                 for n in field_names
@@ -162,6 +173,11 @@ def _build_status(
         rotated_at=(
             credential.rotated_at.isoformat()
             if credential.rotated_at is not None
+            else None
+        ),
+        last_validated_at=(
+            credential.last_validated_at.isoformat()
+            if credential.last_validated_at is not None
             else None
         ),
         fields=fields,
@@ -221,13 +237,23 @@ def update_credential(
         )
 
     expected_fields = _PROVIDER_FIELD_NAMES[provider_id]
+    normalized_fields = {
+        key: value
+        for key, value in payload.fields.items()
+        if not (provider_id == "litellm" and key == "fallback_model" and not value)
+    }
     if not expected_fields:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail=f"provider '{provider_id}' requires no credentials",
         )
 
-    missing = [f for f in expected_fields if f not in payload.fields]
+    required_fields = [
+        field
+        for field in expected_fields
+        if not (provider_id == "litellm" and field == "fallback_model")
+    ]
+    missing = [f for f in required_fields if f not in normalized_fields]
     if missing:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
@@ -239,11 +265,11 @@ def update_credential(
     existing = store.get(provider_id)
     now = datetime.now(UTC)
 
-    credential_type = "+".join(sorted(payload.fields.keys()))
+    credential_type = "+".join(sorted(normalized_fields.keys()))
     new_credential = Credential(
         provider_id=provider_id,
         credential_type=credential_type,
-        encrypted_payload=key_manager.encrypt_payload(dict(payload.fields)),
+        encrypted_payload=key_manager.encrypt_payload(normalized_fields),
         created_at=existing.created_at if existing is not None else now,
         rotated_at=now if existing is not None else None,
         last_validated_at=None,
@@ -301,3 +327,86 @@ def revoke_credential(
     request.app.state.provider_bootstrap.reload()
 
     return _build_status(provider_id, revoked, key_manager)
+
+
+@admin_router.post(
+    "/credentials/{provider_id}/validate",
+    status_code=status.HTTP_200_OK,
+    response_model=CredentialStatusResponse,
+)
+def validate_credential(
+    provider_id: str,
+    request: Request,
+) -> CredentialStatusResponse:
+    """Validate a saved credential structurally without returning secrets."""
+    if provider_id not in _PROVIDER_FIELD_NAMES:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"unknown provider: '{provider_id}'",
+        )
+
+    expected_fields = _PROVIDER_FIELD_NAMES[provider_id]
+    if not expected_fields:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"provider '{provider_id}' requires no credentials",
+        )
+
+    key_manager = _key_manager()
+    store = _credential_store_from(request)
+    existing = store.get(provider_id)
+    if existing is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"no credential configured for provider '{provider_id}'",
+        )
+    if existing.status is CredentialStatus.REVOKED:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"credential for provider '{provider_id}' is revoked",
+        )
+
+    now = datetime.now(UTC)
+    try:
+        payload = key_manager.decrypt_payload(existing.encrypted_payload)
+        required_fields = [
+            field
+            for field in expected_fields
+            if not (provider_id == "litellm" and field == "fallback_model")
+        ]
+        missing_or_blank = [
+            field for field in required_fields if not payload.get(field, "").strip()
+        ]
+        if missing_or_blank:
+            raise ValueError(
+                "credential payload is missing required fields: "
+                + ", ".join(missing_or_blank)
+            )
+    except Exception:  # noqa: BLE001
+        invalid = Credential(
+            provider_id=existing.provider_id,
+            credential_type=existing.credential_type,
+            encrypted_payload=existing.encrypted_payload,
+            created_at=existing.created_at,
+            rotated_at=existing.rotated_at,
+            last_validated_at=None,
+            status=CredentialStatus.INVALID,
+            provenance=existing.provenance,
+        )
+        store.save(invalid)
+        request.app.state.provider_bootstrap.reload()
+        return _build_status(provider_id, invalid, key_manager)
+
+    validated = Credential(
+        provider_id=existing.provider_id,
+        credential_type=existing.credential_type,
+        encrypted_payload=existing.encrypted_payload,
+        created_at=existing.created_at,
+        rotated_at=existing.rotated_at,
+        last_validated_at=now,
+        status=CredentialStatus.ACTIVE,
+        provenance=existing.provenance,
+    )
+    store.save(validated)
+    request.app.state.provider_bootstrap.reload()
+    return _build_status(provider_id, validated, key_manager)

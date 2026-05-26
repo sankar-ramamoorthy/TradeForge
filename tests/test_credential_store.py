@@ -118,6 +118,39 @@ def test_credential_store_writes_and_reads_litellm_credentials(
     )
 
 
+def test_credential_store_writes_and_reads_litellm_fallback_model(
+    tmp_path: Path,
+) -> None:
+    key_manager = KeyManager(Fernet.generate_key())
+    store = CredentialStore(tmp_path / ".keys.enc")
+    credential = create_litellm_credential(
+        LiteLLMCredentialPayload(
+            base_url="http://localhost:4000",
+            api_key="litellm-key",
+            default_model="primary-model",
+            fallback_model="fallback-model",
+        ),
+        key_manager=key_manager,
+    )
+
+    store.save(credential)
+
+    assert key_manager.decrypt_payload(credential.encrypted_payload) == {
+        "api_key": "litellm-key",
+        "base_url": "http://localhost:4000",
+        "default_model": "primary-model",
+        "fallback_model": "fallback-model",
+    }
+    assert get_litellm_credential(store, key_manager=key_manager) == (
+        LiteLLMCredentialPayload(
+            base_url="http://localhost:4000",
+            api_key="litellm-key",
+            default_model="primary-model",
+            fallback_model="fallback-model",
+        )
+    )
+
+
 def test_litellm_credential_retrieval_fails_when_not_configured(
     tmp_path: Path,
 ) -> None:

@@ -5,7 +5,7 @@ type: index
 status: canonical
 tags: [TradeForge, roadmap, milestones, architecture, cognition, workspaces]
 created: 2026-05-09
-updated: 2026-05-13
+updated: 2026-05-26
 supersedes: MILESTONE_ROADMAP_DEPRECATED.md
 ---
 
@@ -2280,6 +2280,227 @@ M13 excludes deterministic predictive scoring, autonomous trade recommendations,
 * Evidence gains contextual meaning rather than simplistic polarity.
 * Interpretations become replayable cognitive artifacts.
 * Operators gain structured probabilistic context rather than signals.
+
+---
+
+## M13A - Provider Governance And AI Gateway Configuration
+
+**Status:** Done
+
+## Semantic Intent
+
+Formalize external systems governance and AI routing infrastructure before
+behavioral intelligence and broader advisory expansion increase provider,
+credential, gateway, and diagnostic complexity.
+
+M13A stabilizes the operational control plane around external providers. It
+does not introduce a new decision workspace, lifecycle authority, autonomous
+execution path, or AI decision authority.
+
+## Architectural Significance
+
+M10C established the credential boundary. M10D established capability-aware
+provider architecture. M10E established contextual acquisition workflows. M11,
+M12, and M13 introduced AI advisory, advisory observations, and contextual
+interpretation.
+
+Together, those milestones created a larger operational gap: credential entry,
+provider selection, capability routing, LiteLLM routing, health checks,
+diagnostics, fallback state, and contextual provenance are too important to
+remain collapsed into contextual workflow rails.
+
+The core M13A distinction is:
+
+```text
+Credential != Provider != Capability != Model
+```
+
+LiteLLM must be treated as an AI gateway and routing boundary, not as a normal
+one-key provider. TradeForge should request semantic advisory roles and
+capabilities while gateway configuration maps those roles to concrete model
+providers outside workflow logic.
+
+## Canonical Concepts
+
+* [[Provider Boundary]]
+* [[Provider Provenance]]
+* [[AI Advisory Boundary]]
+* [[Derived State Must Remain Distinguishable]]
+* [[Human Decision Sovereignty]]
+* [[Replayability Is Foundational]]
+* [[UX Is Architectural]]
+
+## Scope
+
+M13A introduces or resolves:
+
+* provider governance control surface design
+* credential lifecycle visibility beyond basic save/revoke
+* provider health, validation, diagnostics, and degraded-state visibility
+* capability-first routing governance for price, fundamentals, AI advisory, and future broker/paper trading
+* LiteLLM as an AI gateway rather than an ordinary data provider
+* AI route aliases such as fast summary, reasoning, long-context analysis, cheap classification, and local/offline routes
+* contextual rail simplification so rails show provider status, provenance, freshness, fallback state, and configure links rather than long-form administration
+* replay and provenance questions for provider route, health, fallback, and gateway state
+
+## Explicit Exclusions
+
+M13A explicitly excludes:
+
+* autonomous trading
+* AI decision authority
+* AI plan approval
+* automated broker execution
+* broker automation expansion beyond governance modeling
+* a generalized AI orchestration engine
+* treating provider health, model output, or gateway state as canonical event-ledger truth
+* replacing the existing M9 market snapshot boundary or M10D provider capability registry
+
+## Recommended Issue Order
+
+1. `TF-F059` - Formalize M13A provider governance roadmap (**Done**)
+2. `TF-F060` - Define provider governance control surface design (**Done**)
+3. `TF-F061` - Define capability routing governance model (**Done**)
+4. `TF-F062` - Define AI gateway and route alias model (**Done**)
+5. `TF-F063` - Define provider diagnostics and health history model (**Done**)
+6. `TF-F064` - Implement provider governance read APIs (**Done**)
+7. `TF-F065` - Implement credential validation and test workflow (**Done**)
+8. `TF-F066` - Implement AI gateway route visibility (**Done**)
+9. `TF-F067` - Implement provider governance frontend surface and rail cleanup (**Done**)
+10. `TF-F068` - M13A verification and M14 readiness gate (**Done**)
+11. `TF-F071` - Fix advisory thesis review event store loading (**Done, corrective feedback issue**)
+
+## Linked Runtime Issues
+
+* TF-F059: Formalize M13A provider governance roadmap (**Done**)
+* TF-F060: Define provider governance control surface design (**Done**)
+* TF-F061: Define capability routing governance model (**Done**)
+* TF-F062: Define AI gateway and route alias model (**Done**)
+* TF-F063: Define provider diagnostics and health history model (**Done**)
+* TF-F064: Implement provider governance read APIs (**Done**)
+* TF-F065: Implement credential validation and test workflow (**Done**)
+* TF-F066: Implement AI gateway route visibility (**Done**)
+* TF-F067: Implement provider governance frontend surface and rail cleanup (**Done**)
+* TF-F068: M13A verification and M14 readiness gate (**Done**)
+* TF-F071: Fix advisory thesis review event store loading (**Done, corrective feedback issue**)
+
+## Acceptance Meaning
+
+* Provider governance is modeled as an external systems control plane, not as a contextual rail form.
+* Credential status, provider health, capability routing, gateway routing, fallback behavior, and diagnostics are distinguishable operational concerns.
+* Contextual rails remain cognition-preserving surfaces focused on status, provenance, freshness, fallback, and advisory boundaries.
+* LiteLLM routing is represented through gateway and route-alias concepts rather than hardcoded raw model names in workflow logic.
+* External provider and AI gateway state remain advisory, non-canonical, and subordinate to human decision sovereignty.
+
+---
+
+## M13B - AI Gateway Governance And Managed Advisory Runtime
+
+**Status:** Done
+
+## Semantic Intent
+
+Establish TradeForge as the governed operator-facing owner of the managed AI
+advisory runtime.
+
+M13B turns the M13A AI gateway foundation into a managed operational boundary:
+operators choose advisory routes through TradeForge, TradeForge mediates access
+to LiteLLM, and downstream LLM provider secrets are governed through the
+TradeForge credential boundary.
+
+## Architectural Significance
+
+M13A proved LiteLLM advisory invocation, provider governance visibility, smoke
+testing, route stabilization, and diagnostics. It also left an intentional
+boundary: TradeForge stored the LiteLLM gateway credential, while downstream
+LLM provider keys lived in LiteLLM configuration or operator environment.
+
+M13B changes that boundary for the managed advisory runtime. TradeForge becomes
+the governed owner of downstream LLM provider secrets and the sole
+operator-facing advisory gateway.
+
+The core M13B distinction is:
+
+```text
+Operator
+  -> TradeForge Provider Governance
+  -> encrypted LLM provider credential governance
+  -> global advisory model selection
+  -> TradeForge advisory boundary
+  -> internal LiteLLM runtime
+  -> vendor model providers
+```
+
+## Canonical Concepts
+
+* [[AI Advisory Boundary]]
+* [[Human Decision Sovereignty]]
+* [[Provider Boundary]]
+* [[Provider Provenance]]
+* [[Derived State Must Remain Distinguishable]]
+* [[Replayability Is Foundational]]
+* [[Operational Credential Boundary]]
+
+## Scope
+
+M13B introduces or resolves:
+
+* global advisory model and route selection
+* LiteLLM model discovery through TradeForge
+* operator-selected primary advisory model or route
+* optional fallback advisory model or route
+* removal of hardcoded advisory model names from workflow logic
+* advisory-wide use of the selected configuration
+* non-canonical smoke testing for the selected route
+* internal-only LiteLLM runtime exposure by default
+* TradeForge-mediated advisory access to LiteLLM
+* local debugging workflow for internal LiteLLM access
+* governed downstream LLM provider secret management
+* encrypted Groq, NVIDIA NIM, OpenAI, Anthropic, Google-style provider keys
+* runtime decryption only inside the trusted backend advisory boundary
+* stateless request-time provider credential composition for LiteLLM calls
+* explicit rotation and reload semantics
+* non-invasive LiteLLM readiness checks that do not probe model providers
+
+## Explicit Exclusions
+
+M13B explicitly excludes:
+
+* autonomous trading
+* AI decision authority
+* AI plan approval
+* lifecycle transitions from AI output
+* direct vendor SDK bypass from advisory workflow code
+* generalized AI orchestration
+* multi-agent runtime governance
+* automatic hidden model selection
+* dynamic per-task routing policies
+* dynamic LiteLLM YAML editing unless separately scoped
+* Kubernetes secrets or external vault integration
+* broker execution expansion
+
+## Linked Runtime Issues
+
+* TF-F072: Global Advisory Model Selection (**Done**)
+* TF-F073: Internalize LiteLLM Gateway Network Boundary (**Done**)
+* TF-F074: Governed LLM Provider Secret Management (**Done**)
+* TF-F075: Implement Stateless LiteLLM Request-Time Credential Composition (**Done**)
+* TF-F076: Replace LiteLLM route-probing healthcheck with non-invasive readiness check (**Done**)
+
+## Acceptance Meaning
+
+* TradeForge is the operator-facing advisory gateway.
+* LiteLLM is treated as managed internal infrastructure by default.
+* Advisory workflow code does not depend on hardcoded raw model names.
+* Downstream LLM vendor keys are governed by TradeForge credential storage.
+* Provider secrets are masked in UI/API responses and decrypted only inside the
+  trusted backend advisory request path.
+* LiteLLM remains stateless for managed local advisory runtime operation:
+  TradeForge resolves explicit provider/model selection and supplies the
+  required provider credential per request.
+* LiteLLM readiness checks do not perform provider/model route probing.
+* AI gateway routing and provider-secret state remain operational,
+  non-canonical, and subordinate to human decision sovereignty.
 
 ---
 

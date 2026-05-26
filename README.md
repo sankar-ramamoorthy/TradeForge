@@ -60,12 +60,20 @@ Advisory analytics on accumulated evidence:
 
 All advisory outputs are non-canonical. They cannot approve plans, execute trades, mutate lifecycle state, or write authoritative decision events. Human decision sovereignty is mandatory.
 
-### Credential management
+### Provider governance
 
-- Configure provider API keys from the **ProviderConfigurationPanel** in the browser — no terminal required after initial master key setup
+- Dedicated **Provider Governance** surface at `/workspaces/provider-governance` — separate operational control plane, not a workspace rail
+- Configure provider API keys from the browser — no terminal required after initial master key setup
 - Masked field display (last 4 characters of secrets shown)
+- Credential validation workflow — test a credential without saving, or validate an existing one on demand
 - Provider registry reloads automatically after credential changes — no restart required
 - Revoke credentials with audit trail preserved
+- LiteLLM surfaced as an AI gateway with named route aliases — not treated as an ordinary data provider
+- AI gateway route visibility: fast-summary, reasoning, long-context, and classification routes are distinguishable operational concerns
+- Advisory route selection and smoke tests are exposed through Provider Governance and remain non-canonical
+- Downstream LLM provider secrets are governed through the same encrypted boundary and resolved only for the individual advisory request that needs them
+- Capability routing governance: `Credential != Provider != Capability != Model`
+- Contextual rails show provider status, provenance, freshness, and a configure link — long-form administration lives in the governance surface
 
 ---
 
@@ -83,8 +91,7 @@ uv run uvicorn src.app.api.application:app --host 127.0.0.1 --port 8000 --reload
 **Terminal 2 — Frontend**
 
 ```bash
-cd frontend
-npm install
+npm run install:frontend
 npm run dev
 ```
 
@@ -122,8 +129,7 @@ uv run mypy src tests
 ### Frontend
 
 ```bash
-cd frontend
-npm install
+npm run install:frontend
 npm run typecheck
 npm run lint
 npm run build
@@ -145,10 +151,21 @@ uv run python scripts/manage_credentials.py generate-master-key
 ```bash
 uv run python scripts/manage_credentials.py register fmp --api-key "<key>"
 uv run python scripts/manage_credentials.py register litellm \
-  --base-url "http://localhost:4000" \
-  --api-key "<key>" \
-  --default-model "tradeforge-groq-70b"
+  --base-url "http://litellm:4000" \
+  --api-key "<key>"
 ```
+
+Provider Governance stores advisory model selection separately from the LiteLLM
+gateway credential. Select explicit provider/model pairs through TradeForge
+without creating canonical event-ledger facts.
+
+Downstream LLM provider keys can also be stored through the same encrypted
+credential boundary using provider IDs such as `llm_groq`, `llm_nvidia_nim`,
+`llm_openai`, `llm_anthropic`, and `llm_google`. TradeForge masks these values
+in API/UI responses and decrypts them only inside the trusted backend advisory
+request path. LiteLLM receives the required provider credential per
+`/chat/completions` request; downstream provider keys are not configured in
+LiteLLM environment variables or static config.
 
 See [`HOW-TO-SETUP-KEYS.md`](HOW-TO-SETUP-KEYS.md) for full credential setup.
 
@@ -171,7 +188,14 @@ To run LiteLLM through Docker Compose:
 docker compose --profile advisory up -d litellm
 ```
 
-Use `http://localhost:4000` as the LiteLLM base URL when the backend runs on the host. Use `http://litellm:4000` when the TradeForge backend also runs inside Docker Compose.
+Use `http://litellm:4000` as the LiteLLM base URL when TradeForge runs inside
+Docker Compose. LiteLLM is not exposed on `localhost:4000` by default; browser
+and operator workflows should go through TradeForge. For temporary local
+inspection, start with the explicit debug override:
+
+```bash
+docker compose --profile advisory -f docker-compose.yml -f docker-compose.litellm-debug.yml up -d litellm
+```
 
 Without a LiteLLM credential: lifecycle, market context, replay, and manual advisory artifact workflows all work normally. AI generation endpoints report `not_configured`.
 
@@ -238,6 +262,8 @@ DOCS/
 | M11 | Done | AI advisory boundary, replay/review assistance, provenance |
 | M12 | Done | Advisory observation and cognitive evidence layer |
 | M13 | Done | Contextual interpretation and thesis influence |
+| M13A | Done | Provider governance, AI gateway configuration, credential validation, route visibility |
+| M13B | Done | Managed advisory runtime, route selection, governed provider secrets, and stateless LiteLLM request-time composition |
 | M14+ | Planned | Behavioral intelligence, cognitive replay, attention allocation, simulation |
 
 ---

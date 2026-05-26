@@ -6,12 +6,24 @@ import {
   revokeCredential,
   updateCredential,
   updateProviderPreference,
+  validateCredential,
   type CredentialListResponse,
   type CredentialStatus,
   type ProviderConfiguration,
 } from "../api/runtime";
 
-const CREDENTIAL_PROVIDERS = ["polygon", "alpaca", "fmp", "alpha_vantage", "litellm"] as const;
+const CREDENTIAL_PROVIDERS = [
+  "polygon",
+  "alpaca",
+  "fmp",
+  "alpha_vantage",
+  "litellm",
+  "llm_groq",
+  "llm_nvidia_nim",
+  "llm_openai",
+  "llm_anthropic",
+  "llm_google",
+] as const;
 type CredentialProvider = (typeof CREDENTIAL_PROVIDERS)[number];
 
 export function ProviderConfigurationPanel() {
@@ -57,7 +69,14 @@ export function ProviderConfigurationPanel() {
   const handleSave = async (providerId: CredentialProvider) => {
     setSaving(true);
     try {
-      const updated = await updateCredential(providerId, formValues);
+      const schema = PROVIDER_CREDENTIAL_SCHEMAS[providerId] ?? [];
+      const filteredFields = Object.fromEntries(
+        Object.entries(formValues).filter(([name, value]) => {
+          const field = schema.find((item) => item.name === name);
+          return !field?.optional || value.trim() !== "";
+        }),
+      );
+      const updated = await updateCredential(providerId, filteredFields);
       setCredList((prev) =>
         prev
           ? {
@@ -97,6 +116,29 @@ export function ProviderConfigurationPanel() {
       fetchProviderConfiguration().then(setConfig).catch(() => undefined);
     } catch (err) {
       showToast(err instanceof Error ? err.message : "Revoke failed.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleValidate = async (providerId: string) => {
+    setSaving(true);
+    try {
+      const updated = await validateCredential(providerId);
+      setCredList((prev) =>
+        prev
+          ? {
+              ...prev,
+              credentials: prev.credentials.map((c) =>
+                c.provider_id === providerId ? updated : c,
+              ),
+            }
+          : prev,
+      );
+      showToast("Credential validation complete.");
+      fetchProviderConfiguration().then(setConfig).catch(() => undefined);
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : "Validation failed.");
     } finally {
       setSaving(false);
     }
@@ -190,7 +232,7 @@ export function ProviderConfigurationPanel() {
                         : "credential-badge--missing"
                     }`}
                   >
-                    {isConfigured ? "configured" : "not configured"}
+                    {cred?.status ?? (isConfigured ? "configured" : "not configured")}
                   </span>
                   {!masterKeyMissing && (
                     <button
@@ -199,6 +241,18 @@ export function ProviderConfigurationPanel() {
                       type="button"
                     >
                       {isExpanded ? "Cancel" : isConfigured ? "Update" : "Add credential"}
+                    </button>
+                  )}
+                  {isConfigured && !masterKeyMissing && !isExpanded && (
+                    <button
+                      className="credential-toggle-btn"
+                      disabled={saving}
+                      onClick={() => {
+                        void handleValidate(providerId);
+                      }}
+                      type="button"
+                    >
+                      Validate
                     </button>
                   )}
                   {isConfigured && !masterKeyMissing && !isExpanded && (
@@ -216,6 +270,14 @@ export function ProviderConfigurationPanel() {
                 {/* Masked field display when configured and not editing */}
                 {isConfigured && !isExpanded && cred && cred.fields.length > 0 && (
                   <div className="credential-masked-fields">
+                    {cred.last_validated_at ? (
+                      <span className="credential-masked-field">
+                        <span className="credential-field-name">validated:</span>{" "}
+                        <span className="credential-field-value">
+                          {new Date(cred.last_validated_at).toLocaleString()}
+                        </span>
+                      </span>
+                    ) : null}
                     {cred.fields.map((field) => (
                       <span key={field.name} className="credential-masked-field">
                         <span className="credential-field-name">{field.name}:</span>{" "}
@@ -252,7 +314,7 @@ export function ProviderConfigurationPanel() {
                             fieldDef.secret ? "••••••••" : `Enter ${fieldDef.label}`
                           }
                           autoComplete={fieldDef.secret ? "new-password" : "off"}
-                          required
+                          required={!fieldDef.optional}
                         />
                       </label>
                     ))}

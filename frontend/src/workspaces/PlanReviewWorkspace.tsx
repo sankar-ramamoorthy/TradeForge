@@ -8,6 +8,8 @@ import {
   fetchPlanArtifact,
   fetchPlanReadiness,
   postLifecycleTransition,
+  generateThesisReview,
+  type AdvisoryGeneratedResponse,
   type PlanReadiness,
   type ThesisArtifact,
   type TradePlanArtifact,
@@ -23,6 +25,7 @@ import { PlanReadinessPanel } from "./PlanReadinessPanel";
 import { AdvisoryInterpretationPanel } from "./AdvisoryInterpretationPanel";
 
 type TransitionState = "idle" | "transitioning" | "error";
+type AdvisoryInvocationState = "not_invoked" | "running" | "succeeded" | "failed";
 
 const AUTHORITY_LABELS: Record<string, string> = {
   canonical: "Canonical",
@@ -225,6 +228,11 @@ export function PlanReviewWorkspace({ context, onNavigateProgrammatic, onStageLo
   const [loadError, setLoadError] = useState<string | null>(null);
   const [transitionState, setTransitionState] = useState<TransitionState>("idle");
   const [transitionError, setTransitionError] = useState<string | null>(null);
+  const [advisoryState, setAdvisoryState] =
+    useState<AdvisoryInvocationState>("not_invoked");
+  const [advisoryReview, setAdvisoryReview] =
+    useState<AdvisoryGeneratedResponse | null>(null);
+  const [advisoryError, setAdvisoryError] = useState<string | null>(null);
   const fetchControllerRef = useRef<AbortController | null>(null);
 
   const params: WorkspaceApiParams = {
@@ -327,6 +335,29 @@ export function PlanReviewWorkspace({ context, onNavigateProgrammatic, onStageLo
 
   const handleCreatePlan = () => setShowPlanModal(true);
   const handleAuthorizePlan = makeTransitionHandler("Approval");
+  const handleGenerateAdvisoryReview = () => {
+    if (!context.decision_id) return;
+    setAdvisoryState("running");
+    setAdvisoryReview(null);
+    setAdvisoryError(null);
+    generateThesisReview({
+      decision_id: context.decision_id,
+      persona_id: context.persona_id,
+      workspace_id: context.workspace_id,
+    })
+      .then((review) => {
+        setAdvisoryState("succeeded");
+        setAdvisoryReview(review);
+      })
+      .catch((err: unknown) => {
+        setAdvisoryState("failed");
+        setAdvisoryError(
+          err instanceof Error
+            ? err.message
+            : "Advisory review generation failed",
+        );
+      });
+  };
   const armPlanSuccessHref =
     "/workspaces/active-position" +
     (context.decision_id
@@ -425,6 +456,52 @@ export function PlanReviewWorkspace({ context, onNavigateProgrammatic, onStageLo
             context={context}
             title="Evidence influence and caveats"
           />
+
+          {thesis ? (
+            <div className="lifecycle-action-surface">
+              <p className="eyebrow">Advisory Review</p>
+              <p className="lifecycle-action-note">
+                Request an explicit non-canonical thesis review. This does not
+                approve the plan, create a lifecycle event, or store an
+                interpretation.
+              </p>
+              <p className="projection-detail">
+                Invocation state: {advisoryState.replace(/_/g, " ")}
+              </p>
+              {advisoryError ? (
+                <div className="runtime-error">{advisoryError}</div>
+              ) : null}
+              {advisoryReview ? (
+                <article className="advisory-interpretation-item">
+                  <div className="advisory-interpretation-meta">
+                    <span>{advisoryReview.provenance.provider_id}</span>
+                    <span>{advisoryReview.provenance.model_id}</span>
+                    <span>Confidence: {advisoryReview.confidence}</span>
+                  </div>
+                  <p className="advisory-interpretation-content">
+                    {advisoryReview.content}
+                  </p>
+                  {advisoryReview.caveats.length > 0 ? (
+                    <ul className="advisory-caveat-list">
+                      {advisoryReview.caveats.map((caveat) => (
+                        <li key={caveat}>{caveat}</li>
+                      ))}
+                    </ul>
+                  ) : null}
+                </article>
+              ) : null}
+              <button
+                className="lifecycle-action-btn"
+                disabled={advisoryState === "running" || !context.decision_id}
+                onClick={handleGenerateAdvisoryReview}
+                type="button"
+              >
+                {advisoryState === "running"
+                  ? "Generating advisory review..."
+                  : "Generate Advisory Review"}
+              </button>
+            </div>
+          ) : null}
 
           {showPlanModal && context.decision_id ? (
             <PlanDevelopmentModal

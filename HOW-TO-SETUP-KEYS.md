@@ -52,37 +52,64 @@ encrypted payloads, not plaintext provider keys.
 
 ### LiteLLM advisory credentials
 
-TradeForge talks to LiteLLM through the same encrypted credential registry. If
-the backend runs on the host, register LiteLLM with `localhost`:
+TradeForge talks to LiteLLM through the same encrypted credential registry. For
+the managed Docker Compose runtime, register the internal LiteLLM service URL:
 
 ```powershell
 $env:LITELLM_MASTER_KEY = "sk-tradeforge-local-dev"
 uv run python scripts\manage_credentials.py register litellm `
-  --base-url "http://localhost:4000" `
-  --api-key $env:LITELLM_MASTER_KEY `
-  --default-model "tradeforge-groq-70b"
+  --base-url "http://litellm:4000" `
+  --api-key $env:LITELLM_MASTER_KEY
 ```
 
-If the backend runs inside Docker Compose, register the Compose service URL
-instead:
+LiteLLM is not exposed on `localhost:4000` by default. Browser and operator
+workflows should reach advisory functions through TradeForge.
+
+If you intentionally need temporary host access for local LiteLLM inspection,
+start the debug override and use `http://localhost:4000` only for that debug
+session:
 
 ```powershell
-uv run python scripts\manage_credentials.py register litellm `
-  --base-url "http://litellm:4000" `
-  --api-key $env:LITELLM_MASTER_KEY `
-  --default-model "tradeforge-groq-70b"
+docker compose --profile advisory -f docker-compose.yml -f docker-compose.litellm-debug.yml up -d litellm
 ```
+
+Provider Governance stores advisory model selection separately from the LiteLLM
+gateway credential. Select explicit provider/model pairs through
+`/workspaces/provider-governance`, for example provider `llm_groq` plus model
+`groq/llama-3.1-70b-versatile`. This selection is operational configuration
+only; it is not event-ledger truth.
+
+### Downstream LLM provider secrets
+
+M13B moves downstream model-provider key governance into TradeForge. Store
+provider keys in `.keys.enc` with these provider IDs:
+
+```powershell
+uv run python scripts\manage_credentials.py register llm_groq --api-key "<groq-key>"
+uv run python scripts\manage_credentials.py register llm_nvidia_nim --api-key "<nvidia-nim-key>"
+uv run python scripts\manage_credentials.py register llm_openai --api-key "<openai-key>"
+uv run python scripts\manage_credentials.py register llm_anthropic --api-key "<anthropic-key>"
+uv run python scripts\manage_credentials.py register llm_google --api-key "<google-key>"
+```
+
+The UI/API only shows masked values. Runtime decryption occurs at the
+composition boundary, where TradeForge resolves the selected provider ID and
+adds the required `api_key` to that individual LiteLLM `/chat/completions`
+request. Ollama is keyless and uses a configured API base instead of a stored
+CredentialStore secret.
 
 Start the optional LiteLLM service with:
 
 ```powershell
-$env:GROQ_API_KEY = "<groq-key>"
 docker compose --profile advisory up -d litellm
 ```
 
-`litellm_config.yaml` reads provider API keys from environment variables such
-as `GROQ_API_KEY` and `NVIDIA_NIM_API_KEY`. Do not put provider keys in the
-config file.
+LiteLLM remains stateless in the managed local runtime. Do not configure a
+LiteLLM database for TradeForge provider secrets, do not use
+`POST /config/update`, and do not put downstream provider API keys in LiteLLM
+environment variables or `litellm_config.yaml`. TradeForge's governed
+credential store is the authoritative owner of these secrets and supplies them
+per request.
 
 ## 3. Select a market provider when needed
 
