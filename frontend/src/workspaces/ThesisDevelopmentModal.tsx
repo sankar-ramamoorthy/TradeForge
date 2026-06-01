@@ -1,9 +1,21 @@
-import { useState, type FormEvent } from "react";
-import { postDevelopThesis } from "../api/runtime";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
+import {
+  fetchThesisImports,
+  postDevelopThesis,
+  scanLocalThesisImports,
+  type ThesisImportMappedFields,
+  type ThesisImportPreview,
+} from "../api/runtime";
 import { type WorkspaceContext } from "../workspaceRouting";
 import { FundamentalsContextPanel } from "./FundamentalsContextPanel";
 
 type SubmitState = "idle" | "submitting" | "error";
+type ImportFieldName =
+  | "narrative"
+  | "catalysts"
+  | "assumptions"
+  | "invalidation_conditions";
+type ImportFieldState = "accepted" | "edited";
 
 type Props = {
   context: Required<WorkspaceContext>;
@@ -17,11 +29,13 @@ function ListInput({
   items,
   onChange,
   placeholder,
+  importState,
 }: {
   label: string;
   items: string[];
   onChange: (items: string[]) => void;
   placeholder: string;
+  importState?: ImportFieldState;
 }) {
   function handleChange(index: number, value: string) {
     const next = [...items];
@@ -39,7 +53,10 @@ function ListInput({
 
   return (
     <div className="thesis-list-input">
-      <label className="thesis-field-label">{label}</label>
+      <label className="thesis-field-label">
+        {label}
+        {importState ? <ImportFieldBadge state={importState} /> : null}
+      </label>
       {items.map((item, index) => (
         <div className="thesis-list-row" key={index}>
           <input
@@ -73,6 +90,205 @@ function ListInput({
   );
 }
 
+function ImportFieldBadge({ state }: { state: ImportFieldState }) {
+  return (
+    <span className="thesis-import-field-badge">
+      {state === "edited" ? "Imported edited" : "Imported unchanged"}
+    </span>
+  );
+}
+
+function fieldHasValue(
+  field: ImportFieldName,
+  values: {
+    narrative: string;
+    catalysts: string[];
+    assumptions: string[];
+    invalidation_conditions: string[];
+  },
+) {
+  if (field === "narrative") return values.narrative.trim().length > 0;
+  return values[field].some((item) => item.trim());
+}
+
+function mappedFieldHasValue(field: ImportFieldName, mapped: ThesisImportMappedFields) {
+  const value = mapped[field];
+  return Array.isArray(value) ? value.length > 0 : Boolean(value);
+}
+
+function importedListEdited(current: string[], imported: string[] | undefined) {
+  if (!imported) return false;
+  const cleanCurrent = current.filter((item) => item.trim()).map((item) => item.trim());
+  return JSON.stringify(cleanCurrent) !== JSON.stringify(imported);
+}
+
+function ThesisImportPreviewPanel({
+  context,
+  symbol,
+  onAccept,
+  onReject,
+  acceptedFields,
+  rejectedFields,
+}: {
+  context: Required<WorkspaceContext>;
+  symbol: string;
+  onAccept: (artifact: ThesisImportPreview, field: ImportFieldName) => void;
+  onReject: (artifact: ThesisImportPreview, field: ImportFieldName) => void;
+  acceptedFields: ReadonlySet<string>;
+  rejectedFields: ReadonlySet<string>;
+}) {
+  const [imports, setImports] = useState<ThesisImportPreview[]>([]);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [scanMessage, setScanMessage] = useState<string | null>(null);
+  const [scanning, setScanning] = useState(false);
+
+  function loadImports(signal?: AbortSignal) {
+    return fetchThesisImports(
+      {
+        persona_id: context.persona_id,
+        workspace_id: context.workspace_id,
+        symbol,
+      },
+      signal,
+    ).then((response) => {
+      setImports(response.imports);
+      setLoadError(null);
+      return response;
+    });
+  }
+
+  useEffect(() => {
+    const controller = new AbortController();
+    loadImports(controller.signal)
+      .catch((err: unknown) => {
+        if (err instanceof DOMException && err.name === "AbortError") return;
+        setLoadError(err instanceof Error ? err.message : "Failed to load imports.");
+      });
+    return () => controller.abort();
+  }, [context.persona_id, context.workspace_id, symbol]);
+
+  function handleScanLocalImports() {
+    setScanning(true);
+    setScanMessage(null);
+    scanLocalThesisImports({
+      persona_id: context.persona_id,
+      workspace_id: context.workspace_id,
+      symbol,
+    })
+      .then((result) => {
+        setScanMessage(
+          `Scanned ${result.scanned_count} file${result.scanned_count !== 1 ? "s" : ""}; imported ${result.imported_count}.`,
+        );
+        return loadImports();
+      })
+      .catch((err: unknown) => {
+        setLoadError(err instanceof Error ? err.message : "Local import scan failed.");
+      })
+      .finally(() => setScanning(false));
+  }
+
+  const fields: { name: ImportFieldName; label: string }[] = [
+    { name: "narrative", label: "Narrative" },
+    { name: "catalysts", label: "Catalysts" },
+    { name: "assumptions", label: "Assumptions" },
+    { name: "invalidation_conditions", label: "Invalidation" },
+  ];
+
+  return (
+    <aside className="thesis-import-panel" aria-label="Thesis import preview">
+      <div className="thesis-import-panel-header">
+        <div>
+          <p className="eyebrow">Import Preview</p>
+          <h3>Advisory draft context</h3>
+        </div>
+        <div className="thesis-import-badges">
+          <span className="field-authority-badge authority-advisory">Advisory</span>
+          <span className="thesis-import-noncanonical">Non-canonical</span>
+        </div>
+      </div>
+      <div className="thesis-import-dropoff">
+        <span>Drop markdown in imports/incoming.</span>
+        <button
+          className="thesis-import-action"
+          disabled={scanning}
+          onClick={handleScanLocalImports}
+          type="button"
+        >
+          {scanning ? "Scanning..." : "Scan folder"}
+        </button>
+      </div>
+
+      {loadError ? <div className="runtime-error">{loadError}</div> : null}
+      {scanMessage ? <p className="thesis-import-scan-message">{scanMessage}</p> : null}
+      {!loadError && imports.length === 0 ? (
+        <p className="field-no-data">No eligible thesis draft artifacts for {symbol}.</p>
+      ) : null}
+
+      {imports.map((artifact) => (
+        <div className="thesis-import-card" key={artifact.artifact_id}>
+          <div className="thesis-import-source">
+            <strong>{artifact.title}</strong>
+            <span>{artifact.source}</span>
+            <span>{new Date(artifact.captured_at).toLocaleString()}</span>
+          </div>
+          <p className="thesis-import-provenance">{artifact.provenance_summary}</p>
+          <div className="thesis-import-meta">
+            <span>Uncertainty: {artifact.uncertainty_band}</span>
+            <span>{artifact.caveats.length} caveat{artifact.caveats.length !== 1 ? "s" : ""}</span>
+          </div>
+          {artifact.caveats.length > 0 ? (
+            <ul className="thesis-import-caveats">
+              {artifact.caveats.map((caveat) => (
+                <li key={caveat}>{caveat}</li>
+              ))}
+            </ul>
+          ) : null}
+
+          <div className="thesis-import-fields">
+            {fields.map((field) => {
+              if (!mappedFieldHasValue(field.name, artifact.mapped_fields)) return null;
+              const value = artifact.mapped_fields[field.name];
+              const fieldKey = `${artifact.artifact_id}:${field.name}`;
+              const accepted = acceptedFields.has(field.name);
+              const rejected = rejectedFields.has(fieldKey);
+              return (
+                <div className="thesis-import-field" key={field.name}>
+                  <div>
+                    <span className="thesis-import-field-name">{field.label}</span>
+                    <p>
+                      {Array.isArray(value)
+                        ? value.join("; ")
+                        : value}
+                    </p>
+                  </div>
+                  <div className="thesis-import-field-actions">
+                    <button
+                      className="thesis-import-action"
+                      disabled={accepted}
+                      onClick={() => onAccept(artifact, field.name)}
+                      type="button"
+                    >
+                      {accepted ? "Accepted" : "Accept"}
+                    </button>
+                    <button
+                      className="thesis-import-action secondary"
+                      disabled={rejected}
+                      onClick={() => onReject(artifact, field.name)}
+                      type="button"
+                    >
+                      {rejected ? "Rejected" : "Reject"}
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      ))}
+    </aside>
+  );
+}
+
 export function ThesisDevelopmentModal({ context, symbol, onSuccess, onCancel }: Props) {
   const [narrative, setNarrative] = useState("");
   const [catalysts, setCatalysts] = useState<string[]>([""]);
@@ -82,6 +298,106 @@ export function ThesisDevelopmentModal({ context, symbol, onSuccess, onCancel }:
   const [regimeAlignment, setRegimeAlignment] = useState("");
   const [submitState, setSubmitState] = useState<SubmitState>("idle");
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [sourceArtifactId, setSourceArtifactId] = useState<string | null>(null);
+  const [acceptedFields, setAcceptedFields] = useState<Set<ImportFieldName>>(new Set());
+  const [rejectedFields, setRejectedFields] = useState<Set<string>>(new Set());
+  const [importedBaselines, setImportedBaselines] = useState<
+    Partial<Record<ImportFieldName, string | string[]>>
+  >({});
+
+  const editedImportFields = useMemo(() => {
+    const edited: ImportFieldName[] = [];
+    if (
+      acceptedFields.has("narrative") &&
+      typeof importedBaselines.narrative === "string" &&
+      narrative.trim() !== importedBaselines.narrative
+    ) {
+      edited.push("narrative");
+    }
+    if (
+      acceptedFields.has("catalysts") &&
+      importedListEdited(catalysts, importedBaselines.catalysts as string[] | undefined)
+    ) {
+      edited.push("catalysts");
+    }
+    if (
+      acceptedFields.has("assumptions") &&
+      importedListEdited(assumptions, importedBaselines.assumptions as string[] | undefined)
+    ) {
+      edited.push("assumptions");
+    }
+    if (
+      acceptedFields.has("invalidation_conditions") &&
+      importedListEdited(
+        invalidationConditions,
+        importedBaselines.invalidation_conditions as string[] | undefined,
+      )
+    ) {
+      edited.push("invalidation_conditions");
+    }
+    return edited;
+  }, [acceptedFields, assumptions, catalysts, importedBaselines, invalidationConditions, narrative]);
+
+  function importFieldState(field: ImportFieldName): ImportFieldState | undefined {
+    if (!acceptedFields.has(field)) return undefined;
+    return editedImportFields.includes(field) ? "edited" : "accepted";
+  }
+
+  function handleAcceptImport(artifact: ThesisImportPreview, field: ImportFieldName) {
+    if (sourceArtifactId && sourceArtifactId !== artifact.artifact_id) {
+      window.alert("Finish or submit the current import source before using another.");
+      return;
+    }
+    const currentValues = {
+      narrative,
+      catalysts,
+      assumptions,
+      invalidation_conditions: invalidationConditions,
+    };
+    const incoming = artifact.mapped_fields[field];
+    if (!incoming || (Array.isArray(incoming) && incoming.length === 0)) return;
+
+    let mode: "replace" | "append" = "replace";
+    if (fieldHasValue(field, currentValues)) {
+      const choice = window.prompt(
+        "This draft field already has content. Type append, replace, or cancel.",
+        "append",
+      );
+      if (choice === null || choice.toLowerCase() === "cancel") return;
+      if (choice.toLowerCase() !== "append" && choice.toLowerCase() !== "replace") return;
+      mode = choice.toLowerCase() as "replace" | "append";
+    }
+
+    if (field === "narrative" && typeof incoming === "string") {
+      const next =
+        mode === "append" && narrative.trim()
+          ? `${narrative.trim()}\n\n${incoming}`
+          : incoming;
+      setNarrative(next);
+      setImportedBaselines((prev) => ({ ...prev, narrative: next.trim() }));
+    } else if (Array.isArray(incoming)) {
+      const existing = currentValues[field];
+      const current = Array.isArray(existing)
+        ? existing.filter((item) => item.trim())
+        : [];
+      const next = mode === "append" ? [...current, ...incoming] : incoming;
+      if (field === "catalysts") setCatalysts(next);
+      if (field === "assumptions") setAssumptions(next);
+      if (field === "invalidation_conditions") setInvalidationConditions(next);
+      setImportedBaselines((prev) => ({ ...prev, [field]: next }));
+    }
+    setSourceArtifactId(artifact.artifact_id);
+    setAcceptedFields((prev) => new Set([...prev, field]));
+  }
+
+  function handleRejectImport(artifact: ThesisImportPreview, field: ImportFieldName) {
+    if (sourceArtifactId && sourceArtifactId !== artifact.artifact_id) {
+      window.alert("Finish or submit the current import source before using another.");
+      return;
+    }
+    setSourceArtifactId(artifact.artifact_id);
+    setRejectedFields((prev) => new Set([...prev, `${artifact.artifact_id}:${field}`]));
+  }
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -118,6 +434,12 @@ export function ThesisDevelopmentModal({ context, symbol, onSuccess, onCancel }:
       return;
     }
 
+    const rejectedImportFieldNames = Array.from(rejectedFields)
+      .map((field) => field.split(":")[1])
+      .filter((field): field is ImportFieldName =>
+        ["narrative", "catalysts", "assumptions", "invalidation_conditions"].includes(field),
+      );
+
     postDevelopThesis({
       decision_id: context.decision_id,
       symbol,
@@ -129,6 +451,13 @@ export function ThesisDevelopmentModal({ context, symbol, onSuccess, onCancel }:
       regime_alignment: regimeAlignment.trim(),
       persona_id: context.persona_id,
       workspace_id: context.workspace_id,
+      source_advisory_artifact_id: sourceArtifactId ?? undefined,
+      accepted_import_fields: Array.from(acceptedFields),
+      edited_import_fields: editedImportFields,
+      rejected_import_fields: Array.from(new Set(rejectedImportFieldNames)),
+      import_acceptance_intent: sourceArtifactId
+        ? "operator_selectively_incorporates_advisory_cognition"
+        : undefined,
     })
       .then((response) => {
         setSubmitState("idle");
@@ -180,10 +509,15 @@ export function ThesisDevelopmentModal({ context, symbol, onSuccess, onCancel }:
         <FundamentalsContextPanel symbol={symbol} />
 
         <form className="thesis-modal-form" onSubmit={handleSubmit}>
-          <div className="thesis-field-group">
+          <div className="thesis-modal-grid">
+            <div className="thesis-authoring-region">
+              <div className="thesis-field-group">
             <label className="thesis-field-label" htmlFor="thesis-narrative">
               Thesis Narrative
               <span className="thesis-field-required" aria-hidden="true"> *</span>
+              {importFieldState("narrative") ? (
+                <ImportFieldBadge state={importFieldState("narrative")!} />
+              ) : null}
             </label>
             <p className="thesis-field-hint">
               The core argument for why this idea has merit.
@@ -199,28 +533,31 @@ export function ThesisDevelopmentModal({ context, symbol, onSuccess, onCancel }:
             />
           </div>
 
-          <ListInput
-            items={catalysts}
-            label="Catalysts *"
-            onChange={setCatalysts}
-            placeholder="e.g. Strong earnings guidance"
-          />
+              <ListInput
+                items={catalysts}
+                label="Catalysts *"
+                onChange={setCatalysts}
+                placeholder="e.g. Strong earnings guidance"
+                importState={importFieldState("catalysts")}
+              />
 
-          <ListInput
-            items={assumptions}
-            label="Assumptions *"
-            onChange={setAssumptions}
-            placeholder="e.g. Market remains risk-on"
-          />
+              <ListInput
+                items={assumptions}
+                label="Assumptions *"
+                onChange={setAssumptions}
+                placeholder="e.g. Market remains risk-on"
+                importState={importFieldState("assumptions")}
+              />
 
-          <ListInput
-            items={invalidationConditions}
-            label="Invalidation Conditions *"
-            onChange={setInvalidationConditions}
-            placeholder="e.g. Break below 200-day MA on volume"
-          />
+              <ListInput
+                items={invalidationConditions}
+                label="Invalidation Conditions *"
+                onChange={setInvalidationConditions}
+                placeholder="e.g. Break below 200-day MA on volume"
+                importState={importFieldState("invalidation_conditions")}
+              />
 
-          <div className="thesis-field-group">
+              <div className="thesis-field-group">
             <label className="thesis-field-label" htmlFor="thesis-confidence">
               Conviction Level: {CONFIDENCE_LABELS[confidenceLevel]} ({confidenceLevel}/5)
             </label>
@@ -240,7 +577,7 @@ export function ThesisDevelopmentModal({ context, symbol, onSuccess, onCancel }:
             </div>
           </div>
 
-          <div className="thesis-field-group">
+              <div className="thesis-field-group">
             <label className="thesis-field-label" htmlFor="thesis-regime">
               Regime Alignment
               <span className="thesis-field-optional"> (optional)</span>
@@ -257,11 +594,29 @@ export function ThesisDevelopmentModal({ context, symbol, onSuccess, onCancel }:
               value={regimeAlignment}
             />
           </div>
+            </div>
+
+            <ThesisImportPreviewPanel
+              acceptedFields={acceptedFields}
+              context={context}
+              onAccept={handleAcceptImport}
+              onReject={handleRejectImport}
+              rejectedFields={rejectedFields}
+              symbol={symbol}
+            />
+          </div>
 
           {submitError ? (
             <div className="runtime-error" role="alert">
               {submitError}
             </div>
+          ) : null}
+
+          {sourceArtifactId ? (
+            <p className="thesis-import-submit-summary">
+              Provenance: {acceptedFields.size} accepted, {editedImportFields.length} edited,
+              {" "} {rejectedFields.size} rejected.
+            </p>
           ) : null}
 
           <div className="thesis-modal-actions">

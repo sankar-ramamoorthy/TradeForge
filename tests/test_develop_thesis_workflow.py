@@ -91,6 +91,87 @@ def test_develop_thesis_embeds_structured_payload_in_event() -> None:
     assert thesis_data["confidence_level"] == 3
 
 
+def test_develop_thesis_preserves_import_provenance() -> None:
+    client, decision_id = _app_with_idea()
+    artifact_payload = {
+        "artifact_type": "imported_research",
+        "artifact_format": "markdown",
+        "title": "AAPL draft thesis",
+        "body": "# AAPL\n\nDraft thesis context.",
+        "source_references": [
+            {
+                "source_kind": "url",
+                "source_id": "research-url-1",
+                "summary": "External research URL",
+                "source_uri": "https://research.example.test/aapl",
+            }
+        ],
+        "capture_origin": "imported_research",
+        "provenance_summary": "operator imported external research",
+        "uncertainty_band": "medium",
+        "caveats": ["Research may lag current market conditions."],
+        "persona_id": PERSONA_ID,
+        "workspace_id": WORKSPACE_ID,
+        "metadata": {
+            "artifact_role": "thesis_draft",
+            "schema_version": "thesis_draft.v1",
+            "symbol": "AAPL",
+            "mapped_fields": {
+                "narrative": "AAPL is basing with stronger breadth.",
+                "catalysts": ["Earnings guidance"],
+                "assumptions": ["Market remains constructive"],
+                "invalidation_conditions": ["Base failure on volume"],
+            },
+        },
+        "captured_at": "2026-05-22T16:30:00Z",
+    }
+    artifact_response = client.post("/advisory/artifacts", json=artifact_payload)
+    assert artifact_response.status_code == 201, artifact_response.json()
+    artifact_id = artifact_response.json()["artifact_id"]
+
+    response = client.post(
+        "/lifecycle/decisions/develop-thesis",
+        json=_valid_thesis_payload(
+            decision_id,
+            source_advisory_artifact_id=artifact_id,
+            accepted_import_fields=["narrative", "catalysts"],
+            edited_import_fields=["narrative"],
+            rejected_import_fields=["assumptions"],
+            import_acceptance_intent="operator_selectively_incorporates_advisory_cognition",
+        ),
+    )
+
+    assert response.status_code == 201, response.json()
+    thesis_entry = next(
+        e
+        for e in client.get("/replay/timeline").json()["entries"]
+        if e["event_type"] == "decision.thesis_created"
+    )
+    provenance = thesis_entry["payload"]["m14c_import_provenance"]
+    assert provenance["source_advisory_artifact_id"] == artifact_id
+    assert provenance["accepted_import_fields"] == ["narrative", "catalysts"]
+    assert provenance["edited_import_fields"] == ["narrative"]
+    assert provenance["rejected_import_fields"] == ["assumptions"]
+    assert provenance["advisory_content_is_canonical"] is False
+    assert thesis_entry["provenance"]["actor"] == "human"
+
+
+def test_develop_thesis_rejects_missing_import_source() -> None:
+    client, decision_id = _app_with_idea()
+    response = client.post(
+        "/lifecycle/decisions/develop-thesis",
+        json=_valid_thesis_payload(
+            decision_id,
+            source_advisory_artifact_id="artifact-missing",
+            accepted_import_fields=["narrative"],
+            import_acceptance_intent="operator_selectively_incorporates_advisory_cognition",
+        ),
+    )
+
+    assert response.status_code == 422
+    assert "eligible thesis import" in response.json()["detail"]["message"]
+
+
 def test_develop_thesis_rejects_empty_narrative() -> None:
     client, decision_id = _app_with_idea()
     response = client.post(

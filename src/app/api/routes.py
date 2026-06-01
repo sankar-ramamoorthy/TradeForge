@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import uuid
 from datetime import UTC, datetime
+from pathlib import Path
 from typing import Any, Literal
 
 from fastapi import APIRouter, HTTPException, Query, Request, status
@@ -659,6 +660,101 @@ class AdvisoryArtifactListResponse(BaseModel):
     artifacts: list[AdvisoryArtifactResponse]
 
 
+class ThesisImportMappedFieldsResponse(BaseModel):
+    title: str | None = None
+    narrative: str | None = None
+    catalysts: list[str] = Field(default_factory=list)
+    assumptions: list[str] = Field(default_factory=list)
+    invalidation_conditions: list[str] = Field(default_factory=list)
+    evidence_links: list[str] = Field(default_factory=list)
+    notes: str | None = None
+
+
+class ThesisImportSourceReferenceResponse(BaseModel):
+    source_kind: AdvisorySourceKind
+    source_id: str
+    summary: str
+    source_uri: str | None
+
+
+class ThesisImportPreviewResponse(BaseModel):
+    artifact_id: str
+    artifact_type: AdvisoryArtifactType
+    artifact_format: AdvisoryArtifactFormat
+    title: str
+    source: str
+    captured_at: datetime
+    provenance_summary: str
+    uncertainty_band: AdvisoryUncertaintyBand
+    caveats: list[str]
+    mapped_fields: ThesisImportMappedFieldsResponse
+    source_references: list[ThesisImportSourceReferenceResponse]
+    authority: Literal["advisory"]
+    is_canonical: Literal[False]
+    lifecycle_authority: Literal[False]
+
+
+class ThesisImportPreviewListResponse(BaseModel):
+    authority: Literal["advisory"]
+    is_canonical: Literal[False]
+    total_count: int
+    imports: list[ThesisImportPreviewResponse]
+
+
+class PlanImportMappedFieldsResponse(BaseModel):
+    entry_rationale: str | None = None
+    stop_rationale: str | None = None
+    target_rationale: str | None = None
+    risk_notes: list[str] = Field(default_factory=list)
+
+
+class PlanImportPreviewResponse(BaseModel):
+    artifact_id: str
+    artifact_type: AdvisoryArtifactType
+    artifact_format: AdvisoryArtifactFormat
+    title: str
+    source: str
+    captured_at: datetime
+    provenance_summary: str
+    uncertainty_band: AdvisoryUncertaintyBand
+    caveats: list[str]
+    mapped_fields: PlanImportMappedFieldsResponse
+    source_references: list[ThesisImportSourceReferenceResponse]
+    authority: Literal["advisory"]
+    is_canonical: Literal[False]
+    lifecycle_authority: Literal[False]
+    execution_authority: Literal[False]
+
+
+class PlanImportPreviewListResponse(BaseModel):
+    authority: Literal["advisory"]
+    is_canonical: Literal[False]
+    total_count: int
+    imports: list[PlanImportPreviewResponse]
+
+
+class LocalThesisImportScanResponse(BaseModel):
+    authority: Literal["advisory"]
+    is_canonical: Literal[False]
+    import_directory: str
+    scanned_count: int
+    imported_count: int
+    skipped_count: int
+    imported_artifact_ids: list[str]
+    skipped_files: list[str]
+
+
+class LocalPlanImportScanResponse(BaseModel):
+    authority: Literal["advisory"]
+    is_canonical: Literal[False]
+    import_directory: str
+    scanned_count: int
+    imported_count: int
+    skipped_count: int
+    imported_artifact_ids: list[str]
+    skipped_files: list[str]
+
+
 class InterpretationDraftPayload(BaseModel):
     observation_ids: list[str] = Field(min_length=1)
     operator_question: str = Field(min_length=1, max_length=3000)
@@ -893,6 +989,13 @@ class DevelopThesisPayload(BaseModel):
     regime_alignment: str = Field(default="", max_length=500)
     persona_id: str = Field(min_length=1)
     workspace_id: str = Field(min_length=1)
+    source_advisory_artifact_id: str | None = Field(default=None, min_length=1)
+    accepted_import_fields: list[str] = Field(default_factory=list)
+    edited_import_fields: list[str] = Field(default_factory=list)
+    rejected_import_fields: list[str] = Field(default_factory=list)
+    import_acceptance_intent: (
+        Literal["operator_selectively_incorporates_advisory_cognition"] | None
+    ) = None
 
 
 class DevelopThesisResponse(BaseModel):
@@ -950,6 +1053,13 @@ class CreatePlanPayload(BaseModel):
     playbook_alignment: str = Field(default="", max_length=500)
     persona_id: str = Field(min_length=1)
     workspace_id: str = Field(min_length=1)
+    source_advisory_artifact_id: str | None = Field(default=None, min_length=1)
+    accepted_import_fields: list[str] = Field(default_factory=list)
+    edited_import_fields: list[str] = Field(default_factory=list)
+    rejected_import_fields: list[str] = Field(default_factory=list)
+    import_acceptance_intent: (
+        Literal["operator_selectively_incorporates_advisory_cognition"] | None
+    ) = None
 
 
 class CreatePlanResponse(BaseModel):
@@ -2413,6 +2523,559 @@ def _advisory_artifact_response(
     )
 
 
+_THESIS_IMPORT_SCHEMA_VERSION = "thesis_draft.v1"
+_THESIS_IMPORT_ROLE = "thesis_draft"
+_THESIS_IMPORT_FIELD_NAMES = frozenset(
+    {
+        "title",
+        "narrative",
+        "catalysts",
+        "assumptions",
+        "invalidation_conditions",
+        "evidence_links",
+        "notes",
+    }
+)
+_LOCAL_THESIS_IMPORT_DIR = Path("imports") / "incoming"
+_THESIS_IMPORT_SECTION_ALIASES = {
+    "thesis narrative": "narrative",
+    "narrative": "narrative",
+    "catalysts": "catalysts",
+    "assumptions": "assumptions",
+    "invalidation conditions": "invalidation_conditions",
+    "invalidation": "invalidation_conditions",
+    "evidence links": "evidence_links",
+    "notes": "notes",
+}
+_PLAN_IMPORT_SCHEMA_VERSION = "plan_draft.v1"
+_PLAN_IMPORT_ROLE = "plan_draft"
+_PLAN_IMPORT_FIELD_NAMES = frozenset(
+    {
+        "entry_rationale",
+        "stop_rationale",
+        "target_rationale",
+        "risk_notes",
+    }
+)
+_PLAN_IMPORT_PROHIBITED_FIELD_NAMES = frozenset(
+    {
+        "price",
+        "entry_price",
+        "stop_price",
+        "target_price",
+        "size",
+        "sizing",
+        "sizing_rationale",
+        "quantity",
+        "shares",
+        "contracts",
+        "order_type",
+        "broker_order",
+        "approval",
+        "approved",
+        "authorization",
+        "execution_authorization",
+        "execution_instructions",
+    }
+)
+_PLAN_IMPORT_SECTION_ALIASES = {
+    "entry rationale": "entry_rationale",
+    "entry": "entry_rationale",
+    "stop rationale": "stop_rationale",
+    "stop": "stop_rationale",
+    "target rationale": "target_rationale",
+    "target": "target_rationale",
+    "risk notes": "risk_notes",
+    "risk": "risk_notes",
+}
+
+
+def _thesis_import_preview_response(
+    artifact: AdvisoryArtifact,
+) -> ThesisImportPreviewResponse | None:
+    metadata = artifact.metadata
+    if metadata.get("artifact_role") != _THESIS_IMPORT_ROLE:
+        return None
+    if metadata.get("schema_version") != _THESIS_IMPORT_SCHEMA_VERSION:
+        return None
+    if artifact.artifact_type not in {
+        AdvisoryArtifactType.IMPORTED_RESEARCH,
+        AdvisoryArtifactType.MARKDOWN_NOTE,
+    }:
+        return None
+    if artifact.artifact_format not in {
+        AdvisoryArtifactFormat.MARKDOWN,
+        AdvisoryArtifactFormat.JSON,
+    }:
+        return None
+
+    mapped_fields = metadata.get("mapped_fields")
+    if not isinstance(mapped_fields, dict):
+        return None
+
+    mapped = _mapped_thesis_import_fields(mapped_fields)
+    if not any(
+        (
+            mapped.title,
+            mapped.narrative,
+            mapped.catalysts,
+            mapped.assumptions,
+            mapped.invalidation_conditions,
+            mapped.evidence_links,
+            mapped.notes,
+        )
+    ):
+        return None
+
+    return ThesisImportPreviewResponse(
+        artifact_id=artifact.artifact_id,
+        artifact_type=artifact.artifact_type,
+        artifact_format=artifact.artifact_format,
+        title=artifact.title,
+        source=str(metadata.get("source") or artifact.capture_origin.value),
+        captured_at=artifact.captured_at,
+        provenance_summary=artifact.provenance_summary,
+        uncertainty_band=artifact.uncertainty_band,
+        caveats=list(artifact.caveats),
+        mapped_fields=mapped,
+        source_references=[
+            ThesisImportSourceReferenceResponse(
+                source_kind=source.source_kind,
+                source_id=source.source_id,
+                summary=source.summary,
+                source_uri=source.source_uri,
+            )
+            for source in artifact.source_references
+        ],
+        authority="advisory",
+        is_canonical=False,
+        lifecycle_authority=False,
+    )
+
+
+def _plan_import_preview_response(
+    artifact: AdvisoryArtifact,
+) -> PlanImportPreviewResponse | None:
+    metadata = artifact.metadata
+    if metadata.get("artifact_role") != _PLAN_IMPORT_ROLE:
+        return None
+    if metadata.get("schema_version") != _PLAN_IMPORT_SCHEMA_VERSION:
+        return None
+    if artifact.artifact_type not in {
+        AdvisoryArtifactType.IMPORTED_RESEARCH,
+        AdvisoryArtifactType.MARKDOWN_NOTE,
+    }:
+        return None
+    if artifact.artifact_format not in {
+        AdvisoryArtifactFormat.MARKDOWN,
+        AdvisoryArtifactFormat.JSON,
+    }:
+        return None
+
+    mapped_fields = metadata.get("mapped_fields")
+    if not isinstance(mapped_fields, dict):
+        return None
+    if any(
+        str(field_name).strip().lower() in _PLAN_IMPORT_PROHIBITED_FIELD_NAMES
+        for field_name in mapped_fields
+    ):
+        return None
+
+    mapped = _mapped_plan_import_fields(mapped_fields)
+    if not any(
+        (
+            mapped.entry_rationale,
+            mapped.stop_rationale,
+            mapped.target_rationale,
+            mapped.risk_notes,
+        )
+    ):
+        return None
+
+    return PlanImportPreviewResponse(
+        artifact_id=artifact.artifact_id,
+        artifact_type=artifact.artifact_type,
+        artifact_format=artifact.artifact_format,
+        title=artifact.title,
+        source=str(metadata.get("source") or artifact.capture_origin.value),
+        captured_at=artifact.captured_at,
+        provenance_summary=artifact.provenance_summary,
+        uncertainty_band=artifact.uncertainty_band,
+        caveats=list(artifact.caveats),
+        mapped_fields=mapped,
+        source_references=[
+            ThesisImportSourceReferenceResponse(
+                source_kind=source.source_kind,
+                source_id=source.source_id,
+                summary=source.summary,
+                source_uri=source.source_uri,
+            )
+            for source in artifact.source_references
+        ],
+        authority="advisory",
+        is_canonical=False,
+        lifecycle_authority=False,
+        execution_authority=False,
+    )
+
+
+def _mapped_thesis_import_fields(
+    mapped_fields: dict[object, object],
+) -> ThesisImportMappedFieldsResponse:
+    return ThesisImportMappedFieldsResponse(
+        title=_optional_string(mapped_fields.get("title")),
+        narrative=_optional_string(mapped_fields.get("narrative")),
+        catalysts=_string_list(mapped_fields.get("catalysts")),
+        assumptions=_string_list(mapped_fields.get("assumptions")),
+        invalidation_conditions=_string_list(
+            mapped_fields.get("invalidation_conditions")
+        ),
+        evidence_links=_string_list(mapped_fields.get("evidence_links")),
+        notes=_optional_string(mapped_fields.get("notes")),
+    )
+
+
+def _mapped_plan_import_fields(
+    mapped_fields: dict[object, object],
+) -> PlanImportMappedFieldsResponse:
+    return PlanImportMappedFieldsResponse(
+        entry_rationale=_optional_string(mapped_fields.get("entry_rationale")),
+        stop_rationale=_optional_string(mapped_fields.get("stop_rationale")),
+        target_rationale=_optional_string(mapped_fields.get("target_rationale")),
+        risk_notes=_string_list(mapped_fields.get("risk_notes")),
+    )
+
+
+def _optional_string(value: object) -> str | None:
+    if not isinstance(value, str):
+        return None
+    stripped = value.strip()
+    return stripped or None
+
+
+def _string_list(value: object) -> list[str]:
+    if isinstance(value, str):
+        stripped = value.strip()
+        return [stripped] if stripped else []
+    if not isinstance(value, list):
+        return []
+    return [item.strip() for item in value if isinstance(item, str) and item.strip()]
+
+
+def _matching_thesis_import_artifact(
+    request: Request,
+    *,
+    artifact_id: str,
+    persona_id: str,
+    workspace_id: str,
+    symbol: str,
+) -> AdvisoryArtifact | None:
+    artifact = _advisory_artifact_query_service_from(request).get(artifact_id)
+    if artifact is None:
+        return None
+    if artifact.persona_id != persona_id or artifact.workspace_id != workspace_id:
+        return None
+    if str(artifact.metadata.get("symbol", "")).strip().upper() != symbol:
+        return None
+    if _thesis_import_preview_response(artifact) is None:
+        return None
+    return artifact
+
+
+def _matching_plan_import_artifact(
+    request: Request,
+    *,
+    artifact_id: str,
+    persona_id: str,
+    workspace_id: str,
+    decision_id: str,
+    symbol: str,
+) -> AdvisoryArtifact | None:
+    artifact = _advisory_artifact_query_service_from(request).get(artifact_id)
+    if artifact is None:
+        return None
+    if artifact.persona_id != persona_id or artifact.workspace_id != workspace_id:
+        return None
+    if str(artifact.metadata.get("symbol", "")).strip().upper() != symbol:
+        return None
+    if str(artifact.metadata.get("decision_id", "")).strip() != decision_id:
+        return None
+    if _plan_import_preview_response(artifact) is None:
+        return None
+    return artifact
+
+
+def _validated_import_field_names(
+    label: str,
+    values: list[str],
+    allowed_fields: frozenset[str] = _THESIS_IMPORT_FIELD_NAMES,
+    artifact_label: str = "thesis",
+) -> list[str]:
+    cleaned = []
+    for value in values:
+        field_name = value.strip()
+        if not field_name:
+            continue
+        if field_name not in allowed_fields:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail={
+                    "message": (
+                        f"{label} contains unsupported {artifact_label} import field"
+                    )
+                },
+            )
+        if field_name not in cleaned:
+            cleaned.append(field_name)
+    return cleaned
+
+
+def _local_thesis_import_artifact_from_markdown(
+    *,
+    path: Path,
+    persona_id: str,
+    workspace_id: str,
+    symbol: str,
+    captured_at: datetime,
+) -> AdvisoryArtifact | None:
+    text = path.read_text(encoding="utf-8")
+    frontmatter, body = _split_markdown_frontmatter(text)
+    if frontmatter.get("artifact_role") != _THESIS_IMPORT_ROLE:
+        return None
+    if frontmatter.get("schema_version") != _THESIS_IMPORT_SCHEMA_VERSION:
+        return None
+    if str(frontmatter.get("symbol", "")).strip().upper() != symbol:
+        return None
+
+    mapped_fields = _mapped_fields_from_markdown_sections(body)
+    if not any(mapped_fields.values()):
+        return None
+
+    metadata: dict[str, object] = {
+        "artifact_role": _THESIS_IMPORT_ROLE,
+        "schema_version": _THESIS_IMPORT_SCHEMA_VERSION,
+        "symbol": symbol,
+        "source": frontmatter.get("source", "local import"),
+        "mapped_fields": mapped_fields,
+        "local_import_file": path.name,
+    }
+    title = _optional_string(frontmatter.get("title")) or path.stem.replace("_", " ")
+    return AdvisoryArtifact(
+        artifact_id=f"artifact-{uuid.uuid4()}",
+        artifact_type=AdvisoryArtifactType.MARKDOWN_NOTE,
+        artifact_format=AdvisoryArtifactFormat.MARKDOWN,
+        title=title,
+        body=body.strip() or text.strip(),
+        source_references=(
+            AdvisoryArtifactSourceReference(
+                source_kind=AdvisorySourceKind.MARKDOWN_ARTIFACT,
+                source_id=path.name,
+                summary=f"Local thesis draft import from {path.name}",
+            ),
+        ),
+        capture_origin=AdvisoryCaptureOrigin.OPERATOR_MANUAL,
+        provenance_summary=f"operator local markdown import: {path.name}",
+        uncertainty_band=AdvisoryUncertaintyBand.UNKNOWN,
+        caveats=("Local import requires operator review before thesis promotion.",),
+        persona_id=persona_id,
+        workspace_id=workspace_id,
+        captured_at=captured_at,
+        metadata=metadata,
+        tags=("thesis_draft", symbol),
+    )
+
+
+def _local_plan_import_artifact_from_markdown(
+    *,
+    path: Path,
+    persona_id: str,
+    workspace_id: str,
+    decision_id: str,
+    symbol: str,
+    captured_at: datetime,
+) -> AdvisoryArtifact | None:
+    text = path.read_text(encoding="utf-8")
+    frontmatter, body = _split_markdown_frontmatter(text)
+    if frontmatter.get("artifact_role") != _PLAN_IMPORT_ROLE:
+        return None
+    if frontmatter.get("schema_version") != _PLAN_IMPORT_SCHEMA_VERSION:
+        return None
+    if str(frontmatter.get("symbol", "")).strip().upper() != symbol:
+        return None
+    frontmatter_decision_id = _optional_string(frontmatter.get("decision_id"))
+    if frontmatter_decision_id is not None and frontmatter_decision_id != decision_id:
+        return None
+
+    mapped_fields = _mapped_plan_fields_from_markdown_sections(body)
+    if not any(mapped_fields.values()):
+        return None
+
+    metadata: dict[str, object] = {
+        "artifact_role": _PLAN_IMPORT_ROLE,
+        "schema_version": _PLAN_IMPORT_SCHEMA_VERSION,
+        "symbol": symbol,
+        "decision_id": decision_id,
+        "source": frontmatter.get("source", "local import"),
+        "mapped_fields": mapped_fields,
+        "local_import_file": path.name,
+    }
+    title = _optional_string(frontmatter.get("title")) or path.stem.replace("_", " ")
+    return AdvisoryArtifact(
+        artifact_id=f"artifact-{uuid.uuid4()}",
+        artifact_type=AdvisoryArtifactType.MARKDOWN_NOTE,
+        artifact_format=AdvisoryArtifactFormat.MARKDOWN,
+        title=title,
+        body=body.strip() or text.strip(),
+        source_references=(
+            AdvisoryArtifactSourceReference(
+                source_kind=AdvisorySourceKind.MARKDOWN_ARTIFACT,
+                source_id=path.name,
+                summary=f"Local plan draft import from {path.name}",
+            ),
+        ),
+        capture_origin=AdvisoryCaptureOrigin.OPERATOR_MANUAL,
+        provenance_summary=f"operator local markdown import: {path.name}",
+        uncertainty_band=AdvisoryUncertaintyBand.UNKNOWN,
+        caveats=(
+            "Local import requires operator review before plan creation.",
+            "Local import has no sizing, approval, or execution authority.",
+        ),
+        persona_id=persona_id,
+        workspace_id=workspace_id,
+        captured_at=captured_at,
+        metadata=metadata,
+        tags=("plan_draft", symbol),
+    )
+
+
+def _split_markdown_frontmatter(text: str) -> tuple[dict[str, object], str]:
+    lines = text.splitlines()
+    if not lines or lines[0].strip() != "---":
+        return {}, text
+    end_index: int | None = None
+    for index, line in enumerate(lines[1:], start=1):
+        if line.strip() == "---":
+            end_index = index
+            break
+    if end_index is None:
+        return {}, text
+    frontmatter = _parse_simple_yaml_frontmatter(lines[1:end_index])
+    body = "\n".join(lines[end_index + 1 :])
+    return frontmatter, body
+
+
+def _parse_simple_yaml_frontmatter(lines: list[str]) -> dict[str, object]:
+    parsed: dict[str, object] = {}
+    for line in lines:
+        stripped = line.strip()
+        if not stripped or stripped.startswith("#") or ":" not in stripped:
+            continue
+        key, value = stripped.split(":", 1)
+        clean_key = key.strip()
+        clean_value = value.strip().strip("'\"")
+        if clean_key:
+            parsed[clean_key] = clean_value
+    return parsed
+
+
+def _mapped_fields_from_markdown_sections(body: str) -> dict[str, object]:
+    sections: dict[str, list[str]] = {}
+    current_key: str | None = None
+    for line in body.splitlines():
+        stripped = line.strip()
+        if stripped.startswith("#"):
+            heading = stripped.lstrip("#").strip().lower()
+            current_key = _THESIS_IMPORT_SECTION_ALIASES.get(heading)
+            if current_key is not None:
+                sections.setdefault(current_key, [])
+            continue
+        if current_key is not None:
+            sections[current_key].append(line)
+
+    mapped: dict[str, object] = {}
+    narrative = _section_text(sections.get("narrative", []))
+    if narrative:
+        mapped["narrative"] = narrative
+    notes = _section_text(sections.get("notes", []))
+    if notes:
+        mapped["notes"] = notes
+    for field_name in (
+        "catalysts",
+        "assumptions",
+        "invalidation_conditions",
+        "evidence_links",
+    ):
+        values = _section_list(sections.get(field_name, []))
+        if values:
+            mapped[field_name] = values
+    return mapped
+
+
+def _mapped_plan_fields_from_markdown_sections(body: str) -> dict[str, object]:
+    sections: dict[str, list[str]] = {}
+    current_key: str | None = None
+    for line in body.splitlines():
+        stripped = line.strip()
+        if stripped.startswith("#"):
+            heading = stripped.lstrip("#").strip().lower()
+            current_key = _PLAN_IMPORT_SECTION_ALIASES.get(heading)
+            if current_key is not None:
+                sections.setdefault(current_key, [])
+            continue
+        if current_key is not None:
+            sections[current_key].append(line)
+
+    mapped: dict[str, object] = {}
+    for field_name in (
+        "entry_rationale",
+        "stop_rationale",
+        "target_rationale",
+    ):
+        text = _section_text(sections.get(field_name, []))
+        if text:
+            mapped[field_name] = text
+    risk_notes = _section_list(sections.get("risk_notes", []))
+    if risk_notes:
+        mapped["risk_notes"] = risk_notes
+    return mapped
+
+
+def _section_text(lines: list[str]) -> str | None:
+    text = "\n".join(line.strip() for line in lines).strip()
+    return text or None
+
+
+def _section_list(lines: list[str]) -> list[str]:
+    values: list[str] = []
+    for line in lines:
+        stripped = line.strip()
+        if not stripped:
+            continue
+        if stripped.startswith(("- ", "* ")):
+            stripped = stripped[2:].strip()
+        values.append(stripped)
+    return values
+
+
+def _local_import_already_persisted(
+    artifacts: tuple[AdvisoryArtifact, ...],
+    path: Path,
+    symbol: str,
+    artifact_role: str = _THESIS_IMPORT_ROLE,
+    decision_id: str | None = None,
+) -> bool:
+    return any(
+        artifact.metadata.get("local_import_file") == path.name
+        and str(artifact.metadata.get("symbol", "")).strip().upper() == symbol
+        and artifact.metadata.get("artifact_role") == artifact_role
+        and (
+            decision_id is None
+            or str(artifact.metadata.get("decision_id", "")).strip() == decision_id
+        )
+        for artifact in artifacts
+    )
+
+
 def _conflict_markers_for_observation(
     observation: AdvisoryObservation,
 ) -> list[AdvisoryConflictMarkerResponse]:
@@ -2944,11 +3607,78 @@ def develop_thesis(
     service = _lifecycle_service_from(request)
     symbol = payload.symbol.strip().upper()
     now = datetime.now(tz=UTC)
+    clean_accepted_fields = _validated_import_field_names(
+        "accepted_import_fields",
+        payload.accepted_import_fields,
+    )
+    clean_edited_fields = _validated_import_field_names(
+        "edited_import_fields",
+        payload.edited_import_fields,
+    )
+    clean_rejected_fields = _validated_import_field_names(
+        "rejected_import_fields",
+        payload.rejected_import_fields,
+    )
+
+    source_artifact: AdvisoryArtifact | None = None
+    if payload.source_advisory_artifact_id is not None:
+        source_artifact = _matching_thesis_import_artifact(
+            request,
+            artifact_id=payload.source_advisory_artifact_id,
+            persona_id=payload.persona_id,
+            workspace_id=payload.workspace_id,
+            symbol=symbol,
+        )
+        if source_artifact is None:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail={
+                    "message": (
+                        "source advisory artifact is not an eligible thesis import"
+                    )
+                },
+            )
+        if payload.import_acceptance_intent is None:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail={
+                    "message": (
+                        "import acceptance intent is required when source artifact "
+                        "is provided"
+                    )
+                },
+            )
 
     event_payload: dict[str, object] = {
         "symbol": symbol,
         **artifact.to_payload(),
     }
+    provenance: dict[str, object] = {
+        "actor": "human",
+        "source": "thesis-development-workflow",
+    }
+    entity_references = [
+        EntityReference(entity_type="decision", entity_id=payload.decision_id),
+        EntityReference(entity_type="ticker", entity_id=symbol),
+    ]
+    if source_artifact is not None:
+        import_provenance = {
+            "source_advisory_artifact_id": source_artifact.artifact_id,
+            "accepted_import_fields": clean_accepted_fields,
+            "edited_import_fields": clean_edited_fields,
+            "rejected_import_fields": clean_rejected_fields,
+            "import_acceptance_intent": payload.import_acceptance_intent,
+            "authority": "advisory_source_context_only",
+            "advisory_content_is_canonical": False,
+        }
+        event_payload["m14c_import_provenance"] = import_provenance
+        provenance["m14c_import_provenance"] = import_provenance
+        entity_references.append(
+            EntityReference(
+                entity_type="advisory_artifact",
+                entity_id=source_artifact.artifact_id,
+            )
+        )
 
     result = service.transition(
         LifecycleTransitionRequest(
@@ -2956,12 +3686,9 @@ def develop_thesis(
             timestamp=now,
             persona_id=payload.persona_id,
             workspace_id=payload.workspace_id,
-            entity_references=(
-                EntityReference(entity_type="decision", entity_id=payload.decision_id),
-                EntityReference(entity_type="ticker", entity_id=symbol),
-            ),
+            entity_references=tuple(entity_references),
             payload=event_payload,
-            provenance={"actor": "human", "source": "thesis-development-workflow"},
+            provenance=provenance,
         )
     )
 
@@ -3225,11 +3952,88 @@ def create_plan(
     service = _lifecycle_service_from(request)
     symbol = payload.symbol.strip().upper()
     now = datetime.now(tz=UTC)
+    clean_accepted_fields = _validated_import_field_names(
+        "accepted_import_fields",
+        payload.accepted_import_fields,
+        _PLAN_IMPORT_FIELD_NAMES,
+        "plan",
+    )
+    clean_edited_fields = _validated_import_field_names(
+        "edited_import_fields",
+        payload.edited_import_fields,
+        _PLAN_IMPORT_FIELD_NAMES,
+        "plan",
+    )
+    clean_rejected_fields = _validated_import_field_names(
+        "rejected_import_fields",
+        payload.rejected_import_fields,
+        _PLAN_IMPORT_FIELD_NAMES,
+        "plan",
+    )
+
+    source_artifact: AdvisoryArtifact | None = None
+    if payload.source_advisory_artifact_id is not None:
+        source_artifact = _matching_plan_import_artifact(
+            request,
+            artifact_id=payload.source_advisory_artifact_id,
+            persona_id=payload.persona_id,
+            workspace_id=payload.workspace_id,
+            decision_id=payload.decision_id,
+            symbol=symbol,
+        )
+        if source_artifact is None:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail={
+                    "message": (
+                        "source advisory artifact is not an eligible plan import"
+                    )
+                },
+            )
+        if payload.import_acceptance_intent is None:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail={
+                    "message": (
+                        "import_acceptance_intent is required when plan import "
+                        "provenance is submitted"
+                    )
+                },
+            )
 
     event_payload: dict[str, object] = {
         "symbol": symbol,
         **artifact.to_payload(),
     }
+    provenance: dict[str, object] = {
+        "actor": "human",
+        "source": "plan-creation-workflow",
+    }
+    entity_references = [
+        EntityReference(entity_type="decision", entity_id=payload.decision_id),
+        EntityReference(entity_type="ticker", entity_id=symbol),
+    ]
+    if source_artifact is not None:
+        import_provenance = {
+            "source_advisory_artifact_id": source_artifact.artifact_id,
+            "accepted_import_fields": clean_accepted_fields,
+            "edited_import_fields": clean_edited_fields,
+            "rejected_import_fields": clean_rejected_fields,
+            "import_acceptance_intent": payload.import_acceptance_intent,
+            "authority": "advisory_source_context_only",
+            "advisory_content_is_canonical": False,
+            "sizing_auto_populated": False,
+            "approval_authority": False,
+            "execution_authority": False,
+        }
+        event_payload["m14c_import_provenance"] = import_provenance
+        provenance["m14c_import_provenance"] = import_provenance
+        entity_references.append(
+            EntityReference(
+                entity_type="advisory_artifact",
+                entity_id=source_artifact.artifact_id,
+            )
+        )
 
     result = service.transition(
         LifecycleTransitionRequest(
@@ -3237,12 +4041,9 @@ def create_plan(
             timestamp=now,
             persona_id=payload.persona_id,
             workspace_id=payload.workspace_id,
-            entity_references=(
-                EntityReference(entity_type="decision", entity_id=payload.decision_id),
-                EntityReference(entity_type="ticker", entity_id=symbol),
-            ),
+            entity_references=tuple(entity_references),
             payload=event_payload,
-            provenance={"actor": "human", "source": "plan-creation-workflow"},
+            provenance=provenance,
         )
     )
 
@@ -5635,6 +6436,200 @@ def create_advisory_artifact(
             detail={"message": str(exc)},
         ) from exc
     return _advisory_artifact_response(captured)
+
+
+@advisory_router.get(
+    "/thesis-imports",
+    response_model=ThesisImportPreviewListResponse,
+)
+def list_thesis_import_previews(
+    request: Request,
+    persona_id: str = Query(min_length=1),
+    workspace_id: str = Query(min_length=1),
+    symbol: str = Query(min_length=1, max_length=10),
+) -> ThesisImportPreviewListResponse:
+    normalized_symbol = symbol.strip().upper()
+    artifacts = _advisory_artifact_query_service_from(request).list(
+        AdvisoryArtifactQuery(
+            persona_id=persona_id,
+            workspace_id=workspace_id,
+        )
+    )
+    previews = [
+        preview
+        for artifact in artifacts
+        if str(artifact.metadata.get("symbol", "")).strip().upper()
+        == normalized_symbol
+        for preview in (_thesis_import_preview_response(artifact),)
+        if preview is not None
+    ]
+    return ThesisImportPreviewListResponse(
+        authority="advisory",
+        is_canonical=False,
+        total_count=len(previews),
+        imports=previews,
+    )
+
+
+@advisory_router.get(
+    "/plan-imports",
+    response_model=PlanImportPreviewListResponse,
+)
+def list_plan_import_previews(
+    request: Request,
+    persona_id: str = Query(min_length=1),
+    workspace_id: str = Query(min_length=1),
+    decision_id: str = Query(min_length=1),
+    symbol: str = Query(min_length=1, max_length=10),
+) -> PlanImportPreviewListResponse:
+    normalized_symbol = symbol.strip().upper()
+    artifacts = _advisory_artifact_query_service_from(request).list(
+        AdvisoryArtifactQuery(
+            persona_id=persona_id,
+            workspace_id=workspace_id,
+        )
+    )
+    previews = [
+        preview
+        for artifact in artifacts
+        if str(artifact.metadata.get("symbol", "")).strip().upper()
+        == normalized_symbol
+        and str(artifact.metadata.get("decision_id", "")).strip() == decision_id
+        for preview in (_plan_import_preview_response(artifact),)
+        if preview is not None
+    ]
+    return PlanImportPreviewListResponse(
+        authority="advisory",
+        is_canonical=False,
+        total_count=len(previews),
+        imports=previews,
+    )
+
+
+@advisory_router.post(
+    "/thesis-imports/scan-local",
+    response_model=LocalThesisImportScanResponse,
+)
+def scan_local_thesis_imports(
+    request: Request,
+    persona_id: str = Query(min_length=1),
+    workspace_id: str = Query(min_length=1),
+    symbol: str = Query(min_length=1, max_length=10),
+) -> LocalThesisImportScanResponse:
+    normalized_symbol = symbol.strip().upper()
+    import_dir = _LOCAL_THESIS_IMPORT_DIR
+    import_dir.mkdir(parents=True, exist_ok=True)
+    query_service = _advisory_artifact_query_service_from(request)
+    ingestion_service = _advisory_artifact_ingestion_service_from(request)
+    existing = query_service.list(
+        AdvisoryArtifactQuery(
+            persona_id=persona_id,
+            workspace_id=workspace_id,
+        )
+    )
+
+    scanned_count = 0
+    imported_artifact_ids: list[str] = []
+    skipped_files: list[str] = []
+    for path in sorted(import_dir.glob("*.md")):
+        scanned_count += 1
+        if _local_import_already_persisted(existing, path, normalized_symbol):
+            skipped_files.append(path.name)
+            continue
+        artifact = _local_thesis_import_artifact_from_markdown(
+            path=path,
+            persona_id=persona_id,
+            workspace_id=workspace_id,
+            symbol=normalized_symbol,
+            captured_at=datetime.now(UTC),
+        )
+        if artifact is None:
+            skipped_files.append(path.name)
+            continue
+        try:
+            captured = ingestion_service.ingest(artifact)
+        except ValueError as exc:
+            skipped_files.append(f"{path.name}: {exc}")
+            continue
+        imported_artifact_ids.append(captured.artifact_id)
+
+    return LocalThesisImportScanResponse(
+        authority="advisory",
+        is_canonical=False,
+        import_directory=str(import_dir),
+        scanned_count=scanned_count,
+        imported_count=len(imported_artifact_ids),
+        skipped_count=len(skipped_files),
+        imported_artifact_ids=imported_artifact_ids,
+        skipped_files=skipped_files,
+    )
+
+
+@advisory_router.post(
+    "/plan-imports/scan-local",
+    response_model=LocalPlanImportScanResponse,
+)
+def scan_local_plan_imports(
+    request: Request,
+    persona_id: str = Query(min_length=1),
+    workspace_id: str = Query(min_length=1),
+    decision_id: str = Query(min_length=1),
+    symbol: str = Query(min_length=1, max_length=10),
+) -> LocalPlanImportScanResponse:
+    normalized_symbol = symbol.strip().upper()
+    import_dir = _LOCAL_THESIS_IMPORT_DIR
+    import_dir.mkdir(parents=True, exist_ok=True)
+    query_service = _advisory_artifact_query_service_from(request)
+    ingestion_service = _advisory_artifact_ingestion_service_from(request)
+    existing = query_service.list(
+        AdvisoryArtifactQuery(
+            persona_id=persona_id,
+            workspace_id=workspace_id,
+        )
+    )
+
+    scanned_count = 0
+    imported_artifact_ids: list[str] = []
+    skipped_files: list[str] = []
+    for path in sorted(import_dir.glob("*.md")):
+        scanned_count += 1
+        if _local_import_already_persisted(
+            existing,
+            path,
+            normalized_symbol,
+            artifact_role=_PLAN_IMPORT_ROLE,
+            decision_id=decision_id,
+        ):
+            skipped_files.append(path.name)
+            continue
+        artifact = _local_plan_import_artifact_from_markdown(
+            path=path,
+            persona_id=persona_id,
+            workspace_id=workspace_id,
+            decision_id=decision_id,
+            symbol=normalized_symbol,
+            captured_at=datetime.now(UTC),
+        )
+        if artifact is None:
+            skipped_files.append(path.name)
+            continue
+        try:
+            captured = ingestion_service.ingest(artifact)
+        except ValueError as exc:
+            skipped_files.append(f"{path.name}: {exc}")
+            continue
+        imported_artifact_ids.append(captured.artifact_id)
+
+    return LocalPlanImportScanResponse(
+        authority="advisory",
+        is_canonical=False,
+        import_directory=str(import_dir),
+        scanned_count=scanned_count,
+        imported_count=len(imported_artifact_ids),
+        skipped_count=len(skipped_files),
+        imported_artifact_ids=imported_artifact_ids,
+        skipped_files=skipped_files,
+    )
 
 
 @advisory_router.get(
