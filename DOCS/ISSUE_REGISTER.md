@@ -20,7 +20,7 @@ Each issue records:
 
 GitHub issues may mirror these records, but this file remains the local planning source of truth.
 
-Roadmap v2 is the active milestone direction. This register now tracks runtime implementation through completed M14 while preserving the earlier MVP record for reference.
+Roadmap v2 is the active milestone direction. This register now tracks runtime implementation through completed M14 and active M14C while preserving the earlier MVP record for reference.
 
 
 ---
@@ -243,6 +243,7 @@ Roadmap v2 is the active milestone direction. This register now tracks runtime i
 | TF-F074 | Done | M13B | Governed LLM Provider Secret Management | `feature/tf-f074-governed-llm-provider-secrets` |
 | TF-F075 | Done | M13B | Implement Stateless LiteLLM Request-Time Credential Composition | `feature/tf-f075-litellm-secret-injection` |
 | TF-F076 | Done | M13B | Replace LiteLLM route-probing healthcheck with non-invasive readiness check | `fix/tf-f076-litellm-readiness-healthcheck` |
+| TF-F077 | Done | M14C | Verify ATKR Thesis Local Import Feedback | `fix/tf-f077-atkr-thesis-import-feedback` |
 | TF-C001 | Done | M14 | Detect recurring sizing violations | `feature/tf-c001-recurring-sizing-violations` |
 | TF-C002 | Done | M14 | Detect impulsive execution patterns | `feature/tf-c002-impulsive-execution-patterns` |
 | TF-C003 | Done | M14 | Implement process deviation overlays | `feature/tf-c003-process-deviation-overlays` |
@@ -253,6 +254,8 @@ Roadmap v2 is the active milestone direction. This register now tracks runtime i
 | TF-C008 | Done | M14 | Implement emotional reflection overlays | `feature/tf-c008-emotional-reflection-overlays` |
 | TF-C009 | Done | M14 | Implement operator behavior timelines | `feature/tf-c009-operator-behavior-timelines` |
 | TF-C010 | Done | M14 | Implement decision-quality review metrics | `feature/tf-c010-decision-quality-review-metrics` |
+| TF-R001 | In Progress | M14C | Thesis Workspace Advisory Import Preview | `feature/m14c-thesis-import-workflow` |
+| TF-R002 | Done | M14C | Plan Workspace Advisory Import Mediation | `feature/m14c-plan-import-mediation` |
 
 ## TF-C001: Detect Recurring Sizing Violations
 
@@ -8375,5 +8378,392 @@ provider API keys remain absent from the LiteLLM service environment.
   `nvidia_nim/meta/llama-3.1-70b-instruct`.
 - Post-smoke LiteLLM logs showed the explicit `/chat/completions` request and
   no Groq, Gemini, OpenAI, or Anthropic fallback attempts.
+
+---
+
+## TF-F077: Verify ATKR Thesis Local Import Feedback
+
+**Status:** Done
+
+**Classification:** operational feedback / verification
+
+**Milestone:** M14C
+
+**Branch:** `fix/tf-f077-atkr-thesis-import-feedback`
+
+**Affected Layer:** app, tests
+
+**Linked ADRs:** ADR-0001, ADR-0002, ADR-0034, ADR-0041
+
+**Impacted Invariants:** Human Decision Sovereignty, Event Ledger Canonical Truth, Lifecycle Authority, AI Advisory Boundary, Derived State Must Remain Distinguishable, Replayability Is Foundational
+
+**Source:** Operator feedback on 2026-05-28 using
+`imports/incoming/ATKR_thesis_draft.md`.
+
+**Problem:**
+Operator feedback initially showed the Plan Import Preview scanning
+`imports/incoming` and importing zero files with the message
+`No eligible plan draft artifacts for ATKR`. The operator then clarified the
+intended artifact was `ATKR_thesis_draft.md`.
+
+The observed UI was the plan import path, whose correct behavior is to ignore
+`thesis_draft.v1` artifacts. The thesis import scanner already accepts the
+reported `ATKR_thesis_draft.md` shape and imports it as a non-canonical
+advisory artifact.
+
+**Scope:**
+
+- Verify the live thesis scan endpoint against the reported ATKR file.
+- Confirm the imported artifact appears in the thesis import preview endpoint.
+- Preserve the distinction between thesis and plan import routes.
+- Avoid runtime code changes when the implemented behavior is already correct.
+
+**Acceptance Criteria:**
+
+- `POST /advisory/thesis-imports/scan-local` imports the reported
+  `ATKR_thesis_draft.md` file.
+- `GET /advisory/thesis-imports` returns the ATKR thesis import preview.
+- The imported advisory artifact remains non-canonical and does not append
+  Event Ledger records.
+- Plan import preview continues to reject thesis artifacts.
+- No new thesis fields are inferred beyond the existing deterministic markdown
+  section mapping.
+
+**Out Of Scope:**
+
+- AI parsing from arbitrary prose.
+- Plan import YAML-body mapping.
+- Frontend workflow changes.
+- New event types, lifecycle transitions, or advisory artifact schemas.
+- Automatic thesis creation or lifecycle advancement.
+
+**ADR Checkpoint:**
+No new ADR is required. This is an operational verification issue inside the
+existing TF-R001 advisory import boundary and does not change event, lifecycle,
+domain, or workspace semantics.
+
+**Resolution Summary:**
+No runtime code change was required. The live backend successfully imported the
+reported ATKR thesis file through the thesis scan route. The pasted failure came
+from the Plan Import Preview, which correctly ignores `thesis_draft.v1`
+artifacts.
+
+**Verification Completed:**
+
+- `uv run pytest tests\test_advisory_artifact.py -k local_thesis_import_scan -q`
+- `POST /advisory/thesis-imports/scan-local?persona_id=persona.swing&workspace_id=workspace.context&symbol=ATKR`
+  returned `scanned_count: 2` and `imported_count: 1`.
+- `GET /advisory/thesis-imports?persona_id=persona.swing&workspace_id=workspace.context&symbol=ATKR`
+  returned `total_count: 1`.
+
+---
+
+## TF-R001: Thesis Workspace Advisory Import Preview
+
+**Status:** In Progress
+
+**Classification:** feature / lifecycle UX / advisory traceability
+
+**Milestone:** M14C
+
+**Branch:** `feature/m14c-thesis-import-workflow`
+
+**Affected Layer:** app, services/advisory read model, frontend, tests
+
+**Linked ADRs:** ADR-0001, ADR-0002, ADR-0034, ADR-0035, ADR-0041
+
+**Impacted Invariants:** Human Decision Sovereignty, Event Ledger Canonical Truth, Lifecycle Authority, AI Advisory Boundary, Derived State Must Remain Distinguishable, Replayability Is Foundational
+
+**Source:**
+Runtime implementation plan for M14C TF-R001; KB synthesis
+`knowledge/processed/20260527-tf-r001-local-thesis-import-dropoff-synthesis.md`;
+raw implementation capture
+`knowledge/raw/archived/Implemented the missing operator dropoff side.md`;
+manual feedback
+`knowledge/raw/feed back Local.md thesis import scan failed`; diagnosis
+`knowledge/raw/20260527-tf-r001-scan-not-found-diagnosis.md`.
+
+**Problem:**
+Operators need a controlled way to bring durable advisory research artifacts into
+the Thesis authoring workflow without allowing advisory cognition to create,
+approve, or mutate lifecycle state.
+
+**Scope:**
+
+- Expose a read-only thesis import preview over existing advisory artifacts.
+- Add an on-demand local drop-folder scan for `imports/incoming/*.md` so
+  operators can create advisory thesis-draft artifacts without calling the API
+  manually.
+- Restrict TF-R001 import mapping to deterministic `thesis_draft.v1`
+  `metadata.mapped_fields`.
+- Allow operators to selectively accept advisory fields into the existing Thesis
+  draft UI.
+- Preserve accepted, edited, and rejected import field provenance on the normal
+  `decision.thesis_created` event.
+- Show import provenance in replay as advisory source context only.
+
+**Acceptance Criteria:**
+
+- Markdown files dropped in `imports/incoming` with thesis-draft front matter
+  can be scanned on demand into non-canonical advisory artifacts.
+- `GET /advisory/thesis-imports` returns only matching persona, workspace,
+  symbol, and `artifact_role == "thesis_draft"` artifacts.
+- The endpoint returns advisory authority flags and never appends events.
+- Unsupported or unmapped artifacts are ignored rather than inferred from prose.
+- `POST /lifecycle/decisions/develop-thesis` accepts optional import provenance
+  while preserving human workflow provenance and lifecycle authority.
+- Missing source advisory artifact IDs are rejected with a clear 422.
+- The Thesis Development modal shows advisory, non-canonical import previews and
+  keeps manual Develop Thesis submission as the only lifecycle action.
+- Replay renders import provenance as `Advisory source, operator-promoted thesis`.
+
+**Out Of Scope:**
+
+- Watchers, background orchestration, AI parsing, automatic thesis creation,
+  conviction assignment, sizing, approval, execution, and new canonical event
+  types for field acceptance.
+
+**Implementation Summary:**
+Added a read-only thesis import preview API over existing advisory artifacts:
+`GET /advisory/thesis-imports`. The endpoint returns only advisory,
+non-canonical `thesis_draft.v1` artifacts matching persona, workspace, and
+symbol, with deterministic field mapping from `metadata.mapped_fields`.
+
+Added an on-demand local markdown dropoff path:
+`POST /advisory/thesis-imports/scan-local`. The scan reads
+`imports/incoming/*.md`, parses simple front matter plus thesis sections,
+persists matching files as non-canonical advisory markdown artifacts, and does
+not append Event Ledger records.
+
+Extended `POST /lifecycle/decisions/develop-thesis` with optional import
+provenance fields. The normal `decision.thesis_created` event remains the only
+canonical lifecycle fact, with advisory import provenance stored as source
+context under `m14c_import_provenance`.
+
+Updated `ThesisDevelopmentModal` with an Import Preview panel, a local
+`Scan folder` action, per-field accept/reject controls, append/replace conflict
+handling, imported/edited badges, and provenance submission. Replay now labels
+imported context as `Advisory source, operator-promoted thesis`.
+
+**Verification Completed:**
+
+- `uv run pytest tests\test_advisory_artifact.py tests\test_develop_thesis_workflow.py`
+- `uv run mypy src\app\api\routes.py tests\test_advisory_artifact.py`
+- `uv run ruff check src\app\api\routes.py tests\test_advisory_artifact.py --select F`
+- `npm.cmd run typecheck`
+- `npm.cmd run build`
+- `git diff --check`
+
+**Remaining Acceptance:**
+
+- Align or restart the running local API so it exposes the current TF-R001
+  route set. Manual feedback on 2026-05-27 showed the UI reaching a backend
+  that returned FastAPI `{"detail":"Not Found"}` for
+  `POST /advisory/thesis-imports/scan-local`, while the current checkout passes
+  the targeted scan regression test.
+- Operator manual test of the ATKR drop-folder workflow against the aligned
+  backend.
+- README/operator documentation after manual test feedback.
+
+---
+
+## TF-R002: Plan Workspace Advisory Import Mediation
+
+**Status:** Done
+
+**Classification:** feature / lifecycle UX / advisory traceability / execution-boundary protection
+
+**Milestone:** M14C
+
+**Branch:** `feature/m14c-plan-import-mediation`
+
+**Affected Layer:** app, services/advisory read model, frontend, tests
+
+**Linked ADRs:** ADR-0001, ADR-0002, ADR-0004, ADR-0006, ADR-0033, ADR-0034, ADR-0035, ADR-0041
+
+**Impacted Invariants:** Human Decision Sovereignty, Event Ledger Canonical Truth, Lifecycle Authority, AI Advisory Boundary, Derived State Must Remain Distinguishable, Replayability Is Foundational, Workspaces Are Operational Environments
+
+**Depends On:** TF-R001, M10AIS06, M10AIS07, ADR-0034, ADR-0041
+
+**Source:**
+`knowledge/raw/TF-R002 — Plan Workspace Import Mediation.md`;
+TF-R001 implementation pattern; M14C operator cognition bridge planning.
+
+**Problem:**
+Operators need a controlled way to bring advisory plan-adjacent rationale into
+the Plan authoring workflow without allowing imported material to populate
+order prices, calculate sizing, approve plans, authorize execution, or create
+broker-facing intent.
+
+Plan imports are more sensitive than thesis imports because they sit adjacent
+to risk acceptance and later execution. The runtime needs an explicit mediation
+surface that lets advisory material assist plan authorship while preserving
+operator-owned structured plan creation through the existing
+`decision.plan_created` lifecycle event.
+
+**Scope:**
+
+- Extend the TF-R001 import-preview pattern to the Plan Review workspace and
+  Plan Development modal.
+- Support deterministic `plan_draft.v1` advisory artifact mapping for:
+  `entry_rationale`, `stop_rationale`, `target_rationale`, and `risk_notes`.
+- Expose a read-only plan import preview over existing advisory artifacts for
+  the active persona, workspace, decision, and symbol.
+- Optionally extend the on-demand local markdown scan to ingest matching
+  plan-draft files as non-canonical advisory artifacts.
+- Allow operators to selectively accept entry, stop, target, and risk-note
+  advisory fields into the editable plan draft.
+- Preserve accepted, rejected, and edited import provenance on the normal
+  `decision.plan_created` event when the operator manually submits the plan.
+- Keep `sizing_rationale` explicitly operator-authored or operator-confirmed;
+  imported material may be visible as context but must not auto-fill sizing.
+- Show replay provenance as advisory source context only after manual plan
+  submission.
+
+**Acceptance Criteria:**
+
+- `GET /advisory/plan-imports` returns only matching persona, workspace,
+  decision, symbol, and `artifact_role == "plan_draft"` artifacts.
+- The plan import endpoint returns advisory authority flags and never appends
+  Event Ledger records.
+- Unsupported, unmapped, execution-authorizing, broker-order, or sizing
+  artifacts are ignored or rejected rather than inferred from prose.
+- Markdown files with `plan_draft.v1` front matter can be scanned on demand
+  into non-canonical advisory artifacts if the TF-R001 local scan path is
+  extended for this slice.
+- The Plan Development modal shows advisory, non-canonical import previews and
+  keeps manual Create Plan submission as the only lifecycle action.
+- Operators can accept, reject, append, replace, or edit imported
+  `entry_rationale`, `stop_rationale`, `target_rationale`, and `risk_notes`
+  before plan submission.
+- Imported `risk_notes` are treated as advisory planning context and may only
+  enter the submitted plan through explicit operator action in an existing
+  plan field, such as execution assumptions or revised rationale text.
+- `sizing_rationale` remains manually entered or explicitly confirmed by the
+  operator and is never automatically populated from import material.
+- `POST /lifecycle/decisions/create-plan` accepts optional import provenance
+  while preserving human workflow provenance and lifecycle authority.
+- Missing source advisory artifact IDs are rejected with a clear 422.
+- Replay renders plan import provenance as
+  `Advisory source, operator-authored plan` or equivalent wording that does not
+  imply advisory execution authority.
+
+**Out Of Scope:**
+
+- Automatic price population.
+- Automatic sizing, risk calculation, or quantity suggestion.
+- Broker integration, order tickets, or execution instructions.
+- Automatic plan creation, plan approval, plan arming, or execution
+  authorization.
+- Background filesystem watchers or polling daemons.
+- AI parsing from arbitrary prose.
+- New canonical event types for field acceptance.
+- Universal import framework or cross-workspace import center.
+
+**Design Plan:**
+
+1. Reuse the TF-R001 pattern: advisory artifacts are the durable non-canonical
+   source; import preview endpoints are read-only; lifecycle events are created
+   only by existing authoring endpoints.
+2. Define a narrow `plan_draft.v1` mapping. Accepted source fields are limited
+   to entry rationale, stop rationale, target rationale, and risk notes.
+   Numeric prices, quantities, order types, approval language, execution
+   instructions, and sizing directives are not mapped.
+3. Add a plan-import read model that filters by persona, workspace, decision,
+   symbol, artifact role, and schema version. The service should not infer plan
+   fields from prose outside deterministic `metadata.mapped_fields`.
+4. Extend Plan Development UI with an Import Preview panel only while the
+   active decision is in Thesis stage and plan creation is available. The panel
+   should mirror TF-R001 accept/reject/edit provenance controls but label all
+   imported content advisory and non-canonical.
+5. Extend plan submission provenance by adding optional
+   `m14c_import_provenance` metadata to the normal
+   `decision.plan_created` payload. The canonical fact remains the operator
+   plan event, not the advisory source artifact.
+6. Extend replay rendering to show advisory source context on plan events
+   without treating imported material as execution authority.
+7. Add targeted backend, frontend typecheck/build, and replay/provenance tests.
+
+**Event Impact Analysis:**
+
+- No new canonical event type is planned.
+- Advisory artifact capture may continue to use existing M12 advisory capture
+  semantics where applicable.
+- `decision.plan_created` remains the canonical lifecycle event for plan
+  creation.
+- Import acceptance before submission remains draft UI/read-model state, not
+  event truth.
+- Submitted import provenance is event payload metadata that explains source
+  influence; it does not make advisory content authoritative.
+
+**Lifecycle Impact Analysis:**
+
+- The allowed lifecycle flow remains Idea -> Thesis -> Plan -> Approval ->
+  Execution -> Position -> Review.
+- TF-R002 operates only inside the Thesis -> Plan authoring gate.
+- Import preview and field acceptance cannot advance lifecycle state.
+- Approval, arming, execution, and broker activity remain untouched.
+
+**Replay Impact Analysis:**
+
+- Replay should be able to show that a plan was operator-authored using
+  advisory source context.
+- Replay must not depend on live filesystem paths, current advisory provider
+  output, mutable UI state, or broker APIs.
+- Replay labels must distinguish advisory source material from the canonical
+  `decision.plan_created` fact.
+
+**Testing Strategy:**
+
+- Backend tests for `plan_draft.v1` filtering, advisory flags, unsupported
+  artifact rejection, missing source artifact validation, and create-plan
+  provenance payloads.
+- Lifecycle tests proving import preview does not append events and cannot
+  advance Thesis -> Plan without manual plan submission.
+- Frontend typecheck/build for Plan Development modal import controls.
+- Replay rendering test or targeted frontend coverage for plan import
+  provenance labels if the existing test structure supports it.
+
+**ADR Checkpoint:**
+
+No new ADR is required before implementation if TF-R002 remains a direct
+extension of ADR-0034 and ADR-0041. Create an ADR only if implementation
+introduces a durable generic import framework, new import state vocabulary,
+new canonical events, or a reusable cross-workspace selective promotion
+architecture beyond thesis and plan slices.
+
+**Resolution Summary:**
+Implemented a Plan Workspace advisory import mediation path parallel to
+TF-R001 while preserving stricter execution-boundary controls.
+
+Added `GET /advisory/plan-imports` for read-only `plan_draft.v1` import
+previews filtered by persona, workspace, decision, and symbol. Added
+`POST /advisory/plan-imports/scan-local` for on-demand local markdown scan into
+non-canonical advisory artifacts. The plan mapper supports only
+`entry_rationale`, `stop_rationale`, `target_rationale`, and `risk_notes`, and
+ignores artifacts that attempt prohibited mapped authority such as sizing,
+prices, quantities, broker orders, approval, or execution instructions.
+
+Extended `POST /lifecycle/decisions/create-plan` with optional import
+provenance validation. Missing or non-matching source advisory artifact IDs are
+rejected with 422. Valid provenance is stored on the normal
+`decision.plan_created` payload under `m14c_import_provenance`; the canonical
+plan remains the operator-authored lifecycle event.
+
+Updated Plan Development UI with advisory plan import previews, local scan,
+field accept/reject controls, edited/unchanged import markers, and provenance
+submission. `sizing_rationale` remains manually authored and is never
+auto-filled by import mediation. Replay now labels plan import provenance as
+`Advisory source, operator-authored plan` and shows explicit no-sizing,
+no-approval, and no-execution authority flags.
+
+**Verification Completed:**
+
+- `uv run pytest tests\test_advisory_artifact.py tests\test_create_plan_workflow.py tests\test_develop_thesis_workflow.py`
+- `uv run mypy src\app\api\routes.py tests\test_advisory_artifact.py tests\test_create_plan_workflow.py`
+- `uv run ruff check src\app\api\routes.py tests\test_advisory_artifact.py tests\test_create_plan_workflow.py --select F`
+- `npm.cmd run typecheck`
+- `npm.cmd run build`
+- `git diff --check`
 
 ---

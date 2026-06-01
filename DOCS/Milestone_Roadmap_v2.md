@@ -2550,6 +2550,63 @@ M14 introduces recurring behavioral pattern detection, process violation trackin
 
 ---
 
+## M14C - Thesis Import Workflow And Advisory Dropoff
+
+**Status:** In Progress
+
+## Semantic Intent
+
+Bridge durable advisory cognition into operator-owned Thesis authoring without
+allowing advisory material to become lifecycle authority.
+
+## Architectural Significance
+
+M14C turns the M12 advisory artifact substrate into a practical operator
+workflow. It adds explicit import dropoff and preview paths for thesis and
+plan-adjacent advisory artifacts while preserving the Decision Lifecycle Engine
+as the only owner of canonical lifecycle progression.
+
+## Canonical Concepts
+
+* [[Advisory Artifact]]
+* [[Persona Workspace]]
+* [[Decision Lifecycle Engine]]
+* [[Event Ledger]]
+* [[Replay System]]
+
+## Scope
+
+M14C introduces deterministic local markdown thesis-draft import, advisory
+artifact preview inside lifecycle authoring modals, selective operator field
+acceptance, field-level provenance preservation, plan import mediation, and
+replay-visible advisory source context.
+
+M14C does not introduce filesystem watchers, autonomous parsing, AI-generated
+lifecycle mutation, automatic thesis or plan creation, automatic price
+population, sizing, approval, broker integration, or execution.
+
+## Linked Runtime Issues
+
+* TF-R001: Thesis Workspace advisory import preview and local markdown dropoff
+  (**In Progress**, pending operator manual acceptance and README update)
+* TF-R002: Plan Workspace advisory import mediation
+  (**Done**)
+
+## Acceptance Meaning
+
+* Operators can drop a structured markdown thesis draft into `imports/incoming`
+  and explicitly scan it into advisory artifact storage.
+* Thesis import previews remain advisory and non-canonical until the operator
+  manually submits the Thesis workflow.
+* Plan import previews may assist entry, stop, target, and risk-note rationale
+  only through explicit operator acceptance and manual Create Plan submission.
+* Plan imports do not populate prices, calculate sizing, approve plans, create
+  broker orders, or authorize execution.
+* Replay can show imported advisory source context without confusing it with
+  canonical lifecycle truth.
+
+---
+
 ## M15 - Replayable Cognitive Reconstruction
 
 **Status:** Planned

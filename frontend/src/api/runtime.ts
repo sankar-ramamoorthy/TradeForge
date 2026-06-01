@@ -984,6 +984,11 @@ export type DevelopThesisRequest = {
   regime_alignment?: string;
   persona_id: string;
   workspace_id: string;
+  source_advisory_artifact_id?: string;
+  accepted_import_fields?: string[];
+  edited_import_fields?: string[];
+  rejected_import_fields?: string[];
+  import_acceptance_intent?: "operator_selectively_incorporates_advisory_cognition";
 };
 
 export type DevelopThesisResponse = {
@@ -1020,6 +1025,170 @@ export async function postDevelopThesis(
   }
 
   return response.json() as Promise<DevelopThesisResponse>;
+}
+
+export type ThesisImportMappedFields = {
+  title: string | null;
+  narrative: string | null;
+  catalysts: string[];
+  assumptions: string[];
+  invalidation_conditions: string[];
+  evidence_links: string[];
+  notes: string | null;
+};
+
+export type ThesisImportPreview = {
+  artifact_id: string;
+  artifact_type: "imported_research" | "generated_advisory" | "markdown_note";
+  artifact_format: "markdown" | "text" | "json";
+  title: string;
+  source: string;
+  captured_at: string;
+  provenance_summary: string;
+  uncertainty_band: "low" | "medium" | "high" | "unknown";
+  caveats: string[];
+  mapped_fields: ThesisImportMappedFields;
+  authority: "advisory";
+  is_canonical: false;
+  lifecycle_authority: false;
+};
+
+export type ThesisImportPreviewList = {
+  authority: "advisory";
+  is_canonical: false;
+  total_count: number;
+  imports: ThesisImportPreview[];
+};
+
+export type LocalThesisImportScanResult = {
+  authority: "advisory";
+  is_canonical: false;
+  import_directory: string;
+  scanned_count: number;
+  imported_count: number;
+  skipped_count: number;
+  imported_artifact_ids: string[];
+  skipped_files: string[];
+};
+
+export async function fetchThesisImports(
+  params: { persona_id: string; workspace_id: string; symbol: string },
+  signal?: AbortSignal,
+): Promise<ThesisImportPreviewList> {
+  const urlParams = new URLSearchParams();
+  urlParams.set("persona_id", params.persona_id);
+  urlParams.set("workspace_id", params.workspace_id);
+  urlParams.set("symbol", params.symbol);
+  const response = await fetch(`/advisory/thesis-imports?${urlParams}`, { signal });
+  return readOperationalJson<ThesisImportPreviewList>(
+    response,
+    "Thesis import preview request",
+  );
+}
+
+export async function scanLocalThesisImports(
+  params: { persona_id: string; workspace_id: string; symbol: string },
+  signal?: AbortSignal,
+): Promise<LocalThesisImportScanResult> {
+  const urlParams = new URLSearchParams();
+  urlParams.set("persona_id", params.persona_id);
+  urlParams.set("workspace_id", params.workspace_id);
+  urlParams.set("symbol", params.symbol);
+  const response = await fetch(`/advisory/thesis-imports/scan-local?${urlParams}`, {
+    method: "POST",
+    signal,
+  });
+  return readOperationalJson<LocalThesisImportScanResult>(
+    response,
+    "Local thesis import scan",
+  );
+}
+
+export type PlanImportMappedFields = {
+  entry_rationale: string | null;
+  stop_rationale: string | null;
+  target_rationale: string | null;
+  risk_notes: string[];
+};
+
+export type PlanImportPreview = {
+  artifact_id: string;
+  artifact_type: "imported_research" | "generated_advisory" | "markdown_note";
+  artifact_format: "markdown" | "text" | "json";
+  title: string;
+  source: string;
+  captured_at: string;
+  provenance_summary: string;
+  uncertainty_band: "low" | "medium" | "high" | "unknown";
+  caveats: string[];
+  mapped_fields: PlanImportMappedFields;
+  authority: "advisory";
+  is_canonical: false;
+  lifecycle_authority: false;
+  execution_authority: false;
+};
+
+export type PlanImportPreviewList = {
+  authority: "advisory";
+  is_canonical: false;
+  total_count: number;
+  imports: PlanImportPreview[];
+};
+
+export type LocalPlanImportScanResult = {
+  authority: "advisory";
+  is_canonical: false;
+  import_directory: string;
+  scanned_count: number;
+  imported_count: number;
+  skipped_count: number;
+  imported_artifact_ids: string[];
+  skipped_files: string[];
+};
+
+export async function fetchPlanImports(
+  params: {
+    persona_id: string;
+    workspace_id: string;
+    decision_id: string;
+    symbol: string;
+  },
+  signal?: AbortSignal,
+): Promise<PlanImportPreviewList> {
+  const urlParams = new URLSearchParams();
+  urlParams.set("persona_id", params.persona_id);
+  urlParams.set("workspace_id", params.workspace_id);
+  urlParams.set("decision_id", params.decision_id);
+  urlParams.set("symbol", params.symbol);
+  const response = await fetch(`/advisory/plan-imports?${urlParams}`, { signal });
+  return readOperationalJson<PlanImportPreviewList>(
+    response,
+    "Plan import preview request",
+  );
+}
+
+export async function scanLocalPlanImports(
+  params: {
+    persona_id: string;
+    workspace_id: string;
+    decision_id: string;
+    symbol: string;
+  },
+  signal?: AbortSignal,
+): Promise<LocalPlanImportScanResult> {
+  const urlParams = new URLSearchParams();
+  urlParams.set("persona_id", params.persona_id);
+  urlParams.set("workspace_id", params.workspace_id);
+  urlParams.set("decision_id", params.decision_id);
+  urlParams.set("symbol", params.symbol);
+  const response = await fetch(`/advisory/plan-imports/scan-local?${urlParams}`, {
+    method: "POST",
+    signal,
+  });
+  return readOperationalJson<LocalPlanImportScanResult>(
+    response,
+    "Local plan import scan",
+  );
 }
 
 export type ThesisArtifact = {
@@ -1063,6 +1232,11 @@ export type CreatePlanRequest = {
   playbook_alignment?: string;
   persona_id: string;
   workspace_id: string;
+  source_advisory_artifact_id?: string;
+  accepted_import_fields?: string[];
+  edited_import_fields?: string[];
+  rejected_import_fields?: string[];
+  import_acceptance_intent?: "operator_selectively_incorporates_advisory_cognition";
 };
 
 export type CreatePlanResponse = {

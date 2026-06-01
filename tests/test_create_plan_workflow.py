@@ -101,6 +101,91 @@ def test_create_plan_embeds_structured_payload_in_event() -> None:
     assert plan_data["playbook_alignment"] == "swing-breakout-v1"
 
 
+def test_create_plan_preserves_import_provenance() -> None:
+    client, decision_id = _app_with_thesis()
+    artifact_payload = {
+        "artifact_type": "imported_research",
+        "artifact_format": "markdown",
+        "title": "AAPL draft plan",
+        "body": "# AAPL\n\nDraft plan context.",
+        "source_references": [
+            {
+                "source_kind": "url",
+                "source_id": "research-url-1",
+                "summary": "External research URL",
+                "source_uri": "https://research.example.test/aapl-plan",
+            }
+        ],
+        "capture_origin": "imported_research",
+        "provenance_summary": "operator imported external plan research",
+        "uncertainty_band": "medium",
+        "caveats": ["Research may lag current market conditions."],
+        "persona_id": PERSONA_ID,
+        "workspace_id": WORKSPACE_ID,
+        "metadata": {
+            "artifact_role": "plan_draft",
+            "schema_version": "plan_draft.v1",
+            "symbol": "AAPL",
+            "decision_id": decision_id,
+            "mapped_fields": {
+                "entry_rationale": "Enter only if AAPL reclaims the base.",
+                "stop_rationale": "Base failure invalidates the setup.",
+                "target_rationale": "Prior supply zone is the first target.",
+                "risk_notes": ["Check earnings date."],
+            },
+        },
+        "captured_at": "2026-05-22T16:30:00Z",
+    }
+    artifact_response = client.post("/advisory/artifacts", json=artifact_payload)
+    assert artifact_response.status_code == 201, artifact_response.json()
+    artifact_id = artifact_response.json()["artifact_id"]
+
+    response = client.post(
+        "/lifecycle/decisions/create-plan",
+        json=_valid_plan_payload(
+            decision_id,
+            source_advisory_artifact_id=artifact_id,
+            accepted_import_fields=["entry_rationale", "risk_notes"],
+            edited_import_fields=["entry_rationale"],
+            rejected_import_fields=["target_rationale"],
+            import_acceptance_intent="operator_selectively_incorporates_advisory_cognition",
+        ),
+    )
+
+    assert response.status_code == 201, response.json()
+    plan_entry = next(
+        e
+        for e in client.get("/replay/timeline").json()["entries"]
+        if e["event_type"] == "decision.plan_created"
+    )
+    provenance = plan_entry["payload"]["m14c_import_provenance"]
+    assert provenance["source_advisory_artifact_id"] == artifact_id
+    assert provenance["accepted_import_fields"] == ["entry_rationale", "risk_notes"]
+    assert provenance["edited_import_fields"] == ["entry_rationale"]
+    assert provenance["rejected_import_fields"] == ["target_rationale"]
+    assert provenance["advisory_content_is_canonical"] is False
+    assert provenance["sizing_auto_populated"] is False
+    assert provenance["approval_authority"] is False
+    assert provenance["execution_authority"] is False
+    assert plan_entry["provenance"]["actor"] == "human"
+
+
+def test_create_plan_rejects_missing_import_source() -> None:
+    client, decision_id = _app_with_thesis()
+    response = client.post(
+        "/lifecycle/decisions/create-plan",
+        json=_valid_plan_payload(
+            decision_id,
+            source_advisory_artifact_id="artifact-missing",
+            accepted_import_fields=["entry_rationale"],
+            import_acceptance_intent="operator_selectively_incorporates_advisory_cognition",
+        ),
+    )
+
+    assert response.status_code == 422
+    assert "eligible plan import" in response.json()["detail"]["message"]
+
+
 def test_create_plan_rejects_empty_entry_rationale() -> None:
     client, decision_id = _app_with_thesis()
     response = client.post(

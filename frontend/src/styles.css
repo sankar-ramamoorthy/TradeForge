@@ -2633,7 +2633,7 @@ p {
   border: 1px solid var(--color-border);
   border-radius: 12px;
   box-shadow: 0 16px 48px rgba(18, 28, 26, 0.22);
-  width: min(680px, 100%);
+  width: min(1080px, 100%);
   display: flex;
   flex-direction: column;
 }
@@ -2685,6 +2685,181 @@ p {
   display: flex;
   flex-direction: column;
   gap: 24px;
+}
+
+.thesis-modal-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 360px);
+  gap: 24px;
+  align-items: start;
+}
+
+.thesis-authoring-region {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  min-width: 0;
+}
+
+.thesis-import-panel {
+  border-left: 1px solid var(--color-border);
+  padding-left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+}
+
+.thesis-import-panel-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.thesis-import-panel-header h3 {
+  margin: 2px 0 0;
+  font-size: 1rem;
+}
+
+.thesis-import-badges,
+.thesis-import-field-actions,
+.thesis-import-dropoff {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.thesis-import-dropoff {
+  justify-content: space-between;
+  align-items: center;
+  border: 1px dashed var(--color-border);
+  border-radius: 8px;
+  padding: 10px;
+  color: var(--color-text-muted);
+  font-size: 0.82rem;
+}
+
+.thesis-import-noncanonical,
+.thesis-import-field-badge {
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  padding: 2px 8px;
+  color: var(--color-text-muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.thesis-import-field-badge {
+  margin-left: 8px;
+}
+
+.thesis-import-card,
+.thesis-import-field,
+.thesis-import-replay-context {
+  background: var(--color-surface-muted);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+}
+
+.thesis-import-card {
+  padding: 12px;
+}
+
+.thesis-import-source {
+  display: grid;
+  gap: 3px;
+  font-size: 0.84rem;
+}
+
+.thesis-import-source span,
+.thesis-import-meta,
+.thesis-import-provenance,
+.thesis-import-caveats,
+.thesis-import-field p,
+.thesis-import-submit-summary,
+.thesis-import-scan-message,
+.thesis-import-replay-context p {
+  color: var(--color-text-muted);
+  font-size: 0.82rem;
+}
+
+.thesis-import-meta {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.thesis-import-caveats {
+  margin: 8px 0 0 18px;
+  padding: 0;
+}
+
+.thesis-import-fields {
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.thesis-import-field {
+  padding: 10px;
+  display: grid;
+  gap: 10px;
+}
+
+.thesis-import-field-name {
+  display: block;
+  font-size: 0.76rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.thesis-import-field p,
+.thesis-import-provenance,
+.thesis-import-submit-summary,
+.thesis-import-scan-message,
+.thesis-import-replay-context p {
+  margin: 4px 0 0;
+}
+
+.thesis-import-action {
+  border: 1px solid var(--color-border-active);
+  background: var(--color-surface);
+  color: var(--color-text);
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.thesis-import-action.secondary {
+  border-color: var(--color-border);
+  color: var(--color-text-muted);
+}
+
+.thesis-import-action:disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+
+.thesis-import-replay-context {
+  margin-top: 10px;
+  padding: 10px;
+}
+
+@media (max-width: 900px) {
+  .thesis-modal-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .thesis-import-panel {
+    border-left: 0;
+    border-top: 1px solid var(--color-border);
+    padding-left: 0;
+    padding-top: 20px;
+  }
 }
 
 .thesis-modal-actions {

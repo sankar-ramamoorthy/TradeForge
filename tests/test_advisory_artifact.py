@@ -3,6 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from fastapi.testclient import TestClient
+from pytest import MonkeyPatch
 from src.app.api import create_app
 
 _NOW = "2026-05-22T16:30:00Z"
@@ -148,6 +149,297 @@ def test_markdown_artifact_can_be_linked_as_candidate_evidence() -> None:
     assert candidate_response.status_code == 201
     evidence = candidate_response.json()["evidence"][0]
     assert evidence["artifact_id"] == artifact["artifact_id"]
+
+
+def test_thesis_import_preview_returns_only_eligible_mapped_artifacts() -> None:
+    client = TestClient(create_app())
+    eligible_payload = _artifact_payload()
+    eligible_payload["title"] = "AAPL draft thesis"
+    eligible_payload["metadata"] = {
+        "artifact_role": "thesis_draft",
+        "schema_version": "thesis_draft.v1",
+        "symbol": "AAPL",
+        "source": "Research Cockpit",
+        "mapped_fields": {
+            "title": "AAPL reversal thesis",
+            "narrative": "AAPL has rebuilt a base with improving breadth confirmation.",
+            "catalysts": ["Earnings guidance", "Sector rotation"],
+            "assumptions": ["Market remains constructive"],
+            "invalidation_conditions": ["Break below the base on volume"],
+            "evidence_links": ["https://research.example.test/aapl"],
+            "notes": "Imported as operator-reviewed draft context.",
+        },
+    }
+    eligible = client.post("/advisory/artifacts", json=eligible_payload)
+    assert eligible.status_code == 201, eligible.json()
+
+    wrong_symbol_payload = _artifact_payload()
+    wrong_symbol_payload["metadata"] = {
+        "artifact_role": "thesis_draft",
+        "schema_version": "thesis_draft.v1",
+        "symbol": "MSFT",
+        "mapped_fields": {"narrative": "Wrong symbol draft."},
+    }
+    wrong_symbol_response = client.post(
+        "/advisory/artifacts",
+        json=wrong_symbol_payload,
+    )
+    assert wrong_symbol_response.status_code == 201
+
+    prose_only_payload = _artifact_payload(artifact_type="markdown_note")
+    prose_only_payload["metadata"] = {
+        "artifact_role": "thesis_draft",
+        "schema_version": "thesis_draft.v1",
+        "symbol": "AAPL",
+    }
+    prose_only_payload["capture_origin"] = "operator_manual"
+    prose_only_response = client.post(
+        "/advisory/artifacts",
+        json=prose_only_payload,
+    )
+    assert prose_only_response.status_code == 201
+
+    response = client.get(
+        "/advisory/thesis-imports",
+        params={
+            "persona_id": "persona.swing",
+            "workspace_id": "workspace.context",
+            "symbol": "aapl",
+        },
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["authority"] == "advisory"
+    assert body["is_canonical"] is False
+    assert body["total_count"] == 1
+    preview = body["imports"][0]
+    assert preview["artifact_id"] == eligible.json()["artifact_id"]
+    assert preview["lifecycle_authority"] is False
+    assert preview["mapped_fields"]["narrative"].startswith("AAPL")
+    assert preview["mapped_fields"]["catalysts"] == [
+        "Earnings guidance",
+        "Sector rotation",
+    ]
+    assert client.get("/replay/timeline").json()["source_event_count"] == 0
+
+
+def test_local_thesis_import_scan_persists_markdown_dropoff(
+    tmp_path: Path,
+    monkeypatch: MonkeyPatch,
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    incoming = tmp_path / "imports" / "incoming"
+    incoming.mkdir(parents=True)
+    (incoming / "ATKR_thesis_draft.md").write_text(
+        """---
+artifact_role: thesis_draft
+schema_version: thesis_draft.v1
+symbol: ATKR
+source: claude
+---
+
+# Thesis Narrative
+
+ATKR may benefit from infrastructure spending and improving construction demand.
+
+# Catalysts
+
+- infrastructure backlog expansion
+- margin recovery
+
+# Assumptions
+
+- nonresidential demand remains stable
+
+# Invalidation Conditions
+
+- backlog deterioration
+- margin compression resumes
+""",
+        encoding="utf-8",
+    )
+    client = TestClient(create_app())
+
+    response = client.post(
+        "/advisory/thesis-imports/scan-local",
+        params={
+            "persona_id": "persona.swing",
+            "workspace_id": "workspace.context",
+            "symbol": "ATKR",
+        },
+    )
+
+    assert response.status_code == 200, response.json()
+    body = response.json()
+    assert body["authority"] == "advisory"
+    assert body["imported_count"] == 1
+    assert body["scanned_count"] == 1
+    assert client.get("/replay/timeline").json()["source_event_count"] == 0
+
+    preview = client.get(
+        "/advisory/thesis-imports",
+        params={
+            "persona_id": "persona.swing",
+            "workspace_id": "workspace.context",
+            "symbol": "ATKR",
+        },
+    ).json()["imports"][0]
+    assert preview["source"] == "claude"
+    assert preview["mapped_fields"]["narrative"].startswith("ATKR")
+    assert preview["mapped_fields"]["catalysts"] == [
+        "infrastructure backlog expansion",
+        "margin recovery",
+    ]
+    assert preview["is_canonical"] is False
+
+
+def test_plan_import_preview_returns_only_eligible_mapped_artifacts() -> None:
+    client = TestClient(create_app())
+    decision_id = "decision-plan-import-1"
+    eligible_payload = _artifact_payload()
+    eligible_payload["title"] = "AAPL draft plan"
+    eligible_payload["metadata"] = {
+        "artifact_role": "plan_draft",
+        "schema_version": "plan_draft.v1",
+        "symbol": "AAPL",
+        "decision_id": decision_id,
+        "source": "Research Cockpit",
+        "mapped_fields": {
+            "entry_rationale": "Enter only if AAPL reclaims the prior base.",
+            "stop_rationale": "Base failure invalidates the planned setup.",
+            "target_rationale": "Prior supply zone defines the first target.",
+            "risk_notes": ["Do not chase a gap open.", "Earnings risk remains."],
+        },
+    }
+    eligible = client.post("/advisory/artifacts", json=eligible_payload)
+    assert eligible.status_code == 201, eligible.json()
+
+    sizing_payload = _artifact_payload()
+    sizing_payload["metadata"] = {
+        "artifact_role": "plan_draft",
+        "schema_version": "plan_draft.v1",
+        "symbol": "AAPL",
+        "decision_id": decision_id,
+        "mapped_fields": {
+            "entry_rationale": "Valid rationale.",
+            "sizing_rationale": "Use 2% account risk.",
+        },
+    }
+    sizing_response = client.post("/advisory/artifacts", json=sizing_payload)
+    assert sizing_response.status_code == 201
+
+    wrong_decision_payload = _artifact_payload()
+    wrong_decision_payload["metadata"] = {
+        "artifact_role": "plan_draft",
+        "schema_version": "plan_draft.v1",
+        "symbol": "AAPL",
+        "decision_id": "other-decision",
+        "mapped_fields": {"entry_rationale": "Wrong decision draft."},
+    }
+    wrong_decision_response = client.post(
+        "/advisory/artifacts",
+        json=wrong_decision_payload,
+    )
+    assert wrong_decision_response.status_code == 201
+
+    response = client.get(
+        "/advisory/plan-imports",
+        params={
+            "persona_id": "persona.swing",
+            "workspace_id": "workspace.context",
+            "decision_id": decision_id,
+            "symbol": "aapl",
+        },
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["authority"] == "advisory"
+    assert body["is_canonical"] is False
+    assert body["total_count"] == 1
+    preview = body["imports"][0]
+    assert preview["artifact_id"] == eligible.json()["artifact_id"]
+    assert preview["lifecycle_authority"] is False
+    assert preview["execution_authority"] is False
+    assert preview["mapped_fields"]["entry_rationale"].startswith("Enter")
+    assert preview["mapped_fields"]["risk_notes"] == [
+        "Do not chase a gap open.",
+        "Earnings risk remains.",
+    ]
+    assert client.get("/replay/timeline").json()["source_event_count"] == 0
+
+
+def test_local_plan_import_scan_persists_markdown_dropoff(
+    tmp_path: Path,
+    monkeypatch: MonkeyPatch,
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    incoming = tmp_path / "imports" / "incoming"
+    incoming.mkdir(parents=True)
+    (incoming / "ATKR_plan_draft.md").write_text(
+        """---
+artifact_role: plan_draft
+schema_version: plan_draft.v1
+symbol: ATKR
+source: claude
+---
+
+# Entry Rationale
+
+Wait for ATKR to reclaim the 50-day average after constructive volume.
+
+# Stop Rationale
+
+A close below the prior base invalidates the setup.
+
+# Target Rationale
+
+First target is the prior supply zone.
+
+# Risk Notes
+
+- earnings date must be checked
+- do not size from this import
+""",
+        encoding="utf-8",
+    )
+    client = TestClient(create_app())
+
+    response = client.post(
+        "/advisory/plan-imports/scan-local",
+        params={
+            "persona_id": "persona.swing",
+            "workspace_id": "workspace.context",
+            "decision_id": "decision-atkr-plan",
+            "symbol": "ATKR",
+        },
+    )
+
+    assert response.status_code == 200, response.json()
+    body = response.json()
+    assert body["authority"] == "advisory"
+    assert body["imported_count"] == 1
+    assert body["scanned_count"] == 1
+    assert client.get("/replay/timeline").json()["source_event_count"] == 0
+
+    preview = client.get(
+        "/advisory/plan-imports",
+        params={
+            "persona_id": "persona.swing",
+            "workspace_id": "workspace.context",
+            "decision_id": "decision-atkr-plan",
+            "symbol": "ATKR",
+        },
+    ).json()["imports"][0]
+    assert preview["source"] == "claude"
+    assert preview["mapped_fields"]["entry_rationale"].startswith("Wait for ATKR")
+    assert preview["mapped_fields"]["risk_notes"] == [
+        "earnings date must be checked",
+        "do not size from this import",
+    ]
+    assert preview["is_canonical"] is False
+    assert preview["execution_authority"] is False
 
 
 def test_advisory_artifact_migration_exists() -> None:

@@ -63,6 +63,14 @@ type ThesisPayloadData = {
   invalidation_conditions: string[];
   confidence_level: number;
   regime_alignment: string;
+  import_provenance: ThesisImportProvenance | null;
+};
+
+type ThesisImportProvenance = {
+  source_advisory_artifact_id: string;
+  accepted_import_fields: string[];
+  edited_import_fields: string[];
+  rejected_import_fields: string[];
 };
 
 type PlanPayloadData = {
@@ -72,6 +80,17 @@ type PlanPayloadData = {
   sizing_rationale: string;
   execution_assumptions: string[];
   playbook_alignment: string;
+  import_provenance: PlanImportProvenance | null;
+};
+
+type PlanImportProvenance = {
+  source_advisory_artifact_id: string;
+  accepted_import_fields: string[];
+  edited_import_fields: string[];
+  rejected_import_fields: string[];
+  sizing_auto_populated: boolean;
+  approval_authority: boolean;
+  execution_authority: boolean;
 };
 
 function extractThesisPayload(
@@ -103,6 +122,66 @@ function extractThesisPayload(
       typeof thesis["regime_alignment"] === "string"
         ? (thesis["regime_alignment"] as string)
         : "",
+    import_provenance: extractThesisImportProvenance(payload),
+  };
+}
+
+function extractThesisImportProvenance(
+  payload: Record<string, unknown>,
+): ThesisImportProvenance | null {
+  const raw = payload["m14c_import_provenance"];
+  if (!raw || typeof raw !== "object") return null;
+  const provenance = raw as Record<string, unknown>;
+  const sourceId = provenance["source_advisory_artifact_id"];
+  if (typeof sourceId !== "string" || !sourceId) return null;
+  return {
+    source_advisory_artifact_id: sourceId,
+    accepted_import_fields: Array.isArray(provenance["accepted_import_fields"])
+      ? (provenance["accepted_import_fields"] as unknown[]).filter(
+          (x): x is string => typeof x === "string",
+        )
+      : [],
+    edited_import_fields: Array.isArray(provenance["edited_import_fields"])
+      ? (provenance["edited_import_fields"] as unknown[]).filter(
+          (x): x is string => typeof x === "string",
+        )
+      : [],
+    rejected_import_fields: Array.isArray(provenance["rejected_import_fields"])
+      ? (provenance["rejected_import_fields"] as unknown[]).filter(
+          (x): x is string => typeof x === "string",
+        )
+      : [],
+  };
+}
+
+function extractPlanImportProvenance(
+  payload: Record<string, unknown>,
+): PlanImportProvenance | null {
+  const raw = payload["m14c_import_provenance"];
+  if (!raw || typeof raw !== "object") return null;
+  const provenance = raw as Record<string, unknown>;
+  const sourceId = provenance["source_advisory_artifact_id"];
+  if (typeof sourceId !== "string" || !sourceId) return null;
+  return {
+    source_advisory_artifact_id: sourceId,
+    accepted_import_fields: Array.isArray(provenance["accepted_import_fields"])
+      ? (provenance["accepted_import_fields"] as unknown[]).filter(
+          (x): x is string => typeof x === "string",
+        )
+      : [],
+    edited_import_fields: Array.isArray(provenance["edited_import_fields"])
+      ? (provenance["edited_import_fields"] as unknown[]).filter(
+          (x): x is string => typeof x === "string",
+        )
+      : [],
+    rejected_import_fields: Array.isArray(provenance["rejected_import_fields"])
+      ? (provenance["rejected_import_fields"] as unknown[]).filter(
+          (x): x is string => typeof x === "string",
+        )
+      : [],
+    sizing_auto_populated: provenance["sizing_auto_populated"] === true,
+    approval_authority: provenance["approval_authority"] === true,
+    execution_authority: provenance["execution_authority"] === true,
   };
 }
 
@@ -162,6 +241,7 @@ function extractPlanPayload(
       typeof plan["playbook_alignment"] === "string"
         ? (plan["playbook_alignment"] as string)
         : "",
+    import_provenance: extractPlanImportProvenance(payload),
   };
 }
 
@@ -208,6 +288,19 @@ function ThesisPayloadPreview({ thesis, eventType }: { thesis: ThesisPayloadData
           </>
         ) : null}
       </div>
+      {thesis.import_provenance ? (
+        <div className="thesis-import-replay-context">
+          <span className="field-authority-badge authority-advisory">
+            Advisory source, operator-promoted thesis
+          </span>
+          <p>Source artifact: {thesis.import_provenance.source_advisory_artifact_id}</p>
+          <p>
+            Accepted: {thesis.import_provenance.accepted_import_fields.join(", ") || "none"}
+            {" "} | Edited: {thesis.import_provenance.edited_import_fields.join(", ") || "none"}
+            {" "} | Rejected: {thesis.import_provenance.rejected_import_fields.join(", ") || "none"}
+          </p>
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -234,6 +327,24 @@ function PlanPayloadPreview({ plan }: { plan: PlanPayloadData }) {
           <span className="cognitive-count-item">
             {plan.execution_assumptions.length} execution assumption{plan.execution_assumptions.length !== 1 ? "s" : ""}
           </span>
+        </div>
+      ) : null}
+      {plan.import_provenance ? (
+        <div className="thesis-import-replay-context">
+          <span className="field-authority-badge authority-advisory">
+            Advisory source, operator-authored plan
+          </span>
+          <p>Source artifact: {plan.import_provenance.source_advisory_artifact_id}</p>
+          <p>
+            Accepted: {plan.import_provenance.accepted_import_fields.join(", ") || "none"}
+            {" "} | Edited: {plan.import_provenance.edited_import_fields.join(", ") || "none"}
+            {" "} | Rejected: {plan.import_provenance.rejected_import_fields.join(", ") || "none"}
+          </p>
+          <p>
+            Sizing auto-populated: {plan.import_provenance.sizing_auto_populated ? "yes" : "no"}
+            {" "} | Approval authority: {plan.import_provenance.approval_authority ? "yes" : "no"}
+            {" "} | Execution authority: {plan.import_provenance.execution_authority ? "yes" : "no"}
+          </p>
         </div>
       ) : null}
     </div>
