@@ -31,6 +31,11 @@ Roadmap v2 is the active milestone direction. This register now tracks runtime i
 |---|---|---|
 | Roadmap issues | `TF-####` | Planned milestone implementation work — sequential, roadmap-tied |
 | Feedback issues | `TF-F###` | Field-observed bugs, enhancements, and architectural gaps discovered during testing or operation |
+| Paper trading | `TF-P###` | M-PT paper execution boundary work |
+| API refactor | `TF-RF###` | M-RF routes.py decomposition phases |
+| DI conversion | `TF-RF2-###` | M-RF2 FastAPI Depends() conversion phases |
+| Frontend refactor | `TF-RFE###` | M-RF-FE frontend API client decomposition phases |
+| Ease of use | `EZ-##` / `EV-##` / `RAMP-##` / `GOV-##` | M-EZ onboarding, evidence density, entry ramp, and governance calibration work |
 
 `TF-F###` issues are not pre-planned. They originate from operational walkthroughs, testing sessions, or runtime observations. They are assigned to a milestone only when scheduled for implementation.
 
@@ -256,6 +261,54 @@ Roadmap v2 is the active milestone direction. This register now tracks runtime i
 | TF-C010 | Done | M14 | Implement decision-quality review metrics | `feature/tf-c010-decision-quality-review-metrics` |
 | TF-R001 | In Progress | M14C | Thesis Workspace Advisory Import Preview | `feature/m14c-thesis-import-workflow` |
 | TF-R002 | Done | M14C | Plan Workspace Advisory Import Mediation | `feature/m14c-plan-import-mediation` |
+| TF-P001 | Planned | M-PT | ADR — paper execution boundary model | `docs/tf-p001-paper-execution-adr` |
+| TF-P002 | Planned | M-PT | Register M-PT issues and roadmap entry | `docs/tf-p002-mpt-registration` |
+| TF-P003 | Planned | M-PT | Paper order domain model and validation | `feature/tf-p003-paper-order-domain` |
+| TF-P004 | Planned | M-PT | ExecutionPort protocol and Alpaca paper adapter | `feature/tf-p004-alpaca-paper-adapter` |
+| TF-P005 | Planned | M-PT | In-memory FakeExecutionAdapter | `feature/tf-p005-fake-execution-adapter` |
+| TF-P006 | Planned | M-PT | ExecutionOrchestrationService | `feature/tf-p006-execution-orchestration` |
+| TF-P007 | Planned | M-PT | OrderSyncService polling reconciliation | `feature/tf-p007-order-sync-service` |
+| TF-P008 | Planned | M-PT | Armed-trigger evaluation to attention queue | `feature/tf-p008-armed-trigger-attention` |
+| TF-P009 | Planned | M-PT | Execution API routes | `feature/tf-p009-execution-routes` |
+| TF-P010 | Planned | M-PT | Paper execution workspace surfaces | `feature/tf-p010-execution-workspaces` |
+| TF-P011 | Planned | M-PT | Execution-quality facts in review projections | `feature/tf-p011-execution-quality-review` |
+| TF-P012 | Planned | M-PT | Docs, demo flow, and KB synthesis | `docs/tf-p012-mpt-closeout` |
+| EZ-01 | Planned | M-EZ | Postgres-by-default single compose stack | `feature/ez-01-single-compose-stack` |
+| EZ-02 | Planned | M-EZ | In-app first-run wizard for master key setup | `feature/ez-02-first-run-wizard` |
+| EZ-03 | Planned | M-EZ | Documentation truth pass | `docs/ez-03-doc-truth-pass` |
+| EV-01 | Planned | M-EZ | Scheduled market snapshot job | `feature/ev-01-scheduled-snapshots` |
+| EV-02 | Planned | M-EZ | Watchlist as first-class pre-lifecycle object | `feature/ev-02-watchlist` |
+| EV-03 | Planned | M-EZ | Per-symbol evidence panel | `feature/ev-03-evidence-panel` |
+| EV-04 | Planned | M-EZ | Basic price chart component | `feature/ev-04-price-chart` |
+| RAMP-01 | Planned | M-EZ | Quick-capture idea tier | `feature/ramp-01-quick-capture` |
+| RAMP-02 | Planned | M-EZ | Guided first-decision mode | `feature/ramp-02-guided-first-decision` |
+| RAMP-03 | Planned | M-EZ | Operator identity profiles | `feature/ramp-03-operator-identity` |
+| GOV-01 | Planned | M-EZ | Two-tier issue discipline documentation | `docs/gov-01-two-tier-discipline` |
+| GOV-02 | Planned | M-EZ | Knowledge base hygiene pass | `docs/gov-02-kb-hygiene` |
+| TF-RF001 | Planned | M-RF | OpenAPI contract snapshot test | `refactor/tf-rf001-openapi-snapshot` |
+| TF-RF002 | Planned | M-RF | Extract deps.py service accessors | `refactor/tf-rf002-deps-extraction` |
+| TF-RF003 | Planned | M-RF | Create routes package; move runtime and behavioral | `refactor/tf-rf003-routes-package` |
+| TF-RF004 | Planned | M-RF | Move replay, provenance, and market routers | `refactor/tf-rf004-replay-market` |
+| TF-RF005 | Planned | M-RF | Move workspace router | `refactor/tf-rf005-workspace` |
+| TF-RF006 | Planned | M-RF | Move lifecycle router | `refactor/tf-rf006-lifecycle` |
+| TF-RF007 | Planned | M-RF | Move advisory router family | `refactor/tf-rf007-advisory` |
+| TF-RF008 | Planned | M-RF | Move governance router | `refactor/tf-rf008-governance` |
+| TF-RF009 | Planned | M-RF | Move local import parsing to services layer | `refactor/tf-rf009-import-parsing` |
+| TF-RF010 | Planned | M-RF | Final assembly and monolith deletion | `refactor/tf-rf010-assembly` |
+| TF-RF2-001 | Planned | M-RF2 | Accessor inventory and conversion baseline | `refactor/tf-rf2-001-inventory` |
+| TF-RF2-002 | Planned | M-RF2 | Rename accessors to public get_* names | `refactor/tf-rf2-002-accessor-renames` |
+| TF-RF2-003 | Planned | M-RF2 | Convert handler-direct call sites to Depends | `refactor/tf-rf2-003-handler-depends` |
+| TF-RF2-004 | Planned | M-RF2 | Convert request-taking helpers to explicit params | `refactor/tf-rf2-004-helper-params` |
+| TF-RF2-005 | Planned | M-RF2 | Dependency override demonstration test | `refactor/tf-rf2-005-override-test` |
+| TF-RF2-006 | Planned | M-RF2 | M-RF2 closeout and gates | `refactor/tf-rf2-006-closeout` |
+| TF-RFE001 | Planned | M-RF-FE | Extract http.ts request helper | `refactor/tf-rfe001-http-helper` |
+| TF-RFE002 | Planned | M-RF-FE | Move behavioral and replay client modules | `refactor/tf-rfe002-behavioral-replay` |
+| TF-RFE003 | Planned | M-RF-FE | Move workspace and market client modules | `refactor/tf-rfe003-workspace-market` |
+| TF-RFE004 | Planned | M-RF-FE | Move lifecycle client module | `refactor/tf-rfe004-lifecycle` |
+| TF-RFE005 | Planned | M-RF-FE | Move advisory, generation, and imports modules | `refactor/tf-rfe005-advisory` |
+| TF-RFE006 | Planned | M-RF-FE | Move governance client module | `refactor/tf-rfe006-governance` |
+| TF-RFE007 | Planned | M-RF-FE | Error-handling unification via requestJson | `refactor/tf-rfe007-error-unification` |
+| TF-RFE008 | Planned | M-RF-FE | M-RF-FE closeout and barrel decision | `refactor/tf-rfe008-closeout` |
 
 ## TF-C001: Detect Recurring Sizing Violations
 
@@ -8765,5 +8818,637 @@ no-approval, and no-execution authority flags.
 - `npm.cmd run typecheck`
 - `npm.cmd run build`
 - `git diff --check`
+
+---
+
+# M-PT — Paper Execution And Outcome Truth (registered 2026-07-09)
+
+Detailed authoritative plan for all TF-P issues:
+`knowledge/raw/20260709-paper-trading-implementation-plan.md`
+(TradeForge-KnowledgeBase repository). Entries below are register-level
+summaries; the KB plan holds full scope, guard design, and testing strategy.
+
+Shared invariant frame for all TF-P issues: Human Decision Sovereignty,
+Event Ledger Canonical Truth, Lifecycle Authority, AI Advisory Boundary,
+Replayability Is Foundational, Layer Separation.
+
+---
+
+## TF-P001: ADR — Paper Execution Boundary Model
+
+**Status:** Planned
+
+**Milestone:** M-PT
+
+**Branch:** `docs/tf-p001-paper-execution-adr`
+
+**Affected Layer:** docs (ADR), KB event taxonomy
+
+**Linked ADRs:** new ADR; relates to ADR-0001, ADR-0002, ADR-0032, ADR-0036
+
+**Problem:** No architectural decision exists for broker-backed paper
+execution: port contract, event taxonomy, replay safety, human-command-only
+invocation.
+
+**Scope:** Author the ADR covering ExecutionPort, paper-only scope, the
+`PaperOrder*` event family, broker-as-reconciled-external-system, and the
+three-layer paper guard. Update KB `EVENT_TAXONOMY.md` and glossary.
+
+**Acceptance Criteria:** ADR accepted; no invariant weakened; event names
+carry the `Paper` prefix.
+
+**Out Of Scope:** Live trading in any form; auto-submit on Armed triggers.
+
+---
+
+## TF-P002: Register M-PT Issues And Roadmap Entry
+
+**Status:** Planned
+
+**Milestone:** M-PT
+
+**Branch:** `docs/tf-p002-mpt-registration`
+
+**Affected Layer:** docs
+
+**Scope:** Verify/complete this register section and the roadmap entry after
+TF-P001 lands (ADR number backfilled into all TF-P entries).
+
+**Acceptance Criteria:** Register and roadmap agree with the accepted ADR.
+
+---
+
+## TF-P003: Paper Order Domain Model And Validation
+
+**Status:** Planned
+
+**Milestone:** M-PT
+
+**Branch:** `feature/tf-p003-paper-order-domain`
+
+**Affected Layer:** domain, tests
+
+**Linked ADRs:** TF-P001 ADR, ADR-0001, ADR-0002
+
+**Problem:** No domain representation exists for order intent, order state,
+or fill facts.
+
+**Scope:** New `src/domain/execution/` package: `PaperOrderIntent`, order
+state machine, pure validators (plan stage, qty, limit-price rules), the
+`PaperOrder*` event dataclasses. `mode` literal-fixed to `"paper"` (guard
+layer 1). No I/O or SDK imports.
+
+**Acceptance Criteria:** State machine and validator tests pass; non-paper
+intent construction raises; domain purity preserved.
+
+**Out Of Scope:** Broker calls; service orchestration; UI.
+
+---
+
+## TF-P004: ExecutionPort Protocol And Alpaca Paper Adapter
+
+**Status:** Planned
+
+**Milestone:** M-PT
+
+**Branch:** `feature/tf-p004-alpaca-paper-adapter`
+
+**Affected Layer:** domain (port), infrastructure, tests
+
+**Linked ADRs:** TF-P001 ADR, ADR-0032, ADR-0037
+
+**Scope:** ExecutionPort protocol (submit/cancel/status/open-orders/
+position); `AlpacaPaperExecutionAdapter` with `TradingClient(paper=True)`
+hardcoded (guard layer 2); credential resolution via existing CredentialStore
+alpaca shape at composition root; typed error mapping; broker timestamps and
+order ids preserved for provenance.
+
+**Acceptance Criteria:** Mocked-SDK tests prove `paper=True` construction,
+response mapping, and error mapping.
+
+**Out Of Scope:** Live-mode configuration; streaming/websockets.
+
+---
+
+## TF-P005: In-Memory FakeExecutionAdapter
+
+**Status:** Planned
+
+**Milestone:** M-PT
+
+**Branch:** `feature/tf-p005-fake-execution-adapter`
+
+**Affected Layer:** infrastructure, tests
+
+**Scope:** Deterministic ExecutionPort fake with scriptable fills
+(instant-fill and never-fill modes); default adapter when no Alpaca
+credential exists; simulated fills at persisted snapshot prices.
+
+**Acceptance Criteria:** Whole execution feature operable with zero
+credentials; fake is the service-test backbone.
+
+---
+
+## TF-P006: ExecutionOrchestrationService
+
+**Status:** Planned
+
+**Milestone:** M-PT
+
+**Branch:** `feature/tf-p006-execution-orchestration`
+
+**Affected Layer:** services, tests
+
+**Linked ADRs:** TF-P001 ADR, ADR-0002
+
+**Problem:** Order submission must be validated against lifecycle state and
+recorded as events, invocable only by explicit human command.
+
+**Scope:** `submit_paper_order` / `cancel_paper_order` taking operator
+command objects; lifecycle-stage validation (Approved/Armed only); event
+append on broker ack; drive Approval to Execution transition through
+LifecycleOrchestrationService; import-boundary test proving no dependency
+path from `src/services/advisory/` (guard layer 3).
+
+**Acceptance Criteria:** Stage-rejection tests; no event written on broker
+failure; advisory import-boundary test green.
+
+**Out Of Scope:** Background sync; AI-triggered submission (forbidden
+permanently).
+
+---
+
+## TF-P007: OrderSyncService Polling Reconciliation
+
+**Status:** Planned
+
+**Milestone:** M-PT
+
+**Branch:** `feature/tf-p007-order-sync-service`
+
+**Affected Layer:** services, app (lifespan), tests
+
+**Scope:** Background asyncio polling task (default 30s, env-configurable):
+fetch status for ledger-open orders; idempotently append observed
+status-change events (dedupe on broker order id + status + fill qty);
+graceful degradation on broker unavailability.
+
+**Acceptance Criteria:** Idempotent re-poll test; partial-fill sequence
+test; no fabricated events; append-only.
+
+**Out Of Scope:** Websocket streaming; Armed-trigger evaluation (TF-P008).
+
+---
+
+## TF-P008: Armed-Trigger Evaluation To Attention Queue
+
+**Status:** Planned
+
+**Milestone:** M-PT
+
+**Branch:** `feature/tf-p008-armed-trigger-attention`
+
+**Affected Layer:** services, tests
+
+**Scope:** Sync-loop extension evaluating Armed plans structured price
+triggers against latest persisted snapshots; on match, raise an attention
+item ("trigger met — review and submit?") in the operational attention
+queue. Never auto-submits.
+
+**Acceptance Criteria:** Trigger match produces attention item only; no
+order submission path exists from trigger evaluation.
+
+**Out Of Scope:** Auto-submit on trigger (requires future dedicated ADR).
+
+---
+
+## TF-P009: Execution API Routes
+
+**Status:** Planned
+
+**Milestone:** M-PT
+
+**Branch:** `feature/tf-p009-execution-routes`
+
+**Affected Layer:** app, tests
+
+**Linked ADRs:** ADR-0020
+
+**Scope:** New router file (NOT routes.py; `routes/execution.py` if M-RF has
+landed): POST paper-orders, POST cancel, GET orders by decision, GET
+positions by decision.
+
+**Acceptance Criteria:** FastAPI tests per existing conventions; endpoints
+require explicit command payloads.
+
+---
+
+## TF-P010: Paper Execution Workspace Surfaces
+
+**Status:** Planned
+
+**Milestone:** M-PT
+
+**Branch:** `feature/tf-p010-execution-workspaces`
+
+**Affected Layer:** frontend
+
+**Scope:** Plan Review submit panel (Approved/Armed only, prefilled from
+plan, explicit confirm dialog); Active Position order-status panel + cancel;
+persistent PAPER badge on all execution surfaces; Review workspace shows
+actual-fill facts beside manual reflection inputs.
+
+**Acceptance Criteria:** Typecheck + build green; PAPER badge present on
+every execution surface; confirm dialog restates symbol/side/qty/price.
+
+---
+
+## TF-P011: Execution-Quality Facts In Review Projections
+
+**Status:** Planned
+
+**Milestone:** M-PT
+
+**Branch:** `feature/tf-p011-execution-quality-review`
+
+**Affected Layer:** services (projections), domain (read models), tests
+
+**Linked ADRs:** ADR-0044
+
+**Scope:** Deterministic derived fields from broker facts: planned vs actual
+entry, slippage, holding period, realized P&L; feed behavioral signals
+(sizing deviation from real fills). Authority-labeled `derived`.
+
+**Acceptance Criteria:** Deterministic tests; authority labels present;
+no approval gating from metrics.
+
+---
+
+## TF-P012: M-PT Docs, Demo Flow, And KB Synthesis
+
+**Status:** Planned
+
+**Milestone:** M-PT
+
+**Branch:** `docs/tf-p012-mpt-closeout`
+
+**Affected Layer:** docs, KB
+
+**Scope:** README paper-trading quickstart; HOW-TO-SETUP-KEYS paper note;
+demo flow option on FakeExecutionAdapter; KB processed synthesis.
+
+**Acceptance Criteria:** Fresh-clone quickstart verified; register/roadmap
+statuses synchronized.
+
+---
+
+# M-EZ — Ease Of Use, Evidence Density, And Entry Ramp (registered 2026-07-09)
+
+Detailed authoritative plan:
+`knowledge/raw/20260709-product-viability-and-ease-of-use-roadmap.md`
+(TradeForge-KnowledgeBase repository).
+
+---
+
+## EZ-01: Postgres-By-Default Single Compose Stack
+
+**Status:** Planned
+
+**Milestone:** M-EZ
+
+**Branch:** `feature/ez-01-single-compose-stack`
+
+**Affected Layer:** infrastructure (compose/Dockerfile), app (static serving)
+
+**Scope:** `docker compose up` yields postgres + backend + served frontend
+build at one URL; `alembic upgrade head` on container start; frontend build
+stage in runtime image or nginx sidecar.
+
+**Acceptance Criteria:** Fresh machine with Docker, one command, working
+persistent app in browser; no uv/Node/second terminal.
+
+---
+
+## EZ-02: In-App First-Run Wizard
+
+**Status:** Planned
+
+**Milestone:** M-EZ
+
+**Branch:** `feature/ez-02-first-run-wizard`
+
+**Affected Layer:** app, security, frontend
+
+**Linked ADRs:** ADR-0037
+
+**Scope:** Setup mode when no master key and no `.keys.enc`: UI generates
+master key, shows once, persists to compose-mounted env file (documented
+trust tradeoff); credentials remain optional (yfinance default).
+
+**Acceptance Criteria:** No terminal needed after `docker compose up`;
+existing CLI path still works; secrets never logged.
+
+---
+
+## EZ-03: Documentation Truth Pass
+
+**Status:** Planned
+
+**Milestone:** M-EZ
+
+**Branch:** `docs/ez-03-doc-truth-pass`
+
+**Affected Layer:** docs
+
+**Scope:** Fill or delete empty `DOCS/architecture.md`, `DOCS/domain-model.md`,
+`DOCS/event-schema.md`; rewrite stale `PROJECT.md`; consolidate to a single
+authoritative roadmap file.
+
+**Acceptance Criteria:** No empty docs; PROJECT.md reflects current state;
+one roadmap authority.
+
+---
+
+## EV-01: Scheduled Market Snapshot Job
+
+**Status:** Planned
+
+**Milestone:** M-EZ
+
+**Branch:** `feature/ev-01-scheduled-snapshots`
+
+**Affected Layer:** services, app (lifespan), tests
+
+**Linked ADRs:** ADR-0010, ADR-0032, ADR-0038
+
+**Scope:** In-process background refresh of snapshots for symbols on active
+decisions + watchlist; configurable cadence (hourly market hours, daily
+close otherwise); persists through existing snapshot boundary with
+provenance; replay never calls live APIs.
+
+**Acceptance Criteria:** Cadence configurable; failures degrade gracefully;
+snapshots provenance-tagged.
+
+---
+
+## EV-02: Watchlist As First-Class Pre-Lifecycle Object
+
+**Status:** Planned
+
+**Milestone:** M-EZ
+
+**Branch:** `feature/ev-02-watchlist`
+
+**Affected Layer:** domain, services, app, frontend
+
+**Scope:** Watchlist entry = symbol + one-line rationale + date;
+pre-lifecycle (not a TradeIdea); feeds EV-01 scanning and Opportunity
+Workspace; promotable to TradeIdea by explicit operator action.
+
+**Acceptance Criteria:** No lifecycle events from watchlist CRUD; promotion
+creates a canonical TradeIdea via existing workflow only.
+
+---
+
+## EV-03: Per-Symbol Evidence Panel
+
+**Status:** Planned
+
+**Milestone:** M-EZ
+
+**Branch:** `feature/ev-03-evidence-panel`
+
+**Affected Layer:** services, app, frontend
+
+**Scope:** Deterministic evidence answering the blue-pin questions: last
+price, % change, volume vs average, 52w distance, next earnings, prior
+high/low and moving-average levels, fundamentals snapshot via existing
+adapters. Every fact timestamped + provider-tagged. AI interpretation stays
+a separate advisory overlay.
+
+**Acceptance Criteria:** Panel renders with yfinance-only (no keys);
+deterministic values test-covered; provenance visible.
+
+---
+
+## EV-04: Basic Price Chart Component
+
+**Status:** Planned
+
+**Milestone:** M-EZ
+
+**Branch:** `feature/ev-04-price-chart`
+
+**Affected Layer:** frontend, app (bars endpoint if needed)
+
+**Linked ADRs:** ADR-0007 (compliance note: visual evidence inside a
+decision surface, not dashboard organization)
+
+**Scope:** One reusable candlestick/line chart fed from persisted
+snapshots/bars; embedded in evidence panel and decision workspaces.
+
+**Acceptance Criteria:** Renders from persisted data only; typecheck +
+build green.
+
+---
+
+## RAMP-01: Quick-Capture Idea Tier
+
+**Status:** Planned
+
+**Milestone:** M-EZ
+
+**Branch:** `feature/ramp-01-quick-capture`
+
+**Affected Layer:** app, frontend, services
+
+**Linked ADRs:** ADR-0002, ADR-0034
+
+**Scope:** "Jot an idea" input (symbol + 2 sentences) creating a TradeIdea
+with draft-status stub thesis; full structured thesis remains mandatory at
+Approval gate.
+
+**Acceptance Criteria:** Lifecycle unchanged; Approval blocked until thesis
+complete; capture takes under 30 seconds.
+
+---
+
+## RAMP-02: Guided First-Decision Mode
+
+**Status:** Planned
+
+**Milestone:** M-EZ
+
+**Branch:** `feature/ramp-02-guided-first-decision`
+
+**Affected Layer:** frontend
+
+**Scope:** Extend existing walkthrough/onboarding assets into a
+persona-neutral guided path with plain-language labels and a beginner
+glossary layer.
+
+**Acceptance Criteria:** A non-trader can complete one full lifecycle with
+guidance only.
+
+---
+
+## RAMP-03: Operator Identity Profiles
+
+**Status:** Planned
+
+**Milestone:** M-EZ
+
+**Branch:** `feature/ramp-03-operator-identity`
+
+**Affected Layer:** domain (events), services, app, frontend
+
+**Linked ADRs:** ADR-0022 (extends)
+
+**Scope:** Named operator profiles (household trust tier, no passwords);
+explicit `operator_id` on new canonical events; workspace filtering by
+operator.
+
+**Acceptance Criteria:** Two operators keep separate decision histories;
+prior events remain valid (migration/back-compat defined in planning).
+
+---
+
+## GOV-01: Two-Tier Issue Discipline Documentation
+
+**Status:** Planned
+
+**Milestone:** M-EZ
+
+**Branch:** `docs/gov-01-two-tier-discipline`
+
+**Affected Layer:** docs (AGENTS.md, CLAUDE.md)
+
+**Scope:** Document Tier A (full ceremony: domain/events/lifecycle/
+persistence/security/advisory boundary) vs Tier B (batch issues: frontend
+copy/layout/styling/docs).
+
+**Acceptance Criteria:** Both agent bootstrap files updated consistently.
+
+---
+
+## GOV-02: Knowledge Base Hygiene Pass
+
+**Status:** Planned
+
+**Milestone:** M-EZ
+
+**Branch:** `docs/gov-02-kb-hygiene` (KB repository work)
+
+**Affected Layer:** knowledge base repository
+
+**Scope:** Archive 4.1 MB litellm log out of `knowledge/raw/`; consolidate
+root `raw/` into `knowledge/raw/`; mark M15 TF-D001 through TF-D008
+explicitly deferred (or register them).
+
+**Acceptance Criteria:** Single raw location; no oversized binaries/logs in
+raw; M15 issue status unambiguous.
+
+---
+
+# M-RF — API Boundary Decomposition (registered 2026-07-09)
+
+Detailed authoritative plan (full per-phase scope, target structure, agent
+guardrails): `knowledge/raw/20260709-routes-refactor-implementation-plan.md`
+(TradeForge-KnowledgeBase repository).
+
+Shared frame for all TF-RF issues — **Status:** Planned; **Milestone:** M-RF;
+**Affected Layer:** app, tests (TF-RF009 also services); **Linked ADRs:**
+ADR-0020; **Impacted Invariants:** Layer Separation (semantics unchanged);
+**Shared acceptance criteria:** OpenAPI contract snapshot byte-identical;
+`uv run pytest`, `ruff`, `mypy` green; every moved symbol defined exactly
+once; move-only (no renames, no behavior change) except where an issue below
+states otherwise.
+
+- **TF-RF001** — OpenAPI contract snapshot test. Create
+  `tests/test_api_contract_snapshot.py` + committed snapshot of
+  `app.openapi()` and the route table. The golden gate for all later phases.
+- **TF-RF002** — Extract the ~30 `_x_service_from(request)` accessors to
+  `src/app/api/deps.py`, names verbatim.
+- **TF-RF003** — Create `src/app/api/routes/` package; move `runtime` and
+  `behavioral` domains (handlers + models + mappers) as pattern-setters.
+- **TF-RF004** — Move `replay`, `provenance`, `market` domains.
+- **TF-RF005** — Move `workspace` domain incl. attention/playbook mappers.
+- **TF-RF006** — Move `lifecycle` domain (largest; includes mid-file
+  `ThesisArtifactResponse`; shared `EntityReferencePayload` may seed
+  `shared_schemas.py`).
+- **TF-RF007** — Move advisory family as three modules: `advisory`,
+  `advisory_generation`, `advisory_analytics` (incl. mid-file model block).
+- **TF-RF008** — Move governance endpoints + helpers; path fidelity wins
+  over router-tag tidiness.
+- **TF-RF009** — SEMANTIC MOVE: relocate markdown import parsing
+  (~2722–3078 of the monolith) to
+  `src/services/advisory/local_import_parsing.py` (layer correction,
+  INVARIANTS section 9); moved bodies byte-identical except imports/prefix.
+- **TF-RF010** — Assemble routers in `routes/__init__.py`; repoint
+  `application.py`; delete `routes.py`; update architecture docs.
+
+---
+
+# M-RF2 — API Dependency Injection (registered 2026-07-09)
+
+**Blocked on:** M-RF complete (TF-RF010 landed). Detailed authoritative,
+self-contained plan:
+`knowledge/raw/20260709-depends-injection-conversion-plan.md`
+(TradeForge-KnowledgeBase repository).
+
+Shared frame for all TF-RF2 issues — **Status:** Planned; **Milestone:**
+M-RF2; **Affected Layer:** app, tests; **Linked ADRs:** ADR-0020;
+**Shared acceptance criteria:** OpenAPI snapshot byte-identical throughout
+(dependency functions take exactly one parameter, `request: Request`);
+existing tests pass unmodified; full gates green per phase.
+
+- **TF-RF2-001** — Accessor inventory: classify call sites handler-direct
+  (Class H) vs helper-internal (Class F); list exclusions.
+- **TF-RF2-002** — Rename accessors to public `get_*` names; full call-site
+  sweep; grep gates (old names zero, new names defined once).
+- **TF-RF2-003** — Convert Class H sites to
+  `Annotated[Type, Depends(get_x)]`, one module per commit; drop `request`
+  param only where nothing else uses it.
+- **TF-RF2-004** — Convert request-taking helpers to explicit service
+  parameters; helpers needing 4+ services may keep `request` (documented).
+- **TF-RF2-005** — Add one `tests/test_dependency_overrides.py`
+  demonstration test using `app.dependency_overrides`.
+- **TF-RF2-006** — Closeout: grep gates, snapshot diff empty across the
+  milestone, KB synthesis; record deferred idea (create_app kwarg plumbing
+  simplification).
+
+---
+
+# M-RF-FE — Frontend API Client Decomposition (registered 2026-07-09)
+
+Detailed authoritative plan:
+`knowledge/raw/20260709-frontend-api-client-refactor-plan.md`
+(TradeForge-KnowledgeBase repository). Independent of M-RF; land both before
+M-PT frontend work.
+
+Shared frame for all TF-RFE issues — **Status:** Planned; **Milestone:**
+M-RF-FE; **Affected Layer:** frontend; **Shared acceptance criteria:**
+`npm run typecheck` and `npm run build` green per phase; `runtime.ts` barrel
+keeps every symbol importable at all times (33 importers untouched);
+each moved symbol defined exactly once under `src/api/`; move-only except
+TF-RFE007.
+
+- **TF-RFE001** — Extract `http.ts`: move `readOperationalJson`, add
+  `requestJson<T>` wrapper; do not touch the ~49 hand-rolled fetch sites.
+- **TF-RFE002** — Move `behavioral.ts` + `replay.ts` (pattern-setters).
+- **TF-RFE003** — Move `workspace.ts` + `market.ts` (incl. query builders).
+- **TF-RFE004** — Move `lifecycle.ts` (largest; `shared.ts` decision point
+  for `EntityReferencePayload`).
+- **TF-RFE005** — Move `advisory.ts`, `advisoryGeneration.ts`, `imports.ts`.
+- **TF-RFE006** — Move `governance.ts` (incl. credentials +
+  `PROVIDER_CREDENTIAL_SCHEMAS`); `runtime.ts` retains barrel + runtime
+  status/session fetchers.
+- **TF-RFE007** — SEMANTIC PHASE: convert ~49 hand-rolled fetch sites to
+  `requestJson`; pre-grep workspaces for error-message string matching;
+  per-domain commits; manual failure-path smoke per domain; zero raw
+  `fetch(` outside `http.ts` afterward.
+- **TF-RFE008** — Closeout: barrel end-state decision, `frontend/DESIGN.md`
+  module map, KB synthesis; register deferred OpenAPI-generated-types and
+  vitest ideas.
 
 ---

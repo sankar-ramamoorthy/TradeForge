@@ -2751,3 +2751,281 @@ M19 introduces long-term decision quality analysis, thesis category performance,
 * Cognitive performance analysis remains reflective and advisory, not lifecycle or execution authority.
 
 ---
+
+# Near-Term Product Milestones (registered 2026-07-09)
+
+The following milestones originate from the 2026-07-09 comprehensive product
+audit (knowledge base:
+`knowledge/raw/20260709-comprehensive-product-audit.md`). They are
+deliberately prioritized AHEAD of M15 through M19: the audit concluded that
+paper execution, ease of use, and evidence density close the operational
+loop that the cognitive milestones (M15+) will later deepen. M15 through M19
+remain planned and unchanged.
+
+Each milestone has a detailed implementation plan in the knowledge base
+(paths cited per milestone) and registered issues in
+`DOCS/ISSUE_REGISTER.md`.
+
+---
+
+## M-PT - Paper Execution And Outcome Truth
+
+**Status:** Planned
+
+## Semantic Intent
+
+Close the decision lifecycle loop with real broker facts at zero financial
+risk. Execution and Position stages gain paper-broker-backed order
+submission, fill reconciliation, and outcome truth, so Review reflects
+actual fills rather than hand-entered numbers.
+
+## Architectural Significance
+
+Introduces the first execution boundary: an ExecutionPort with an Alpaca
+paper adapter (`paper=True` hardcoded) and a deterministic fake adapter.
+Broker interactions are recorded as immutable `PaperOrder*` events; the
+Event Ledger remains canonical and broker state is reconciled into events,
+never trusted live. Order submission is human-command-only; a three-layer
+guard makes live trading structurally impossible and an import-boundary
+test proves advisory code cannot reach the execution service.
+
+## Canonical Concepts
+
+Human Decision Sovereignty, Event Ledger Canonical Truth, Provider Boundary,
+Replayability Is Foundational.
+
+## Scope
+
+Paper order domain model and event taxonomy; ExecutionPort + Alpaca paper
+adapter + fake adapter; ExecutionOrchestrationService; polling
+OrderSyncService; Armed-trigger evaluation surfacing attention items (never
+auto-submitting); execution API routes in a dedicated router file; workspace
+surfaces with persistent PAPER badges; execution-quality facts in review
+projections.
+
+## Explicit Exclusions
+
+Live-money trading in any form; AI-triggered or automated order submission;
+auto-submit on Armed triggers (future dedicated ADR required); websocket
+streaming; broker portfolio import.
+
+## Linked Runtime Issues
+
+TF-P001 through TF-P012 (see issue register).
+
+## Detailed Plan
+
+`knowledge/raw/20260709-paper-trading-implementation-plan.md`
+
+## Acceptance Meaning
+
+* A plan can be paper-executed, tracked to fill, and reviewed against actual
+  outcome data end to end.
+* Replaying a decision containing paper events makes zero broker calls.
+* Human sovereignty and the AI advisory boundary remain fully intact.
+
+---
+
+## M-EZ - Ease Of Use, Evidence Density, And Entry Ramp
+
+**Status:** Planned
+
+## Semantic Intent
+
+Make TradeForge usable by a household (operator + family): one-command
+start, evidence that arrives without being asked for, and a low-friction
+entry ramp — without weakening lifecycle rigor at the Approval gate.
+
+## Architectural Significance
+
+Addresses the audit's core diagnosis ("the product models cognition better
+than it models evidence") and the onboarding wall. Introduces the first
+background scheduling capability (snapshot refresh), a pre-lifecycle
+watchlist object, deterministic per-symbol evidence surfaces, operator
+identity on canonical events (extending ADR-0022), and a documented
+two-tier issue discipline.
+
+## Scope
+
+Postgres-by-default single compose stack serving the built frontend; in-app
+first-run wizard replacing the CLI master-key step; documentation truth pass
+(empty DOCS files, stale PROJECT.md, single roadmap authority); scheduled
+snapshot job; watchlist; per-symbol evidence panel answering the blue-pin
+questions; one price chart component; quick-capture idea tier with
+draft-status stub thesis; guided first-decision mode; operator identity
+profiles; two-tier issue discipline documentation; KB hygiene pass.
+
+## Explicit Exclusions
+
+Multi-tenant hosting and real authentication; mobile apps; additional
+advisory analytics; any weakening of the structured thesis requirement at
+Approval; dashboard-style reorganization (ADR-0007 stands — charts are
+visual evidence inside decision surfaces, not dashboard organization).
+
+## Linked Runtime Issues
+
+EZ-01 through EZ-03, EV-01 through EV-04, RAMP-01 through RAMP-03,
+GOV-01 through GOV-02 (see issue register).
+
+## Detailed Plan
+
+`knowledge/raw/20260709-product-viability-and-ease-of-use-roadmap.md`
+
+## Acceptance Meaning
+
+* A family member can start the system with one command, capture an idea in
+  under two minutes, and see real evidence without configuring anything.
+* Evidence density catches up with the cognitive framework.
+* Governance overhead is calibrated to change risk, not applied uniformly.
+
+---
+
+## M-RF - API Boundary Decomposition
+
+**Status:** Planned
+
+## Semantic Intent
+
+Decompose the 7,504-line `src/app/api/routes.py` monolith (82 routes, ~162
+response models, service accessors, mappers, and an embedded markdown import
+subsystem) into per-domain router modules with zero behavior change.
+
+## Architectural Significance
+
+Pure structural refactor inside the ADR-0020 boundary, gated by a committed
+OpenAPI contract snapshot that must remain byte-identical across all phases.
+Includes one deliberate layer correction: markdown import parsing moves from
+the HTTP layer to `src/services/advisory/local_import_parsing.py`
+(Layer Separation invariant). Reduces collateral-edit risk for AI-assisted
+implementation of all subsequent milestones.
+
+## Scope
+
+OpenAPI snapshot harness; `deps.py` accessor extraction; per-domain modules
+under `src/app/api/routes/` (runtime, behavioral, replay, provenance,
+market, workspace, lifecycle, advisory x3, governance); import-parsing layer
+correction; final assembly and monolith deletion.
+
+## Explicit Exclusions
+
+Route, schema, or behavior changes of any kind; Depends() conversion
+(deferred to M-RF2); error-handling changes; async conversions.
+
+## Linked Runtime Issues
+
+TF-RF001 through TF-RF010 (see issue register).
+
+## Detailed Plan
+
+`knowledge/raw/20260709-routes-refactor-implementation-plan.md`
+
+## Acceptance Meaning
+
+* No file in `src/app/api/` exceeds ~800 lines; the OpenAPI contract is
+  provably unchanged; layer separation is restored for import parsing.
+
+---
+
+## M-RF-FE - Frontend API Client Decomposition
+
+**Status:** Planned
+
+## Semantic Intent
+
+Decompose the 1,856-line `frontend/src/api/runtime.ts` client (~95 types,
+~55 fetchers, 33 importing files) into per-domain modules mirroring M-RF
+backend names, and unify the two-class error handling onto the
+`readOperationalJson` pattern.
+
+## Architectural Significance
+
+The barrel re-export keeps all 33 importers compiling unchanged, making
+TypeScript strict mode the refactor harness. The error-handling unification
+(final phase, explicitly semantic) closes the failure mode behind TF-F069
+at the ~49 call sites that hand-roll response parsing.
+
+## Scope
+
+`http.ts` request helper; per-domain client modules (lifecycle, replay,
+workspace, market, advisory, generation, imports, behavioral, governance);
+error-handling unification; closeout with module map in `frontend/DESIGN.md`.
+
+## Explicit Exclusions
+
+Endpoint or type shape changes; state-management or react-query adoption;
+OpenAPI type generation (recorded as deferred follow-up); test-runner
+introduction (deferred).
+
+## Linked Runtime Issues
+
+TF-RFE001 through TF-RFE008 (see issue register).
+
+## Detailed Plan
+
+`knowledge/raw/20260709-frontend-api-client-refactor-plan.md`
+
+## Acceptance Meaning
+
+* Client modules mirror backend router domains one-to-one; every API call
+  site shares one guarded request path; typecheck/build stay green
+  throughout.
+
+---
+
+## M-RF2 - API Dependency Injection
+
+**Status:** Planned (blocked on M-RF completion)
+
+## Semantic Intent
+
+Convert route handlers from service-locator acquisition
+(`request.app.state` accessors) to declared FastAPI dependency injection
+(`Annotated[..., Depends(get_x)]`).
+
+## Architectural Significance
+
+Handlers declare their dependencies; tests gain `dependency_overrides`;
+future cross-cutting dependencies (operator identity from RAMP-03,
+execution-boundary guards from M-PT) become declarable. The OpenAPI snapshot
+from M-RF remains byte-identical throughout — dependency functions take
+exactly one parameter (`request: Request`), guaranteeing no schema change.
+
+## Scope
+
+Accessor inventory and classification; public `get_*` renames; handler
+conversion one module per commit; request-taking helper conversion to
+explicit parameters; one demonstration override test; closeout gates.
+
+## Explicit Exclusions
+
+Changes to `create_app()` wiring or its keyword-argument test plumbing;
+rewrites of existing tests; behavior or schema changes of any kind.
+
+## Linked Runtime Issues
+
+TF-RF2-001 through TF-RF2-006 (see issue register).
+
+## Detailed Plan
+
+`knowledge/raw/20260709-depends-injection-conversion-plan.md`
+
+## Acceptance Meaning
+
+* Dependencies are visible in handler signatures; a service can be swapped
+  in one test line; the API contract is provably unchanged.
+
+---
+
+# Recommended Near-Term Sequence
+
+```text
+1. M-RF   (API decomposition — before commissioning major new work)
+2. M-RF-FE (frontend client decomposition — independent, can interleave)
+3. M-PT   Phases 0-2 alongside EZ-01/EZ-02
+4. EV-01 through EV-04, RAMP-01/02
+5. M-PT   Phases 3-5
+6. M-RF2, RAMP-03, GOV-01/02, EZ-03
+7. Then reassess M15 through M19 with real usage history accumulated
+```
+
+---
