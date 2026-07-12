@@ -60,6 +60,18 @@ Advisory analytics on accumulated evidence:
 
 All advisory outputs are non-canonical. They cannot approve plans, execute trades, mutate lifecycle state, or write authoritative decision events. Human decision sovereignty is mandatory.
 
+### Advisory imports (local drop-folder)
+
+Bring externally authored research into the Thesis and Plan workflows as non-canonical advisory artifacts:
+
+- Drop markdown files into `imports/incoming/` (relative to the backend working directory)
+- Files must declare front matter: `artifact_role: thesis_draft` with `schema_version: thesis_draft.v1` (or `artifact_role: plan_draft` with `schema_version: plan_draft.v1`) and a `symbol` matching the active workflow; plan drafts may pin a `decision_id`
+- Scan on demand with the **Scan folder** action in the Thesis Development or Plan Development modal — no watchers, no background ingestion
+- Thesis sections mapped deterministically from headings: Narrative, Catalysts, Assumptions, Invalidation Conditions, Evidence Links, Notes
+- Plan sections mapped: entry, stop, and target rationale plus risk notes — prices, sizing, order, and approval fields are prohibited and never imported
+- Accept, edit, or reject each imported field individually; manual submission remains the only lifecycle action
+- Accepted/edited/rejected provenance rides on the normal `decision.thesis_created` / `decision.plan_created` event; replay labels it `Advisory source, operator-promoted thesis`
+
 ### Provider governance
 
 - Dedicated **Provider Governance** surface at `/workspaces/provider-governance` — separate operational control plane, not a workspace rail

@@ -259,7 +259,7 @@ Roadmap v2 is the active milestone direction. This register now tracks runtime i
 | TF-C008 | Done | M14 | Implement emotional reflection overlays | `feature/tf-c008-emotional-reflection-overlays` |
 | TF-C009 | Done | M14 | Implement operator behavior timelines | `feature/tf-c009-operator-behavior-timelines` |
 | TF-C010 | Done | M14 | Implement decision-quality review metrics | `feature/tf-c010-decision-quality-review-metrics` |
-| TF-R001 | In Progress | M14C | Thesis Workspace Advisory Import Preview | `feature/m14c-thesis-import-workflow` |
+| TF-R001 | Done | M14C | Thesis Workspace Advisory Import Preview | `feature/m14c-thesis-import-workflow` |
 | TF-R002 | Done | M14C | Plan Workspace Advisory Import Mediation | `feature/m14c-plan-import-mediation` |
 | TF-P001 | Planned | M-PT | ADR — paper execution boundary model | `docs/tf-p001-paper-execution-adr` |
 | TF-P002 | Planned | M-PT | Register M-PT issues and roadmap entry | `docs/tf-p002-mpt-registration` |
@@ -8513,7 +8513,7 @@ artifacts.
 
 ## TF-R001: Thesis Workspace Advisory Import Preview
 
-**Status:** In Progress
+**Status:** Done
 
 **Classification:** feature / lifecycle UX / advisory traceability
 
@@ -8607,16 +8607,19 @@ imported context as `Advisory source, operator-promoted thesis`.
 - `npm.cmd run build`
 - `git diff --check`
 
-**Remaining Acceptance:**
+**Closure (2026-07-11):**
 
-- Align or restart the running local API so it exposes the current TF-R001
-  route set. Manual feedback on 2026-05-27 showed the UI reaching a backend
-  that returned FastAPI `{"detail":"Not Found"}` for
-  `POST /advisory/thesis-imports/scan-local`, while the current checkout passes
-  the targeted scan regression test.
-- Operator manual test of the ATKR drop-folder workflow against the aligned
-  backend.
-- README/operator documentation after manual test feedback.
+- Backend alignment: the 2026-05-27 `{"detail":"Not Found"}` failure was a
+  stale running server; the aligned backend verification recorded above
+  (`scan-local` returning `scanned_count: 2, imported_count: 1`, preview
+  returning `total_count: 1` for ATKR) confirms the route set is exposed.
+- Automated regression re-verified at closure:
+  `uv run pytest tests/test_advisory_artifact.py tests/test_develop_thesis_workflow.py`
+  — 19 passed.
+- Operator documentation added to `README.md` under
+  `Advisory imports (local drop-folder)` (covers TF-R001 thesis imports and
+  TF-R002 plan imports).
+- Closed by operator direction ahead of commissioning M-RF.
 
 ---
 
