@@ -26,6 +26,13 @@ from src.services.advisory import (
     InterpretationDraftService,
 )
 from src.services.behavioral import BehavioralSignalReadService
+from src.services.evidence import (
+    EvidenceEligibilityService,
+    EvidencePanelService,
+    EvidenceRankingService,
+    EvidenceRefreshService,
+    WatchlistService,
+)
 from src.services.lifecycle import LifecycleOrchestrationService
 from src.services.market.contextual_summary import ContextualSummaryService
 from src.services.market.fundamentals_service import FundamentalsService
@@ -267,4 +274,41 @@ def _provenance_query_service_from(request: Request) -> ProvenanceQueryService:
     service = getattr(request.app.state, "provenance_query_service", None)
     if not isinstance(service, ProvenanceQueryService):
         raise RuntimeError("provenance query service is not configured")
+    return service
+
+
+def _watchlist_service_from(request: Request) -> WatchlistService:
+    service = getattr(request.app.state, "watchlist_service", None)
+    if not isinstance(service, WatchlistService):
+        raise RuntimeError("watchlist service is not configured")
+    return service
+
+
+def _evidence_eligibility_service_from(
+    request: Request,
+) -> EvidenceEligibilityService:
+    service = getattr(request.app.state, "evidence_eligibility_service", None)
+    if not isinstance(service, EvidenceEligibilityService):
+        raise RuntimeError("evidence eligibility service is not configured")
+    return service
+
+
+def _evidence_refresh_service_from(request: Request) -> EvidenceRefreshService:
+    service = getattr(request.app.state, "evidence_refresh_service", None)
+    if not isinstance(service, EvidenceRefreshService):
+        raise RuntimeError("evidence refresh service is not configured")
+    return service
+
+
+def _evidence_ranking_service_from(request: Request) -> EvidenceRankingService:
+    service = getattr(request.app.state, "evidence_ranking_service", None)
+    if not isinstance(service, EvidenceRankingService):
+        raise RuntimeError("evidence ranking service is not configured")
+    return service
+
+
+def _evidence_panel_service_from(request: Request) -> EvidencePanelService:
+    service = getattr(request.app.state, "evidence_panel_service", None)
+    if not isinstance(service, EvidencePanelService):
+        raise RuntimeError("evidence panel service is not configured")
     return service

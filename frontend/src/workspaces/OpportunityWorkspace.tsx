@@ -22,6 +22,7 @@ import { OpportunityEvaluationPanel } from "./OpportunityEvaluationPanel";
 import { OpportunityGuidancePanel } from "./OpportunityGuidancePanel";
 import { AdvisoryInterpretationPanel } from "./AdvisoryInterpretationPanel";
 import { CandidateReviewQueuePanel } from "./CandidateReviewQueuePanel";
+import { SymbolEvidencePanel } from "./SymbolEvidencePanel";
 
 type TransitionState =
   | "idle"
@@ -322,13 +323,7 @@ export function OpportunityWorkspace({
             </div>
           ) : null}
 
-          <div className="chart-deferred-note" aria-label="Chart context">
-            <span className="eyebrow">Chart Context</span>
-            <p>
-              Chart integration is deferred for MVP. Charts support reasoning but
-              do not own opportunity state.
-            </p>
-          </div>
+          <SymbolEvidencePanel symbol={symbolFromProjection} />
 
           <div
             className="attention-authority-note"

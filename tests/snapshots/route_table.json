@@ -166,6 +166,26 @@
   ],
   [
     "GET",
+    "/evidence/eligibility",
+    "list_evidence_eligibility"
+  ],
+  [
+    "GET",
+    "/evidence/ranking",
+    "get_evidence_ranking"
+  ],
+  [
+    "GET",
+    "/evidence/symbols/{symbol}",
+    "get_symbol_evidence"
+  ],
+  [
+    "GET",
+    "/evidence/watchlist",
+    "list_watchlist"
+  ],
+  [
+    "GET",
     "/health",
     "health"
   ],
@@ -340,6 +360,11 @@
     "redoc_html"
   ],
   [
+    "PATCH",
+    "/evidence/watchlist/{entry_id}",
+    "update_watchlist_entry"
+  ],
+  [
     "POST",
     "/admin/credentials/{provider_id}/validate",
     "validate_credential"
@@ -398,6 +423,16 @@
     "POST",
     "/advisory/thesis-review",
     "generate_thesis_review"
+  ],
+  [
+    "POST",
+    "/evidence/refresh/run",
+    "run_evidence_refresh"
+  ],
+  [
+    "POST",
+    "/evidence/watchlist",
+    "add_watchlist_entry"
   ],
   [
     "POST",

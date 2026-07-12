@@ -22,6 +22,7 @@ from src.app.api.routes.advisory import advisory_router
 from src.app.api.routes.advisory_analytics import advisory_analytics_router
 from src.app.api.routes.advisory_generation import advisory_generation_router
 from src.app.api.routes.behavioral import behavioral_router
+from src.app.api.routes.evidence import evidence_router
 from src.app.api.routes.governance import (
     governance_router,
     workspace_governance_router,
@@ -47,6 +48,7 @@ runtime_router.include_router(behavioral_router)
 runtime_router.include_router(advisory_router)
 runtime_router.include_router(advisory_generation_router)
 runtime_router.include_router(advisory_analytics_router)
+runtime_router.include_router(evidence_router)
 runtime_router.include_router(market_router)
 
 __all__ = ["runtime_router"]

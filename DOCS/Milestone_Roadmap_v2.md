@@ -2611,6 +2611,8 @@ population, sizing, approval, broker integration, or execution.
 
 **Status:** Planned
 
+**Evidence Density Slice:** Implemented 2026-07-12 (EV-00 through EV-05).
+
 ## Semantic Intent
 
 Reconstruct historical discretionary cognition with high-fidelity replayable context.
@@ -2839,21 +2841,26 @@ entry ramp — without weakening lifecycle rigor at the Approval gate.
 ## Architectural Significance
 
 Addresses the audit's core diagnosis ("the product models cognition better
-than it models evidence") and the onboarding wall. Introduces the first
-background scheduling capability (snapshot refresh), a pre-lifecycle
+than it models evidence") and the onboarding wall. The 2026-07-12 Evidence
+Density refinement narrows the next product-value slice: define evidence and
+attention-ranking authority first, then ship snapshots, watchlist, transparent
+ranking, per-symbol evidence, and charting. This prevents automated evidence
+collection from becoming a larger unranked list. M-EZ also introduces the
+first background scheduling capability (snapshot refresh), a pre-lifecycle
 watchlist object, deterministic per-symbol evidence surfaces, operator
-identity on canonical events (extending ADR-0022), and a documented
-two-tier issue discipline.
+identity on canonical events (extending ADR-0022), and a documented two-tier
+issue discipline.
 
 ## Scope
 
 Postgres-by-default single compose stack serving the built frontend; in-app
 first-run wizard replacing the CLI master-key step; documentation truth pass
-(empty DOCS files, stale PROJECT.md, single roadmap authority); scheduled
-snapshot job; watchlist; per-symbol evidence panel answering the blue-pin
-questions; one price chart component; quick-capture idea tier with
-draft-status stub thesis; guided first-decision mode; operator identity
-profiles; two-tier issue discipline documentation; KB hygiene pass.
+(empty DOCS files, stale PROJECT.md, single roadmap authority); Evidence
+Density design authority; scheduled snapshot job; watchlist; transparent
+attention ranking; per-symbol evidence panel answering the blue-pin questions;
+one price chart component; quick-capture idea tier with draft-status stub
+thesis; guided first-decision mode; operator identity profiles; two-tier issue
+discipline documentation; KB hygiene pass.
 
 ## Explicit Exclusions
 
@@ -2864,18 +2871,27 @@ visual evidence inside decision surfaces, not dashboard organization).
 
 ## Linked Runtime Issues
 
-EZ-01 through EZ-03, EV-01 through EV-04, RAMP-01 through RAMP-03,
+EZ-01 through EZ-03, EV-00 through EV-05, RAMP-01 through RAMP-03,
 GOV-01 through GOV-02 (see issue register).
 
 ## Detailed Plan
 
 `knowledge/raw/20260709-product-viability-and-ease-of-use-roadmap.md`
 
+Evidence Density refinement:
+`knowledge/processed/20260712-evidence-density-attention-ranking-synthesis.md`
+and `knowledge/topics/evidence-density-and-attention-ranking.md`
+
+Runtime authority:
+`DOCS/evidence-density-and-attention-ranking.md`
+
 ## Acceptance Meaning
 
 * A family member can start the system with one command, capture an idea in
   under two minutes, and see real evidence without configuring anything.
 * Evidence density catches up with the cognitive framework.
+* Attention ranking is transparent, deterministic, provenance-backed, and
+  explicitly not a buy/sell recommendation or lifecycle authority.
 * Governance overhead is calibrated to change risk, not applied uniformly.
 
 ---
@@ -3026,11 +3042,14 @@ TF-RF2-001 through TF-RF2-006 (see issue register).
 
 ```text
 1. M-RF   (API decomposition — before commissioning major new work)
-2. M-RF-FE (frontend client decomposition — independent, can interleave)
-3. M-PT   Phases 0-2 alongside EZ-01/EZ-02
-4. EV-01 through EV-04, RAMP-01/02
-5. M-PT   Phases 3-5
-6. M-RF2, RAMP-03, GOV-01/02, EZ-03
+2. EV-00 (Evidence Density and transparent attention-ranking authority)
+3. EV-01, EV-02, EV-05, EV-03, EV-04 (first Evidence Density vertical slice)
+   - implemented 2026-07-12
+4. M-RF-FE (frontend client decomposition - independent, can interleave where
+   it reduces EV frontend risk)
+5. M-PT phases 0-2, then phases 3-5 after evidence surfaces help select and
+   understand setups
+6. EZ-01/EZ-02, RAMP-01/02, then M-RF2, RAMP-03, GOV-01/02, EZ-03
 7. Then reassess M15 through M19 with real usage history accumulated
 ```
 

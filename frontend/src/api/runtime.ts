@@ -656,6 +656,173 @@ export type ProviderAttempt = {
   failure_reason: string | null;
 };
 
+export type WatchlistEntry = {
+  entry_id: string;
+  symbol: string;
+  rationale: string;
+  status: "active" | "paused" | "archived";
+  persona_id: string;
+  workspace_id: string | null;
+  added_at: string;
+  updated_at: string;
+  pinned: boolean;
+};
+
+export type WatchlistResponse = {
+  authority: "canonical-event-derived";
+  entries: WatchlistEntry[];
+};
+
+export type CreateWatchlistEntryRequest = {
+  symbol: string;
+  rationale: string;
+  persona_id: string;
+  workspace_id?: string;
+  pinned?: boolean;
+};
+
+export type EvidenceRankingReason = {
+  code: string;
+  label: string;
+  detail: string;
+  weight: number;
+};
+
+export type EvidenceSnapshot = {
+  symbol: string;
+  provider_id: string;
+  provider_version: string;
+  fetched_at: string;
+  data_as_of: string;
+  open: string;
+  high: string;
+  low: string;
+  close: string;
+  volume: number;
+  regime: string;
+  is_advisory: boolean;
+};
+
+export type EvidenceRankedItem = {
+  authority: "advisory";
+  symbol: string;
+  rank: number;
+  priority_score: number;
+  freshness: string;
+  sources: string[];
+  reasons: EvidenceRankingReason[];
+  decision_ids: string[];
+  watchlist_entry_ids: string[];
+  snapshot: EvidenceSnapshot | null;
+  is_advisory: boolean;
+};
+
+export type EvidenceRanking = {
+  authority: "advisory";
+  generated_at: string;
+  items: EvidenceRankedItem[];
+  is_advisory: boolean;
+};
+
+export type EvidenceRefreshResult = {
+  authority: "advisory";
+  eligible_symbols: string[];
+  refreshed_symbols: string[];
+  unavailable_symbols: string[];
+  fetched_at: string;
+  is_advisory: boolean;
+};
+
+export type EvidenceFact = {
+  key: string;
+  label: string;
+  value: string | null;
+  freshness: string;
+  source: string;
+};
+
+export type EvidenceChartPoint = {
+  timestamp: string;
+  open: string;
+  high: string;
+  low: string;
+  close: string;
+  volume: number;
+  provider_id: string;
+};
+
+export type EvidencePanel = {
+  authority: "advisory";
+  symbol: string;
+  generated_at: string;
+  freshness: string;
+  facts: EvidenceFact[];
+  chart_points: EvidenceChartPoint[];
+  ranking_item: EvidenceRankedItem | null;
+  latest_snapshot: EvidenceSnapshot | null;
+  is_advisory: boolean;
+};
+
+export async function fetchWatchlist(
+  signal?: AbortSignal,
+): Promise<WatchlistResponse> {
+  const response = await fetch("/evidence/watchlist", { signal });
+  return readOperationalJson<WatchlistResponse>(response, "Watchlist request");
+}
+
+export async function postWatchlistEntry(
+  request: CreateWatchlistEntryRequest,
+  signal?: AbortSignal,
+): Promise<WatchlistEntry> {
+  const response = await fetch("/evidence/watchlist", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(request),
+    signal,
+  });
+  return readOperationalJson<WatchlistEntry>(
+    response,
+    "Watchlist entry creation",
+  );
+}
+
+export async function runEvidenceRefresh(
+  signal?: AbortSignal,
+): Promise<EvidenceRefreshResult> {
+  const response = await fetch("/evidence/refresh/run", {
+    method: "POST",
+    signal,
+  });
+  return readOperationalJson<EvidenceRefreshResult>(
+    response,
+    "Evidence refresh",
+  );
+}
+
+export async function fetchEvidenceRanking(
+  signal?: AbortSignal,
+): Promise<EvidenceRanking> {
+  const response = await fetch("/evidence/ranking", { signal });
+  return readOperationalJson<EvidenceRanking>(
+    response,
+    "Evidence ranking request",
+  );
+}
+
+export async function fetchSymbolEvidence(
+  symbol: string,
+  signal?: AbortSignal,
+): Promise<EvidencePanel> {
+  const response = await fetch(
+    `/evidence/symbols/${encodeURIComponent(symbol)}`,
+    { signal },
+  );
+  return readOperationalJson<EvidencePanel>(
+    response,
+    "Symbol evidence request",
+  );
+}
+
 export async function fetchFundamentalsContext(
   symbol: string,
   instrumentKind: "equity" | "etf" | "unknown" = "equity",
