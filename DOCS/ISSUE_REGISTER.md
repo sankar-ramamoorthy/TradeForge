@@ -285,7 +285,7 @@ Roadmap v2 is the active milestone direction. This register now tracks runtime i
 | RAMP-03 | Planned | M-EZ | Operator identity profiles | `feature/ramp-03-operator-identity` |
 | GOV-01 | Planned | M-EZ | Two-tier issue discipline documentation | `docs/gov-01-two-tier-discipline` |
 | GOV-02 | Planned | M-EZ | Knowledge base hygiene pass | `docs/gov-02-kb-hygiene` |
-| TF-RF001 | Planned | M-RF | OpenAPI contract snapshot test | `refactor/tf-rf001-openapi-snapshot` |
+| TF-RF001 | Done | M-RF | OpenAPI contract snapshot test | `refactor/tf-rf001-openapi-snapshot` |
 | TF-RF002 | Planned | M-RF | Extract deps.py service accessors | `refactor/tf-rf002-deps-extraction` |
 | TF-RF003 | Planned | M-RF | Create routes package; move runtime and behavioral | `refactor/tf-rf003-routes-package` |
 | TF-RF004 | Planned | M-RF | Move replay, provenance, and market routers | `refactor/tf-rf004-replay-market` |
@@ -9370,6 +9370,16 @@ states otherwise.
 - **TF-RF001** — OpenAPI contract snapshot test. Create
   `tests/test_api_contract_snapshot.py` + committed snapshot of
   `app.openapi()` and the route table. The golden gate for all later phases.
+  **Done 2026-07-11.** Snapshots committed under `tests/snapshots/`
+  (`openapi_contract.json`, `route_table.json`; 94 route-table entries).
+  Regeneration is gated behind `TRADEFORGE_UPDATE_API_SNAPSHOT=1` and
+  forbidden during M-RF. Pre-M-RF gate baseline recorded at closure:
+  full pytest suite green; new test clean under ruff and mypy; repo-wide
+  `ruff check .` and `mypy src tests` carry pre-existing violations
+  (3 mypy errors in `test_openai_compatible_provider.py` /
+  `test_cognitive_snapshot.py`; assorted E501/I001/F401) — later M-RF
+  phases must not add to that baseline, and moved code may not gain new
+  violations.
 - **TF-RF002** — Extract the ~30 `_x_service_from(request)` accessors to
   `src/app/api/deps.py`, names verbatim.
 - **TF-RF003** — Create `src/app/api/routes/` package; move `runtime` and
