@@ -287,14 +287,14 @@ Roadmap v2 is the active milestone direction. This register now tracks runtime i
 | GOV-02 | Planned | M-EZ | Knowledge base hygiene pass | `docs/gov-02-kb-hygiene` |
 | TF-RF001 | Done | M-RF | OpenAPI contract snapshot test | `refactor/tf-rf001-openapi-snapshot` |
 | TF-RF002 | Done | M-RF | Extract deps.py service accessors | `refactor/tf-rf002-deps-extraction` |
-| TF-RF003 | Planned | M-RF | Create routes package; move runtime and behavioral | `refactor/tf-rf003-routes-package` |
-| TF-RF004 | Planned | M-RF | Move replay, provenance, and market routers | `refactor/tf-rf004-replay-market` |
-| TF-RF005 | Planned | M-RF | Move workspace router | `refactor/tf-rf005-workspace` |
-| TF-RF006 | Planned | M-RF | Move lifecycle router | `refactor/tf-rf006-lifecycle` |
-| TF-RF007 | Planned | M-RF | Move advisory router family | `refactor/tf-rf007-advisory` |
-| TF-RF008 | Planned | M-RF | Move governance router | `refactor/tf-rf008-governance` |
-| TF-RF009 | Planned | M-RF | Move local import parsing to services layer | `refactor/tf-rf009-import-parsing` |
-| TF-RF010 | Planned | M-RF | Final assembly and monolith deletion | `refactor/tf-rf010-assembly` |
+| TF-RF003 | Done | M-RF | Create routes package; move runtime and behavioral | `refactor/tf-rf002-deps-extraction` |
+| TF-RF004 | Done | M-RF | Move replay, provenance, and market routers | `refactor/tf-rf004-replay-market` |
+| TF-RF005 | Done | M-RF | Move workspace router | `refactor/tf-rf004-replay-market` |
+| TF-RF006 | Done | M-RF | Move lifecycle router | `refactor/tf-rf004-replay-market` |
+| TF-RF007 | Done | M-RF | Move advisory router family | `refactor/tf-rf004-replay-market` |
+| TF-RF008 | Done | M-RF | Move governance router | `refactor/tf-rf004-replay-market` |
+| TF-RF009 | Done | M-RF | Move local import parsing to services layer | `refactor/tf-rf004-replay-market` |
+| TF-RF010 | Done | M-RF | Final assembly and monolith deletion | `refactor/tf-rf004-replay-market` |
 | TF-RF2-001 | Planned | M-RF2 | Accessor inventory and conversion baseline | `refactor/tf-rf2-001-inventory` |
 | TF-RF2-002 | Planned | M-RF2 | Rename accessors to public get_* names | `refactor/tf-rf2-002-accessor-renames` |
 | TF-RF2-003 | Planned | M-RF2 | Convert handler-direct call sites to Depends | `refactor/tf-rf2-003-handler-depends` |
@@ -9384,22 +9384,57 @@ states otherwise.
   `src/app/api/deps.py`, names verbatim.
 - **TF-RF003** — Create `src/app/api/routes/` package; move `runtime` and
   `behavioral` domains (handlers + models + mappers) as pattern-setters.
+  **Done 2026-07-11.** Landed with TF-RF002 via PR #61 (branch
+  `refactor/tf-rf002-deps-extraction`, commit `520488b`). Monolith now lives
+  at `src/app/api/routes/_monolith.py`; `routes/runtime.py`
+  (`runtime_status_router`) and `routes/behavioral.py` extracted; gates all
+  green (865 passed).
 - **TF-RF004** — Move `replay`, `provenance`, `market` domains.
+  **Done 2026-07-12.** Seeded `src/app/api/shared_schemas.py` with
+  `EntityReferencePayload`, `_entity_reference_payloads`, and
+  `_default_persona_context` (shared across replay/workspace/lifecycle/
+  market). Workspace-scoped market overlays kept exact paths via
+  `workspace_market_router` (same prefix/tags), included before the
+  workspace router so `/workspaces/{route_id}` still matches last.
 - **TF-RF005** — Move `workspace` domain incl. attention/playbook mappers.
+  **Done 2026-07-12.** Provider-configuration pair parked on
+  `workspace_governance_router` (moved to `governance.py` in TF-RF008).
 - **TF-RF006** — Move `lifecycle` domain (largest; includes mid-file
   `ThesisArtifactResponse`; shared `EntityReferencePayload` may seed
   `shared_schemas.py`).
+  **Done 2026-07-12.** Executed after TF-RF007/TF-RF009 because lifecycle
+  handlers consume advisory import helpers. `EntityReferencePayload` had
+  already seeded `shared_schemas.py` in TF-RF004. 2,082 lines — exceeds the
+  aspirational ~800-line ceiling; keeping the domain whole won.
 - **TF-RF007** — Move advisory family as three modules: `advisory`,
   `advisory_generation`, `advisory_analytics` (incl. mid-file model block).
+  **Done 2026-07-12.** Three routers share the `/advisory` prefix and are
+  included in original registration order. Three renamed decorator lines
+  were wrapped for line length; all else verbatim.
 - **TF-RF008** — Move governance endpoints + helpers; path fidelity wins
   over router-tag tidiness.
+  **Done 2026-07-12.** `governance_router` declared with no prefix/tags so
+  operations keep exact paths and the ["runtime"] tag; included first,
+  matching the era when these handlers sat directly on `runtime_router`.
 - **TF-RF009** — SEMANTIC MOVE: relocate markdown import parsing
   (~2722–3078 of the monolith) to
   `src/services/advisory/local_import_parsing.py` (layer correction,
   INVARIANTS section 9); moved bodies byte-identical except imports/prefix.
+  **Done 2026-07-12.** Executed ahead of TF-RF006/TF-RF007 (both consume
+  these helpers). Deviation: `_validated_import_field_names` stayed at the
+  API boundary because it raises HTTPException — moving it would drag
+  FastAPI into the services layer; it lives in `routes/lifecycle.py`. The
+  Request-taking `_matching_*_import_artifact` helpers likewise stayed
+  API-side (`routes/advisory.py`). Byte-identity of moved bodies verified
+  mechanically modulo the underscore-prefix removal.
 - **TF-RF010** — Assemble routers in `routes/__init__.py`; repoint
   `application.py`; delete `routes.py`; update architecture docs.
-
+  **Done 2026-07-12.** `routes/_monolith.py` (the TF-RF003 rename of
+  `routes.py`) deleted; `routes/__init__.py` is the only assembly point;
+  `application.py` import unchanged. README, ADR-0020 history note, and
+  roadmap updated. Milestone closed with the OpenAPI snapshot
+  byte-identical, 865 tests green, and ruff/mypy at the pre-M-RF baseline
+  throughout. All phases landed on branch `refactor/tf-rf004-replay-market`.
 ---
 
 # M-RF2 — API Dependency Injection (registered 2026-07-09)

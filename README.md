@@ -231,7 +231,7 @@ Without a LiteLLM credential: lifecycle, market context, replay, and manual advi
 
 ```
 src/
-├── app/            HTTP boundary (FastAPI, admin routes)
+├── app/            HTTP boundary (FastAPI; per-domain routers in api/routes/)
 ├── domain/         Pure domain — events, lifecycle, advisory contracts
 ├── infrastructure/ Adapters — event store, market, advisory stores
 ├── security/       Credential boundary (KeyManager, CredentialStore)

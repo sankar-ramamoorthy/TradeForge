@@ -60,3 +60,13 @@ boundaries.
 
 Rejected because a shared app factory preserves a single runtime boundary and
 consistent middleware/router registration.
+
+## History
+
+- 2026-07-12 (M-RF, TF-RF001–TF-RF010): the `routes.py` monolith was
+  decomposed into per-domain router modules under `src/app/api/routes/`,
+  with shared service accessors in `src/app/api/deps.py`, cross-domain
+  schemas in `src/app/api/shared_schemas.py`, and markdown import parsing
+  relocated to `src/services/advisory/local_import_parsing.py`. Structural
+  only — the runtime boundary, route contract, and this decision are
+  unchanged (OpenAPI snapshot byte-identical across the milestone).
