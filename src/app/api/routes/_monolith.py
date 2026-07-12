@@ -17,7 +17,6 @@ from src.app.api.deps import (
     _advisory_observation_capture_service_from,
     _advisory_observation_query_service_from,
     _attention_queue_read_service_from,
-    _behavioral_signal_read_service_from,
     _candidate_review_queue_service_from,
     _contextual_summary_service_from,
     _credential_store_from_state,
@@ -31,9 +30,10 @@ from src.app.api.deps import (
     _provenance_query_service_from,
     _provider_registry_from,
     _replay_timeline_service_from,
-    _session_provider_from,
     _workspace_projection_read_service_from,
 )
+from src.app.api.routes.behavioral import behavioral_router
+from src.app.api.routes.runtime import runtime_status_router
 from src.domain.advisory import (
     AdvisoryArtifact,
     AdvisoryArtifactFormat,
@@ -61,7 +61,6 @@ from src.domain.advisory import (
     ObservationKind,
     ThesisInfluence,
 )
-from src.domain.behavioral import BehavioralSignalSeverity, BehavioralSignalType
 from src.domain.cognition import (
     ANNOTATION_TYPES,
     SCENARIO_BRANCH_TYPES,
@@ -150,7 +149,6 @@ workspace_router = APIRouter(prefix="/workspaces", tags=["workspaces"])
 provenance_router = APIRouter(prefix="/provenance", tags=["provenance"])
 market_router = APIRouter(prefix="/market", tags=["market"])
 advisory_router = APIRouter(prefix="/advisory", tags=["advisory"])
-behavioral_router = APIRouter(prefix="/behavioral", tags=["behavioral"])
 
 _DISMISSED_CANDIDATE_QUERY = Query(default_factory=list)
 _COGNITIVE_SNAPSHOT_AT_QUERY = Query(default=None)
@@ -199,36 +197,6 @@ _AI_GATEWAY_ROUTE_ALIASES: tuple[tuple[str, str, str], ...] = (
 _LLM_PROVIDER_SECRET_IDS = frozenset(
     schema.provider_id for schema in LLM_PROVIDER_SECRET_SCHEMAS
 )
-
-
-class RuntimeStatusResponse(BaseModel):
-    status: Literal["ok"]
-    runtime: Literal["tradeforge"]
-    boundary: Literal["http"]
-    owns_domain_rules: Literal[False]
-
-
-class UserIdentityResponse(BaseModel):
-    user_id: str
-    display_name: str
-
-
-class SessionWorkspaceContextResponse(BaseModel):
-    persona_id: str
-    persona_version: str
-    workspace_id: str
-    selected_workflow_id: str | None
-    decision_id: str | None
-
-
-class RuntimeSessionResponse(BaseModel):
-    session_id: str
-    authority: Literal["session"]
-    user: UserIdentityResponse
-    active_context: SessionWorkspaceContextResponse
-    owns_persona_semantics: Literal[False]
-    owns_lifecycle_authority: Literal[False]
-    owns_event_truth: Literal[False]
 
 
 class EntityReferencePayload(BaseModel):
@@ -402,190 +370,6 @@ class CandidateReviewQueueResponse(BaseModel):
     ordering: Literal["captured_at_desc_then_candidate_id_asc"]
     total_count: int
     candidates: list[AdvisoryCandidateResponse]
-
-
-class BehavioralSignalSourceEventResponse(BaseModel):
-    source_sequence: int
-    event_type: str
-    timestamp: datetime
-
-
-class BehavioralSignalResponse(BaseModel):
-    signal_id: str
-    signal_type: BehavioralSignalType
-    severity: BehavioralSignalSeverity
-    persona_id: str
-    workspace_id: str | None
-    decision_id: str
-    summary: str
-    rationale: str
-    recurrence_count: int
-    recurring: bool
-    detected_at: datetime
-    source_event_refs: list[BehavioralSignalSourceEventResponse]
-    authority: Literal["derived"]
-    is_canonical: Literal[False]
-
-
-class BehavioralSignalListResponse(BaseModel):
-    authority: Literal["derived"]
-    is_canonical: Literal[False]
-    total_count: int
-    recurring_count: int
-    signals: list[BehavioralSignalResponse]
-
-
-class BehavioralClusterResponse(BaseModel):
-    cluster_id: str
-    persona_id: str
-    workspace_id: str | None
-    signal_type: BehavioralSignalType
-    signal_count: int
-    recurring_decision_ids: list[str]
-    severity: BehavioralSignalSeverity
-    summary: str
-    source_signal_ids: list[str]
-    authority: Literal["derived"]
-    is_canonical: Literal[False]
-
-
-class BehavioralClusterListResponse(BaseModel):
-    authority: Literal["derived"]
-    is_canonical: Literal[False]
-    total_count: int
-    clusters: list[BehavioralClusterResponse]
-
-
-class RecurringMistakeResponse(BaseModel):
-    mistake_id: str
-    persona_id: str
-    workspace_id: str | None
-    category: str
-    decision_count: int
-    signal_count: int
-    decision_quality_average: float | None
-    execution_quality_average: float | None
-    summary: str
-    source_signal_ids: list[str]
-    source_event_refs: list[BehavioralSignalSourceEventResponse]
-    authority: Literal["derived"]
-    is_canonical: Literal[False]
-
-
-class RecurringMistakeListResponse(BaseModel):
-    authority: Literal["derived"]
-    is_canonical: Literal[False]
-    total_count: int
-    mistakes: list[RecurringMistakeResponse]
-
-
-class DisciplineDeteriorationResponse(BaseModel):
-    deterioration_id: str
-    persona_id: str
-    workspace_id: str | None
-    signal_type: BehavioralSignalType
-    baseline_count: int
-    recent_count: int
-    baseline_window_size: int
-    recent_window_size: int
-    severity: BehavioralSignalSeverity
-    summary: str
-    source_signal_ids: list[str]
-    authority: Literal["derived"]
-    is_canonical: Literal[False]
-
-
-class DisciplineDeteriorationListResponse(BaseModel):
-    authority: Literal["derived"]
-    is_canonical: Literal[False]
-    total_count: int
-    signals: list[DisciplineDeteriorationResponse]
-
-
-class ThesisAttachmentResponse(BaseModel):
-    analysis_id: str
-    persona_id: str
-    workspace_id: str | None
-    decision_id: str
-    attachment_detected: bool
-    confidence_shift: int
-    invalidation_terms_reviewed: int
-    summary: str
-    source_event_refs: list[BehavioralSignalSourceEventResponse]
-    authority: Literal["derived"]
-    is_canonical: Literal[False]
-
-
-class ThesisAttachmentListResponse(BaseModel):
-    authority: Literal["derived"]
-    is_canonical: Literal[False]
-    total_count: int
-    analyses: list[ThesisAttachmentResponse]
-
-
-class EmotionalReflectionResponse(BaseModel):
-    overlay_id: str
-    persona_id: str
-    workspace_id: str | None
-    decision_id: str
-    source: Literal["operator_review_text"]
-    emotional_terms: list[str]
-    summary: str
-    source_event_refs: list[BehavioralSignalSourceEventResponse]
-    authority: Literal["derived"]
-    is_canonical: Literal[False]
-
-
-class EmotionalReflectionListResponse(BaseModel):
-    authority: Literal["derived"]
-    is_canonical: Literal[False]
-    total_count: int
-    overlays: list[EmotionalReflectionResponse]
-
-
-class BehaviorTimelineEntryResponse(BaseModel):
-    entry_id: str
-    timestamp: datetime
-    persona_id: str
-    workspace_id: str | None
-    decision_id: str
-    entry_type: str
-    summary: str
-    source_event_refs: list[BehavioralSignalSourceEventResponse]
-    source_signal_ids: list[str]
-    authority: Literal["derived"]
-    is_canonical: Literal[False]
-
-
-class BehaviorTimelineResponse(BaseModel):
-    authority: Literal["derived"]
-    is_canonical: Literal[False]
-    total_count: int
-    entries: list[BehaviorTimelineEntryResponse]
-
-
-class DecisionQualityMetricResponse(BaseModel):
-    metric_id: str
-    persona_id: str
-    workspace_id: str | None
-    decision_id: str
-    decision_quality: int
-    execution_quality: int
-    outcome_quality: int | None
-    process_signal_count: int
-    summary: str
-    source_event_refs: list[BehavioralSignalSourceEventResponse]
-    authority: Literal["derived"]
-    is_canonical: Literal[False]
-
-
-class DecisionQualityMetricsResponse(BaseModel):
-    authority: Literal["derived"]
-    is_canonical: Literal[False]
-    total_count: int
-    average_decision_quality: float | None
-    average_execution_quality: float | None
-    metrics: list[DecisionQualityMetricResponse]
 
 
 class AdvisoryArtifactSourceReferencePayload(BaseModel):
@@ -3115,40 +2899,6 @@ def _source_linked_artifact_response(artifact: Any) -> SourceLinkedArtifactRespo
         timestamp=artifact.timestamp,
         payload=dict(artifact.payload),
         provenance=dict(artifact.provenance),
-    )
-
-
-@runtime_router.get("/health", response_model=RuntimeStatusResponse)
-def health() -> RuntimeStatusResponse:
-    return RuntimeStatusResponse(
-        status="ok",
-        runtime="tradeforge",
-        boundary="http",
-        owns_domain_rules=False,
-    )
-
-
-@runtime_router.get("/session", response_model=RuntimeSessionResponse)
-def get_current_session(request: Request) -> RuntimeSessionResponse:
-    session = _session_provider_from(request).current_session()
-
-    return RuntimeSessionResponse(
-        session_id=session.session_id,
-        authority="session",
-        user=UserIdentityResponse(
-            user_id=session.user.user_id,
-            display_name=session.user.display_name,
-        ),
-        active_context=SessionWorkspaceContextResponse(
-            persona_id=session.active_context.persona_id,
-            persona_version=session.active_context.persona_version,
-            workspace_id=session.active_context.workspace_id,
-            selected_workflow_id=session.active_context.selected_workflow_id,
-            decision_id=session.active_context.decision_id,
-        ),
-        owns_persona_semantics=False,
-        owns_lifecycle_authority=False,
-        owns_event_truth=False,
     )
 
 
@@ -5787,345 +5537,6 @@ def get_candidate_review_queue(
     )
 
 
-@behavioral_router.get("/signals", response_model=BehavioralSignalListResponse)
-def get_behavioral_signals(
-    request: Request,
-    persona_id: str | None = Query(default=None, min_length=1),
-    workspace_id: str | None = Query(default=None, min_length=1),
-    decision_id: str | None = Query(default=None, min_length=1),
-) -> BehavioralSignalListResponse:
-    """Return deterministic, derived behavioral signals from event history."""
-    view = _behavioral_signal_read_service_from(request).list_signals(
-        persona_id=persona_id,
-        workspace_id=workspace_id,
-        decision_id=decision_id,
-    )
-    return BehavioralSignalListResponse(
-        authority="derived",
-        is_canonical=False,
-        total_count=view.total_count,
-        recurring_count=view.recurring_count,
-        signals=[
-            BehavioralSignalResponse(
-                signal_id=signal.signal_id,
-                signal_type=signal.signal_type,
-                severity=signal.severity,
-                persona_id=signal.persona_id,
-                workspace_id=signal.workspace_id,
-                decision_id=signal.decision_id,
-                summary=signal.summary,
-                rationale=signal.rationale,
-                recurrence_count=signal.recurrence_count,
-                recurring=signal.recurring,
-                detected_at=signal.detected_at,
-                source_event_refs=[
-                    BehavioralSignalSourceEventResponse(
-                        source_sequence=source.source_sequence,
-                        event_type=source.event_type,
-                        timestamp=source.timestamp,
-                    )
-                    for source in signal.source_event_refs
-                ],
-                authority="derived",
-                is_canonical=False,
-            )
-            for signal in view.signals
-        ],
-    )
-
-
-def _behavioral_source_refs_response(
-    refs: tuple[Any, ...],
-) -> list[BehavioralSignalSourceEventResponse]:
-    return [
-        BehavioralSignalSourceEventResponse(
-            source_sequence=source.source_sequence,
-            event_type=source.event_type,
-            timestamp=source.timestamp,
-        )
-        for source in refs
-    ]
-
-
-@behavioral_router.get("/clusters", response_model=BehavioralClusterListResponse)
-def get_behavioral_clusters(
-    request: Request,
-    persona_id: str | None = Query(default=None, min_length=1),
-    workspace_id: str | None = Query(default=None, min_length=1),
-    decision_id: str | None = Query(default=None, min_length=1),
-) -> BehavioralClusterListResponse:
-    view = _behavioral_signal_read_service_from(request).list_clusters(
-        persona_id=persona_id,
-        workspace_id=workspace_id,
-        decision_id=decision_id,
-    )
-    return BehavioralClusterListResponse(
-        authority="derived",
-        is_canonical=False,
-        total_count=view.total_count,
-        clusters=[
-            BehavioralClusterResponse(
-                cluster_id=cluster.cluster_id,
-                persona_id=cluster.persona_id,
-                workspace_id=cluster.workspace_id,
-                signal_type=cluster.signal_type,
-                signal_count=cluster.signal_count,
-                recurring_decision_ids=list(cluster.recurring_decision_ids),
-                severity=cluster.severity,
-                summary=cluster.summary,
-                source_signal_ids=list(cluster.source_signal_ids),
-                authority="derived",
-                is_canonical=False,
-            )
-            for cluster in view.clusters
-        ],
-    )
-
-
-@behavioral_router.get(
-    "/recurring-mistakes",
-    response_model=RecurringMistakeListResponse,
-)
-def get_recurring_mistakes(
-    request: Request,
-    persona_id: str | None = Query(default=None, min_length=1),
-    workspace_id: str | None = Query(default=None, min_length=1),
-    decision_id: str | None = Query(default=None, min_length=1),
-) -> RecurringMistakeListResponse:
-    view = _behavioral_signal_read_service_from(request).list_recurring_mistakes(
-        persona_id=persona_id,
-        workspace_id=workspace_id,
-        decision_id=decision_id,
-    )
-    return RecurringMistakeListResponse(
-        authority="derived",
-        is_canonical=False,
-        total_count=view.total_count,
-        mistakes=[
-            RecurringMistakeResponse(
-                mistake_id=mistake.mistake_id,
-                persona_id=mistake.persona_id,
-                workspace_id=mistake.workspace_id,
-                category=mistake.category,
-                decision_count=mistake.decision_count,
-                signal_count=mistake.signal_count,
-                decision_quality_average=mistake.decision_quality_average,
-                execution_quality_average=mistake.execution_quality_average,
-                summary=mistake.summary,
-                source_signal_ids=list(mistake.source_signal_ids),
-                source_event_refs=_behavioral_source_refs_response(
-                    mistake.source_event_refs
-                ),
-                authority="derived",
-                is_canonical=False,
-            )
-            for mistake in view.mistakes
-        ],
-    )
-
-
-@behavioral_router.get(
-    "/deterioration",
-    response_model=DisciplineDeteriorationListResponse,
-)
-def get_discipline_deterioration(
-    request: Request,
-    persona_id: str | None = Query(default=None, min_length=1),
-    workspace_id: str | None = Query(default=None, min_length=1),
-    decision_id: str | None = Query(default=None, min_length=1),
-) -> DisciplineDeteriorationListResponse:
-    view = _behavioral_signal_read_service_from(request).list_deterioration_signals(
-        persona_id=persona_id,
-        workspace_id=workspace_id,
-        decision_id=decision_id,
-    )
-    return DisciplineDeteriorationListResponse(
-        authority="derived",
-        is_canonical=False,
-        total_count=view.total_count,
-        signals=[
-            DisciplineDeteriorationResponse(
-                deterioration_id=signal.deterioration_id,
-                persona_id=signal.persona_id,
-                workspace_id=signal.workspace_id,
-                signal_type=signal.signal_type,
-                baseline_count=signal.baseline_count,
-                recent_count=signal.recent_count,
-                baseline_window_size=signal.baseline_window_size,
-                recent_window_size=signal.recent_window_size,
-                severity=signal.severity,
-                summary=signal.summary,
-                source_signal_ids=list(signal.source_signal_ids),
-                authority="derived",
-                is_canonical=False,
-            )
-            for signal in view.signals
-        ],
-    )
-
-
-@behavioral_router.get(
-    "/thesis-attachment",
-    response_model=ThesisAttachmentListResponse,
-)
-def get_thesis_attachment(
-    request: Request,
-    persona_id: str | None = Query(default=None, min_length=1),
-    workspace_id: str | None = Query(default=None, min_length=1),
-    decision_id: str | None = Query(default=None, min_length=1),
-) -> ThesisAttachmentListResponse:
-    view = _behavioral_signal_read_service_from(request).list_thesis_attachment(
-        persona_id=persona_id,
-        workspace_id=workspace_id,
-        decision_id=decision_id,
-    )
-    return ThesisAttachmentListResponse(
-        authority="derived",
-        is_canonical=False,
-        total_count=view.total_count,
-        analyses=[
-            ThesisAttachmentResponse(
-                analysis_id=analysis.analysis_id,
-                persona_id=analysis.persona_id,
-                workspace_id=analysis.workspace_id,
-                decision_id=analysis.decision_id,
-                attachment_detected=analysis.attachment_detected,
-                confidence_shift=analysis.confidence_shift,
-                invalidation_terms_reviewed=analysis.invalidation_terms_reviewed,
-                summary=analysis.summary,
-                source_event_refs=_behavioral_source_refs_response(
-                    analysis.source_event_refs
-                ),
-                authority="derived",
-                is_canonical=False,
-            )
-            for analysis in view.analyses
-        ],
-    )
-
-
-@behavioral_router.get(
-    "/emotional-reflections",
-    response_model=EmotionalReflectionListResponse,
-)
-def get_emotional_reflections(
-    request: Request,
-    persona_id: str | None = Query(default=None, min_length=1),
-    workspace_id: str | None = Query(default=None, min_length=1),
-    decision_id: str | None = Query(default=None, min_length=1),
-) -> EmotionalReflectionListResponse:
-    view = _behavioral_signal_read_service_from(request).list_emotional_reflections(
-        persona_id=persona_id,
-        workspace_id=workspace_id,
-        decision_id=decision_id,
-    )
-    return EmotionalReflectionListResponse(
-        authority="derived",
-        is_canonical=False,
-        total_count=view.total_count,
-        overlays=[
-            EmotionalReflectionResponse(
-                overlay_id=overlay.overlay_id,
-                persona_id=overlay.persona_id,
-                workspace_id=overlay.workspace_id,
-                decision_id=overlay.decision_id,
-                source="operator_review_text",
-                emotional_terms=list(overlay.emotional_terms),
-                summary=overlay.summary,
-                source_event_refs=_behavioral_source_refs_response(
-                    overlay.source_event_refs
-                ),
-                authority="derived",
-                is_canonical=False,
-            )
-            for overlay in view.overlays
-        ],
-    )
-
-
-@behavioral_router.get(
-    "/timeline",
-    response_model=BehaviorTimelineResponse,
-)
-def get_behavior_timeline(
-    request: Request,
-    persona_id: str | None = Query(default=None, min_length=1),
-    workspace_id: str | None = Query(default=None, min_length=1),
-    decision_id: str | None = Query(default=None, min_length=1),
-) -> BehaviorTimelineResponse:
-    view = _behavioral_signal_read_service_from(request).list_behavior_timeline(
-        persona_id=persona_id,
-        workspace_id=workspace_id,
-        decision_id=decision_id,
-    )
-    return BehaviorTimelineResponse(
-        authority="derived",
-        is_canonical=False,
-        total_count=view.total_count,
-        entries=[
-            BehaviorTimelineEntryResponse(
-                entry_id=entry.entry_id,
-                timestamp=entry.timestamp,
-                persona_id=entry.persona_id,
-                workspace_id=entry.workspace_id,
-                decision_id=entry.decision_id,
-                entry_type=entry.entry_type,
-                summary=entry.summary,
-                source_event_refs=_behavioral_source_refs_response(
-                    entry.source_event_refs
-                ),
-                source_signal_ids=list(entry.source_signal_ids),
-                authority="derived",
-                is_canonical=False,
-            )
-            for entry in view.entries
-        ],
-    )
-
-
-@behavioral_router.get(
-    "/quality-metrics",
-    response_model=DecisionQualityMetricsResponse,
-)
-def get_decision_quality_metrics(
-    request: Request,
-    persona_id: str | None = Query(default=None, min_length=1),
-    workspace_id: str | None = Query(default=None, min_length=1),
-    decision_id: str | None = Query(default=None, min_length=1),
-) -> DecisionQualityMetricsResponse:
-    view = _behavioral_signal_read_service_from(request).list_quality_metrics(
-        persona_id=persona_id,
-        workspace_id=workspace_id,
-        decision_id=decision_id,
-    )
-    return DecisionQualityMetricsResponse(
-        authority="derived",
-        is_canonical=False,
-        total_count=view.total_count,
-        average_decision_quality=view.average_decision_quality,
-        average_execution_quality=view.average_execution_quality,
-        metrics=[
-            DecisionQualityMetricResponse(
-                metric_id=metric.metric_id,
-                persona_id=metric.persona_id,
-                workspace_id=metric.workspace_id,
-                decision_id=metric.decision_id,
-                decision_quality=metric.decision_quality,
-                execution_quality=metric.execution_quality,
-                outcome_quality=metric.outcome_quality,
-                process_signal_count=metric.process_signal_count,
-                summary=metric.summary,
-                source_event_refs=_behavioral_source_refs_response(
-                    metric.source_event_refs
-                ),
-                authority="derived",
-                is_canonical=False,
-            )
-            for metric in view.metrics
-        ],
-    )
-
-
 @advisory_router.get(
     "/candidates/{candidate_id}",
     response_model=AdvisoryCandidateResponse,
@@ -7271,6 +6682,7 @@ def get_market_snapshots(
     )
 
 
+runtime_router.include_router(runtime_status_router)
 runtime_router.include_router(lifecycle_router)
 runtime_router.include_router(replay_router)
 runtime_router.include_router(workspace_router)
