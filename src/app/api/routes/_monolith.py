@@ -18,22 +18,23 @@ from src.app.api.deps import (
     _advisory_observation_query_service_from,
     _attention_queue_read_service_from,
     _candidate_review_queue_service_from,
-    _contextual_summary_service_from,
     _credential_store_from_state,
     _event_store_from,
-    _fundamentals_service_from,
-    _historical_reconstruction_pipeline_from,
     _interpretation_draft_service_from,
     _lifecycle_service_from,
-    _market_snapshot_query_service_from,
-    _market_snapshot_service_from,
-    _provenance_query_service_from,
     _provider_registry_from,
-    _replay_timeline_service_from,
     _workspace_projection_read_service_from,
 )
 from src.app.api.routes.behavioral import behavioral_router
+from src.app.api.routes.market import market_router, workspace_market_router
+from src.app.api.routes.provenance import provenance_router
+from src.app.api.routes.replay import replay_router
 from src.app.api.routes.runtime import runtime_status_router
+from src.app.api.shared_schemas import (
+    EntityReferencePayload,
+    _default_persona_context,
+    _entity_reference_payloads,
+)
 from src.domain.advisory import (
     AdvisoryArtifact,
     AdvisoryArtifactFormat,
@@ -80,18 +81,7 @@ from src.domain.lifecycle import LifecycleStage
 from src.domain.lifecycle.state import LIFECYCLE_EVENT_STAGE_MAP, derive_lifecycle_state
 from src.domain.lifecycle.transitions import ALLOWED_LIFECYCLE_TRANSITIONS
 from src.domain.market.capability import ProviderCapability
-from src.domain.market.instrument import ExternalContextType, InstrumentKind
 from src.domain.market.snapshot import MarketRegime
-from src.domain.personas import (
-    PersonaContext,
-    PersonaDecisionVelocity,
-    PersonaInterpretationProfile,
-    PersonaRiskFraming,
-    PersonaSignalPreference,
-    PersonaTimeHorizon,
-    PersonaVersion,
-)
-from src.domain.replay import ProjectionAuthority, ReplayTimelineEntryKind
 from src.security.advisory_model_selection import (
     AdvisoryModelSelectionConfig,
     get_advisory_model_selection_config,
@@ -128,10 +118,6 @@ from src.services.lifecycle import (
     LifecycleOrchestrationService,
     LifecycleTransitionRequest,
 )
-from src.services.market.context import MarketContextRequest
-from src.services.replay import (
-    ReconstructionStateAuthority,
-)
 from src.services.workspace_engine import (
     OperationalAttentionQueue,
     UnknownWorkspaceStateContractError,
@@ -144,10 +130,7 @@ from src.services.workspace_engine import (
 
 runtime_router = APIRouter(tags=["runtime"])
 lifecycle_router = APIRouter(prefix="/lifecycle", tags=["lifecycle"])
-replay_router = APIRouter(prefix="/replay", tags=["replay"])
 workspace_router = APIRouter(prefix="/workspaces", tags=["workspaces"])
-provenance_router = APIRouter(prefix="/provenance", tags=["provenance"])
-market_router = APIRouter(prefix="/market", tags=["market"])
 advisory_router = APIRouter(prefix="/advisory", tags=["advisory"])
 
 _DISMISSED_CANDIDATE_QUERY = Query(default_factory=list)
@@ -197,11 +180,6 @@ _AI_GATEWAY_ROUTE_ALIASES: tuple[tuple[str, str, str], ...] = (
 _LLM_PROVIDER_SECRET_IDS = frozenset(
     schema.provider_id for schema in LLM_PROVIDER_SECRET_SCHEMAS
 )
-
-
-class EntityReferencePayload(BaseModel):
-    entity_type: str
-    entity_id: str
 
 
 class AdvisoryEvidencePayload(BaseModel):
@@ -1103,79 +1081,6 @@ class PlaybookSummaryResponse(BaseModel):
     authority: Literal["derived"]
 
 
-class ReplayProjectionLifecycleStateResponse(BaseModel):
-    current_stage: LifecycleStage
-
-
-class ReplayProjectionResponse(BaseModel):
-    authority: ProjectionAuthority
-    source_event_count: int
-    source_event_types: list[str]
-    last_event_timestamp: datetime | None
-    lifecycle_state: ReplayProjectionLifecycleStateResponse | None
-
-
-class ReplayTimelineEntryResponse(BaseModel):
-    source_sequence: int
-    kind: ReplayTimelineEntryKind
-    event_type: str
-    event_domain: str
-    timestamp: datetime
-    persona_id: str
-    workspace_id: str | None
-    entity_references: list[EntityReferencePayload]
-    payload: dict[str, Any]
-    provenance: dict[str, Any]
-    lifecycle_stage: LifecycleStage | None
-
-
-class ReplayTimelineResponse(BaseModel):
-    authority: ProjectionAuthority
-    source_event_count: int
-    entries: list[ReplayTimelineEntryResponse]
-
-
-class HistoricalFactResponse(BaseModel):
-    source_sequence: int
-    event_type: str
-    event_domain: str
-    timestamp: datetime
-    persona_id: str
-    workspace_id: str | None
-    entity_references: list[EntityReferencePayload]
-    provenance: dict[str, Any]
-
-
-class SourceLinkedArtifactResponse(BaseModel):
-    source_sequence: int
-    event_type: str
-    timestamp: datetime
-    payload: dict[str, Any]
-    provenance: dict[str, Any]
-
-
-class HistoricalDerivedStateResponse(BaseModel):
-    authority: ReconstructionStateAuthority
-    replay_projection: ReplayProjectionResponse
-    replay_timeline: ReplayTimelineResponse
-
-
-class HistoricalInferredStateResponse(BaseModel):
-    authority: ReconstructionStateAuthority
-    entries: list[Any]
-
-
-class HistoricalReconstructionResponse(BaseModel):
-    authority: ProjectionAuthority
-    source_event_count: int
-    source_event_types: list[str]
-    facts: list[HistoricalFactResponse]
-    derived_state: HistoricalDerivedStateResponse
-    inferred_state: HistoricalInferredStateResponse
-    notes: list[SourceLinkedArtifactResponse]
-    review_artifacts: list[SourceLinkedArtifactResponse]
-
-
 class WorkspaceProjectionContextResponse(BaseModel):
     persona_id: str
     persona_version: str
@@ -1244,40 +1149,6 @@ class OperationalAttentionQueueResponse(BaseModel):
     decision_id: str | None
     items: list[AttentionItemResponse]
     authority_boundaries: list[str]
-
-
-class MarketSnapshotOverlayResponse(BaseModel):
-    symbol: str
-    provider_id: str
-    fetched_at: datetime
-    data_as_of: datetime
-    open: str
-    high: str
-    low: str
-    close: str
-    volume: int
-    regime: str
-    interpretation_headline: str
-    interpretation_detail: str
-
-
-class ProviderAttemptResponse(BaseModel):
-    provider_id: str
-    attempted_at: datetime
-    outcome: Literal["success", "failure"]
-    failure_reason: str | None
-
-
-class MarketContextOverlayResponse(BaseModel):
-    authority: Literal["advisory"]
-    provider_id: str
-    fetched_at: datetime
-    available: list[MarketSnapshotOverlayResponse]
-    unavailable_symbols: list[str]
-    is_complete: bool
-    is_partial: bool
-    is_empty: bool
-    attempts: list[ProviderAttemptResponse]
 
 
 class ProviderCapabilityResponse(BaseModel):
@@ -1479,95 +1350,6 @@ class ProviderGovernanceResponse(BaseModel):
 class ProviderPreferenceRequest(BaseModel):
     preferred_provider_id: str
     fallback_provider_ids: list[str] = []
-
-
-class FundamentalsOverlayResponse(BaseModel):
-    authority: Literal["advisory"]
-    symbol: str
-    instrument_kind: InstrumentKind
-    requested_context_type: ExternalContextType
-    coverage_status: Literal["available", "unavailable", "unsupported"]
-    alternative_context_type: ExternalContextType | None
-    selected_provider_id: str | None
-    attempted_provider_ids: list[str]
-    used_fallback: bool
-    is_available: bool
-    fetched_at: datetime
-    errors: list[str]
-    attempts: list[ProviderAttemptResponse]
-    company_name: str | None
-    sector: str | None
-    industry: str | None
-    revenue: str | None
-    net_income: str | None
-    price_earnings: str | None
-    return_on_equity: str | None
-    data_as_of: datetime | None
-
-
-class ContextualMarketNoteResponse(BaseModel):
-    symbol: str
-    close: str
-    regime: str
-    provider_id: str
-    data_as_of: str
-    is_advisory: bool
-
-
-class ContextualSummaryResponse(BaseModel):
-    authority: Literal["derived"]
-    persona_id: str
-    workspace_id: str
-    operational_headline: str
-    operational_details: list[str]
-    market_context_notes: list[ContextualMarketNoteResponse]
-    market_context_available: bool
-    source_inputs: list[str]
-    authority_boundaries: list[str]
-
-
-class PersistedMarketSnapshotResponse(BaseModel):
-    snapshot_id: int
-    provider_id: str
-    provider_version: str
-    symbol: str
-    fetched_at: datetime
-    data_as_of: datetime
-    open: str
-    high: str
-    low: str
-    close: str
-    volume: int
-    regime: str
-    persisted_at: datetime
-    is_advisory: bool
-
-
-class MarketSnapshotQueryResponse(BaseModel):
-    authority: Literal["advisory"]
-    total_count: int
-    snapshots: list[PersistedMarketSnapshotResponse]
-
-
-class ProviderFetchRecordResponse(BaseModel):
-    provider_id: str
-    provider_version: str
-    symbol: str
-    fetched_at: datetime
-    outcome: str
-    data_as_of: datetime | None
-    error_reason: str | None
-    is_advisory: bool
-
-
-class ProvenanceQueryResponse(BaseModel):
-    authority: Literal["advisory"]
-    total_count: int
-    success_count: int
-    failure_count: int
-    providers_seen: list[str]
-    symbols_seen: list[str]
-    records: list[ProviderFetchRecordResponse]
 
 
 def _credential_status_for(
@@ -1907,31 +1689,6 @@ _ATTENTION_PRIORITY_LABELS: dict[int, str] = {
     30: "high",
     40: "critical",
 }
-
-
-def _default_persona_context(
-    persona_id: str,
-    persona_version: str,
-    workspace_id: str,
-    workflow_id: str | None,
-    decision_id: str | None,
-) -> PersonaContext:
-    return PersonaContext(
-        profile=PersonaInterpretationProfile(
-            persona_version=PersonaVersion(
-                persona_id=persona_id,
-                version=persona_version,
-            ),
-            name=persona_id,
-            time_horizon=PersonaTimeHorizon.SWING,
-            risk_framing=PersonaRiskFraming.BALANCED,
-            decision_velocity=PersonaDecisionVelocity.BALANCED,
-            signal_preferences=(PersonaSignalPreference.MULTI_FACTOR,),
-        ),
-        workspace_id=workspace_id,
-        workflow_id=workflow_id,
-        decision_id=decision_id,
-    )
 
 
 def _advisory_observation_response(
@@ -2759,18 +2516,6 @@ def _operational_attention_queue_response(
     )
 
 
-def _entity_reference_payloads(
-    entity_references: tuple[EntityReference, ...],
-) -> list[EntityReferencePayload]:
-    return [
-        EntityReferencePayload(
-            entity_type=reference.entity_type,
-            entity_id=reference.entity_id,
-        )
-        for reference in entity_references
-    ]
-
-
 def _workspace_context_response(
     context: WorkspaceProjectionContext,
 ) -> WorkspaceProjectionContextResponse:
@@ -2847,58 +2592,6 @@ def _workspace_projection_set_response(
             route_id: _workspace_projection_response(projection)
             for route_id, projection in projection_set.projections.items()
         },
-    )
-
-
-def _replay_projection_response(projection: Any) -> ReplayProjectionResponse:
-    lifecycle_state = (
-        ReplayProjectionLifecycleStateResponse(
-            current_stage=projection.lifecycle_state.current_stage
-        )
-        if projection.lifecycle_state is not None
-        else None
-    )
-    return ReplayProjectionResponse(
-        authority=projection.authority,
-        source_event_count=projection.source_event_count,
-        source_event_types=list(projection.source_event_types),
-        last_event_timestamp=projection.last_event_timestamp,
-        lifecycle_state=lifecycle_state,
-    )
-
-
-def _replay_timeline_response(timeline: Any) -> ReplayTimelineResponse:
-    return ReplayTimelineResponse(
-        authority=timeline.authority,
-        source_event_count=timeline.source_event_count,
-        entries=[
-            ReplayTimelineEntryResponse(
-                source_sequence=entry.source_sequence,
-                kind=entry.kind,
-                event_type=entry.event_type,
-                event_domain=entry.event_domain.value,
-                timestamp=entry.timestamp,
-                persona_id=entry.persona_id,
-                workspace_id=entry.workspace_id,
-                entity_references=_entity_reference_payloads(
-                    entry.entity_references
-                ),
-                payload=dict(entry.payload),
-                provenance=dict(entry.provenance),
-                lifecycle_stage=entry.lifecycle_stage,
-            )
-            for entry in timeline.entries
-        ],
-    )
-
-
-def _source_linked_artifact_response(artifact: Any) -> SourceLinkedArtifactResponse:
-    return SourceLinkedArtifactResponse(
-        source_sequence=artifact.source_sequence,
-        event_type=artifact.event_type,
-        timestamp=artifact.timestamp,
-        payload=dict(artifact.payload),
-        provenance=dict(artifact.provenance),
     )
 
 
@@ -4527,64 +4220,6 @@ def get_annotations(
     )
 
 
-@replay_router.get("", response_model=HistoricalReconstructionResponse)
-def get_replay_reconstruction(
-    request: Request,
-) -> HistoricalReconstructionResponse:
-    reconstruction = _historical_reconstruction_pipeline_from(
-        request
-    ).reconstruct()
-
-    return HistoricalReconstructionResponse(
-        authority=reconstruction.authority,
-        source_event_count=reconstruction.source_event_count,
-        source_event_types=list(reconstruction.source_event_types),
-        facts=[
-            HistoricalFactResponse(
-                source_sequence=fact.source_sequence,
-                event_type=fact.event_type,
-                event_domain=fact.event_domain.value,
-                timestamp=fact.timestamp,
-                persona_id=fact.persona_id,
-                workspace_id=fact.workspace_id,
-                entity_references=_entity_reference_payloads(
-                    fact.entity_references
-                ),
-                provenance=dict(fact.provenance),
-            )
-            for fact in reconstruction.facts
-        ],
-        derived_state=HistoricalDerivedStateResponse(
-            authority=reconstruction.derived_state.authority,
-            replay_projection=_replay_projection_response(
-                reconstruction.derived_state.replay_projection
-            ),
-            replay_timeline=_replay_timeline_response(
-                reconstruction.derived_state.replay_timeline
-            ),
-        ),
-        inferred_state=HistoricalInferredStateResponse(
-            authority=reconstruction.inferred_state.authority,
-            entries=list(reconstruction.inferred_state.entries),
-        ),
-        notes=[
-            _source_linked_artifact_response(note)
-            for note in reconstruction.notes
-        ],
-        review_artifacts=[
-            _source_linked_artifact_response(artifact)
-            for artifact in reconstruction.review_artifacts
-        ],
-    )
-
-
-@replay_router.get("/timeline", response_model=ReplayTimelineResponse)
-def get_replay_timeline(request: Request) -> ReplayTimelineResponse:
-    return _replay_timeline_response(
-        _replay_timeline_service_from(request).build()
-    )
-
-
 @workspace_router.get("/playbook-summary", response_model=PlaybookSummaryResponse)
 def get_playbook_summary(
     request: Request,
@@ -4701,129 +4336,6 @@ def get_operating_attention_queue(
     )
     queue = _attention_queue_read_service_from(request).queue_for(persona_context)
     return _operational_attention_queue_response(queue)
-
-
-@workspace_router.get(
-    "/contextual-summary",
-    response_model=ContextualSummaryResponse,
-)
-def get_contextual_summary(
-    request: Request,
-    persona_id: str = Query(min_length=1),
-    persona_version: str = Query(min_length=1),
-    workspace_id: str = Query(min_length=1),
-    workflow_id: str | None = Query(default=None, min_length=1),
-    decision_id: str | None = Query(default=None, min_length=1),
-    symbols: str | None = Query(default=None),
-) -> ContextualSummaryResponse:
-    """Return a contextual operational summary combining workspace state and
-    advisory market context.
-
-    Workspace summary is always derived from event history. Market context
-    notes are added when the symbols param is provided. All market context
-    is advisory and non-canonical.
-    """
-    persona_context = _default_persona_context(
-        persona_id=persona_id,
-        persona_version=persona_version,
-        workspace_id=workspace_id,
-        workflow_id=workflow_id,
-        decision_id=decision_id,
-    )
-    symbol_list: tuple[str, ...] = ()
-    if symbols:
-        symbol_list = tuple(
-            s.strip().upper() for s in symbols.split(",") if s.strip()
-        )
-    summary = _contextual_summary_service_from(request).summarize_for(
-        persona_context, symbol_list
-    )
-    return ContextualSummaryResponse(
-        authority="derived",
-        persona_id=summary.persona_id,
-        workspace_id=summary.workspace_id,
-        operational_headline=summary.operational_headline,
-        operational_details=list(summary.operational_details),
-        market_context_notes=[
-            ContextualMarketNoteResponse(
-                symbol=note.symbol,
-                close=note.close,
-                regime=note.regime,
-                provider_id=note.provider_id,
-                data_as_of=note.data_as_of_iso,
-                is_advisory=note.is_advisory,
-            )
-            for note in summary.market_context_notes
-        ],
-        market_context_available=summary.market_context_available,
-        source_inputs=list(summary.source_inputs),
-        authority_boundaries=list(summary.authority_boundaries),
-    )
-
-
-@workspace_router.get(
-    "/market-context",
-    response_model=MarketContextOverlayResponse,
-)
-def get_market_context_overlay(
-    request: Request,
-    symbols: str = Query(min_length=1),
-) -> MarketContextOverlayResponse:
-    """Return advisory market context for one or more comma-separated symbols.
-
-    Authority is always ADVISORY. Snapshots are non-canonical derived context
-    and must not be written to the event ledger.
-    """
-    symbol_list = tuple(
-        s.strip().upper() for s in symbols.split(",") if s.strip()
-    )
-    if not symbol_list:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail={"message": "symbols must contain at least one valid ticker"},
-        )
-    mkt_request = MarketContextRequest(symbols=symbol_list)
-    result = _market_snapshot_service_from(request).fetch_context(mkt_request)
-    return MarketContextOverlayResponse(
-        authority="advisory",
-        provider_id=result.provider_id,
-        fetched_at=result.fetched_at,
-        available=[
-            MarketSnapshotOverlayResponse(
-                symbol=snap.symbol,
-                provider_id=snap.provider_id,
-                fetched_at=snap.provenance.fetched_at,
-                data_as_of=snap.provenance.data_as_of,
-                open=str(snap.price.open),
-                high=str(snap.price.high),
-                low=str(snap.price.low),
-                close=str(snap.price.close),
-                volume=snap.price.volume,
-                regime=snap.regime.value,
-                interpretation_headline=_market_interpretation_headline(
-                    snap.regime.value
-                ),
-                interpretation_detail=_market_interpretation_detail(
-                    snap.regime.value
-                ),
-            )
-            for snap in result.available
-        ],
-        unavailable_symbols=list(result.unavailable_symbols),
-        is_complete=result.is_complete,
-        is_partial=result.is_partial,
-        is_empty=result.is_empty,
-        attempts=[
-            ProviderAttemptResponse(
-                provider_id=attempt.provider_id,
-                attempted_at=attempt.attempted_at,
-                outcome=attempt.outcome,
-                failure_reason=attempt.failure_reason,
-            )
-            for symbol_result in result.symbol_results
-            for attempt in symbol_result.attempts
-        ],
-    )
 
 
 @workspace_router.get(
@@ -5155,109 +4667,6 @@ def update_provider_configuration(
     return get_provider_configuration(request)
 
 
-@workspace_router.get(
-    "/fundamentals-context",
-    response_model=FundamentalsOverlayResponse,
-)
-def get_fundamentals_context(
-    request: Request,
-    symbol: str = Query(min_length=1),
-    instrument_kind: InstrumentKind = InstrumentKind.EQUITY,
-) -> FundamentalsOverlayResponse:
-    if instrument_kind == InstrumentKind.ETF:
-        return FundamentalsOverlayResponse(
-            authority="advisory",
-            symbol=symbol.upper(),
-            instrument_kind=instrument_kind,
-            requested_context_type=ExternalContextType.COMPANY_FUNDAMENTALS,
-            coverage_status="unsupported",
-            alternative_context_type=ExternalContextType.ETF_CONTEXT,
-            selected_provider_id=None,
-            attempted_provider_ids=[],
-            used_fallback=False,
-            is_available=False,
-            fetched_at=datetime.now(UTC),
-            errors=[],
-            attempts=[],
-            company_name=None,
-            sector=None,
-            industry=None,
-            revenue=None,
-            net_income=None,
-            price_earnings=None,
-            return_on_equity=None,
-            data_as_of=None,
-        )
-
-    result = _fundamentals_service_from(request).fetch(symbol)
-    bundle = result.bundle
-    profile = bundle.profile if bundle is not None else None
-    statement_values = (
-        dict(bundle.statements[0].values)
-        if bundle and bundle.statements
-        else {}
-    )
-    ratio_values = dict(bundle.ratios.values) if bundle and bundle.ratios else {}
-    return FundamentalsOverlayResponse(
-        authority="advisory",
-        symbol=result.symbol,
-        instrument_kind=instrument_kind,
-        requested_context_type=ExternalContextType.COMPANY_FUNDAMENTALS,
-        coverage_status="available" if result.is_available else "unavailable",
-        alternative_context_type=None,
-        selected_provider_id=result.selected_provider_id,
-        attempted_provider_ids=list(result.attempted_provider_ids),
-        used_fallback=result.used_fallback,
-        is_available=result.is_available,
-        fetched_at=result.fetched_at,
-        errors=list(result.error_reasons),
-        attempts=[
-            ProviderAttemptResponse(
-                provider_id=attempt.provider_id,
-                attempted_at=attempt.attempted_at,
-                outcome=attempt.outcome,
-                failure_reason=attempt.failure_reason,
-            )
-            for attempt in result.attempts
-        ],
-        company_name=profile.company_name if profile else None,
-        sector=profile.sector if profile else None,
-        industry=profile.industry if profile else None,
-        revenue=_string_or_none(statement_values.get("revenue")),
-        net_income=_string_or_none(statement_values.get("net_income")),
-        price_earnings=_string_or_none(ratio_values.get("price_earnings")),
-        return_on_equity=_string_or_none(ratio_values.get("return_on_equity")),
-        data_as_of=bundle.data_as_of if bundle is not None else None,
-    )
-
-
-def _string_or_none(value: object | None) -> str | None:
-    return None if value is None else str(value)
-
-
-def _market_interpretation_headline(regime: str) -> str:
-    return {
-        "bull": "Price structure is trending higher.",
-        "bear": "Price structure is trending lower.",
-        "ranging": "Price structure is range-bound.",
-        "high-volatility": "Price is moving with elevated volatility.",
-        "low-volatility": "Price is moving with compressed volatility.",
-    }.get(regime, "Price structure is not yet clear.")
-
-
-def _market_interpretation_detail(regime: str) -> str:
-    return {
-        "bull": "Use the raw fields below to inspect whether momentum remains extended or orderly.",
-        "bear": "Use the raw fields below to inspect whether weakness is persistent or stabilizing.",
-        "ranging": "Use the raw fields below to inspect where price sits inside the current range.",
-        "high-volatility": "Use the raw fields below to judge whether volatility supports or weakens the setup.",
-        "low-volatility": "Use the raw fields below to judge whether compression is constructive or merely inactive.",
-    }.get(
-        regime,
-        "Use the raw fields below to inspect the provider-backed snapshot before drawing conclusions.",
-    )
-
-
 @workspace_router.get("/{route_id}", response_model=WorkspaceProjectionResponse)
 def get_workspace_projection(
     request: Request,
@@ -5286,49 +4695,6 @@ def get_workspace_projection(
         ) from error
 
     return _workspace_projection_response(projection)
-
-
-@provenance_router.get("/market-data", response_model=ProvenanceQueryResponse)
-def get_market_data_provenance(
-    request: Request,
-    since: datetime | None = None,
-    until: datetime | None = None,
-    provider_id: str | None = Query(default=None, min_length=1),
-    symbol: str | None = Query(default=None, min_length=1),
-) -> ProvenanceQueryResponse:
-    """Return the advisory provider provenance registry for market data fetches.
-
-    Records all fetch interactions (successes and failures) for auditing and
-    replay integrity purposes. All records are advisory — not canonical truth.
-    Supports optional filtering by time range, provider, and symbol.
-    """
-    result = _provenance_query_service_from(request).query(
-        since=since,
-        until=until,
-        provider_id=provider_id,
-        symbol=symbol,
-    )
-    return ProvenanceQueryResponse(
-        authority="advisory",
-        total_count=result.total_count,
-        success_count=result.success_count,
-        failure_count=result.failure_count,
-        providers_seen=list(result.providers_seen),
-        symbols_seen=list(result.symbols_seen),
-        records=[
-            ProviderFetchRecordResponse(
-                provider_id=record.provider_id,
-                provider_version=record.provider_version,
-                symbol=record.symbol,
-                fetched_at=record.fetched_at,
-                outcome=record.outcome,
-                data_as_of=record.data_as_of,
-                error_reason=record.error_reason,
-                is_advisory=record.is_advisory,
-            )
-            for record in result.records
-        ],
-    )
 
 
 @advisory_router.post(
@@ -6638,53 +6004,10 @@ def get_reasoning_timeline(
     )
 
 
-@market_router.get("/snapshots", response_model=MarketSnapshotQueryResponse)
-def get_market_snapshots(
-    request: Request,
-    since: datetime | None = None,
-    until: datetime | None = None,
-    provider_id: str | None = Query(default=None, min_length=1),
-    symbol: str | None = Query(default=None, min_length=1),
-) -> MarketSnapshotQueryResponse:
-    """Return persisted advisory market snapshots from the snapshot archive.
-
-    Supports optional filtering by time range, provider, and symbol.
-    All returned snapshots are advisory derived artifacts — not canonical facts.
-    """
-    result = _market_snapshot_query_service_from(request).query(
-        since=since,
-        until=until,
-        provider_id=provider_id,
-        symbol=symbol,
-    )
-    return MarketSnapshotQueryResponse(
-        authority="advisory",
-        total_count=result.total_count,
-        snapshots=[
-            PersistedMarketSnapshotResponse(
-                snapshot_id=record.snapshot_id,
-                provider_id=record.snapshot.provenance.provider_id,
-                provider_version=record.snapshot.provenance.provider_version,
-                symbol=record.symbol,
-                fetched_at=record.snapshot.provenance.fetched_at,
-                data_as_of=record.snapshot.provenance.data_as_of,
-                open=str(record.snapshot.price.open),
-                high=str(record.snapshot.price.high),
-                low=str(record.snapshot.price.low),
-                close=str(record.snapshot.price.close),
-                volume=record.snapshot.price.volume,
-                regime=record.snapshot.regime.value,
-                persisted_at=record.persisted_at,
-                is_advisory=record.is_advisory,
-            )
-            for record in result.snapshots
-        ],
-    )
-
-
 runtime_router.include_router(runtime_status_router)
 runtime_router.include_router(lifecycle_router)
 runtime_router.include_router(replay_router)
+runtime_router.include_router(workspace_market_router)
 runtime_router.include_router(workspace_router)
 runtime_router.include_router(provenance_router)
 runtime_router.include_router(behavioral_router)
