@@ -2882,7 +2882,13 @@ GOV-01 through GOV-02 (see issue register).
 
 ## M-RF - API Boundary Decomposition
 
-**Status:** Planned
+**Status:** Complete (2026-07-12; TF-RF001 through TF-RF010 landed, OpenAPI
+snapshot byte-identical throughout. Deviations recorded in the issue
+register: `_validated_import_field_names` stayed at the API boundary because
+it raises HTTPException; `lifecycle.py` (2,082 lines) and `advisory.py`
+(1,634 lines) exceed the aspirational ~800-line ceiling because the plan's
+stronger rule — models, mappers, and handlers travel together per domain —
+won.)
 
 ## Semantic Intent
 
@@ -2974,7 +2980,7 @@ TF-RFE001 through TF-RFE008 (see issue register).
 
 ## M-RF2 - API Dependency Injection
 
-**Status:** Planned (blocked on M-RF completion)
+**Status:** Planned (unblocked 2026-07-12 — M-RF complete)
 
 ## Semantic Intent
 

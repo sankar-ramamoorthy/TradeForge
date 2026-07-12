@@ -288,13 +288,13 @@ Roadmap v2 is the active milestone direction. This register now tracks runtime i
 | TF-RF001 | Done | M-RF | OpenAPI contract snapshot test | `refactor/tf-rf001-openapi-snapshot` |
 | TF-RF002 | Done | M-RF | Extract deps.py service accessors | `refactor/tf-rf002-deps-extraction` |
 | TF-RF003 | Done | M-RF | Create routes package; move runtime and behavioral | `refactor/tf-rf002-deps-extraction` |
-| TF-RF004 | Planned | M-RF | Move replay, provenance, and market routers | `refactor/tf-rf004-replay-market` |
-| TF-RF005 | Planned | M-RF | Move workspace router | `refactor/tf-rf005-workspace` |
-| TF-RF006 | Planned | M-RF | Move lifecycle router | `refactor/tf-rf006-lifecycle` |
-| TF-RF007 | Planned | M-RF | Move advisory router family | `refactor/tf-rf007-advisory` |
-| TF-RF008 | Planned | M-RF | Move governance router | `refactor/tf-rf008-governance` |
-| TF-RF009 | Planned | M-RF | Move local import parsing to services layer | `refactor/tf-rf009-import-parsing` |
-| TF-RF010 | Planned | M-RF | Final assembly and monolith deletion | `refactor/tf-rf010-assembly` |
+| TF-RF004 | Done | M-RF | Move replay, provenance, and market routers | `refactor/tf-rf004-replay-market` |
+| TF-RF005 | Done | M-RF | Move workspace router | `refactor/tf-rf004-replay-market` |
+| TF-RF006 | Done | M-RF | Move lifecycle router | `refactor/tf-rf004-replay-market` |
+| TF-RF007 | Done | M-RF | Move advisory router family | `refactor/tf-rf004-replay-market` |
+| TF-RF008 | Done | M-RF | Move governance router | `refactor/tf-rf004-replay-market` |
+| TF-RF009 | Done | M-RF | Move local import parsing to services layer | `refactor/tf-rf004-replay-market` |
+| TF-RF010 | Done | M-RF | Final assembly and monolith deletion | `refactor/tf-rf004-replay-market` |
 | TF-RF2-001 | Planned | M-RF2 | Accessor inventory and conversion baseline | `refactor/tf-rf2-001-inventory` |
 | TF-RF2-002 | Planned | M-RF2 | Rename accessors to public get_* names | `refactor/tf-rf2-002-accessor-renames` |
 | TF-RF2-003 | Planned | M-RF2 | Convert handler-direct call sites to Depends | `refactor/tf-rf2-003-handler-depends` |
