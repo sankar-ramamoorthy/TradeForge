@@ -287,7 +287,7 @@ Roadmap v2 is the active milestone direction. This register now tracks runtime i
 | GOV-02 | Planned | M-EZ | Knowledge base hygiene pass | `docs/gov-02-kb-hygiene` |
 | TF-RF001 | Done | M-RF | OpenAPI contract snapshot test | `refactor/tf-rf001-openapi-snapshot` |
 | TF-RF002 | Done | M-RF | Extract deps.py service accessors | `refactor/tf-rf002-deps-extraction` |
-| TF-RF003 | Planned | M-RF | Create routes package; move runtime and behavioral | `refactor/tf-rf003-routes-package` |
+| TF-RF003 | Done | M-RF | Create routes package; move runtime and behavioral | `refactor/tf-rf002-deps-extraction` |
 | TF-RF004 | Planned | M-RF | Move replay, provenance, and market routers | `refactor/tf-rf004-replay-market` |
 | TF-RF005 | Planned | M-RF | Move workspace router | `refactor/tf-rf005-workspace` |
 | TF-RF006 | Planned | M-RF | Move lifecycle router | `refactor/tf-rf006-lifecycle` |
@@ -9384,6 +9384,11 @@ states otherwise.
   `src/app/api/deps.py`, names verbatim.
 - **TF-RF003** — Create `src/app/api/routes/` package; move `runtime` and
   `behavioral` domains (handlers + models + mappers) as pattern-setters.
+  **Done 2026-07-11.** Landed with TF-RF002 via PR #61 (branch
+  `refactor/tf-rf002-deps-extraction`, commit `520488b`). Monolith now lives
+  at `src/app/api/routes/_monolith.py`; `routes/runtime.py`
+  (`runtime_status_router`) and `routes/behavioral.py` extracted; gates all
+  green (865 passed).
 - **TF-RF004** — Move `replay`, `provenance`, `market` domains.
 - **TF-RF005** — Move `workspace` domain incl. attention/playbook mappers.
 - **TF-RF006** — Move `lifecycle` domain (largest; includes mid-file
