@@ -9429,7 +9429,6 @@ states otherwise.
   mechanically modulo the underscore-prefix removal.
 - **TF-RF010** — Assemble routers in `routes/__init__.py`; repoint
   `application.py`; delete `routes.py`; update architecture docs.
-
   **Done 2026-07-12.** `routes/_monolith.py` (the TF-RF003 rename of
   `routes.py`) deleted; `routes/__init__.py` is the only assembly point;
   `application.py` import unchanged. README, ADR-0020 history note, and
