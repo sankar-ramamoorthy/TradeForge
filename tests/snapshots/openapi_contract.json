@@ -4475,6 +4475,50 @@
         "title": "EntityReferencePayload",
         "type": "object"
       },
+      "EvidenceChartPointResponse": {
+        "properties": {
+          "close": {
+            "title": "Close",
+            "type": "string"
+          },
+          "high": {
+            "title": "High",
+            "type": "string"
+          },
+          "low": {
+            "title": "Low",
+            "type": "string"
+          },
+          "open": {
+            "title": "Open",
+            "type": "string"
+          },
+          "provider_id": {
+            "title": "Provider Id",
+            "type": "string"
+          },
+          "timestamp": {
+            "format": "date-time",
+            "title": "Timestamp",
+            "type": "string"
+          },
+          "volume": {
+            "title": "Volume",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "timestamp",
+          "open",
+          "high",
+          "low",
+          "close",
+          "volume",
+          "provider_id"
+        ],
+        "title": "EvidenceChartPointResponse",
+        "type": "object"
+      },
       "EvidenceConflictMarker": {
         "enum": [
           "conflicting",
@@ -4483,6 +4527,445 @@
         ],
         "title": "EvidenceConflictMarker",
         "type": "string"
+      },
+      "EvidenceEligibilityItemResponse": {
+        "properties": {
+          "decision_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Decision Ids",
+            "type": "array"
+          },
+          "pinned": {
+            "title": "Pinned",
+            "type": "boolean"
+          },
+          "sources": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Sources",
+            "type": "array"
+          },
+          "symbol": {
+            "title": "Symbol",
+            "type": "string"
+          },
+          "watchlist_entry_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Watchlist Entry Ids",
+            "type": "array"
+          }
+        },
+        "required": [
+          "symbol",
+          "sources",
+          "decision_ids",
+          "watchlist_entry_ids",
+          "pinned"
+        ],
+        "title": "EvidenceEligibilityItemResponse",
+        "type": "object"
+      },
+      "EvidenceEligibilityResponse": {
+        "properties": {
+          "authority": {
+            "const": "canonical-event-derived",
+            "title": "Authority",
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/EvidenceEligibilityItemResponse"
+            },
+            "title": "Items",
+            "type": "array"
+          }
+        },
+        "required": [
+          "authority",
+          "items"
+        ],
+        "title": "EvidenceEligibilityResponse",
+        "type": "object"
+      },
+      "EvidenceFactResponse": {
+        "properties": {
+          "freshness": {
+            "title": "Freshness",
+            "type": "string"
+          },
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "source": {
+            "title": "Source",
+            "type": "string"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value"
+          }
+        },
+        "required": [
+          "key",
+          "label",
+          "value",
+          "freshness",
+          "source"
+        ],
+        "title": "EvidenceFactResponse",
+        "type": "object"
+      },
+      "EvidencePanelResponse": {
+        "properties": {
+          "authority": {
+            "const": "advisory",
+            "title": "Authority",
+            "type": "string"
+          },
+          "chart_points": {
+            "items": {
+              "$ref": "#/components/schemas/EvidenceChartPointResponse"
+            },
+            "title": "Chart Points",
+            "type": "array"
+          },
+          "facts": {
+            "items": {
+              "$ref": "#/components/schemas/EvidenceFactResponse"
+            },
+            "title": "Facts",
+            "type": "array"
+          },
+          "freshness": {
+            "title": "Freshness",
+            "type": "string"
+          },
+          "generated_at": {
+            "format": "date-time",
+            "title": "Generated At",
+            "type": "string"
+          },
+          "is_advisory": {
+            "title": "Is Advisory",
+            "type": "boolean"
+          },
+          "latest_snapshot": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EvidenceSnapshotResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "ranking_item": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EvidenceRankedItemResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "symbol": {
+            "title": "Symbol",
+            "type": "string"
+          }
+        },
+        "required": [
+          "authority",
+          "symbol",
+          "generated_at",
+          "freshness",
+          "facts",
+          "chart_points",
+          "ranking_item",
+          "latest_snapshot",
+          "is_advisory"
+        ],
+        "title": "EvidencePanelResponse",
+        "type": "object"
+      },
+      "EvidenceRankedItemResponse": {
+        "properties": {
+          "authority": {
+            "const": "advisory",
+            "title": "Authority",
+            "type": "string"
+          },
+          "decision_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Decision Ids",
+            "type": "array"
+          },
+          "freshness": {
+            "title": "Freshness",
+            "type": "string"
+          },
+          "is_advisory": {
+            "title": "Is Advisory",
+            "type": "boolean"
+          },
+          "priority_score": {
+            "title": "Priority Score",
+            "type": "integer"
+          },
+          "rank": {
+            "title": "Rank",
+            "type": "integer"
+          },
+          "reasons": {
+            "items": {
+              "$ref": "#/components/schemas/EvidenceRankingReasonResponse"
+            },
+            "title": "Reasons",
+            "type": "array"
+          },
+          "snapshot": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EvidenceSnapshotResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "sources": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Sources",
+            "type": "array"
+          },
+          "symbol": {
+            "title": "Symbol",
+            "type": "string"
+          },
+          "watchlist_entry_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Watchlist Entry Ids",
+            "type": "array"
+          }
+        },
+        "required": [
+          "authority",
+          "symbol",
+          "rank",
+          "priority_score",
+          "freshness",
+          "sources",
+          "reasons",
+          "decision_ids",
+          "watchlist_entry_ids",
+          "snapshot",
+          "is_advisory"
+        ],
+        "title": "EvidenceRankedItemResponse",
+        "type": "object"
+      },
+      "EvidenceRankingReasonResponse": {
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "detail": {
+            "title": "Detail",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "weight": {
+            "title": "Weight",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "code",
+          "label",
+          "detail",
+          "weight"
+        ],
+        "title": "EvidenceRankingReasonResponse",
+        "type": "object"
+      },
+      "EvidenceRankingResponse": {
+        "properties": {
+          "authority": {
+            "const": "advisory",
+            "title": "Authority",
+            "type": "string"
+          },
+          "generated_at": {
+            "format": "date-time",
+            "title": "Generated At",
+            "type": "string"
+          },
+          "is_advisory": {
+            "title": "Is Advisory",
+            "type": "boolean"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/EvidenceRankedItemResponse"
+            },
+            "title": "Items",
+            "type": "array"
+          }
+        },
+        "required": [
+          "authority",
+          "generated_at",
+          "items",
+          "is_advisory"
+        ],
+        "title": "EvidenceRankingResponse",
+        "type": "object"
+      },
+      "EvidenceRefreshResponse": {
+        "properties": {
+          "authority": {
+            "const": "advisory",
+            "title": "Authority",
+            "type": "string"
+          },
+          "eligible_symbols": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Eligible Symbols",
+            "type": "array"
+          },
+          "fetched_at": {
+            "format": "date-time",
+            "title": "Fetched At",
+            "type": "string"
+          },
+          "is_advisory": {
+            "title": "Is Advisory",
+            "type": "boolean"
+          },
+          "refreshed_symbols": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Refreshed Symbols",
+            "type": "array"
+          },
+          "unavailable_symbols": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Unavailable Symbols",
+            "type": "array"
+          }
+        },
+        "required": [
+          "authority",
+          "eligible_symbols",
+          "refreshed_symbols",
+          "unavailable_symbols",
+          "fetched_at",
+          "is_advisory"
+        ],
+        "title": "EvidenceRefreshResponse",
+        "type": "object"
+      },
+      "EvidenceSnapshotResponse": {
+        "properties": {
+          "close": {
+            "title": "Close",
+            "type": "string"
+          },
+          "data_as_of": {
+            "format": "date-time",
+            "title": "Data As Of",
+            "type": "string"
+          },
+          "fetched_at": {
+            "format": "date-time",
+            "title": "Fetched At",
+            "type": "string"
+          },
+          "high": {
+            "title": "High",
+            "type": "string"
+          },
+          "is_advisory": {
+            "title": "Is Advisory",
+            "type": "boolean"
+          },
+          "low": {
+            "title": "Low",
+            "type": "string"
+          },
+          "open": {
+            "title": "Open",
+            "type": "string"
+          },
+          "provider_id": {
+            "title": "Provider Id",
+            "type": "string"
+          },
+          "provider_version": {
+            "title": "Provider Version",
+            "type": "string"
+          },
+          "regime": {
+            "title": "Regime",
+            "type": "string"
+          },
+          "symbol": {
+            "title": "Symbol",
+            "type": "string"
+          },
+          "volume": {
+            "title": "Volume",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "symbol",
+          "provider_id",
+          "provider_version",
+          "fetched_at",
+          "data_as_of",
+          "open",
+          "high",
+          "low",
+          "close",
+          "volume",
+          "regime",
+          "is_advisory"
+        ],
+        "title": "EvidenceSnapshotResponse",
+        "type": "object"
       },
       "EvidenceStalenessResponse": {
         "properties": {
@@ -9203,6 +9686,200 @@
         "title": "ValidationError",
         "type": "object"
       },
+      "WatchlistEntryRequest": {
+        "properties": {
+          "persona_id": {
+            "minLength": 1,
+            "title": "Persona Id",
+            "type": "string"
+          },
+          "pinned": {
+            "default": false,
+            "title": "Pinned",
+            "type": "boolean"
+          },
+          "rationale": {
+            "minLength": 1,
+            "title": "Rationale",
+            "type": "string"
+          },
+          "symbol": {
+            "minLength": 1,
+            "title": "Symbol",
+            "type": "string"
+          },
+          "workspace_id": {
+            "anyOf": [
+              {
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Workspace Id"
+          }
+        },
+        "required": [
+          "symbol",
+          "rationale",
+          "persona_id"
+        ],
+        "title": "WatchlistEntryRequest",
+        "type": "object"
+      },
+      "WatchlistEntryResponse": {
+        "properties": {
+          "added_at": {
+            "format": "date-time",
+            "title": "Added At",
+            "type": "string"
+          },
+          "entry_id": {
+            "title": "Entry Id",
+            "type": "string"
+          },
+          "persona_id": {
+            "title": "Persona Id",
+            "type": "string"
+          },
+          "pinned": {
+            "title": "Pinned",
+            "type": "boolean"
+          },
+          "rationale": {
+            "title": "Rationale",
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/WatchlistStatus"
+          },
+          "symbol": {
+            "title": "Symbol",
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          },
+          "workspace_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Workspace Id"
+          }
+        },
+        "required": [
+          "entry_id",
+          "symbol",
+          "rationale",
+          "status",
+          "persona_id",
+          "workspace_id",
+          "added_at",
+          "updated_at",
+          "pinned"
+        ],
+        "title": "WatchlistEntryResponse",
+        "type": "object"
+      },
+      "WatchlistEntryUpdateRequest": {
+        "properties": {
+          "persona_id": {
+            "minLength": 1,
+            "title": "Persona Id",
+            "type": "string"
+          },
+          "pinned": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pinned"
+          },
+          "rationale": {
+            "anyOf": [
+              {
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rationale"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/WatchlistStatus"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "workspace_id": {
+            "anyOf": [
+              {
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Workspace Id"
+          }
+        },
+        "required": [
+          "persona_id"
+        ],
+        "title": "WatchlistEntryUpdateRequest",
+        "type": "object"
+      },
+      "WatchlistResponse": {
+        "properties": {
+          "authority": {
+            "const": "canonical-event-derived",
+            "title": "Authority",
+            "type": "string"
+          },
+          "entries": {
+            "items": {
+              "$ref": "#/components/schemas/WatchlistEntryResponse"
+            },
+            "title": "Entries",
+            "type": "array"
+          }
+        },
+        "required": [
+          "authority",
+          "entries"
+        ],
+        "title": "WatchlistResponse",
+        "type": "object"
+      },
+      "WatchlistStatus": {
+        "enum": [
+          "active",
+          "paused",
+          "archived"
+        ],
+        "title": "WatchlistStatus",
+        "type": "string"
+      },
       "WorkspaceProjectionContextResponse": {
         "properties": {
           "decision_id": {
@@ -12432,6 +13109,424 @@
         "tags": [
           "runtime",
           "behavioral"
+        ]
+      }
+    },
+    "/evidence/eligibility": {
+      "get": {
+        "operationId": "list_evidence_eligibility_evidence_eligibility_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "persona_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "minLength": 1,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Persona Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "workspace_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "minLength": 1,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Workspace Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EvidenceEligibilityResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Evidence Eligibility",
+        "tags": [
+          "runtime",
+          "evidence"
+        ]
+      }
+    },
+    "/evidence/ranking": {
+      "get": {
+        "operationId": "get_evidence_ranking_evidence_ranking_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "persona_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "minLength": 1,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Persona Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "workspace_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "minLength": 1,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Workspace Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EvidenceRankingResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Evidence Ranking",
+        "tags": [
+          "runtime",
+          "evidence"
+        ]
+      }
+    },
+    "/evidence/refresh/run": {
+      "post": {
+        "operationId": "run_evidence_refresh_evidence_refresh_run_post",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "persona_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "minLength": 1,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Persona Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "workspace_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "minLength": 1,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Workspace Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EvidenceRefreshResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Run Evidence Refresh",
+        "tags": [
+          "runtime",
+          "evidence"
+        ]
+      }
+    },
+    "/evidence/symbols/{symbol}": {
+      "get": {
+        "operationId": "get_symbol_evidence_evidence_symbols__symbol__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "symbol",
+            "required": true,
+            "schema": {
+              "title": "Symbol",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EvidencePanelResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Symbol Evidence",
+        "tags": [
+          "runtime",
+          "evidence"
+        ]
+      }
+    },
+    "/evidence/watchlist": {
+      "get": {
+        "operationId": "list_watchlist_evidence_watchlist_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "persona_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "minLength": 1,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Persona Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "workspace_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "minLength": 1,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Workspace Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "include_archived",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Include Archived",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WatchlistResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Watchlist",
+        "tags": [
+          "runtime",
+          "evidence"
+        ]
+      },
+      "post": {
+        "operationId": "add_watchlist_entry_evidence_watchlist_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WatchlistEntryRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WatchlistEntryResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Add Watchlist Entry",
+        "tags": [
+          "runtime",
+          "evidence"
+        ]
+      }
+    },
+    "/evidence/watchlist/{entry_id}": {
+      "patch": {
+        "operationId": "update_watchlist_entry_evidence_watchlist__entry_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "entry_id",
+            "required": true,
+            "schema": {
+              "title": "Entry Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WatchlistEntryUpdateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WatchlistEntryResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Update Watchlist Entry",
+        "tags": [
+          "runtime",
+          "evidence"
         ]
       }
     },

@@ -76,6 +76,14 @@ from src.services.advisory import (
     InterpretationDraftService,
 )
 from src.services.behavioral import BehavioralSignalReadService
+from src.services.evidence import (
+    EvidenceEligibilityService,
+    EvidencePanelService,
+    EvidenceRankingService,
+    EvidenceRefreshService,
+    ScheduledEvidenceRefreshJob,
+    WatchlistService,
+)
 from src.services.lifecycle import LifecycleOrchestrationService
 from src.services.market.contextual_summary import ContextualSummaryService
 from src.services.market.fundamentals_service import FundamentalsService
@@ -296,6 +304,19 @@ class ProviderBootstrapService:
         self._app.state.market_snapshot_query_service = MarketSnapshotQueryService(
             snapshot_store
         )
+        eligibility_service = self._app.state.evidence_eligibility_service
+        self._app.state.evidence_refresh_service = EvidenceRefreshService(
+            eligibility_service,
+            market_svc,
+        )
+        self._app.state.evidence_ranking_service = EvidenceRankingService(
+            eligibility_service,
+            self._app.state.market_snapshot_query_service,
+        )
+        self._app.state.evidence_panel_service = EvidencePanelService(
+            self._app.state.evidence_ranking_service,
+            self._app.state.market_snapshot_query_service,
+        )
 
         try:
             provider_registry = _default_provider_registry(credential_store)
@@ -354,6 +375,11 @@ def create_app(
     ) = None,
     advisory_artifact_query_service: AdvisoryArtifactQueryService | None = None,
     behavioral_signal_read_service: BehavioralSignalReadService | None = None,
+    watchlist_service: WatchlistService | None = None,
+    evidence_eligibility_service: EvidenceEligibilityService | None = None,
+    evidence_refresh_service: EvidenceRefreshService | None = None,
+    evidence_ranking_service: EvidenceRankingService | None = None,
+    evidence_panel_service: EvidencePanelService | None = None,
 ) -> FastAPI:
     shared_event_store = event_store or _default_event_store()
     app = FastAPI(
@@ -438,6 +464,47 @@ def create_app(
         market_snapshot_query_service
         if market_snapshot_query_service is not None
         else MarketSnapshotQueryService(_snapshot_store)
+    )
+    _watchlist_service = (
+        watchlist_service
+        if watchlist_service is not None
+        else WatchlistService(shared_event_store)
+    )
+    app.state.watchlist_service = _watchlist_service
+    _evidence_eligibility_service = (
+        evidence_eligibility_service
+        if evidence_eligibility_service is not None
+        else EvidenceEligibilityService(shared_event_store, _watchlist_service)
+    )
+    app.state.evidence_eligibility_service = _evidence_eligibility_service
+    _evidence_refresh_service = (
+        evidence_refresh_service
+        if evidence_refresh_service is not None
+        else EvidenceRefreshService(_evidence_eligibility_service, _market_svc)
+    )
+    app.state.evidence_refresh_service = _evidence_refresh_service
+    _evidence_ranking_service = (
+        evidence_ranking_service
+        if evidence_ranking_service is not None
+        else EvidenceRankingService(
+            _evidence_eligibility_service,
+            app.state.market_snapshot_query_service,
+        )
+    )
+    app.state.evidence_ranking_service = _evidence_ranking_service
+    app.state.evidence_panel_service = (
+        evidence_panel_service
+        if evidence_panel_service is not None
+        else EvidencePanelService(
+            _evidence_ranking_service,
+            app.state.market_snapshot_query_service,
+        )
+    )
+    app.state.evidence_refresh_job = ScheduledEvidenceRefreshJob(
+        _evidence_refresh_service,
+        interval_seconds=float(
+            os.environ.get("TRADEFORGE_EVIDENCE_REFRESH_INTERVAL_SECONDS", "3600")
+        ),
     )
     app.state.provider_registry = _provider_registry
     app.state.fundamentals_service = (
@@ -537,6 +604,16 @@ def create_app(
         else AdvisoryArtifactQueryService(advisory_artifact_store)
     )
     app.state.provider_bootstrap = ProviderBootstrapService(app, _credential_store)
+
+    @app.on_event("startup")
+    async def _start_evidence_refresh_job() -> None:
+        if os.environ.get("TRADEFORGE_EVIDENCE_REFRESH_ENABLED") == "1":
+            await app.state.evidence_refresh_job.start()
+
+    @app.on_event("shutdown")
+    async def _stop_evidence_refresh_job() -> None:
+        await app.state.evidence_refresh_job.stop()
+
     app.include_router(runtime_router)
     from src.app.api.admin_routes import admin_router  # noqa: PLC0415
 

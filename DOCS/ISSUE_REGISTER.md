@@ -276,10 +276,12 @@ Roadmap v2 is the active milestone direction. This register now tracks runtime i
 | EZ-01 | Planned | M-EZ | Postgres-by-default single compose stack | `feature/ez-01-single-compose-stack` |
 | EZ-02 | Planned | M-EZ | In-app first-run wizard for master key setup | `feature/ez-02-first-run-wizard` |
 | EZ-03 | Planned | M-EZ | Documentation truth pass | `docs/ez-03-doc-truth-pass` |
-| EV-01 | Planned | M-EZ | Scheduled market snapshot job | `feature/ev-01-scheduled-snapshots` |
-| EV-02 | Planned | M-EZ | Watchlist as first-class pre-lifecycle object | `feature/ev-02-watchlist` |
-| EV-03 | Planned | M-EZ | Per-symbol evidence panel | `feature/ev-03-evidence-panel` |
-| EV-04 | Planned | M-EZ | Basic price chart component | `feature/ev-04-price-chart` |
+| EV-00 | Done | M-EZ | Define evidence density and attention ranking semantics | `docs/ev-00-evidence-attention-semantics` |
+| EV-01 | Done | M-EZ | Scheduled market snapshot job | `feature/ev-01-scheduled-snapshots` |
+| EV-02 | Done | M-EZ | Watchlist as first-class pre-lifecycle object | `feature/ev-02-watchlist` |
+| EV-03 | Done | M-EZ | Per-symbol evidence panel | `feature/ev-03-evidence-panel` |
+| EV-04 | Done | M-EZ | Basic price chart component | `feature/ev-04-price-chart` |
+| EV-05 | Done | M-EZ | Transparent attention ranking | `feature/ev-05-transparent-attention-ranking` |
 | RAMP-01 | Planned | M-EZ | Quick-capture idea tier | `feature/ramp-01-quick-capture` |
 | RAMP-02 | Planned | M-EZ | Guided first-decision mode | `feature/ramp-02-guided-first-decision` |
 | RAMP-03 | Planned | M-EZ | Operator identity profiles | `feature/ramp-03-operator-identity` |
@@ -9111,6 +9113,11 @@ Detailed authoritative plan:
 `knowledge/raw/20260709-product-viability-and-ease-of-use-roadmap.md`
 (TradeForge-KnowledgeBase repository).
 
+Evidence Density refinement:
+`knowledge/processed/20260712-evidence-density-attention-ranking-synthesis.md`
+and `knowledge/topics/evidence-density-and-attention-ranking.md`
+(TradeForge-KnowledgeBase repository).
+
 ---
 
 ## EZ-01: Postgres-By-Default Single Compose Stack
@@ -9172,9 +9179,67 @@ one roadmap authority.
 
 ---
 
+## EV-00: Define Evidence Density And Attention Ranking Semantics
+
+**Status:** Done
+
+**Milestone:** M-EZ
+
+**Branch:** `docs/ev-00-evidence-attention-semantics`
+
+**Affected Layer:** docs, domain design, services design, frontend design
+
+**Linked ADRs:** ADR-0010, ADR-0013, ADR-0032, ADR-0038, ADR-0041
+
+**Impacted Invariants:** Human Decision Sovereignty; Replayability Is
+Foundational; Derived State Must Remain Distinguishable; Market Intelligence Is
+Interpreted Context; Scenario Discovery Is Non-Authoritative
+
+**Scope:** Create the authoritative runtime design note for Evidence Density
+and transparent attention ranking before EV-01 implementation. Define eligible
+symbols for refresh; evidence freshness, staleness, and missing-data semantics;
+first-slice evidence facts; watchlist membership boundaries; deterministic
+attention priority inputs; operator-visible ranking reasons; provider
+provenance expectations; and replay behavior with no live provider calls.
+
+**Detailed Plan:**
+
+1. Define symbol eligibility tiers: active decisions, armed/approved decisions,
+   watchlist entries, and operator-pinned symbols.
+2. Define freshness states per evidence family: fresh, stale, missing,
+   provider-degraded, and intentionally unavailable.
+3. Define first-slice evidence facts: last price, percent change, volume versus
+   average, 52-week distance, declared-level proximity, next earnings,
+   fundamentals availability, active lifecycle review need, and provider
+   provenance.
+4. Define attention ranking as deterministic derived state, not canonical truth
+   or recommendation authority.
+5. Define ranking reason output shape so every ranked item explains why it is
+   placed where it is.
+6. Define replay rules: historical evidence and ranking must reconstruct from
+   persisted snapshots, historical advisory artifacts, Event Ledger state, and
+   deterministic rules only.
+7. Decide whether the first implementation should extend the existing
+   Operational Attention Queue projection or introduce a distinct evidence
+   priority read model.
+
+**Acceptance Criteria:** Design note accepted; EV-01 acceptance criteria
+updated against the design; EV-05 remains implementable without an opaque AI
+score; explicit statement that ranking is not a buy/sell recommendation,
+lifecycle authority, or execution permission.
+
+**Implementation Note (2026-07-12):** Runtime authority note added at
+`DOCS/evidence-density-and-attention-ranking.md`. EV ranking is deterministic,
+advisory-only, and reason-coded.
+
+**Out Of Scope:** Runtime implementation; new provider integrations; AI
+ranking; charting; paper execution; lifecycle promotion changes.
+
+---
+
 ## EV-01: Scheduled Market Snapshot Job
 
-**Status:** Planned
+**Status:** Done
 
 **Milestone:** M-EZ
 
@@ -9184,19 +9249,28 @@ one roadmap authority.
 
 **Linked ADRs:** ADR-0010, ADR-0032, ADR-0038
 
-**Scope:** In-process background refresh of snapshots for symbols on active
-decisions + watchlist; configurable cadence (hourly market hours, daily
-close otherwise); persists through existing snapshot boundary with
-provenance; replay never calls live APIs.
+**Scope:** In-process background refresh of snapshots for symbols made eligible
+by EV-00: active decisions, watchlist entries, and explicit operator-pinned
+symbols. Use a configurable deterministic cadence for the first slice; persist
+through the existing snapshot boundary with provider provenance, `fetched_at`,
+and `data_as_of`; mark missing or stale evidence explicitly; replay never calls
+live APIs.
 
-**Acceptance Criteria:** Cadence configurable; failures degrade gracefully;
-snapshots provenance-tagged.
+**Acceptance Criteria:** Cadence configurable; eligible-symbol selection follows
+EV-00; provider failures degrade into visible missing/degraded evidence states;
+snapshots are provenance-tagged; replay reconstruction uses persisted
+snapshots only; no autonomous lifecycle changes.
+
+**Implementation Note (2026-07-12):** `EvidenceRefreshService` refreshes active
+decision and watchlist symbols through `MarketSnapshotService`; optional
+`ScheduledEvidenceRefreshJob` is disabled by default and controlled by
+`TRADEFORGE_EVIDENCE_REFRESH_ENABLED`.
 
 ---
 
 ## EV-02: Watchlist As First-Class Pre-Lifecycle Object
 
-**Status:** Planned
+**Status:** Done
 
 **Milestone:** M-EZ
 
@@ -9204,18 +9278,57 @@ snapshots provenance-tagged.
 
 **Affected Layer:** domain, services, app, frontend
 
-**Scope:** Watchlist entry = symbol + one-line rationale + date;
-pre-lifecycle (not a TradeIdea); feeds EV-01 scanning and Opportunity
-Workspace; promotable to TradeIdea by explicit operator action.
+**Scope:** Watchlist entry = symbol, one-line rationale, date added, status,
+and optional operator pin. It remains pre-lifecycle (not a TradeIdea), feeds
+EV-01 scanning and EV-05 ranking, and appears in the Opportunity Workspace.
+Promotion to TradeIdea requires explicit operator action.
 
 **Acceptance Criteria:** No lifecycle events from watchlist CRUD; promotion
-creates a canonical TradeIdea via existing workflow only.
+creates a canonical TradeIdea via existing workflow only; watchlist entries
+carry enough source context to explain why they are eligible for refresh and
+ranking.
+
+**Implementation Note (2026-07-12):** `WatchlistService` appends and replays
+`market.watchlist_entry_added` / `market.watchlist_entry_updated` only.
+
+---
+
+## EV-05: Transparent Attention Ranking
+
+**Status:** Done
+
+**Milestone:** M-EZ
+
+**Branch:** `feature/ev-05-transparent-attention-ranking`
+
+**Affected Layer:** domain, services, app, frontend, tests
+
+**Linked ADRs:** ADR-0010, ADR-0013, ADR-0032, ADR-0038, ADR-0041
+
+**Scope:** Implement deterministic ranking for evidence-bearing active
+decisions and watchlist entries using EV-00 semantics and EV-01/EV-02 data.
+The initial ranking model may consider stale evidence, meaningful price change,
+unusual volume, proximity to declared levels, earnings proximity, active
+decision review needs, and operator-pinned priority. Ranking output must expose
+reason codes and human-readable reasons for each item.
+
+**Acceptance Criteria:** Ranking is deterministic and test-covered; every
+ranked item exposes reason codes, source references, timestamps, and provider
+provenance where applicable; no opaque AI score; no buy/sell recommendation
+language; no lifecycle events or TradeIdeas are created by ranking; replay can
+reconstruct ranking from historical inputs without live provider calls.
+
+**Out Of Scope:** Machine-learned scoring; autonomous promotion; execution
+signals; notification systems beyond existing workspace placement.
+
+**Implementation Note (2026-07-12):** `EvidenceRankingService` returns rank,
+score, source references, provider snapshots, and explicit reason codes.
 
 ---
 
 ## EV-03: Per-Symbol Evidence Panel
 
-**Status:** Planned
+**Status:** Done
 
 **Milestone:** M-EZ
 
@@ -9223,20 +9336,26 @@ creates a canonical TradeIdea via existing workflow only.
 
 **Affected Layer:** services, app, frontend
 
-**Scope:** Deterministic evidence answering the blue-pin questions: last
-price, % change, volume vs average, 52w distance, next earnings, prior
-high/low and moving-average levels, fundamentals snapshot via existing
-adapters. Every fact timestamped + provider-tagged. AI interpretation stays
-a separate advisory overlay.
+**Scope:** Deterministic evidence answering the blue-pin questions after EV-00,
+EV-01, EV-02, and EV-05 exist: last price, % change, volume vs average, 52w
+distance, next earnings, prior high/low and moving-average levels, declared
+level proximity, fundamentals snapshot via existing adapters, freshness state,
+and ranking reasons. Every fact timestamped + provider-tagged. AI
+interpretation stays a separate advisory overlay.
 
 **Acceptance Criteria:** Panel renders with yfinance-only (no keys);
-deterministic values test-covered; provenance visible.
+deterministic values test-covered; provenance, freshness, and ranking reasons
+visible.
+
+**Implementation Note (2026-07-12):** `/evidence/symbols/{symbol}` and
+`SymbolEvidencePanel` surface advisory facts, freshness, ranking reasons, and
+latest provider provenance from persisted snapshots.
 
 ---
 
 ## EV-04: Basic Price Chart Component
 
-**Status:** Planned
+**Status:** Done
 
 **Milestone:** M-EZ
 
@@ -9252,6 +9371,10 @@ snapshots/bars; embedded in evidence panel and decision workspaces.
 
 **Acceptance Criteria:** Renders from persisted data only; typecheck +
 build green.
+
+**Implementation Note (2026-07-12):** `EvidencePriceChart` renders from
+`EvidencePanel.chart_points`, which are derived from the persisted advisory
+snapshot archive.
 
 ---
 

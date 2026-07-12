@@ -24,6 +24,7 @@ import { type ActiveDecisionRecord } from "../activeDecision";
 import { DEMO_SCENARIOS, runDemoFlow, type DemoScenario } from "../demo";
 import { NewTradeIdeaModal } from "./NewTradeIdeaModal";
 import { PlaybookAlignmentPanel } from "./PlaybookAlignmentPanel";
+import { EvidenceRankingPanel } from "./EvidenceRankingPanel";
 
 const CATEGORY_LABELS: Record<string, string> = {
   decision: "Decision",
@@ -439,6 +440,8 @@ export function OperatingWorkspace({
         {playbookSummary ? (
           <PlaybookAlignmentPanel summary={playbookSummary} />
         ) : null}
+
+        <EvidenceRankingPanel context={context} />
       </div>
 
       {projection !== null ? (
