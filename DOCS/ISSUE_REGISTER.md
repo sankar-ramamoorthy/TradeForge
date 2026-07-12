@@ -286,7 +286,7 @@ Roadmap v2 is the active milestone direction. This register now tracks runtime i
 | GOV-01 | Planned | M-EZ | Two-tier issue discipline documentation | `docs/gov-01-two-tier-discipline` |
 | GOV-02 | Planned | M-EZ | Knowledge base hygiene pass | `docs/gov-02-kb-hygiene` |
 | TF-RF001 | Done | M-RF | OpenAPI contract snapshot test | `refactor/tf-rf001-openapi-snapshot` |
-| TF-RF002 | Planned | M-RF | Extract deps.py service accessors | `refactor/tf-rf002-deps-extraction` |
+| TF-RF002 | Done | M-RF | Extract deps.py service accessors | `refactor/tf-rf002-deps-extraction` |
 | TF-RF003 | Planned | M-RF | Create routes package; move runtime and behavioral | `refactor/tf-rf003-routes-package` |
 | TF-RF004 | Planned | M-RF | Move replay, provenance, and market routers | `refactor/tf-rf004-replay-market` |
 | TF-RF005 | Planned | M-RF | Move workspace router | `refactor/tf-rf005-workspace` |
