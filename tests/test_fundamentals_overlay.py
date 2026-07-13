@@ -69,6 +69,50 @@ def test_fundamentals_overlay_returns_advisory_bundle() -> None:
     assert data["revenue"] == "100"
 
 
+def test_fundamentals_overlay_returns_available_partial_bundle() -> None:
+    provenance = ProviderProvenance("alpha_vantage", "test", _TS, _TS)
+    provider = MagicMock()
+    provider.fetch_fundamentals.return_value = FundamentalsBundle(
+        symbol="INTC",
+        profile=CompanyProfile(
+            "INTC", "Intel Corporation", "Technology", "Semiconductors", provenance
+        ),
+        statements=(),
+        ratios=FinancialRatios(
+            "INTC",
+            (("price_earnings", None), ("return_on_equity", Decimal("-0.0291"))),
+            provenance,
+        ),
+        provenance=provenance,
+    )
+    registry = ProviderRegistry(
+        (ProviderDescriptor("alpha_vantage", (ProviderCapability.FUNDAMENTALS,)),),
+        (CapabilityPreference(ProviderCapability.FUNDAMENTALS, "alpha_vantage"),),
+    )
+    client = TestClient(
+        create_app(
+            provider_registry=registry,
+            fundamentals_service=FundamentalsService(
+                registry, {"alpha_vantage": provider}
+            ),
+        )
+    )
+
+    response = client.get(
+        "/workspaces/fundamentals-context?symbol=INTC&instrument_kind=equity"
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["coverage_status"] == "available"
+    assert data["selected_provider_id"] == "alpha_vantage"
+    assert data["company_name"] == "Intel Corporation"
+    assert data["sector"] == "Technology"
+    assert data["revenue"] is None
+    assert data["net_income"] is None
+    assert data["return_on_equity"] == "-0.0291"
+
+
 def test_provider_configuration_exposes_capability_resolution() -> None:
     registry = ProviderRegistry(
         (

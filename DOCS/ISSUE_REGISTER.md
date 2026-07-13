@@ -250,6 +250,7 @@ Roadmap v2 is the active milestone direction. This register now tracks runtime i
 | TF-F076 | Done | M13B | Replace LiteLLM route-probing healthcheck with non-invasive readiness check | `fix/tf-f076-litellm-readiness-healthcheck` |
 | TF-F077 | Done | M14C | Verify ATKR Thesis Local Import Feedback | `fix/tf-f077-atkr-thesis-import-feedback` |
 | TF-F078 | Done | M-EZ | Proxy Evidence API Routes In Vite Dev Server | `fix/tf-f078-evidence-vite-proxy` |
+| TF-F079 | Done | M-EZ | Return Partial Alpha Vantage Fundamentals From Overview | `fix/tf-f079-alpha-vantage-partial-fundamentals` |
 | TF-C001 | Done | M14 | Detect recurring sizing violations | `feature/tf-c001-recurring-sizing-violations` |
 | TF-C002 | Done | M14 | Detect impulsive execution patterns | `feature/tf-c002-impulsive-execution-patterns` |
 | TF-C003 | Done | M14 | Implement process deviation overlays | `feature/tf-c003-process-deviation-overlays` |
@@ -8581,6 +8582,89 @@ added a regression test in `tests/test_frontend_root_scripts.py`.
 - `uv run pytest tests\test_frontend_root_scripts.py`
 - `npm run typecheck`
 - `npm run build`
+
+---
+
+## TF-F079: Return Partial Alpha Vantage Fundamentals From Overview
+
+**Status:** Done
+
+**Classification:** bug / operational feedback / provider normalization
+
+**Milestone:** M-EZ
+
+**Branch:** `fix/tf-f079-alpha-vantage-partial-fundamentals`
+
+**Affected Layer:** infrastructure, app tests
+
+**Linked ADRs:** ADR-0037, ADR-0038
+
+**Impacted Invariants:** Market Intelligence Is Interpreted Context; Derived
+State Must Remain Distinguishable; Replayability Is Foundational; UX Is
+Architectural
+
+**Source:** Operator feedback from live Swagger testing of
+`GET /workspaces/fundamentals-context?symbol=INTC&instrument_kind=equity`.
+
+**Problem:**
+Alpha Vantage `OVERVIEW` can return useful company profile and ratio fields
+while `INCOME_STATEMENT` returns a non-standard payload, throttling message, or
+otherwise lacks `annualReports`. The adapter currently indexes
+`income["annualReports"]` inside the same fatal block as `OVERVIEW`, causing
+the entire fundamentals context to become unavailable and surfacing only the
+opaque error string `'annualReports'`. The operator cannot tell which upstream
+function failed, and usable overview data is discarded.
+
+**Scope:**
+
+- Validate Alpha Vantage `OVERVIEW` separately from `INCOME_STATEMENT`.
+- Return partial normalized fundamentals from `OVERVIEW` when it contains
+  usable company identity and ratios but `INCOME_STATEMENT` is unavailable or
+  malformed.
+- Preserve the existing normalized fundamentals contract by representing
+  unavailable statement values as an empty statement collection.
+- Improve provider failure messages for genuinely unusable Alpha Vantage
+  payloads so they name the function and relevant upstream payload signal.
+- Add regression tests for partial overview fallback and payload diagnostics.
+
+**Acceptance Criteria:**
+
+- If `OVERVIEW` succeeds and `INCOME_STATEMENT` lacks `annualReports`,
+  `/workspaces/fundamentals-context` returns available advisory fundamentals
+  with profile/ratio fields populated and revenue/net income null.
+- If `OVERVIEW` itself is unusable, the provider failure message identifies
+  the Alpha Vantage function and payload reason instead of only a Python key
+  lookup.
+- Alpha Vantage request construction remains deterministic and does not expose
+  credentials in diagnostics.
+- No OpenAPI, event model, lifecycle, replay, or credential-shape change.
+
+**Out Of Scope:**
+
+- Adding new Alpha Vantage functions.
+- Persisting live provider payloads.
+- Changing provider routing policy or fallback order.
+- Expanding the fundamentals domain model.
+
+**ADR Checkpoint:**
+No ADR required. This is a provider adapter degradation and diagnostics fix
+inside the ADR-0038 typed external-data contract and ADR-0037 credential
+boundary.
+
+**Resolution Summary:**
+Updated the Alpha Vantage fundamentals adapter so `OVERVIEW` is validated and
+normalized independently from `INCOME_STATEMENT`. A usable overview now returns
+available partial fundamentals with profile and ratio fields even when income
+statements are unavailable or malformed. Added payload diagnostics for unusable
+overview responses, optional handling for provider `"-"` numeric placeholders,
+and request-shape coverage proving the adapter calls `OVERVIEW` then
+`INCOME_STATEMENT`.
+
+**Verification Completed:**
+
+- `uv run pytest tests\test_fundamentals_adapters.py tests\test_fundamentals_overlay.py`
+- `uv run ruff check src\infrastructure\market\alpha_vantage_adapter.py tests\test_fundamentals_adapters.py tests\test_fundamentals_overlay.py`
+- `uv run mypy src\infrastructure\market\alpha_vantage_adapter.py tests\test_fundamentals_adapters.py tests\test_fundamentals_overlay.py`
 
 ---
 

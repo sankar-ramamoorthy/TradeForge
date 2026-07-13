@@ -41,6 +41,14 @@ class AlphaVantageFundamentalsProvider:
                     "apikey": self._api_key,
                 }
             )
+            company_name = _required_overview_name(overview)
+        except Exception as exc:
+            raise ProviderUnavailableError(
+                _PROVIDER_ID, upper_symbol, _payload_failure("OVERVIEW", exc)
+            ) from exc
+
+        income_row: dict[str, object] | None = None
+        try:
             income = _get_json(
                 {
                     "function": "INCOME_STATEMENT",
@@ -48,34 +56,24 @@ class AlphaVantageFundamentalsProvider:
                     "apikey": self._api_key,
                 }
             )
-            annual_reports = income["annualReports"]
-            if not isinstance(annual_reports, list):
-                raise ValueError("annualReports must be a list")
-            income_row = annual_reports[0]
-            if not isinstance(income_row, dict):
-                raise ValueError("annual report row must be an object")
-        except Exception as exc:
-            raise ProviderUnavailableError(
-                _PROVIDER_ID, upper_symbol, str(exc)
-            ) from exc
+            income_row = _first_annual_report(income)
+        except Exception:
+            income_row = None
 
-        data_as_of = _parse_date(income_row.get("fiscalDateEnding"))
+        data_as_of = (
+            _parse_date(income_row.get("fiscalDateEnding"))
+            if income_row is not None
+            else _parse_optional_date(overview.get("LatestQuarter"), fetched_at)
+        )
         provenance = ProviderProvenance(
             provider_id=_PROVIDER_ID,
             provider_version=self.provider_version,
             fetched_at=fetched_at,
             data_as_of=data_as_of,
         )
-        return FundamentalsBundle(
-            symbol=upper_symbol,
-            profile=CompanyProfile(
-                symbol=upper_symbol,
-                company_name=str(overview["Name"]),
-                sector=_optional_str(overview.get("Sector")),
-                industry=_optional_str(overview.get("Industry")),
-                provenance=provenance,
-            ),
-            statements=(
+        statements: tuple[FinancialStatement, ...] = ()
+        if income_row is not None:
+            statements = (
                 FinancialStatement(
                     symbol=upper_symbol,
                     statement_type="income",
@@ -86,7 +84,18 @@ class AlphaVantageFundamentalsProvider:
                     ),
                     provenance=provenance,
                 ),
+            )
+
+        return FundamentalsBundle(
+            symbol=upper_symbol,
+            profile=CompanyProfile(
+                symbol=upper_symbol,
+                company_name=company_name,
+                sector=_optional_str(overview.get("Sector")),
+                industry=_optional_str(overview.get("Industry")),
+                provenance=provenance,
             ),
+            statements=statements,
             ratios=FinancialRatios(
                 symbol=upper_symbol,
                 values=(
@@ -111,15 +120,70 @@ def _get_json(params: dict[str, str]) -> dict[str, object]:
     return payload
 
 
+def _first_annual_report(payload: dict[str, object]) -> dict[str, object]:
+    annual_reports = payload.get("annualReports")
+    if not isinstance(annual_reports, list) or not annual_reports:
+        raise ValueError(_malformed_payload("INCOME_STATEMENT", payload))
+    income_row = annual_reports[0]
+    if not isinstance(income_row, dict):
+        raise ValueError("INCOME_STATEMENT annualReports row must be an object")
+    return income_row
+
+
 def _parse_date(value: object) -> datetime:
     if not isinstance(value, str):
         raise ValueError("missing statement date")
     return datetime.fromisoformat(value).replace(tzinfo=UTC)
 
 
+def _parse_optional_date(value: object, fallback: datetime) -> datetime:
+    if not isinstance(value, str) or not value.strip():
+        return fallback
+    try:
+        return _parse_date(value)
+    except ValueError:
+        return fallback
+
+
+def _required_overview_name(payload: dict[str, object]) -> str:
+    try:
+        return _required_str(payload.get("Name"), "OVERVIEW", "Name")
+    except ValueError as exc:
+        upstream_message = _upstream_message(payload)
+        if upstream_message is not None:
+            raise ValueError(f"{exc}; {upstream_message}") from exc
+        raise
+
+
+def _required_str(value: object, function_name: str, field_name: str) -> str:
+    if not isinstance(value, str) or not value.strip():
+        raise ValueError(f"{function_name} missing required field {field_name}")
+    return value
+
+
 def _optional_decimal(value: object) -> Decimal | None:
-    return None if value in (None, "None") else Decimal(str(value))
+    return None if value in (None, "None", "-") else Decimal(str(value))
 
 
 def _optional_str(value: object) -> str | None:
     return None if value is None else str(value)
+
+
+def _payload_failure(function_name: str, exc: Exception) -> str:
+    return str(exc) if function_name in str(exc) else f"{function_name}: {exc}"
+
+
+def _malformed_payload(function_name: str, payload: dict[str, object]) -> str:
+    upstream_message = _upstream_message(payload)
+    if upstream_message is not None:
+        return f"{function_name} returned {upstream_message}"
+    keys = ", ".join(sorted(str(key) for key in payload.keys()))
+    return f"{function_name} response missing annualReports; keys: {keys or 'none'}"
+
+
+def _upstream_message(payload: dict[str, object]) -> str | None:
+    for field_name in ("Error Message", "Information", "Note"):
+        message = payload.get(field_name)
+        if isinstance(message, str) and message.strip():
+            return f"{field_name}: {message}"
+    return None

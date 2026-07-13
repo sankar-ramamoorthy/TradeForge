@@ -2877,6 +2877,7 @@ GOV-01 through GOV-02 (see issue register).
 Corrective feedback closed against the EV slice:
 
 - TF-F078: Proxy Evidence API Routes In Vite Dev Server (**Done**)
+- TF-F079: Return Partial Alpha Vantage Fundamentals From Overview (**Done**)
 
 ## Detailed Plan
 
