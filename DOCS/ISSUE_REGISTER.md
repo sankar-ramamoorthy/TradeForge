@@ -249,6 +249,7 @@ Roadmap v2 is the active milestone direction. This register now tracks runtime i
 | TF-F075 | Done | M13B | Implement Stateless LiteLLM Request-Time Credential Composition | `feature/tf-f075-litellm-secret-injection` |
 | TF-F076 | Done | M13B | Replace LiteLLM route-probing healthcheck with non-invasive readiness check | `fix/tf-f076-litellm-readiness-healthcheck` |
 | TF-F077 | Done | M14C | Verify ATKR Thesis Local Import Feedback | `fix/tf-f077-atkr-thesis-import-feedback` |
+| TF-F078 | Done | M-EZ | Proxy Evidence API Routes In Vite Dev Server | `fix/tf-f078-evidence-vite-proxy` |
 | TF-C001 | Done | M14 | Detect recurring sizing violations | `feature/tf-c001-recurring-sizing-violations` |
 | TF-C002 | Done | M14 | Detect impulsive execution patterns | `feature/tf-c002-impulsive-execution-patterns` |
 | TF-C003 | Done | M14 | Implement process deviation overlays | `feature/tf-c003-process-deviation-overlays` |
@@ -8510,6 +8511,76 @@ artifacts.
   returned `scanned_count: 2` and `imported_count: 1`.
 - `GET /advisory/thesis-imports?persona_id=persona.swing&workspace_id=workspace.context&symbol=ATKR`
   returned `total_count: 1`.
+
+---
+
+## TF-F078: Proxy Evidence API Routes In Vite Dev Server
+
+**Status:** Done
+
+**Classification:** bug / operational feedback
+
+**Milestone:** M-EZ
+
+**Branch:** `fix/tf-f078-evidence-vite-proxy`
+
+**Affected Layer:** frontend dev tooling, tests
+
+**Linked ADRs:** ADR-0007, ADR-0032, ADR-0041
+
+**Impacted Invariants:** UX Is Architectural; Derived State Must Remain
+Distinguishable
+
+**Source:** Operator feedback captured in
+`knowledge/raw/archived/Error-Evidence refresh returned a non-JSON response.md`.
+
+**Problem:**
+After EV-00 through EV-05 landed, the dev UI action for Evidence Refresh
+returned `Evidence refresh returned a non-JSON response. Check the local dev
+proxy and API route configuration.` Direct backend inspection showed
+`POST /evidence/refresh/run` was registered in FastAPI, so the failure was not
+a stale backend route. The Vite dev proxy omitted the new `/evidence` prefix,
+causing Vite to serve frontend HTML to a frontend API call that expected JSON.
+The same audit also found `/market` missing even though `/market/snapshots`
+exists.
+
+**Scope:**
+
+- Add `/evidence` to `frontend/vite.config.ts` proxy configuration.
+- Add `/market` to the same proxy configuration for the existing market API
+  prefix.
+- Add a regression test that compares frontend API prefixes against Vite proxy
+  coverage.
+
+**Acceptance Criteria:**
+
+- Dev requests to `/evidence/refresh/run` proxy to FastAPI instead of returning
+  Vite `index.html`.
+- Dev requests to `/market/snapshots` proxy to FastAPI.
+- Frontend root-script tests fail if a static frontend API prefix is missing
+  from the Vite proxy.
+- No API route, event model, lifecycle, or advisory semantics change.
+
+**Out Of Scope:**
+
+- Backend EV route changes.
+- API contract shape changes.
+- Docker runtime changes.
+- Production deployment configuration.
+
+**ADR Checkpoint:**
+No ADR required. This is a dev-server proxy configuration bug inside the
+existing frontend/runtime boundary.
+
+**Resolution Summary:**
+Added `/evidence` and `/market` proxy entries to `frontend/vite.config.ts` and
+added a regression test in `tests/test_frontend_root_scripts.py`.
+
+**Verification Completed:**
+
+- `uv run pytest tests\test_frontend_root_scripts.py`
+- `npm run typecheck`
+- `npm run build`
 
 ---
 

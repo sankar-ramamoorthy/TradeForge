@@ -1,4 +1,5 @@
 import json
+import re
 from pathlib import Path
 
 
@@ -19,3 +20,19 @@ def test_root_package_does_not_own_frontend_dependencies() -> None:
     assert "dependencies" not in package
     assert "devDependencies" not in package
     assert Path("frontend/package.json").exists()
+
+
+def test_vite_proxy_covers_frontend_api_prefixes() -> None:
+    runtime_client = Path("frontend/src/api/runtime.ts").read_text(
+        encoding="utf-8"
+    )
+    vite_config = Path("frontend/vite.config.ts").read_text(encoding="utf-8")
+    api_prefixes = {
+        match.group(1)
+        for match in re.finditer(r'fetch\("(/[^"/?]+)', runtime_client)
+    }
+
+    for prefix in sorted(api_prefixes):
+        assert f'"{prefix}"' in vite_config, (
+            f"frontend API prefix {prefix} must be proxied by Vite"
+        )
