@@ -20,6 +20,8 @@ export default defineConfig({
       "/lifecycle": "http://127.0.0.1:8000",
       "/replay": "http://127.0.0.1:8000",
       "/advisory": "http://127.0.0.1:8000",
+      "/market": "http://127.0.0.1:8000",
+      "/evidence": "http://127.0.0.1:8000",
       "/provider-governance": "http://127.0.0.1:8000",
       "/admin": "http://127.0.0.1:8000"
     }

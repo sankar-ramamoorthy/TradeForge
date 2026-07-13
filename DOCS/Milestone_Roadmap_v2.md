@@ -2874,6 +2874,10 @@ visual evidence inside decision surfaces, not dashboard organization).
 EZ-01 through EZ-03, EV-00 through EV-05, RAMP-01 through RAMP-03,
 GOV-01 through GOV-02 (see issue register).
 
+Corrective feedback closed against the EV slice:
+
+- TF-F078: Proxy Evidence API Routes In Vite Dev Server (**Done**)
+
 ## Detailed Plan
 
 `knowledge/raw/20260709-product-viability-and-ease-of-use-roadmap.md`
