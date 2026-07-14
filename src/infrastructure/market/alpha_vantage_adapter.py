@@ -149,10 +149,7 @@ def _required_overview_name(payload: dict[str, object]) -> str:
     try:
         return _required_str(payload.get("Name"), "OVERVIEW", "Name")
     except ValueError as exc:
-        upstream_message = _upstream_message(payload)
-        if upstream_message is not None:
-            raise ValueError(f"{exc}; {upstream_message}") from exc
-        raise
+        raise ValueError(f"{exc}; {_payload_summary(payload)}") from exc
 
 
 def _required_str(value: object, function_name: str, field_name: str) -> str:
@@ -162,7 +159,7 @@ def _required_str(value: object, function_name: str, field_name: str) -> str:
 
 
 def _optional_decimal(value: object) -> Decimal | None:
-    return None if value in (None, "None", "-") else Decimal(str(value))
+    return None if value in (None, "", "None", "-") else Decimal(str(value))
 
 
 def _optional_str(value: object) -> str | None:
@@ -179,6 +176,14 @@ def _malformed_payload(function_name: str, payload: dict[str, object]) -> str:
         return f"{function_name} returned {upstream_message}"
     keys = ", ".join(sorted(str(key) for key in payload.keys()))
     return f"{function_name} response missing annualReports; keys: {keys or 'none'}"
+
+
+def _payload_summary(payload: dict[str, object]) -> str:
+    upstream_message = _upstream_message(payload)
+    keys = ", ".join(sorted(str(key) for key in payload.keys()))
+    if upstream_message is not None:
+        return upstream_message
+    return f"response keys: {keys or 'none'}"
 
 
 def _upstream_message(payload: dict[str, object]) -> str | None:

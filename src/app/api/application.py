@@ -182,8 +182,8 @@ def _default_provider_registry(
             ),
             CapabilityPreference(
                 ProviderCapability.FUNDAMENTALS,
-                "fmp",
-                ("alpha_vantage",),
+                "alpha_vantage",
+                ("fmp",),
             ),
         ),
     )

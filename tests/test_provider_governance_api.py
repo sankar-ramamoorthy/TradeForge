@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
-from src.app.api.application import create_app
+from src.app.api.application import _default_provider_registry, create_app
 from src.domain.advisory import (
     AdvisoryArtifactKind,
     AdvisoryAuthority,
@@ -74,6 +74,32 @@ def test_provider_governance_includes_capability_routes() -> None:
     assert fundamentals["fallback_provider_ids"] == ["alpha_vantage"]
     assert fundamentals["selected_provider_id"] == "fmp"
     assert fundamentals["degraded"] is False
+
+
+def test_default_fundamentals_preference_uses_alpha_vantage_before_fmp(
+    tmp_path: Path,
+) -> None:
+    store = CredentialStore(tmp_path / ".keys.enc")
+    for provider_id in ("fmp", "alpha_vantage"):
+        store.save(
+            Credential(
+                provider_id=provider_id,
+                credential_type="api_key",
+                encrypted_payload=b"unused",
+                created_at=datetime(2026, 7, 13, tzinfo=UTC),
+                rotated_at=None,
+                last_validated_at=None,
+                status=CredentialStatus.ACTIVE,
+                provenance={"source": "test"},
+            )
+        )
+
+    registry = _default_provider_registry(store)
+    resolution = registry.resolve(ProviderCapability.FUNDAMENTALS)
+
+    assert resolution.preferred_provider_id == "alpha_vantage"
+    assert resolution.fallback_provider_ids == ("fmp",)
+    assert resolution.selected_provider_id == "alpha_vantage"
 
 
 def test_provider_governance_never_returns_credential_values(

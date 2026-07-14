@@ -199,6 +199,31 @@ def test_alpha_vantage_adapter_returns_partial_overview_when_income_unavailable(
     assert bundle.data_as_of.isoformat() == "2026-03-31T00:00:00+00:00"
 
 
+def test_alpha_vantage_adapter_treats_blank_ratio_fields_as_missing() -> None:
+    provider = AlphaVantageFundamentalsProvider("secret")
+    with patch(
+        "src.infrastructure.market.alpha_vantage_adapter._get_json",
+        side_effect=[
+            {
+                "Name": "Spotify Technology S.A.",
+                "PERatio": "",
+                "ReturnOnEquityTTM": "",
+                "LatestQuarter": "2026-03-31",
+            },
+            {},
+        ],
+    ):
+        bundle = provider.fetch_fundamentals("spot")
+
+    assert bundle.profile is not None
+    assert bundle.profile.company_name == "Spotify Technology S.A."
+    assert bundle.ratios is not None
+    assert dict(bundle.ratios.values) == {
+        "price_earnings": None,
+        "return_on_equity": None,
+    }
+
+
 def test_alpha_vantage_adapter_raises_on_malformed_response() -> None:
     provider = AlphaVantageFundamentalsProvider("secret")
     with patch(
@@ -221,3 +246,18 @@ def test_alpha_vantage_adapter_reports_overview_payload_diagnostics() -> None:
     assert "OVERVIEW" in str(exc_info.value)
     assert "Name" in str(exc_info.value)
     assert "Information: Alpha Vantage rate limit" in str(exc_info.value)
+
+
+def test_alpha_vantage_adapter_reports_overview_payload_keys() -> None:
+    provider = AlphaVantageFundamentalsProvider("secret")
+    with patch(
+        "src.infrastructure.market.alpha_vantage_adapter._get_json",
+        return_value={"Symbol": "MU", "AssetType": "Common Stock"},
+    ):
+        with pytest.raises(ProviderUnavailableError) as exc_info:
+            provider.fetch_fundamentals("MU")
+
+    message = str(exc_info.value)
+    assert "OVERVIEW" in message
+    assert "Name" in message
+    assert "response keys: AssetType, Symbol" in message

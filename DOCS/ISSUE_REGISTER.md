@@ -251,6 +251,7 @@ Roadmap v2 is the active milestone direction. This register now tracks runtime i
 | TF-F077 | Done | M14C | Verify ATKR Thesis Local Import Feedback | `fix/tf-f077-atkr-thesis-import-feedback` |
 | TF-F078 | Done | M-EZ | Proxy Evidence API Routes In Vite Dev Server | `fix/tf-f078-evidence-vite-proxy` |
 | TF-F079 | Done | M-EZ | Return Partial Alpha Vantage Fundamentals From Overview | `fix/tf-f079-alpha-vantage-partial-fundamentals` |
+| TF-F080 | Done | M-EZ | Prefer Alpha Vantage Over FMP For Fundamentals Routing | `fix/tf-f080-alpha-vantage-fundamentals-primary` |
 | TF-C001 | Done | M14 | Detect recurring sizing violations | `feature/tf-c001-recurring-sizing-violations` |
 | TF-C002 | Done | M14 | Detect impulsive execution patterns | `feature/tf-c002-impulsive-execution-patterns` |
 | TF-C003 | Done | M14 | Implement process deviation overlays | `feature/tf-c003-process-deviation-overlays` |
@@ -8665,6 +8666,77 @@ and request-shape coverage proving the adapter calls `OVERVIEW` then
 - `uv run pytest tests\test_fundamentals_adapters.py tests\test_fundamentals_overlay.py`
 - `uv run ruff check src\infrastructure\market\alpha_vantage_adapter.py tests\test_fundamentals_adapters.py tests\test_fundamentals_overlay.py`
 - `uv run mypy src\infrastructure\market\alpha_vantage_adapter.py tests\test_fundamentals_adapters.py tests\test_fundamentals_overlay.py`
+
+---
+
+## TF-F080: Prefer Alpha Vantage Over FMP For Fundamentals Routing
+
+**Status:** Done
+
+**Classification:** bug / operational feedback / provider routing
+
+**Milestone:** M-EZ
+
+**Branch:** `fix/tf-f080-alpha-vantage-fundamentals-primary`
+
+**Affected Layer:** app, tests
+
+**Linked ADRs:** ADR-0037, ADR-0038
+
+**Impacted Invariants:** Market Intelligence Is Interpreted Context; Derived
+State Must Remain Distinguishable; Replayability Is Foundational
+
+**Source:** Operator feedback from live fundamentals requests for `MU` and
+`SPOT` on 2026-07-13. FMP returned `402 Payment Required` for symbols outside
+the current subscription's narrow accessible set.
+
+**Problem:**
+The default fundamentals route still prefers FMP and only falls back to Alpha
+Vantage. In the configured local subscription, FMP fails for materially common
+symbols with payment-gated responses. That creates avoidable latency and noisy
+failure provenance before the provider that is actually usable for the current
+operator.
+
+**Scope:**
+
+- Make Alpha Vantage the default fundamentals preference.
+- Keep FMP configured and visible as an ordered fallback when credentials
+  exist.
+- Preserve provider-governance transparency and explicit attempt reporting.
+- Add regression coverage for the default preference order.
+
+**Acceptance Criteria:**
+
+- When both FMP and Alpha Vantage credentials are configured, default
+  fundamentals resolution selects Alpha Vantage first.
+- FMP remains available as a fallback provider rather than being removed from
+  the capability model.
+- No credential shape, event model, lifecycle, replay, or OpenAPI contract
+  change.
+
+**Out Of Scope:**
+
+- Removing FMP support.
+- Adding new fundamentals providers.
+- Persisting provider health history.
+- Changing operator-configured provider preferences beyond the default
+  composition policy.
+
+**ADR Checkpoint:**
+No ADR required. This updates default composition policy inside the existing
+ADR-0038 capability routing model after field evidence showed the original
+rollout preference is operationally poor for the current subscription.
+
+**Resolution Summary:**
+Changed default fundamentals routing from FMP-primary to Alpha
+Vantage-primary while retaining FMP as fallback. Added a composition-level
+test covering the default order when both credentials exist.
+
+**Verification Completed:**
+
+- `uv run pytest tests\test_fundamentals_adapters.py tests\test_fundamentals_overlay.py tests\test_provider_governance_api.py`
+- `uv run ruff check src\infrastructure\market\alpha_vantage_adapter.py src\app\api\application.py tests\test_fundamentals_adapters.py tests\test_provider_governance_api.py`
+- `uv run mypy src\infrastructure\market\alpha_vantage_adapter.py src\app\api\application.py tests\test_fundamentals_adapters.py tests\test_provider_governance_api.py`
 
 ---
 
