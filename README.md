@@ -69,6 +69,7 @@ Bring externally authored research into the Thesis and Plan workflows as non-can
 - Scan on demand with the **Scan folder** action in the Thesis Development or Plan Development modal — no watchers, no background ingestion
 - Thesis sections mapped deterministically from headings: Narrative, Catalysts, Assumptions, Invalidation Conditions, Evidence Links, Notes
 - Plan sections mapped: entry, stop, and target rationale plus risk notes — prices, sizing, order, and approval fields are prohibited and never imported
+- Thesis import previews show advisory source references, evidence links, notes, provenance, uncertainty, and caveats before field acceptance
 - Accept, edit, or reject each imported field individually; manual submission remains the only lifecycle action
 - Accepted/edited/rejected provenance rides on the normal `decision.thesis_created` / `decision.plan_created` event; replay labels it `Advisory source, operator-promoted thesis`
 

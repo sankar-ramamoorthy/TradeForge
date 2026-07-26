@@ -1204,6 +1204,13 @@ export type ThesisImportMappedFields = {
   notes: string | null;
 };
 
+export type ThesisImportSourceReference = {
+  source_kind: string;
+  source_id: string;
+  summary: string;
+  source_uri: string | null;
+};
+
 export type ThesisImportPreview = {
   artifact_id: string;
   artifact_type: "imported_research" | "generated_advisory" | "markdown_note";
@@ -1215,6 +1222,7 @@ export type ThesisImportPreview = {
   uncertainty_band: "low" | "medium" | "high" | "unknown";
   caveats: string[];
   mapped_fields: ThesisImportMappedFields;
+  source_references: ThesisImportSourceReference[];
   authority: "advisory";
   is_canonical: false;
   lifecycle_authority: false;
@@ -1289,6 +1297,7 @@ export type PlanImportPreview = {
   uncertainty_band: "low" | "medium" | "high" | "unknown";
   caveats: string[];
   mapped_fields: PlanImportMappedFields;
+  source_references: ThesisImportSourceReference[];
   authority: "advisory";
   is_canonical: false;
   lifecycle_authority: false;

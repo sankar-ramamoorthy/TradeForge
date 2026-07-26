@@ -3047,6 +3047,7 @@ p {
 .thesis-import-meta,
 .thesis-import-provenance,
 .thesis-import-caveats,
+.thesis-import-source-references,
 .thesis-import-field p,
 .thesis-import-submit-summary,
 .thesis-import-scan-message,
@@ -3064,6 +3065,38 @@ p {
 .thesis-import-caveats {
   margin: 8px 0 0 18px;
   padding: 0;
+}
+
+.thesis-import-source-references {
+  display: grid;
+  gap: 6px;
+  margin-top: 10px;
+  overflow-wrap: anywhere;
+}
+
+.thesis-import-source-references ul {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding-left: 18px;
+}
+
+.thesis-import-source-references li {
+  display: grid;
+  gap: 2px;
+}
+
+.thesis-import-source-references a {
+  color: var(--color-accent);
+  text-decoration: none;
+}
+
+.thesis-import-source-references a:hover {
+  text-decoration: underline;
+}
+
+.thesis-import-source-references small {
+  color: var(--color-text-subtle);
 }
 
 .thesis-import-fields {
@@ -3088,6 +3121,7 @@ p {
 
 .thesis-import-field p,
 .thesis-import-provenance,
+.thesis-import-source-references p,
 .thesis-import-submit-summary,
 .thesis-import-scan-message,
 .thesis-import-replay-context p {
