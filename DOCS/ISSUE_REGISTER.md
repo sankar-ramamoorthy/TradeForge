@@ -8621,6 +8621,14 @@ imported context as `Advisory source, operator-promoted thesis`.
   TF-R002 plan imports).
 - Closed by operator direction ahead of commissioning M-RF.
 
+**Follow-up completion (2026-07-26):**
+
+- Thesis import preview now surfaces returned source references, evidence
+  links, notes, provenance, uncertainty, and caveats before field acceptance.
+- The Thesis Development modal explicitly states that preview is read-only and
+  `Develop Thesis` remains the lifecycle action.
+- M14C roadmap status for TF-R001 was aligned to Done.
+
 ---
 
 ## TF-R002: Plan Workspace Advisory Import Mediation

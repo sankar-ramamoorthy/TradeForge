@@ -2588,7 +2588,7 @@ population, sizing, approval, broker integration, or execution.
 ## Linked Runtime Issues
 
 * TF-R001: Thesis Workspace advisory import preview and local markdown dropoff
-  (**In Progress**, pending operator manual acceptance and README update)
+  (**Done**)
 * TF-R002: Plan Workspace advisory import mediation
   (**Done**)
 

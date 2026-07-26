@@ -5,6 +5,7 @@ import {
   scanLocalThesisImports,
   type ThesisImportMappedFields,
   type ThesisImportPreview,
+  type ThesisImportSourceReference,
 } from "../api/runtime";
 import { type WorkspaceContext } from "../workspaceRouting";
 import { FundamentalsContextPanel } from "./FundamentalsContextPanel";
@@ -122,6 +123,51 @@ function importedListEdited(current: string[], imported: string[] | undefined) {
   return JSON.stringify(cleanCurrent) !== JSON.stringify(imported);
 }
 
+function SourceReferenceList({
+  references,
+}: {
+  references: ThesisImportSourceReference[];
+}) {
+  if (references.length === 0) return null;
+
+  return (
+    <div className="thesis-import-source-references">
+      <span className="thesis-import-field-name">Sources</span>
+      <ul>
+        {references.map((reference) => (
+          <li key={`${reference.source_kind}:${reference.source_id}`}>
+            <span>{reference.summary || reference.source_id}</span>
+            {reference.source_uri ? (
+              <a href={reference.source_uri} rel="noreferrer" target="_blank">
+                {reference.source_uri}
+              </a>
+            ) : (
+              <small>{reference.source_kind}: {reference.source_id}</small>
+            )}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function EvidenceLinks({ links }: { links: string[] }) {
+  if (links.length === 0) return null;
+
+  return (
+    <div className="thesis-import-source-references">
+      <span className="thesis-import-field-name">Evidence Links</span>
+      <ul>
+        {links.map((link) => (
+          <li key={link}>
+            <a href={link} rel="noreferrer" target="_blank">{link}</a>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 function ThesisImportPreviewPanel({
   context,
   symbol,
@@ -207,7 +253,7 @@ function ThesisImportPreviewPanel({
         </div>
       </div>
       <div className="thesis-import-dropoff">
-        <span>Drop markdown in imports/incoming.</span>
+        <span>Drop markdown in imports/incoming. Preview is read-only; Develop Thesis is the lifecycle action.</span>
         <button
           className="thesis-import-action"
           disabled={scanning}
@@ -235,7 +281,16 @@ function ThesisImportPreviewPanel({
           <div className="thesis-import-meta">
             <span>Uncertainty: {artifact.uncertainty_band}</span>
             <span>{artifact.caveats.length} caveat{artifact.caveats.length !== 1 ? "s" : ""}</span>
+            <span>{artifact.source_references.length} source{artifact.source_references.length !== 1 ? "s" : ""}</span>
           </div>
+          <SourceReferenceList references={artifact.source_references} />
+          <EvidenceLinks links={artifact.mapped_fields.evidence_links} />
+          {artifact.mapped_fields.notes ? (
+            <div className="thesis-import-source-references">
+              <span className="thesis-import-field-name">Notes</span>
+              <p>{artifact.mapped_fields.notes}</p>
+            </div>
+          ) : null}
           {artifact.caveats.length > 0 ? (
             <ul className="thesis-import-caveats">
               {artifact.caveats.map((caveat) => (
