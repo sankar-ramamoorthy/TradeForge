@@ -34,9 +34,10 @@ The runtime currently supports:
    are historical source artifacts only.
 2. Preserve M14C advisory import boundaries: imported research is advisory
    draft material until the operator submits normal lifecycle workflows.
-3. Prepare planned near-term work:
-   - operator walkthrough before selecting M-RF-FE, M-RF2, M-PT, Research
-     Cockpit intake, or additional usability work
+3. Address field-observed evidence clarity from the completed operator
+   walkthrough:
+   - TF-F083: surface partial evidence refresh coverage across refresh,
+     ranking, and per-symbol evidence feedback
 4. Reassess M15 cognitive replay after product and evidence workflows have more
    runtime usage behind them.
 
@@ -59,12 +60,18 @@ Completed since the older foundation phase:
 - EZ-03 documentation truth pass is complete.
 - RAMP-01 quick-capture idea tier is complete.
 - RAMP-02 guided first-decision mode is complete.
+- The 2026-07-27 operator walkthrough is complete; it added seven watchlist
+  symbols, inspected evidence refresh and attention ranking, quick-captured
+  three ideas, developed one thesis, imported one Research Cockpit advisory
+  submission through existing mediation, and created one theoretical plan.
 
 Planned:
 
-- operator walkthrough and evidence-based next-stream selection
-- M-RF-FE, M-RF2, M-PT, RAMP-03, and M15+ remain deferred until operator
-  validation or concrete blockers justify activation
+- TF-F083 evidence-refresh coverage clarity is the next major stream selected
+  from walkthrough evidence.
+- M-RF-FE, M-RF2, M-PT, RAMP-03, Research Cockpit intake expansion, and M15+
+  remain deferred until further operator evidence or concrete blockers justify
+  activation.
 
 ---
 
