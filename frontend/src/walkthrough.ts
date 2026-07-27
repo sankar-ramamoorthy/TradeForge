@@ -1,11 +1,59 @@
-import { initNewTradeIdea, postLifecycleTransition } from "./api/runtime";
+import {
+  initNewTradeIdea,
+  postCompleteReview,
+  postCreatePlan,
+  postDevelopThesis,
+  postLifecycleTransition,
+} from "./api/runtime";
 import { setActiveDecision } from "./activeDecision";
 
 const STORAGE_KEY = "tradeforge.walkthrough_session";
 const WALKTHROUGH_SYMBOL = "AAPL";
 const WALKTHROUGH_THESIS =
-  "Breakout above the 200-day moving average on above-average volume. " +
-  "Technology sector momentum intact with strong institutional participation.";
+  "AAPL is testing a breakout above a widely watched moving average. " +
+  "I want to see whether volume confirms demand before treating the idea as actionable.";
+const WALKTHROUGH_PLAN = {
+  entry_rationale:
+    "Enter only if price closes above resistance with volume confirming demand.",
+  stop_rationale:
+    "Exit if price closes back below the breakout level, because that invalidates the setup.",
+  target_rationale:
+    "Use the prior measured range to define a first target with at least two-to-one reward to risk.",
+  sizing_rationale:
+    "Size small enough that a stop loss costs no more than one planned risk unit.",
+  execution_assumptions: [
+    "Liquidity remains normal at the planned entry.",
+    "No earnings event occurs before the first target window.",
+  ],
+  playbook_alignment: "guided-first-decision",
+};
+const WALKTHROUGH_REVIEW = {
+  thesis_vs_outcome:
+    "The walkthrough decision followed the written thesis and plan, so the review focuses on process discipline.",
+  decision_quality: 4,
+  execution_quality: 4,
+  discipline_observations:
+    "Each lifecycle step was recorded explicitly before moving to the next stage.",
+  lessons_learned: [
+    "Write the reason before planning the action.",
+    "Review the process even when the example outcome is theoretical.",
+  ],
+  behavioral_observations:
+    "Guided mode emphasizes sequencing over prediction.",
+};
+
+type WalkthroughAction =
+  | "develop_thesis"
+  | "create_plan"
+  | "approve_plan"
+  | "record_execution"
+  | "complete_review"
+  | "none";
+
+export type WalkthroughGlossaryTerm = {
+  term: string;
+  definition: string;
+};
 
 export type WalkthroughStepDef = {
   stepIndex: number;
@@ -14,6 +62,8 @@ export type WalkthroughStepDef = {
   title: string;
   explanation: string;
   actionLabel: string;
+  action: WalkthroughAction;
+  glossary: WalkthroughGlossaryTerm[];
   transitionStages: string[];
   nextWorkspacePath: string | null;
 };
@@ -35,12 +85,15 @@ export const WALKTHROUGH_STEPS: WalkthroughStepDef[] = [
     stepIndex: 0,
     totalSteps: TOTAL,
     workspacePath: "/workspaces/operating",
-    title: "The Operating Workspace",
+    title: "Start With An Idea",
     explanation:
-      "This is the Operating Workspace — your daily hub for what requires " +
-      "attention. A new AAPL trade idea has just been initialized and appears " +
-      "in your decision queue, awaiting thesis development.",
-    actionLabel: "Develop the Thesis →",
+      "Guided mode created one example AAPL idea. It is not ready for action until you write the reason.",
+    actionLabel: "Write the reason",
+    action: "develop_thesis",
+    glossary: [
+      { term: "Idea", definition: "A symbol and early reason worth investigating." },
+      { term: "Thesis", definition: "The written reason this idea might be worth acting on." },
+    ],
     transitionStages: ["Thesis"],
     nextWorkspacePath: "/workspaces/opportunity",
   },
@@ -48,12 +101,14 @@ export const WALKTHROUGH_STEPS: WalkthroughStepDef[] = [
     stepIndex: 1,
     totalSteps: TOTAL,
     workspacePath: "/workspaces/opportunity",
-    title: "The Opportunity Workspace",
+    title: "Turn The Reason Into A Plan",
     explanation:
-      "The Opportunity Workspace is where you examine and formalize the thesis " +
-      "behind a trade idea. Every decision begins with an explicit thesis — a " +
-      "structured reason grounded in observable conditions, not a gut feeling.",
-    actionLabel: "Create the Plan →",
+      "The thesis is recorded. Next, define the entry, stop, target, sizing, and assumptions.",
+    actionLabel: "Create the plan",
+    action: "create_plan",
+    glossary: [
+      { term: "Plan", definition: "The written rules for entry, stop, target, and sizing." },
+    ],
     transitionStages: ["Plan"],
     nextWorkspacePath: "/workspaces/plan-review",
   },
@@ -61,13 +116,14 @@ export const WALKTHROUGH_STEPS: WalkthroughStepDef[] = [
     stepIndex: 2,
     totalSteps: TOTAL,
     workspacePath: "/workspaces/plan-review",
-    title: "Plan Review — Document the Plan",
+    title: "Approve Deliberately",
     explanation:
-      "The Plan Review Workspace captures your explicit trade plan: entry, " +
-      "position sizing, stop loss, and targets. A written plan separates " +
-      "disciplined decision-making from reactive action. Plans must be explicit " +
-      "before they can be authorized.",
-    actionLabel: "Authorize the Plan →",
+      "Approval confirms that the idea, reason, and plan are complete enough to act on.",
+    actionLabel: "Approve the plan",
+    action: "approve_plan",
+    glossary: [
+      { term: "Approval", definition: "A deliberate decision that the written plan may be acted on." },
+    ],
     transitionStages: ["Approval"],
     nextWorkspacePath: "/workspaces/plan-review",
   },
@@ -75,12 +131,15 @@ export const WALKTHROUGH_STEPS: WalkthroughStepDef[] = [
     stepIndex: 3,
     totalSteps: TOTAL,
     workspacePath: "/workspaces/plan-review",
-    title: "Plan Review — Authorize",
+    title: "Record A Theoretical Action",
     explanation:
-      "Authorization is a deliberate commitment checkpoint. You're confirming " +
-      "that the plan meets your criteria and you'll execute it exactly as written. " +
-      "This becomes an immutable event in your decision ledger — it cannot be revised.",
-    actionLabel: "Record Execution and Open Position →",
+      "No broker connection is needed. Guided mode records a theoretical execution and open position.",
+    actionLabel: "Record theoretical execution",
+    action: "record_execution",
+    glossary: [
+      { term: "Execution", definition: "A record that the plan was acted on." },
+      { term: "Position", definition: "The period after entry while the idea is monitored." },
+    ],
     transitionStages: ["Execution", "Position"],
     nextWorkspacePath: "/workspaces/active-position",
   },
@@ -88,12 +147,14 @@ export const WALKTHROUGH_STEPS: WalkthroughStepDef[] = [
     stepIndex: 4,
     totalSteps: TOTAL,
     workspacePath: "/workspaces/active-position",
-    title: "Active Position Workspace",
+    title: "Close The Loop With Review",
     explanation:
-      "The Active Position Workspace shows your open trade in full context. " +
-      "Here you monitor thesis integrity — the original reason you entered. " +
-      "Positions are managed against the thesis, not the P&L ticker.",
-    actionLabel: "Begin the Review →",
+      "The example position is open. Now record what the decision process showed you.",
+    actionLabel: "Complete the review",
+    action: "complete_review",
+    glossary: [
+      { term: "Review", definition: "A written reflection on process quality and lessons learned." },
+    ],
     transitionStages: ["Review"],
     nextWorkspacePath: "/workspaces/review",
   },
@@ -101,13 +162,14 @@ export const WALKTHROUGH_STEPS: WalkthroughStepDef[] = [
     stepIndex: 5,
     totalSteps: TOTAL,
     workspacePath: "/workspaces/review",
-    title: "Review Workspace",
+    title: "Inspect The Replay",
     explanation:
-      "The Review Workspace captures what you learned. TradeForge deliberately " +
-      "separates decision process quality from outcome — a disciplined process can " +
-      "produce a loss; a sloppy one can produce a winner. Review builds long-term " +
-      "operational discipline, not just attribution.",
-    actionLabel: "Explore the Replay →",
+      "The lifecycle is complete. Replay shows the recorded path from idea through review.",
+    actionLabel: "Open replay",
+    action: "none",
+    glossary: [
+      { term: "Replay", definition: "A reconstruction of the decision from recorded events." },
+    ],
     transitionStages: [],
     nextWorkspacePath: "/workspaces/replay",
   },
@@ -115,13 +177,12 @@ export const WALKTHROUGH_STEPS: WalkthroughStepDef[] = [
     stepIndex: 6,
     totalSteps: TOTAL,
     workspacePath: "/workspaces/replay",
-    title: "Replay Workspace — Complete",
+    title: "First Decision Complete",
     explanation:
-      "The Replay Workspace reconstructs your complete decision history from " +
-      "immutable events. Every stage — Idea through Review — is preserved and " +
-      "replayable. This is TradeForge: structured operational cognition with " +
-      "permanent, auditable memory.",
+      "You completed one guided lifecycle: idea, thesis, plan, approval, execution, position, review, and replay.",
     actionLabel: "Finish Walkthrough",
+    action: "none",
+    glossary: [],
     transitionStages: [],
     nextWorkspacePath: null,
   },
@@ -151,7 +212,7 @@ export function setWalkthroughSession(session: WalkthroughSession): void {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(session));
   } catch {
-    // fail silently
+    // localStorage can fail in private browsing or locked-down environments.
   }
 }
 
@@ -159,7 +220,7 @@ export function clearWalkthroughSession(): void {
   try {
     localStorage.removeItem(STORAGE_KEY);
   } catch {
-    // fail silently
+    // localStorage can fail in private browsing or locked-down environments.
   }
 }
 
@@ -177,6 +238,7 @@ export async function initWalkthrough(options: {
   const init = await initNewTradeIdea({
     symbol: WALKTHROUGH_SYMBOL,
     initial_thesis: WALKTHROUGH_THESIS,
+    capture_mode: "quick_capture",
     persona_id: personaId,
     workspace_id: workspaceId,
   });
@@ -208,6 +270,47 @@ export async function advanceWalkthroughStep(
   session: WalkthroughSession,
   step: WalkthroughStepDef,
 ): Promise<void> {
+  if (step.action === "develop_thesis") {
+    await postDevelopThesis({
+      decision_id: session.decision_id,
+      symbol: session.symbol,
+      narrative: WALKTHROUGH_THESIS,
+      catalysts: ["Breakout attempt", "Constructive relative strength"],
+      assumptions: ["Market conditions remain supportive"],
+      invalidation_conditions: [
+        "Close back below the breakout level",
+        "Volume fails to confirm demand",
+      ],
+      confidence_level: 3,
+      regime_alignment: "Guided example, not a recommendation.",
+      persona_id: session.persona_id,
+      workspace_id: session.workspace_id,
+    });
+    return;
+  }
+
+  if (step.action === "create_plan") {
+    await postCreatePlan({
+      decision_id: session.decision_id,
+      symbol: session.symbol,
+      ...WALKTHROUGH_PLAN,
+      persona_id: session.persona_id,
+      workspace_id: session.workspace_id,
+    });
+    return;
+  }
+
+  if (step.action === "complete_review") {
+    await postCompleteReview({
+      decision_id: session.decision_id,
+      symbol: session.symbol,
+      ...WALKTHROUGH_REVIEW,
+      persona_id: session.persona_id,
+      workspace_id: session.workspace_id,
+    });
+    return;
+  }
+
   if (step.transitionStages.length === 0) return;
 
   const decisionRef = [
@@ -220,14 +323,14 @@ export async function advanceWalkthroughStep(
     persona_id: session.persona_id,
     workspace_id: session.workspace_id,
     entity_references: decisionRef,
-    provenance: { actor: "walkthrough", source: "guided-walkthrough" },
+    provenance: { actor: "walkthrough", source: "guided-first-decision" },
   };
 
   for (const stageName of step.transitionStages) {
     await postLifecycleTransition({
       ...base,
       requested_stage: stageName,
-      payload: { source: "guided-walkthrough" },
+      payload: { source: "guided-first-decision" },
     });
   }
 }

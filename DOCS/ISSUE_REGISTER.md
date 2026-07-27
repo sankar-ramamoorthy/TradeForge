@@ -290,7 +290,7 @@ planning while preserving the earlier MVP record for reference.
 | EV-04 | Done | M-EZ | Basic price chart component | `feature/ev-04-price-chart` |
 | EV-05 | Done | M-EZ | Transparent attention ranking | `feature/ev-05-transparent-attention-ranking` |
 | RAMP-01 | Done | M-EZ | Quick-capture idea tier | `feature/ramp-01-quick-capture` |
-| RAMP-02 | Planned | M-EZ | Guided first-decision mode | `feature/ramp-02-guided-first-decision` |
+| RAMP-02 | Done | M-EZ | Guided first-decision mode | `feature/ramp-02-guided-first-decision` |
 | RAMP-03 | Planned | M-EZ | Operator identity profiles | `feature/ramp-03-operator-identity` |
 | GOV-01 | Done | M-EZ | Two-tier issue discipline documentation | `docs/gov-01-two-tier-discipline` |
 | GOV-02 | Done | M-EZ | Knowledge base hygiene pass | `docs/gov-02-kb-hygiene` |
@@ -9840,7 +9840,7 @@ the operator completes the structured thesis and plan authoring workflows.
 
 ## RAMP-02: Guided First-Decision Mode
 
-**Status:** Planned
+**Status:** Done
 
 **Milestone:** M-EZ
 
@@ -9854,6 +9854,13 @@ glossary layer.
 
 **Acceptance Criteria:** A non-trader can complete one full lifecycle with
 guidance only.
+
+**Implementation Note (2026-07-27):** The guided walkthrough now uses the
+structured thesis, plan, and review frontend API helpers instead of generic
+empty-payload transitions for those authoring gates. The walkthrough remains
+persona-neutral, advances through one theoretical AAPL lifecycle, and adds
+plain-language glossary terms for Idea, Thesis, Plan, Approval, Execution,
+Position, Review, and Replay.
 
 ---
 

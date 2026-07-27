@@ -18,6 +18,7 @@ It is:
 ### Decision lifecycle
 
 - Quick-capture a draft idea with symbol plus two thesis seed sentences
+- Guided first-decision walkthrough with beginner glossary terms
 
 Full 7-stage lifecycle: **Idea → Thesis → Plan → Approval → Execution → Position → Review**
 

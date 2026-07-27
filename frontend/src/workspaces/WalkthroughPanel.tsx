@@ -64,6 +64,16 @@ export function WalkthroughPanel({
       <div className="walkthrough-body">
         <h3 className="walkthrough-step-title">{step.title}</h3>
         <p className="walkthrough-explanation">{step.explanation}</p>
+        {step.glossary.length > 0 ? (
+          <dl className="walkthrough-glossary">
+            {step.glossary.map((item) => (
+              <div key={item.term} className="walkthrough-glossary-item">
+                <dt>{item.term}</dt>
+                <dd>{item.definition}</dd>
+              </div>
+            ))}
+          </dl>
+        ) : null}
         {error ? (
           <p className="walkthrough-error" role="alert">
             {error}

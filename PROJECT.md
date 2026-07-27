@@ -35,7 +35,6 @@ The runtime currently supports:
 2. Preserve M14C advisory import boundaries: imported research is advisory
    draft material until the operator submits normal lifecycle workflows.
 3. Prepare planned near-term work:
-   - RAMP-02 entry-ramp work
    - operator walkthrough before selecting M-RF-FE, M-RF2, M-PT, Research
      Cockpit intake, or additional usability work
 4. Reassess M15 cognitive replay after product and evidence workflows have more
@@ -59,10 +58,10 @@ Completed since the older foundation phase:
 - EZ-02 first-run master key setup is complete.
 - EZ-03 documentation truth pass is complete.
 - RAMP-01 quick-capture idea tier is complete.
+- RAMP-02 guided first-decision mode is complete.
 
 Planned:
 
-- RAMP-02
 - operator walkthrough and evidence-based next-stream selection
 - M-RF-FE, M-RF2, M-PT, RAMP-03, and M15+ remain deferred until operator
   validation or concrete blockers justify activation

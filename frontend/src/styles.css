@@ -2485,6 +2485,34 @@ p {
   line-height: 1.55;
 }
 
+.walkthrough-glossary {
+  display: grid;
+  gap: 6px;
+  margin: 2px 0 0;
+}
+
+.walkthrough-glossary-item {
+  display: grid;
+  gap: 2px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+  background: var(--color-surface);
+  padding: 8px 10px;
+}
+
+.walkthrough-glossary-item dt {
+  color: var(--color-text);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.walkthrough-glossary-item dd {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
 .walkthrough-error {
   font-size: 0.82rem;
   color: var(--color-danger);
