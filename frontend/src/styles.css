@@ -741,6 +741,40 @@ p {
   padding: 0 10px;
 }
 
+.credential-master-key-warning {
+  display: grid;
+  gap: 10px;
+  border: 1px solid #d5b45b;
+  border-radius: var(--radius-control);
+  background: #fff8e6;
+  padding: 10px;
+}
+
+.credential-master-key-warning .credential-save-btn {
+  width: fit-content;
+}
+
+.credential-generated-key {
+  display: grid;
+  gap: 6px;
+  color: var(--color-text);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.credential-generated-key textarea {
+  width: 100%;
+  min-height: 78px;
+  resize: vertical;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+  background: var(--color-surface);
+  color: var(--color-text);
+  padding: 8px;
+  font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+  overflow-wrap: anywhere;
+}
+
 .market-snapshot {
   padding: 10px 12px;
   border: 1px solid var(--color-border);

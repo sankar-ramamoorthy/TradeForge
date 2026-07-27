@@ -2910,6 +2910,10 @@ Runtime authority:
 * EZ-01 is complete: Docker Compose now builds a Postgres-backed TradeForge
   runtime image, runs migrations on startup, and serves the built frontend from
   the API origin at `http://localhost:8000`.
+* EZ-02 is complete: first-run Provider Governance setup can generate the
+  local master key when no key and no `.keys.enc` exist, show it once, persist
+  it to the ignored Compose-mounted `.tradeforge/runtime.env` file, and enable
+  credential entry without a terminal or restart.
 
 ---
 

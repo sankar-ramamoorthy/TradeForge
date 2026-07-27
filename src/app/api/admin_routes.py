@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -31,6 +32,8 @@ _PROVIDER_FIELD_NAMES: dict[str, list[str]] = {
 }
 
 _SECRET_FIELDS = frozenset({"api_key", "secret_key"})
+_RUNTIME_ENV_FILE_ENV_VAR = "TRADEFORGE_RUNTIME_ENV_FILE"
+_DEFAULT_RUNTIME_ENV_FILE = ".tradeforge/runtime.env"
 
 
 def _mask(value: str) -> str:
@@ -94,9 +97,60 @@ class UpdateCredentialPayload(BaseModel):
     fields: dict[str, str] = Field(min_length=1)
 
 
+class SetupStatusResponse(BaseModel):
+    requires_setup: bool
+    master_key_configured: bool
+    credential_store_exists: bool
+    runtime_env_file_path: str
+    can_persist_runtime_env_file: bool
+
+
+class SetupMasterKeyResponse(BaseModel):
+    master_key: str
+    status: SetupStatusResponse
+
+
 # --------------------------------------------------------------------------- #
 # Helpers                                                                       #
 # --------------------------------------------------------------------------- #
+
+
+def _runtime_env_file_path() -> Path:
+    return Path(os.environ.get(_RUNTIME_ENV_FILE_ENV_VAR, _DEFAULT_RUNTIME_ENV_FILE))
+
+
+def _credential_store_exists(request: Request) -> bool:
+    store: CredentialStore | None = request.app.state.credential_store
+    if store is not None and tuple(store.list_credentials()):
+        return True
+    return Path(".keys.enc").exists()
+
+
+def _setup_status(request: Request) -> SetupStatusResponse:
+    master_key_configured = bool(os.environ.get(KeyManager.ENV_VAR_NAME))
+    credential_store_exists = _credential_store_exists(request)
+    runtime_env_file = _runtime_env_file_path()
+    return SetupStatusResponse(
+        requires_setup=not master_key_configured and not credential_store_exists,
+        master_key_configured=master_key_configured,
+        credential_store_exists=credential_store_exists,
+        runtime_env_file_path=str(runtime_env_file),
+        can_persist_runtime_env_file=True,
+    )
+
+
+def _persist_runtime_master_key(master_key: str) -> Path:
+    runtime_env_file = _runtime_env_file_path()
+    runtime_env_file.parent.mkdir(parents=True, exist_ok=True)
+    runtime_env_file.write_text(
+        f"{KeyManager.ENV_VAR_NAME}={master_key}\n",
+        encoding="utf-8",
+    )
+    try:
+        runtime_env_file.chmod(0o600)
+    except OSError:
+        pass
+    return runtime_env_file
 
 
 def _build_status(
@@ -188,6 +242,46 @@ def _build_status(
 # --------------------------------------------------------------------------- #
 # Routes                                                                        #
 # --------------------------------------------------------------------------- #
+
+
+@admin_router.get("/setup/status", response_model=SetupStatusResponse)
+def setup_status(request: Request) -> SetupStatusResponse:
+    """Report whether first-run master key setup is currently allowed."""
+    return _setup_status(request)
+
+
+@admin_router.post(
+    "/setup/master-key",
+    response_model=SetupMasterKeyResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+def setup_master_key(request: Request) -> SetupMasterKeyResponse:
+    """Generate a first-run master key and persist it to the local runtime env file.
+
+    This route is available only before a master key or credential store exists.
+    The generated key is returned once so the operator can record it.
+    """
+    current_status = _setup_status(request)
+    if not current_status.requires_setup:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=(
+                "first-run setup is available only before a master key or "
+                "credential store exists"
+            ),
+        )
+
+    master_key = KeyManager.generate_master_key()
+    _persist_runtime_master_key(master_key)
+    os.environ[KeyManager.ENV_VAR_NAME] = master_key
+    store = CredentialStore(Path(".keys.enc"))
+    request.app.state.credential_store = store
+    request.app.state.provider_bootstrap.set_credential_store(store)
+
+    return SetupMasterKeyResponse(
+        master_key=master_key,
+        status=_setup_status(request),
+    )
 
 
 @admin_router.get("/credentials", response_model=CredentialListResponse)

@@ -565,6 +565,43 @@ export type CredentialListResponse = {
   master_key_configured: boolean;
 };
 
+export type SetupStatusResponse = {
+  requires_setup: boolean;
+  master_key_configured: boolean;
+  credential_store_exists: boolean;
+  runtime_env_file_path: string;
+  can_persist_runtime_env_file: boolean;
+};
+
+export type SetupMasterKeyResponse = {
+  master_key: string;
+  status: SetupStatusResponse;
+};
+
+export async function fetchSetupStatus(
+  signal?: AbortSignal,
+): Promise<SetupStatusResponse> {
+  const response = await fetch("/admin/setup/status", { signal });
+  if (!response.ok) {
+    throw new Error(`Setup status request failed: ${response.status}`);
+  }
+  return response.json() as Promise<SetupStatusResponse>;
+}
+
+export async function generateSetupMasterKey(
+  signal?: AbortSignal,
+): Promise<SetupMasterKeyResponse> {
+  const response = await fetch("/admin/setup/master-key", {
+    method: "POST",
+    signal,
+  });
+  if (!response.ok) {
+    const detail = await response.text();
+    throw new Error(`Master key setup failed (${response.status}): ${detail}`);
+  }
+  return response.json() as Promise<SetupMasterKeyResponse>;
+}
+
 export async function fetchCredentials(
   signal?: AbortSignal,
 ): Promise<CredentialListResponse> {

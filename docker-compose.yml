@@ -8,6 +8,9 @@ services:
     environment:
       TRADEFORGE_DATABASE_URL: postgresql://tradeforge:tradeforge@postgres:5432/tradeforge
       TRADEFORGE_MASTER_KEY: ${TRADEFORGE_MASTER_KEY:-}
+      TRADEFORGE_RUNTIME_ENV_FILE: /app/.tradeforge/runtime.env
+    volumes:
+      - ./.tradeforge:/app/.tradeforge
     ports:
       - "8000:8000"
     depends_on:

@@ -15,4 +15,5 @@ dist/
 .env
 .keys.enc
 TRADEFORGE_MASTER_KEY
+.tradeforge/
 *.log

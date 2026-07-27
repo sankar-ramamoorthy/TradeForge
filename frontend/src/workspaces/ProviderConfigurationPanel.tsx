@@ -3,6 +3,8 @@ import {
   PROVIDER_CREDENTIAL_SCHEMAS,
   fetchCredentials,
   fetchProviderConfiguration,
+  fetchSetupStatus,
+  generateSetupMasterKey,
   revokeCredential,
   updateCredential,
   updateProviderPreference,
@@ -10,6 +12,7 @@ import {
   type CredentialListResponse,
   type CredentialStatus,
   type ProviderConfiguration,
+  type SetupStatusResponse,
 } from "../api/runtime";
 
 const CREDENTIAL_PROVIDERS = [
@@ -29,6 +32,8 @@ type CredentialProvider = (typeof CREDENTIAL_PROVIDERS)[number];
 export function ProviderConfigurationPanel() {
   const [config, setConfig] = useState<ProviderConfiguration | null>(null);
   const [credList, setCredList] = useState<CredentialListResponse | null>(null);
+  const [setupStatus, setSetupStatus] = useState<SetupStatusResponse | null>(null);
+  const [generatedMasterKey, setGeneratedMasterKey] = useState<string | null>(null);
   const [expandedProvider, setExpandedProvider] = useState<string | null>(null);
   const [formValues, setFormValues] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
@@ -46,6 +51,7 @@ export function ProviderConfigurationPanel() {
   useEffect(() => {
     fetchProviderConfiguration().then(setConfig).catch(() => setConfig(null));
     fetchCredentials().then(setCredList).catch(() => setCredList(null));
+    fetchSetupStatus().then(setSetupStatus).catch(() => setSetupStatus(null));
   }, []);
 
   const showToast = (message: string) => {
@@ -55,6 +61,11 @@ export function ProviderConfigurationPanel() {
 
   const credForProvider = (providerId: string): CredentialStatus | undefined =>
     credList?.credentials.find((c) => c.provider_id === providerId);
+
+  const refreshCredentialState = () => {
+    fetchCredentials().then(setCredList).catch(() => setCredList(null));
+    fetchSetupStatus().then(setSetupStatus).catch(() => setSetupStatus(null));
+  };
 
   const toggleExpand = (providerId: string) => {
     if (expandedProvider === providerId) {
@@ -93,6 +104,22 @@ export function ProviderConfigurationPanel() {
       fetchProviderConfiguration().then(setConfig).catch(() => undefined);
     } catch (err) {
       showToast(err instanceof Error ? err.message : "Save failed.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleGenerateMasterKey = async () => {
+    setSaving(true);
+    try {
+      const result = await generateSetupMasterKey();
+      setGeneratedMasterKey(result.master_key);
+      setSetupStatus(result.status);
+      showToast("Master key generated. Save it before closing this view.");
+      refreshCredentialState();
+      fetchProviderConfiguration().then(setConfig).catch(() => undefined);
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : "Master key setup failed.");
     } finally {
       setSaving(false);
     }
@@ -151,6 +178,7 @@ export function ProviderConfigurationPanel() {
     .map((provider) => provider.provider_id);
 
   const masterKeyMissing = credList !== null && !credList.master_key_configured;
+  const setupAvailable = setupStatus?.requires_setup === true;
 
   return (
     <section className="provider-configuration-panel" aria-label="Provider configuration">
@@ -201,9 +229,43 @@ export function ProviderConfigurationPanel() {
         <p className="provider-capability-label">Credentials</p>
 
         {masterKeyMissing && (
-          <p className="credential-master-key-warning projection-detail">
-            TRADEFORGE_MASTER_KEY is not set. Credential management is unavailable.
-          </p>
+          <div className="credential-master-key-warning">
+            {setupAvailable ? (
+              <>
+                <p className="projection-detail">
+                  First-run setup is ready. Generate the local master key here,
+                  record it now, then add provider credentials only if you need
+                  them. yfinance remains available without credentials.
+                </p>
+                <button
+                  className="credential-save-btn"
+                  disabled={saving}
+                  onClick={() => {
+                    void handleGenerateMasterKey();
+                  }}
+                  type="button"
+                >
+                  {saving ? "Generating..." : "Generate master key"}
+                </button>
+              </>
+            ) : (
+              <p className="projection-detail">
+                TRADEFORGE_MASTER_KEY is not set. Use the original master key
+                for the existing credential store before managing credentials.
+              </p>
+            )}
+            {generatedMasterKey ? (
+              <label className="credential-generated-key">
+                Master key shown once
+                <textarea
+                  readOnly
+                  rows={3}
+                  spellCheck={false}
+                  value={generatedMasterKey}
+                />
+              </label>
+            ) : null}
+          </div>
         )}
 
         <div className="credential-provider-list">

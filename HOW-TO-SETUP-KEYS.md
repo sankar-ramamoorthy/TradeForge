@@ -6,6 +6,22 @@ which must live in the OS environment, not in Git and not in `.env`.
 
 ## 1. Generate the master key
 
+### Compose first-run UI
+
+After `docker compose up --build`, open TradeForge and go to Provider
+Governance. If no `TRADEFORGE_MASTER_KEY` and no `.keys.enc` exist, the
+first-run setup panel can generate the master key in the browser. It shows the
+key once and writes it to `.tradeforge/runtime.env`, which Docker Compose mounts
+into the runtime container and Git ignores.
+
+This is a local single-operator trust tradeoff: the key is not committed and is
+not logged, but it is still a local plaintext runtime secret. Save the shown key
+outside the repository. If `.keys.enc` already exists, first-run setup is
+disabled because TradeForge cannot know whether the existing credential store
+belongs to a different master key.
+
+### CLI path
+
 Run this once:
 
 ```powershell
@@ -32,9 +48,8 @@ Open a new terminal after setting a persistent user variable.
 
 If you run TradeForge through Docker Compose without provider credentials,
 `TRADEFORGE_MASTER_KEY` is optional. When you use encrypted provider
-credentials, the shell that launches `docker compose` must also have
-`TRADEFORGE_MASTER_KEY` available so Compose can pass that host value into the
-`tradeforge` container at startup.
+credentials, either use the first-run UI path above or make the key available to
+the `tradeforge` container through the shell environment.
 
 ## 2. Register provider credentials
 
