@@ -257,6 +257,7 @@ planning while preserving the earlier MVP record for reference.
 | TF-F081 | Done | M14C | Accept Negated Advisory Boundary Warnings In Imported Artifacts | `validation/m5-tf-r001-import` |
 | TF-F082 | Done | M-EZ | Operationalize Post-M5 Product-Readiness Sequence | `docs/tf-f082-post-m5-product-readiness` |
 | TF-F083 | Planned | M-EZ | Surface Partial Evidence Refresh Coverage | `fix/tf-f083-evidence-refresh-coverage` |
+| TF-F084 | Done | M-EZ | Provide a Human-Usable Research Cockpit Advisory Handoff | `planning/tf-f084-cockpit-handoff` |
 | TF-C001 | Done | M14 | Detect recurring sizing violations | `feature/tf-c001-recurring-sizing-violations` |
 | TF-C002 | Done | M14 | Detect impulsive execution patterns | `feature/tf-c002-impulsive-execution-patterns` |
 | TF-C003 | Done | M14 | Implement process deviation overlays | `feature/tf-c003-process-deviation-overlays` |
@@ -8895,7 +8896,7 @@ runtime development workflow document to the three-repository governance model.
 
 ## TF-F083: Surface Partial Evidence Refresh Coverage
 
-**Status:** Planned
+**Status:** Done
 
 **Classification:** field-observed usability / evidence robustness
 
@@ -8953,6 +8954,154 @@ per-symbol evidence review.
 **Scheduling Basis:**
 Selected as the next major stream from the 2026-07-27 operator walkthrough
 evidence: additional usability and evidence robustness.
+
+---
+
+## TF-F084: Provide a Human-Usable Research Cockpit Advisory Handoff
+
+**Status:** Planned
+
+**Classification:** field-observed product-readiness / advisory import
+handoff
+
+**Milestone:** M-EZ
+
+**Branch:** `planning/tf-f084-cockpit-handoff`
+
+**Affected Layer:** product planning, app/import boundary, services/advisory
+receiver, frontend import visibility
+
+**Source:** 2026-07-27 Research Cockpit handoff test after M5/TF-R001
+validation.
+
+**Linked Issues:** TF-F081, TF-R001, RC-039, RC-041
+
+**Linked ADRs:** ADR-0001, ADR-0002, ADR-0006, ADR-0034, ADR-0041
+
+**Impacted Invariants:** Human Decision Sovereignty, Event Ledger Canonical
+Truth, Lifecycle Authority, AI Advisory Boundary, Derived State Must Remain
+Distinguishable, Replayability Is Foundational, Cross-Repository Authority
+
+**Problem:**
+The Research Cockpit M5 advisory contract and TradeForge receiver are
+technically validated, but an operator cannot complete the handoff as a normal
+product workflow. The current validated path requires developer knowledge of
+fixture JSON, projection selection, payload construction, persona/workspace
+matching, advisory artifact posting, and the Thesis Import Preview surface.
+
+An operator attempted to copy a Cockpit-rendered M5 Markdown companion into
+`imports/incoming` and expected it to appear in the Advisory Candidate Queue.
+That did not work because the M5 Markdown companion is human-readable output,
+not the current TradeForge local machine-import schema, and thesis imports
+appear in Thesis Import Preview rather than the Advisory Candidate Queue.
+
+Mounting `imports/incoming` by itself is insufficient. A mounted directory only
+helps if the file being scanned is a TradeForge-compatible transferable
+artifact; the existing M5 companion Markdown uses the wrong schema for the
+legacy local Markdown scanner.
+
+**Scope:**
+
+- Implement the first receiver/discovery/status slice against
+  `DOCS/TF-F084_RC041_TRANSFER_CONTRACT.md`.
+- Define the runtime-side human handoff experience for Cockpit-produced
+  advisory material.
+- Make local or mounted handoff visibility explicit to the backend container.
+- Accept or discover a machine-transferable artifact through an explicit
+  operator action.
+- Show operator-visible status: received, symbol matched, import available,
+  skipped, or rejected with reason.
+- Distinguish Advisory Candidate Queue, Thesis Import Preview, and
+  provider-derived advisory context in operator-facing surfaces.
+- Keep imported Cockpit material in Thesis Import Preview, not Advisory
+  Candidate Queue, when the projection is a thesis draft.
+- Derive persona and workspace from the active TradeForge session where
+  possible instead of requiring the operator to know internal IDs.
+- Coordinate with Cockpit-owned RC-041 for producer/export behavior.
+
+**First Implementation Slice To Evaluate:**
+
+Use a local file-based handoff first. The Cockpit emits a
+TradeForge-compatible thesis-draft transfer artifact for a selected M5
+submission, including selected `thesis_draft.v1` projection mapped fields,
+symbol, source/provenance, caveats, and M5 context. The operator places that
+artifact into a mounted or otherwise backend-visible handoff directory.
+TradeForge discovers it through an explicit action and reports receive,
+match, import-availability, skip, and rejection status.
+
+The first slice should compare this against direct M5 submission acceptance,
+but should not implement native M5 envelope acceptance until the receiver
+contract and operator status semantics are explicit.
+
+**Design Decision:**
+Use a UTF-8 JSON transfer file ending in `.tf-thesis-draft.json` with
+`schema_version == "tradeforge.thesis_draft_transfer.v1"`. TradeForge scans
+`imports/incoming`, validates the transfer, assigns active
+persona/workspace from the scan request, persists valid transfers as existing
+non-canonical advisory artifacts, and returns per-file status. Duplicate
+detection uses the stable transfer identity, submission ID, digest, role, and
+symbol instead of only the filename.
+
+**Out Of Scope:**
+
+- Filesystem watchers or background ingestion.
+- Automatic TradeIdea, Thesis, or Plan creation.
+- Lifecycle event creation before normal operator submission.
+- Approval, execution, broker, or paper-trading behavior.
+- New Cockpit collection, provider, M6 intake, schema, fixture, or source
+  storage implementation.
+- Treating Cockpit companion Markdown as machine-importable by default.
+
+**Acceptance Criteria:**
+
+- A normal operator can select a Cockpit submission and transfer it without
+  constructing JSON manually or calling API endpoints directly.
+- TradeForge can discover or receive the machine-transferable artifact through
+  a documented explicit user action.
+- TradeForge reports whether the artifact was received, matched to the active
+  symbol/session, made available for import, skipped, or rejected with a
+  human-readable reason.
+- Thesis-draft transfers appear in Thesis Import Preview, not Advisory
+  Candidate Queue.
+- UI copy clearly distinguishes advisory candidates, thesis imports, and
+  provider-derived advisory context.
+- Persona and workspace matching do not require the operator to know internal
+  IDs when the active session can supply them.
+- Companion Markdown remains human-readable only unless a later issue defines
+  a compatible machine-import schema for it.
+- No lifecycle events, approvals, executions, or Event Ledger facts are created
+  by artifact delivery alone.
+
+**Scheduling Basis:**
+Selected from the 2026-07-27 human handoff test. M5 contract validation is
+accepted, but the human handoff workflow is not operator-ready.
+
+**Resolution Summary:**
+Defined the shared transfer contract in
+`DOCS/TF-F084_RC041_TRANSFER_CONTRACT.md`. TradeForge now scans
+`.tf-thesis-draft.json` transfer files from `imports/incoming` alongside the
+legacy Markdown scanner, validates the transfer contract, assigns the active
+persona/workspace from the scan request, persists valid transfers as
+non-canonical advisory artifacts, reports per-file status, and surfaces valid
+transfers in Thesis Import Preview.
+
+The scanner reports imported, duplicate, skipped, rejected, and symbol mismatch
+states with human-readable reasons. Duplicate detection uses transfer identity
+and M5 submission digest, not only filename. Delivery still creates no
+TradeIdea, Thesis, approval, execution, or Event Ledger fact.
+
+**Verification Completed:**
+
+- `uv run pytest tests\test_advisory_artifact.py tests\test_develop_thesis_workflow.py`
+- `uv run ruff check src\services\advisory\local_import_parsing.py src\app\api\routes\advisory.py tests\test_advisory_artifact.py`
+- `uv run mypy src\services\advisory\local_import_parsing.py src\app\api\routes\advisory.py tests\test_advisory_artifact.py`
+- `npm run typecheck`
+- `npm run lint`
+- `npm run build`
+- Local handoff smoke using the RC-041 exported
+  `sub_m5_mu_review_ready_001.tf-thesis-draft.json`: scan imported the JSON
+  transfer, skipped the old companion Markdown, preview returned one Research
+  Cockpit thesis import for MU, and replay source event count stayed `0`.
 
 ---
 

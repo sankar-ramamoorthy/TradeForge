@@ -2883,6 +2883,13 @@ Corrective feedback closed against the EV slice:
 - TF-F078: Proxy Evidence API Routes In Vite Dev Server (**Done**)
 - TF-F079: Return Partial Alpha Vantage Fundamentals From Overview (**Done**)
 
+Product-readiness follow-ups selected from the 2026-07-27 walkthrough and
+handoff test:
+
+- TF-F083: Surface Partial Evidence Refresh Coverage (**Planned**)
+- TF-F084: Provide a Human-Usable Research Cockpit Advisory Handoff
+  (**Done**)
+
 ## Detailed Plan
 
 `knowledge/raw/20260709-product-viability-and-ease-of-use-roadmap.md`
@@ -2929,6 +2936,14 @@ Runtime authority:
   theoretical plan were created, and one Research Cockpit advisory submission
   was imported through existing mediation. Field evidence selected additional
   usability and evidence robustness as the next stream, registered as TF-F083.
+* The 2026-07-27 Research Cockpit handoff test confirmed that M5 and TF-R001
+  are contract-valid but not operator-ready as a human workflow. TF-F084
+  records that the first implementation slice should not be "mount only";
+  Cockpit must emit a TradeForge-compatible machine-transfer artifact and
+  TradeForge must show explicit receive, symbol-match, import-available, skip,
+  and rejection status. The first slice is now implemented through
+  `.tf-thesis-draft.json` transfer scanning and Thesis Import Preview
+  surfacing.
   M-PT, Research Cockpit intake expansion, M-RF2, M-RF-FE, RAMP-03, and M15+
   remain deferred.
 

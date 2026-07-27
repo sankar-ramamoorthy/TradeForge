@@ -5891,6 +5891,47 @@
         "title": "LifecycleValidationResponse",
         "type": "object"
       },
+      "LocalImportFileStatusResponse": {
+        "properties": {
+          "artifact_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Artifact Id"
+          },
+          "file": {
+            "title": "File",
+            "type": "string"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "imported",
+              "duplicate",
+              "skipped",
+              "rejected",
+              "symbol_mismatch"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "file",
+          "status",
+          "reason"
+        ],
+        "title": "LocalImportFileStatusResponse",
+        "type": "object"
+      },
       "LocalPlanImportScanResponse": {
         "properties": {
           "authority": {
@@ -5954,6 +5995,17 @@
             "title": "Authority",
             "type": "string"
           },
+          "duplicate_count": {
+            "title": "Duplicate Count",
+            "type": "integer"
+          },
+          "file_statuses": {
+            "items": {
+              "$ref": "#/components/schemas/LocalImportFileStatusResponse"
+            },
+            "title": "File Statuses",
+            "type": "array"
+          },
           "import_directory": {
             "title": "Import Directory",
             "type": "string"
@@ -5973,6 +6025,14 @@
             "const": false,
             "title": "Is Canonical",
             "type": "boolean"
+          },
+          "received_count": {
+            "title": "Received Count",
+            "type": "integer"
+          },
+          "rejected_count": {
+            "title": "Rejected Count",
+            "type": "integer"
           },
           "scanned_count": {
             "title": "Scanned Count",
@@ -5994,11 +6054,15 @@
           "authority",
           "is_canonical",
           "import_directory",
+          "received_count",
           "scanned_count",
           "imported_count",
+          "duplicate_count",
+          "rejected_count",
           "skipped_count",
           "imported_artifact_ids",
-          "skipped_files"
+          "skipped_files",
+          "file_statuses"
         ],
         "title": "LocalThesisImportScanResponse",
         "type": "object"

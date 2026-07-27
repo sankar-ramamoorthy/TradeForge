@@ -57,11 +57,17 @@ from src.services.advisory.local_import_parsing import (
     PLAN_IMPORT_SCHEMA_VERSION,
     THESIS_IMPORT_ROLE,
     THESIS_IMPORT_SCHEMA_VERSION,
+    THESIS_TRANSFER_EXTENSION,
+    LocalImportParseError,
     local_import_already_persisted,
     local_plan_import_artifact_from_markdown,
     local_thesis_import_artifact_from_markdown,
+    local_thesis_import_artifact_from_transfer_json,
+    local_transfer_already_persisted,
     optional_string,
     string_list,
+    transfer_file_symbol,
+    transfer_identity_from_file,
 )
 
 advisory_router = APIRouter(prefix="/advisory", tags=["advisory"])
@@ -386,15 +392,32 @@ class PlanImportPreviewListResponse(BaseModel):
     imports: list[PlanImportPreviewResponse]
 
 
+class LocalImportFileStatusResponse(BaseModel):
+    file: str
+    status: Literal[
+        "imported",
+        "duplicate",
+        "skipped",
+        "rejected",
+        "symbol_mismatch",
+    ]
+    reason: str
+    artifact_id: str | None = None
+
+
 class LocalThesisImportScanResponse(BaseModel):
     authority: Literal["advisory"]
     is_canonical: Literal[False]
     import_directory: str
+    received_count: int
     scanned_count: int
     imported_count: int
+    duplicate_count: int
+    rejected_count: int
     skipped_count: int
     imported_artifact_ids: list[str]
     skipped_files: list[str]
+    file_statuses: list[LocalImportFileStatusResponse]
 
 
 class LocalPlanImportScanResponse(BaseModel):
@@ -1323,37 +1346,142 @@ def scan_local_thesis_imports(
     scanned_count = 0
     imported_artifact_ids: list[str] = []
     skipped_files: list[str] = []
-    for path in sorted(import_dir.glob("*.md")):
+    file_statuses: list[LocalImportFileStatusResponse] = []
+    candidate_paths = sorted(
+        [
+            path
+            for path in import_dir.iterdir()
+            if path.is_file()
+            and (path.suffix == ".md" or path.name.endswith(THESIS_TRANSFER_EXTENSION))
+        ],
+        key=lambda item: item.name,
+    )
+    for path in candidate_paths:
         scanned_count += 1
-        if local_import_already_persisted(existing, path, normalized_symbol):
-            skipped_files.append(path.name)
-            continue
-        artifact = local_thesis_import_artifact_from_markdown(
-            path=path,
-            persona_id=persona_id,
-            workspace_id=workspace_id,
-            symbol=normalized_symbol,
-            captured_at=datetime.now(UTC),
-        )
+        artifact: AdvisoryArtifact | None = None
+        if path.name.endswith(THESIS_TRANSFER_EXTENSION):
+            identity = transfer_identity_from_file(path)
+            if identity is not None and local_transfer_already_persisted(
+                existing,
+                transfer_id=identity[0],
+                submission_id=identity[1],
+                submission_digest=identity[2],
+                symbol=normalized_symbol,
+            ):
+                skipped_files.append(path.name)
+                file_statuses.append(
+                    LocalImportFileStatusResponse(
+                        file=path.name,
+                        status="duplicate",
+                        reason=(
+                            "Transfer already imported for this persona, "
+                            "workspace, and symbol."
+                        ),
+                    )
+                )
+                continue
+            file_symbol = transfer_file_symbol(path)
+            if file_symbol is not None and file_symbol != normalized_symbol:
+                skipped_files.append(path.name)
+                file_statuses.append(
+                    LocalImportFileStatusResponse(
+                        file=path.name,
+                        status="symbol_mismatch",
+                        reason=(
+                            f"Transfer symbol {file_symbol} does not match "
+                            f"active symbol {normalized_symbol}."
+                        ),
+                    )
+                )
+                continue
+            try:
+                artifact = local_thesis_import_artifact_from_transfer_json(
+                    path=path,
+                    persona_id=persona_id,
+                    workspace_id=workspace_id,
+                    symbol=normalized_symbol,
+                )
+            except LocalImportParseError as exc:
+                skipped_files.append(f"{path.name}: {exc}")
+                file_statuses.append(
+                    LocalImportFileStatusResponse(
+                        file=path.name,
+                        status=(
+                            "symbol_mismatch"
+                            if str(exc) == "symbol_mismatch"
+                            else "rejected"
+                        ),
+                        reason=str(exc),
+                    )
+                )
+                continue
+        else:
+            if local_import_already_persisted(existing, path, normalized_symbol):
+                skipped_files.append(path.name)
+                file_statuses.append(
+                    LocalImportFileStatusResponse(
+                        file=path.name,
+                        status="duplicate",
+                        reason="Markdown import already persisted.",
+                    )
+                )
+                continue
+            artifact = local_thesis_import_artifact_from_markdown(
+                path=path,
+                persona_id=persona_id,
+                workspace_id=workspace_id,
+                symbol=normalized_symbol,
+                captured_at=datetime.now(UTC),
+            )
         if artifact is None:
             skipped_files.append(path.name)
+            file_statuses.append(
+                LocalImportFileStatusResponse(
+                    file=path.name,
+                    status="skipped",
+                    reason="File is not an eligible thesis draft import.",
+                )
+            )
             continue
         try:
             captured = ingestion_service.ingest(artifact)
         except ValueError as exc:
             skipped_files.append(f"{path.name}: {exc}")
+            file_statuses.append(
+                LocalImportFileStatusResponse(
+                    file=path.name,
+                    status="rejected",
+                    reason=str(exc),
+                )
+            )
             continue
         imported_artifact_ids.append(captured.artifact_id)
+        existing = (*existing, captured)
+        file_statuses.append(
+            LocalImportFileStatusResponse(
+                file=path.name,
+                status="imported",
+                reason=(
+                    "Symbol matched and import is available in Thesis "
+                    "Import Preview."
+                ),
+                artifact_id=captured.artifact_id,
+            )
+        )
 
     return LocalThesisImportScanResponse(
         authority="advisory",
         is_canonical=False,
         import_directory=str(import_dir),
+        received_count=scanned_count,
         scanned_count=scanned_count,
         imported_count=len(imported_artifact_ids),
+        duplicate_count=sum(1 for item in file_statuses if item.status == "duplicate"),
+        rejected_count=sum(1 for item in file_statuses if item.status == "rejected"),
         skipped_count=len(skipped_files),
         imported_artifact_ids=imported_artifact_ids,
         skipped_files=skipped_files,
+        file_statuses=file_statuses,
     )
 
 

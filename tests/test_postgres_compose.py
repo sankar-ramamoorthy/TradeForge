@@ -20,6 +20,12 @@ def test_runtime_service_receives_postgres_database_url() -> None:
     assert "condition: service_healthy" in compose_text
 
 
+def test_runtime_service_mounts_local_import_drop_folder() -> None:
+    compose_text = Path("docker-compose.yml").read_text(encoding="utf-8")
+
+    assert "./imports/incoming:/app/imports/incoming:ro" in compose_text
+
+
 def test_docker_compose_defines_optional_litellm_service() -> None:
     compose_text = Path("docker-compose.yml").read_text(encoding="utf-8")
 
