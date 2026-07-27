@@ -34,7 +34,7 @@ The runtime currently supports:
 2. Preserve M14C advisory import boundaries: imported research is advisory
    draft material until the operator submits normal lifecycle workflows.
 3. Prepare planned near-term work:
-   - EZ-01 through EZ-03 ease-of-use work
+   - EZ-02 and EZ-03 ease-of-use work
    - RAMP-01 and RAMP-02 entry-ramp work
    - operator walkthrough before selecting M-RF-FE, M-RF2, M-PT, Research
      Cockpit intake, or additional usability work
@@ -55,10 +55,11 @@ Completed since the older foundation phase:
 - GOV-01 two-tier issue discipline is documented in the runtime agent
   bootstrap files.
 - GOV-02 bounded Knowledge Base hygiene is complete.
+- EZ-01 single Compose startup is complete.
 
 Planned:
 
-- EZ-01 through EZ-03
+- EZ-02 and EZ-03
 - RAMP-01 and RAMP-02
 - operator walkthrough and evidence-based next-stream selection
 - M-RF-FE, M-RF2, M-PT, RAMP-03, and M15+ remain deferred until operator

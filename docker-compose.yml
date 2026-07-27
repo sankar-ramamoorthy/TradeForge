@@ -7,12 +7,9 @@ services:
     working_dir: /app
     environment:
       TRADEFORGE_DATABASE_URL: postgresql://tradeforge:tradeforge@postgres:5432/tradeforge
-      TRADEFORGE_MASTER_KEY: ${TRADEFORGE_MASTER_KEY:?TRADEFORGE_MASTER_KEY must be set in the host environment}
+      TRADEFORGE_MASTER_KEY: ${TRADEFORGE_MASTER_KEY:-}
     ports:
       - "8000:8000"
-    volumes:
-      - .:/app
-      - tradeforge-venv:/app/.venv
     depends_on:
       postgres:
         condition: service_healthy
@@ -20,13 +17,6 @@ services:
         condition: service_healthy
         required: false
     restart: unless-stopped
-    command:
-      [
-        "uv", "run", "uvicorn",
-        "src.app.api.application:app",
-        "--host", "0.0.0.0",
-        "--port", "8000"
-      ]
 
   postgres:
     image: postgres:16-bookworm
@@ -77,5 +67,4 @@ services:
       ]
 
 volumes:
-  tradeforge-venv:
   tradeforge-postgres-data:
