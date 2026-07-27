@@ -256,6 +256,7 @@ planning while preserving the earlier MVP record for reference.
 | TF-F080 | Done | M-EZ | Prefer Alpha Vantage Over FMP For Fundamentals Routing | `fix/tf-f080-alpha-vantage-fundamentals-primary` |
 | TF-F081 | Done | M14C | Accept Negated Advisory Boundary Warnings In Imported Artifacts | `validation/m5-tf-r001-import` |
 | TF-F082 | Done | M-EZ | Operationalize Post-M5 Product-Readiness Sequence | `docs/tf-f082-post-m5-product-readiness` |
+| TF-F083 | Planned | M-EZ | Surface Partial Evidence Refresh Coverage | `fix/tf-f083-evidence-refresh-coverage` |
 | TF-C001 | Done | M14 | Detect recurring sizing violations | `feature/tf-c001-recurring-sizing-violations` |
 | TF-C002 | Done | M14 | Detect impulsive execution patterns | `feature/tf-c002-impulsive-execution-patterns` |
 | TF-C003 | Done | M14 | Implement process deviation overlays | `feature/tf-c003-process-deviation-overlays` |
@@ -8889,6 +8890,69 @@ runtime development workflow document to the three-repository governance model.
 - `rg` stale-language checks for active M14C, two-repository workflow wording,
   and old Knowledge Base paths.
 - `git diff --check`.
+
+---
+
+## TF-F083: Surface Partial Evidence Refresh Coverage
+
+**Status:** Planned
+
+**Classification:** field-observed usability / evidence robustness
+
+**Milestone:** M-EZ
+
+**Branch:** `fix/tf-f083-evidence-refresh-coverage`
+
+**Affected Layer:** app, services, frontend
+
+**Source:** 2026-07-27 operator walkthrough after RAMP-02.
+
+**Impacted Invariants:** Human Decision Sovereignty, Derived State Must Remain
+Distinguishable, Replayability Is Foundational
+
+**Problem:**
+During the post-RAMP-02 operator walkthrough, the watchlist contained seven
+symbols: AAPL, MSFT, NVDA, TSLA, AMD, META, and GOOGL. The evidence refresh
+returned fresh snapshots for AAPL, NVDA, and TSLA, while attention ranking
+still returned seven entries. The operator flow did not make the partial
+refresh coverage prominent enough for the unrefreshed watchlist symbols.
+
+**Impact:**
+An operator may assume the whole watchlist received fresh evidence when only a
+subset refreshed successfully, weakening trust in attention ranking and
+per-symbol evidence review.
+
+**Scope:**
+
+- Surface attempted, refreshed, missing, stale, or provider-degraded symbols in
+  the evidence refresh result.
+- Carry missing or degraded coverage into attention ranking and per-symbol
+  evidence feedback in operator-visible language.
+- Preserve watchlist and evidence behavior as advisory, deterministic derived
+  state.
+
+**Out Of Scope:**
+
+- Lifecycle event changes.
+- Automatic TradeIdea creation or lifecycle promotion.
+- New provider integrations.
+- Research Cockpit intake, schemas, fixtures, or advisory producer work.
+- Broker execution or paper trading.
+
+**Acceptance Criteria:**
+
+- Refresh feedback distinguishes attempted symbols from successfully refreshed
+  symbols and lists missing or degraded symbols with reasons where available.
+- Attention ranking and per-symbol evidence surfaces clearly show missing,
+  stale, or degraded evidence states for watchlist symbols.
+- No lifecycle events or TradeIdeas are created by evidence refresh, ranking,
+  or missing-evidence feedback.
+- Replay remains based on persisted snapshots and deterministic projection
+  state only.
+
+**Scheduling Basis:**
+Selected as the next major stream from the 2026-07-27 operator walkthrough
+evidence: additional usability and evidence robustness.
 
 ---
 

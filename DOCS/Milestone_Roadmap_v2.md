@@ -2923,6 +2923,14 @@ Runtime authority:
 * RAMP-02 is complete: the guided walkthrough now uses structured authoring
   APIs for thesis, plan, and review, adds beginner glossary terms, and completes
   a theoretical first decision without broker execution.
+* The 2026-07-27 operator walkthrough completed the approved post-RAMP-02
+  validation path: seven watchlist symbols were added, evidence refresh and
+  ranking were inspected, three ideas were quick-captured, one thesis and one
+  theoretical plan were created, and one Research Cockpit advisory submission
+  was imported through existing mediation. Field evidence selected additional
+  usability and evidence robustness as the next stream, registered as TF-F083.
+  M-PT, Research Cockpit intake expansion, M-RF2, M-RF-FE, RAMP-03, and M15+
+  remain deferred.
 
 ---
 
