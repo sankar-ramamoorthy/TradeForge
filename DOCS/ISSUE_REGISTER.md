@@ -292,7 +292,7 @@ planning while preserving the earlier MVP record for reference.
 | RAMP-01 | Planned | M-EZ | Quick-capture idea tier | `feature/ramp-01-quick-capture` |
 | RAMP-02 | Planned | M-EZ | Guided first-decision mode | `feature/ramp-02-guided-first-decision` |
 | RAMP-03 | Planned | M-EZ | Operator identity profiles | `feature/ramp-03-operator-identity` |
-| GOV-01 | Planned | M-EZ | Two-tier issue discipline documentation | `docs/gov-01-two-tier-discipline` |
+| GOV-01 | Done | M-EZ | Two-tier issue discipline documentation | `docs/gov-01-two-tier-discipline` |
 | GOV-02 | Planned | M-EZ | Knowledge base hygiene pass | `docs/gov-02-kb-hygiene` |
 | TF-RF001 | Done | M-RF | OpenAPI contract snapshot test | `refactor/tf-rf001-openapi-snapshot` |
 | TF-RF002 | Done | M-RF | Extract deps.py service accessors | `refactor/tf-rf002-deps-extraction` |
@@ -2325,7 +2325,7 @@ surface supports discretionary evaluation before thesis formation.
 
 ## TF-F035: Translate Scenario-Branch UX Into Trader-Facing Conditional Reasoning
 
-**Status:** Planned
+**Status:** Done
 
 **Classification:** enhancement
 
@@ -9841,6 +9841,13 @@ persistence/security/advisory boundary) vs Tier B (batch issues: frontend
 copy/layout/styling/docs).
 
 **Acceptance Criteria:** Both agent bootstrap files updated consistently.
+
+**Implementation Note (2026-07-27):** `AGENTS.md` and `CLAUDE.md` now define
+Tier A full ceremony for domain, event, lifecycle, persistence, security,
+advisory, execution, API-contract, and cross-repository authority changes, and
+Tier B lightweight batching for bounded low-risk docs, copy, layout, styling,
+fixture-name, and comment cleanup. Tier B keeps issue tracking, branch
+discipline, validation, and invariant boundaries mandatory.
 
 ---
 

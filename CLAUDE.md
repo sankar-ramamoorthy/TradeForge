@@ -167,6 +167,47 @@ Do not silently expand issue scope.
 
 ---
 
+# Two-Tier Issue Discipline
+
+TradeForge uses issue ceremony proportional to architectural risk.
+
+## Tier A - Full Ceremony Required
+
+Use Tier A for changes that touch any of:
+
+- domain models or lifecycle semantics
+- event taxonomy, Event Ledger behavior, replay, or projections
+- persistence, migrations, transaction boundaries, or repository adapters
+- security, credentials, authentication, sessions, or operator identity
+- AI advisory boundaries, provider governance, import mediation, or execution
+  boundaries
+- backend API contracts, schemas, route behavior, or cross-repository
+  authority boundaries
+
+Tier A work requires a single tracked issue with explicit issue ID, milestone,
+affected layer, linked ADRs or ADR impact, impacted invariants, acceptance
+criteria, validation plan, planning-state updates, and a focused commit/PR.
+Do not batch unrelated Tier A issues.
+
+## Tier B - Lightweight Batch Allowed
+
+Tier B may be used only for low-risk changes such as:
+
+- frontend copy, labels, spacing, styling, and layout polish that does not
+  change workflow semantics
+- documentation wording, formatting, link repair, or status cleanup
+- test fixture naming or comments that do not change behavior
+
+Tier B work may batch related low-risk items under one registered issue when
+the issue names the allowed files, the acceptance criteria are explicit, and
+validation remains appropriate to the touched surface.
+
+Tier B does not waive issue tracking, branch discipline, validation, or the
+requirement to preserve lifecycle, event, replay, security, advisory, and
+execution boundaries.
+
+---
+
 # Runtime Design Rules
 
 Before writing code:

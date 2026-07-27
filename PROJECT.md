@@ -34,10 +34,11 @@ The runtime currently supports:
 2. Preserve M14C advisory import boundaries: imported research is advisory
    draft material until the operator submits normal lifecycle workflows.
 3. Prepare planned near-term work:
-   - M-RF-FE frontend API client decomposition
-   - M-RF2 FastAPI dependency injection conversion
-   - M-PT paper execution and outcome truth
-   - remaining M-EZ ease-of-use, ramp, and governance work
+   - GOV-02 bounded Knowledge Base hygiene
+   - EZ-01 through EZ-03 ease-of-use work
+   - RAMP-01 and RAMP-02 entry-ramp work
+   - operator walkthrough before selecting M-RF-FE, M-RF2, M-PT, Research
+     Cockpit intake, or additional usability work
 4. Reassess M15 cognitive replay after product and evidence workflows have more
    runtime usage behind them.
 
@@ -52,14 +53,17 @@ Completed since the older foundation phase:
 - EV-00 through EV-05 are implemented as the Evidence Density slice.
 - M-RF backend API route decomposition is complete.
 - TF-F078 and TF-F079 closed immediate Evidence API/provider feedback.
+- GOV-01 two-tier issue discipline is documented in the runtime agent
+  bootstrap files.
 
 Planned:
 
-- M-RF-FE
-- M-RF2
-- M-PT
-- remaining M-EZ ramp/governance items
-- M15 and later cognitive roadmap milestones
+- GOV-02
+- EZ-01 through EZ-03
+- RAMP-01 and RAMP-02
+- operator walkthrough and evidence-based next-stream selection
+- M-RF-FE, M-RF2, M-PT, RAMP-03, and M15+ remain deferred until operator
+  validation or concrete blockers justify activation
 
 ---
 
