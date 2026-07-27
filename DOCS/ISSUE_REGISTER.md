@@ -280,7 +280,7 @@ planning while preserving the earlier MVP record for reference.
 | TF-P010 | Planned | M-PT | Paper execution workspace surfaces | `feature/tf-p010-execution-workspaces` |
 | TF-P011 | Planned | M-PT | Execution-quality facts in review projections | `feature/tf-p011-execution-quality-review` |
 | TF-P012 | Planned | M-PT | Docs, demo flow, and KB synthesis | `docs/tf-p012-mpt-closeout` |
-| EZ-01 | Planned | M-EZ | Postgres-by-default single compose stack | `feature/ez-01-single-compose-stack` |
+| EZ-01 | Done | M-EZ | Postgres-by-default single compose stack | `feature/ez-01-single-compose-stack` |
 | EZ-02 | Planned | M-EZ | In-app first-run wizard for master key setup | `feature/ez-02-first-run-wizard` |
 | EZ-03 | Planned | M-EZ | Documentation truth pass | `docs/ez-03-doc-truth-pass` |
 | EV-00 | Done | M-EZ | Define evidence density and attention ranking semantics | `docs/ev-00-evidence-attention-semantics` |
@@ -2468,7 +2468,7 @@ Context Workbench so unavailable states no longer require log inspection.
 
 ## TF-F032: Add Explicit Advisory Context Acquisition Workflow
 
-**Status:** Planned
+**Status:** Done
 
 **Classification:** enhancement
 
@@ -9523,6 +9523,33 @@ stage in runtime image or nginx sidecar.
 
 **Acceptance Criteria:** Fresh machine with Docker, one command, working
 persistent app in browser; no uv/Node/second terminal.
+
+**Implementation Note (2026-07-27):** Docker now builds the React frontend in a
+Node build stage, copies `frontend/dist` into the runtime image, runs
+`alembic upgrade head` before starting uvicorn, and serves the built frontend
+from FastAPI when `TRADEFORGE_SERVE_FRONTEND=1` is set in the image. Compose
+starts Postgres and the TradeForge app at `http://localhost:8000` without
+requiring a host `TRADEFORGE_MASTER_KEY` for the default no-credentials,
+yfinance-backed path. `.dockerignore` excludes local secrets and frontend
+build/dependency artifacts from the image context.
+
+**Verification (2026-07-27):**
+
+- `docker compose config` with `TRADEFORGE_MASTER_KEY` unset
+- `uv run pytest tests\test_frontend_static_serving.py tests\test_fastapi_runtime.py tests\test_api_contract_snapshot.py`
+- `uv run ruff check src\app\api\application.py tests\test_frontend_static_serving.py`
+- `uv run mypy src\app\api\application.py tests\test_frontend_static_serving.py`
+- `npm.cmd run typecheck`
+- `npm.cmd run build`
+- `docker build -t tradeforge-runtime:ez-01 .`
+- `docker compose up -d --build tradeforge` with `TRADEFORGE_MASTER_KEY` unset
+- `curl.exe -i http://localhost:8000/health`
+- `curl.exe -i -H "Accept: text/html" http://localhost:8000/`
+- `curl.exe -i -H "Accept: text/html" http://localhost:8000/workspaces/operating`
+
+Full `uv run mypy src tests` and `uv run ruff check .` still report
+pre-existing unrelated violations recorded in the issue register baseline; the
+targeted touched-file gates passed.
 
 ---
 

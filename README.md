@@ -98,23 +98,14 @@ does not create a Thesis, TradeIdea, approval, execution, or Event Ledger fact.
 
 ## Quick Start
 
-No broker account, no API keys, no database required. The default runtime uses an in-memory event store and yfinance for market data.
-
-**Terminal 1 — Backend**
-
-```bash
-uv sync
-uv run uvicorn src.app.api.application:app --host 127.0.0.1 --port 8000 --reload
-```
-
-**Terminal 2 — Frontend**
+No broker account or API keys are required. The default Compose runtime uses
+Postgres for persistence and yfinance for market data.
 
 ```bash
-npm run install:frontend
-npm run dev
+docker compose up --build
 ```
 
-Open **http://localhost:5173**
+Open **http://localhost:8000**
 
 **Demo flow:**
 1. Operating Workspace opens. Click **Start Demo** to seed an AAPL breakout scenario (Idea → Thesis → Plan in one click).
@@ -124,7 +115,9 @@ Open **http://localhost:5173**
 
 Or start a fresh decision with **New Trade Idea** (top right of Operating Workspace).
 
-> Events are in-memory by default — restarting the backend clears decisions. Use Docker + Postgres for persistence.
+Compose runs database migrations before starting the API and serves the built
+frontend from the same URL. Provider credentials and AI advisory setup remain
+optional.
 
 ---
 
@@ -134,7 +127,7 @@ Or start a fresh decision with **New Trade Idea** (top right of Operating Worksp
 
 - Python 3.12+ with [uv](https://docs.astral.sh/uv/)
 - Node.js 18+ with npm
-- Docker + Docker Compose (optional — only needed for Postgres)
+- Docker + Docker Compose
 
 ### Backend
 
@@ -188,14 +181,22 @@ LiteLLM environment variables or static config.
 
 See [`HOW-TO-SETUP-KEYS.md`](HOW-TO-SETUP-KEYS.md) for full credential setup.
 
-### With Postgres (recommended for real use)
+### Local uv/Vite development
 
 ```bash
-docker compose up -d postgres
+uv sync
 uv run alembic upgrade head
+npm run install:frontend
+npm run dev
 ```
 
-Start the backend normally — it uses Postgres for the event ledger when `TRADEFORGE_DATABASE_URL` is set.
+In another terminal:
+
+```bash
+uv run uvicorn src.app.api.application:app --host 127.0.0.1 --port 8000 --reload
+```
+
+Open **http://localhost:5173** for Vite development.
 
 ### AI advisory
 

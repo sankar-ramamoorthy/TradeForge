@@ -1,9 +1,12 @@
 from __future__ import annotations
 
 import os
+from collections.abc import Awaitable, Callable
 from pathlib import Path
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import FileResponse, Response
+from fastapi.staticfiles import StaticFiles
 from src.app.api.routes import runtime_router
 from src.app.session import LocalSessionProvider, SessionProvider
 from src.domain.advisory import AIAdvisoryProvider
@@ -102,6 +105,97 @@ from src.services.workspace_engine import (
 
 APP_TITLE = "TradeForge Runtime"
 APP_VERSION = "0.1.0"
+FRONTEND_SERVE_ENV_VAR = "TRADEFORGE_SERVE_FRONTEND"
+FRONTEND_DIST_ENV_VAR = "TRADEFORGE_FRONTEND_DIST_DIR"
+_API_ROUTE_PREFIXES = frozenset(
+    {
+        "admin",
+        "advisory",
+        "behavioral",
+        "evidence",
+        "health",
+        "lifecycle",
+        "market",
+        "provider-governance",
+        "provenance",
+        "replay",
+        "runtime",
+        "session",
+        "workspaces",
+    }
+)
+
+
+def _should_serve_frontend(frontend_dist_dir: Path | str | None) -> bool:
+    return (
+        frontend_dist_dir is not None
+        or os.environ.get(FRONTEND_SERVE_ENV_VAR) == "1"
+    )
+
+
+def _frontend_dist_path(frontend_dist_dir: Path | str | None) -> Path:
+    configured_path = frontend_dist_dir or os.environ.get(
+        FRONTEND_DIST_ENV_VAR,
+        "frontend/dist",
+    )
+    return Path(configured_path)
+
+
+def _mount_frontend(app: FastAPI, frontend_dist_dir: Path | str | None) -> None:
+    if not _should_serve_frontend(frontend_dist_dir):
+        return
+
+    dist_path = _frontend_dist_path(frontend_dist_dir)
+    index_path = dist_path / "index.html"
+    if not index_path.exists():
+        return
+
+    assets_path = dist_path / "assets"
+    if assets_path.exists():
+        app.mount(
+            "/assets",
+            StaticFiles(directory=assets_path),
+            name="frontend-assets",
+        )
+
+    def _index_response() -> FileResponse:
+        return FileResponse(index_path)
+
+    @app.middleware("http")
+    async def serve_frontend_html_navigation(
+        request: Request,
+        call_next: Callable[[Request], Awaitable[Response]],
+    ) -> Response:
+        path = request.url.path
+        accepts_html = "text/html" in request.headers.get("accept", "")
+        is_frontend_navigation = path == "/" or path.startswith("/workspaces")
+        if (
+            request.method == "GET"
+            and accepts_html
+            and is_frontend_navigation
+            and not path.startswith("/assets")
+        ):
+            return _index_response()
+        return await call_next(request)
+
+    @app.get("/", include_in_schema=False)
+    async def serve_frontend_root() -> FileResponse:
+        return _index_response()
+
+    @app.get("/{full_path:path}", include_in_schema=False)
+    async def serve_frontend_app(full_path: str) -> FileResponse:
+        first_segment = full_path.split("/", 1)[0]
+        if first_segment in _API_ROUTE_PREFIXES:
+            raise HTTPException(status_code=404)
+        if full_path in {"docs", "redoc", "openapi.json"}:
+            raise HTTPException(status_code=404)
+
+        requested_path = dist_path / full_path
+        if requested_path.is_file():
+            return FileResponse(requested_path)
+        if "." in Path(full_path).name:
+            raise HTTPException(status_code=404)
+        return _index_response()
 
 
 def _default_event_store() -> EventStore:
@@ -380,6 +474,7 @@ def create_app(
     evidence_refresh_service: EvidenceRefreshService | None = None,
     evidence_ranking_service: EvidenceRankingService | None = None,
     evidence_panel_service: EvidencePanelService | None = None,
+    frontend_dist_dir: Path | str | None = None,
 ) -> FastAPI:
     shared_event_store = event_store or _default_event_store()
     app = FastAPI(
@@ -618,6 +713,7 @@ def create_app(
     from src.app.api.admin_routes import admin_router  # noqa: PLC0415
 
     app.include_router(admin_router)
+    _mount_frontend(app, frontend_dist_dir)
     return app
 
 
