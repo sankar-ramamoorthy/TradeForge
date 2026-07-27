@@ -282,7 +282,7 @@ planning while preserving the earlier MVP record for reference.
 | TF-P012 | Planned | M-PT | Docs, demo flow, and KB synthesis | `docs/tf-p012-mpt-closeout` |
 | EZ-01 | Done | M-EZ | Postgres-by-default single compose stack | `feature/ez-01-single-compose-stack` |
 | EZ-02 | Done | M-EZ | In-app first-run wizard for master key setup | `feature/ez-02-first-run-wizard` |
-| EZ-03 | Planned | M-EZ | Documentation truth pass | `docs/ez-03-doc-truth-pass` |
+| EZ-03 | Done | M-EZ | Documentation truth pass | `docs/ez-03-doc-truth-pass` |
 | EV-00 | Done | M-EZ | Define evidence density and attention ranking semantics | `docs/ev-00-evidence-attention-semantics` |
 | EV-01 | Done | M-EZ | Scheduled market snapshot job | `feature/ev-01-scheduled-snapshots` |
 | EV-02 | Done | M-EZ | Watchlist as first-class pre-lifecycle object | `feature/ev-02-watchlist` |
@@ -9586,7 +9586,7 @@ the two new admin setup routes.
 
 ## EZ-03: Documentation Truth Pass
 
-**Status:** Planned
+**Status:** Done
 
 **Milestone:** M-EZ
 
@@ -9600,6 +9600,14 @@ authoritative roadmap file.
 
 **Acceptance Criteria:** No empty docs; PROJECT.md reflects current state;
 one roadmap authority.
+
+**Implementation Note (2026-07-27):** Deleted empty placeholder files
+`DOCS/architecture.md`, `DOCS/domain-model.md`, and `DOCS/event-schema.md`.
+`PROJECT.md` now names the active phase as the M-EZ product-readiness sequence
+and states that `DOCS/Milestone_Roadmap_v2.md` is the single active runtime
+roadmap while the deprecated/v3 roadmap files are historical source artifacts.
+README milestone/provider-governance wording now reflects EZ-02 completion and
+keeps M15+ deferred.
 
 ---
 
