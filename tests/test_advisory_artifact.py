@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 from fastapi.testclient import TestClient
@@ -115,6 +116,48 @@ def test_artifact_boundary_rejects_lifecycle_authority_and_active_markdown() -> 
 
     assert script_response.status_code == 422
     assert "executable script" in script_response.json()["detail"]["message"]
+
+
+def test_json_artifact_accepts_negated_boundary_warnings() -> None:
+    client = TestClient(create_app())
+    payload = _artifact_payload(artifact_format="json")
+    payload["body"] = json.dumps(
+        {
+            "advisory_boundary": {
+                "no_lifecycle_authority": True,
+                "no_execution_authority": True,
+                "prohibited_actions": [
+                    "Do not create or promote a TradeForge lifecycle object.",
+                    "Do not write to a TradeForge event ledger.",
+                ],
+            }
+        }
+    )
+
+    response = client.post("/advisory/artifacts", json=payload)
+
+    assert response.status_code == 201, response.json()
+    assert response.json()["is_canonical"] is False
+    assert client.get("/replay/timeline").json()["source_event_count"] == 0
+
+
+def test_json_artifact_rejects_nested_lifecycle_authority_keys() -> None:
+    client = TestClient(create_app())
+    payload = _artifact_payload(artifact_format="json")
+    payload["body"] = json.dumps(
+        {
+            "advisory_boundary": {
+                "lifecycle_transition_intent": "Thesis",
+            }
+        }
+    )
+
+    response = client.post("/advisory/artifacts", json=payload)
+
+    assert response.status_code == 422
+    assert "cannot bypass the decision lifecycle" in (
+        response.json()["detail"]["message"]
+    )
 
 
 def test_markdown_artifact_can_be_linked_as_candidate_evidence() -> None:

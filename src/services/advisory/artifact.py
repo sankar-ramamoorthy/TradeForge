@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import json
 from dataclasses import replace
 
 from src.domain.advisory import (
@@ -82,9 +83,10 @@ def _validate_artifact_boundary(artifact: AdvisoryArtifact) -> None:
     ):
         raise ValueError("imported research requires imported_research origin")
 
-    forbidden = set(artifact.metadata).intersection(_FORBIDDEN_ARTIFACT_FIELDS)
-    lowered_body = artifact.body.lower()
-    if forbidden or any(field in lowered_body for field in _FORBIDDEN_ARTIFACT_FIELDS):
+    forbidden = _forbidden_keys_in(artifact.metadata)
+    if artifact.artifact_format is AdvisoryArtifactFormat.JSON:
+        forbidden.update(_forbidden_json_body_keys(artifact.body))
+    if forbidden:
         raise ValueError(
             "advisory artifacts cannot bypass the decision lifecycle or "
             "assert canonical recommendation authority"
@@ -95,3 +97,29 @@ def _reject_active_markdown(body: str) -> None:
     lowered = body.lower()
     if "<script" in lowered or "javascript:" in lowered:
         raise ValueError("markdown artifacts cannot contain executable script content")
+
+
+def _forbidden_json_body_keys(body: str) -> set[str]:
+    try:
+        parsed = json.loads(body)
+    except json.JSONDecodeError:
+        return set()
+    return _forbidden_keys_in(parsed)
+
+
+def _forbidden_keys_in(value: object) -> set[str]:
+    if isinstance(value, dict):
+        forbidden = {
+            str(key)
+            for key in value
+            if str(key).strip().lower() in _FORBIDDEN_ARTIFACT_FIELDS
+        }
+        for nested in value.values():
+            forbidden.update(_forbidden_keys_in(nested))
+        return forbidden
+    if isinstance(value, list):
+        nested_forbidden: set[str] = set()
+        for item in value:
+            nested_forbidden.update(_forbidden_keys_in(item))
+        return nested_forbidden
+    return set()

@@ -13,8 +13,15 @@ It does NOT define canonical semantic truth.
 Canonical doctrine lives in:
 
 ```text
-C:\Users\bosto\dockerstuff\knowledge-base\TradeForge
+C:\Users\bosto\dockerstuff\TradeForge-Project\TradeForge-KnowledgeBase
 ```
+
+The Research Cockpit sibling repository at
+`C:\Users\bosto\dockerstuff\TradeForge-Project\TradeForge-ResearchCockpit`
+is an upstream evidence and research producer. Activate its context only for
+research-production, advisory-handoff, import-boundary, or cross-repository
+governance work. It has no TradeForge lifecycle, canonical-state, approval,
+execution, or runtime implementation-planning authority.
 
 ---
 
@@ -37,9 +44,9 @@ Do NOT load the entire knowledge base by default.
 Before implementation work, read:
 
 ```text
-C:\Users\bosto\dockerstuff\knowledge-base\TradeForge\SEMANTIC_BOOTSTRAP.md
-C:\Users\bosto\dockerstuff\knowledge-base\TradeForge\INVARIANTS.md
-C:\Users\bosto\dockerstuff\knowledge-base\TradeForge\knowledge\index\runtime-context-map.md
+C:\Users\bosto\dockerstuff\TradeForge-Project\TradeForge-KnowledgeBase\SEMANTIC_BOOTSTRAP.md
+C:\Users\bosto\dockerstuff\TradeForge-Project\TradeForge-KnowledgeBase\INVARIANTS.md
+C:\Users\bosto\dockerstuff\TradeForge-Project\TradeForge-KnowledgeBase\knowledge\index\runtime-context-map.md
 ```
 
 These define:
@@ -73,7 +80,7 @@ Examples:
 Consult:
 
 ```text
-C:\Users\bosto\dockerstuff\knowledge-base\TradeForge\knowledge\index\runtime-context-map.md
+C:\Users\bosto\dockerstuff\TradeForge-Project\TradeForge-KnowledgeBase\knowledge\index\runtime-context-map.md
 ```
 
 Load only the semantic domains relevant to the task.
@@ -236,13 +243,13 @@ TradeForge/DOCS/ADR/
 Primary semantic navigation:
 
 ```text
-C:\Users\bosto\dockerstuff\knowledge-base\TradeForge\knowledge\index\README.md
+C:\Users\bosto\dockerstuff\TradeForge-Project\TradeForge-KnowledgeBase\knowledge\index\README.md
 ```
 
 Primary activation routing:
 
 ```text
-C:\Users\bosto\dockerstuff\knowledge-base\TradeForge\knowledge\index\runtime-context-map.md
+C:\Users\bosto\dockerstuff\TradeForge-Project\TradeForge-KnowledgeBase\knowledge\index\runtime-context-map.md
 ```
 
 ---

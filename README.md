@@ -73,6 +73,12 @@ Bring externally authored research into the Thesis and Plan workflows as non-can
 - Accept, edit, or reject each imported field individually; manual submission remains the only lifecycle action
 - Accepted/edited/rejected provenance rides on the normal `decision.thesis_created` / `decision.plan_created` event; replay labels it `Advisory source, operator-promoted thesis`
 
+The sibling TradeForge Research Cockpit may produce advisory submissions and
+TradeForge-compatible projections for this boundary. Those artifacts remain
+non-canonical until TradeForge validates them, previews them for the operator,
+and the operator submits a normal lifecycle action. Artifact delivery alone
+does not create a Thesis, TradeIdea, approval, execution, or Event Ledger fact.
+
 ### Provider governance
 
 - Dedicated **Provider Governance** surface at `/workspaces/provider-governance` — separate operational control plane, not a workspace rail
