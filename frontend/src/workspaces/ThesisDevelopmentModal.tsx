@@ -222,8 +222,16 @@ function ThesisImportPreviewPanel({
       symbol,
     })
       .then((result) => {
+        const details = result.file_statuses
+          .map((status) => `${status.file}: ${status.status} - ${status.reason}`)
+          .join("\n");
         setScanMessage(
-          `Scanned ${result.scanned_count} file${result.scanned_count !== 1 ? "s" : ""}; imported ${result.imported_count}.`,
+          [
+            `Received ${result.received_count} file${result.received_count !== 1 ? "s" : ""}; imported ${result.imported_count}; duplicates ${result.duplicate_count}; rejected ${result.rejected_count}.`,
+            details,
+          ]
+            .filter(Boolean)
+            .join("\n"),
         );
         return loadImports();
       })
@@ -253,7 +261,7 @@ function ThesisImportPreviewPanel({
         </div>
       </div>
       <div className="thesis-import-dropoff">
-        <span>Drop markdown in imports/incoming. Preview is read-only; Develop Thesis is the lifecycle action.</span>
+        <span>Drop `.tf-thesis-draft.json` transfers or legacy thesis markdown in imports/incoming. Preview is read-only; Develop Thesis is the lifecycle action.</span>
         <button
           className="thesis-import-action"
           disabled={scanning}

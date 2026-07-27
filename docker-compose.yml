@@ -11,6 +11,7 @@ services:
       TRADEFORGE_RUNTIME_ENV_FILE: /app/.tradeforge/runtime.env
     volumes:
       - ./.tradeforge:/app/.tradeforge
+      - ./imports/incoming:/app/imports/incoming:ro
     ports:
       - "8000:8000"
     depends_on:

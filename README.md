@@ -68,6 +68,8 @@ All advisory outputs are non-canonical. They cannot approve plans, execute trade
 Bring externally authored research into the Thesis and Plan workflows as non-canonical advisory artifacts:
 
 - Drop markdown files into `imports/incoming/` (relative to the backend working directory)
+- Docker Compose mounts host `./imports/incoming` at `/app/imports/incoming`
+  read-only for the runtime container
 - Files must declare front matter: `artifact_role: thesis_draft` with `schema_version: thesis_draft.v1` (or `artifact_role: plan_draft` with `schema_version: plan_draft.v1`) and a `symbol` matching the active workflow; plan drafts may pin a `decision_id`
 - Scan on demand with the **Scan folder** action in the Thesis Development or Plan Development modal — no watchers, no background ingestion
 - Thesis sections mapped deterministically from headings: Narrative, Catalysts, Assumptions, Invalidation Conditions, Evidence Links, Notes
@@ -81,6 +83,14 @@ TradeForge-compatible projections for this boundary. Those artifacts remain
 non-canonical until TradeForge validates them, previews them for the operator,
 and the operator submits a normal lifecycle action. Artifact delivery alone
 does not create a Thesis, TradeIdea, approval, execution, or Event Ledger fact.
+Research Cockpit M5 Markdown companion reports are human-readable review
+output; they are not the same thing as the current `imports/incoming`
+machine-import Markdown format unless a later export explicitly emits that
+compatible artifact.
+The first supported Cockpit machine-transfer slice is a
+`.tf-thesis-draft.json` file using
+`tradeforge.thesis_draft_transfer.v1`; scan status reports whether each file
+was imported, duplicated, skipped, rejected, or symbol-mismatched.
 
 ### Provider governance
 

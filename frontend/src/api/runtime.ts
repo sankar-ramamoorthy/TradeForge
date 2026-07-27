@@ -1277,11 +1277,20 @@ export type LocalThesisImportScanResult = {
   authority: "advisory";
   is_canonical: false;
   import_directory: string;
+  received_count: number;
   scanned_count: number;
   imported_count: number;
+  duplicate_count: number;
+  rejected_count: number;
   skipped_count: number;
   imported_artifact_ids: string[];
   skipped_files: string[];
+  file_statuses: {
+    file: string;
+    status: "imported" | "duplicate" | "skipped" | "rejected" | "symbol_mismatch";
+    reason: string;
+    artifact_id: string | null;
+  }[];
 };
 
 export async function fetchThesisImports(

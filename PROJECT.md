@@ -38,6 +38,10 @@ The runtime currently supports:
    walkthrough:
    - TF-F083: surface partial evidence refresh coverage across refresh,
      ranking, and per-symbol evidence feedback
+   - TF-F084: provide a human-usable Research Cockpit advisory handoff; M5 is
+     contract-validated, but the operator workflow needs a transferable
+     artifact plus visible TradeForge receive/match/reject status (done for
+     the first `.tf-thesis-draft.json` slice)
 4. Reassess M15 cognitive replay after product and evidence workflows have more
    runtime usage behind them.
 
@@ -69,6 +73,10 @@ Planned:
 
 - TF-F083 evidence-refresh coverage clarity is the next major stream selected
   from walkthrough evidence.
+- TF-F084 Research Cockpit handoff usability first slice is complete. A
+  Cockpit-exported `.tf-thesis-draft.json` transfer can be scanned from
+  `imports/incoming`, receives per-file status, and appears in Thesis Import
+  Preview without creating lifecycle events.
 - M-RF-FE, M-RF2, M-PT, RAMP-03, Research Cockpit intake expansion, and M15+
   remain deferred until further operator evidence or concrete blockers justify
   activation.

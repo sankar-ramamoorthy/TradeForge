@@ -337,6 +337,137 @@ ATKR may benefit from infrastructure spending and improving construction demand.
     assert preview["is_canonical"] is False
 
 
+def test_local_thesis_import_scan_persists_tradeforge_transfer_json(
+    tmp_path: Path,
+    monkeypatch: MonkeyPatch,
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    incoming = tmp_path / "imports" / "incoming"
+    incoming.mkdir(parents=True)
+    (incoming / "sub_m5_mu_review_ready_001.tf-thesis-draft.json").write_text(
+        json.dumps(_tradeforge_thesis_transfer_payload()),
+        encoding="utf-8",
+    )
+    client = TestClient(create_app())
+
+    response = client.post(
+        "/advisory/thesis-imports/scan-local",
+        params={
+            "persona_id": "persona.swing",
+            "workspace_id": "workspace.context",
+            "symbol": "MU",
+        },
+    )
+
+    assert response.status_code == 200, response.json()
+    body = response.json()
+    assert body["authority"] == "advisory"
+    assert body["received_count"] == 1
+    assert body["imported_count"] == 1
+    assert body["file_statuses"][0]["status"] == "imported"
+    assert "Symbol matched" in body["file_statuses"][0]["reason"]
+    assert client.get("/replay/timeline").json()["source_event_count"] == 0
+
+    preview = client.get(
+        "/advisory/thesis-imports",
+        params={
+            "persona_id": "persona.swing",
+            "workspace_id": "workspace.context",
+            "symbol": "MU",
+        },
+    ).json()["imports"][0]
+    assert preview["source"] == "TradeForge-ResearchCockpit"
+    assert preview["artifact_format"] == "json"
+    assert preview["mapped_fields"]["narrative"].startswith("Synthetic MU")
+    assert preview["mapped_fields"]["catalysts"] == [
+        "Synthetic current company-material evidence remains available."
+    ]
+    assert preview["is_canonical"] is False
+    assert preview["lifecycle_authority"] is False
+
+
+def test_local_thesis_import_scan_reports_transfer_duplicate(
+    tmp_path: Path,
+    monkeypatch: MonkeyPatch,
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    incoming = tmp_path / "imports" / "incoming"
+    incoming.mkdir(parents=True)
+    payload = _tradeforge_thesis_transfer_payload()
+    (incoming / "first.tf-thesis-draft.json").write_text(
+        json.dumps(payload),
+        encoding="utf-8",
+    )
+    (incoming / "second.tf-thesis-draft.json").write_text(
+        json.dumps(payload),
+        encoding="utf-8",
+    )
+    client = TestClient(create_app())
+
+    response = client.post(
+        "/advisory/thesis-imports/scan-local",
+        params={
+            "persona_id": "persona.swing",
+            "workspace_id": "workspace.context",
+            "symbol": "MU",
+        },
+    )
+
+    assert response.status_code == 200, response.json()
+    body = response.json()
+    assert body["received_count"] == 2
+    assert body["imported_count"] == 1
+    assert body["duplicate_count"] == 1
+    assert [status["status"] for status in body["file_statuses"]] == [
+        "imported",
+        "duplicate",
+    ]
+
+
+def test_local_thesis_import_scan_reports_symbol_mismatch_and_invalid_transfer(
+    tmp_path: Path,
+    monkeypatch: MonkeyPatch,
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    incoming = tmp_path / "imports" / "incoming"
+    incoming.mkdir(parents=True)
+    mismatch = _tradeforge_thesis_transfer_payload()
+    mismatch["symbol"] = "MSFT"
+    (incoming / "mismatch.tf-thesis-draft.json").write_text(
+        json.dumps(mismatch),
+        encoding="utf-8",
+    )
+    invalid = _tradeforge_thesis_transfer_payload()
+    mapped_fields = invalid["mapped_fields"]
+    assert isinstance(mapped_fields, dict)
+    mapped_fields["lifecycle_transition_intent"] = "Thesis"
+    (incoming / "invalid.tf-thesis-draft.json").write_text(
+        json.dumps(invalid),
+        encoding="utf-8",
+    )
+    client = TestClient(create_app())
+
+    response = client.post(
+        "/advisory/thesis-imports/scan-local",
+        params={
+            "persona_id": "persona.swing",
+            "workspace_id": "workspace.context",
+            "symbol": "MU",
+        },
+    )
+
+    assert response.status_code == 200, response.json()
+    statuses = {
+        status["file"]: status for status in response.json()["file_statuses"]
+    }
+    assert statuses["mismatch.tf-thesis-draft.json"]["status"] == "symbol_mismatch"
+    assert statuses["invalid.tf-thesis-draft.json"]["status"] == "rejected"
+    assert "unsupported mapped_fields" in statuses[
+        "invalid.tf-thesis-draft.json"
+    ]["reason"]
+    assert response.json()["imported_count"] == 0
+
+
 def test_plan_import_preview_returns_only_eligible_mapped_artifacts() -> None:
     client = TestClient(create_app())
     decision_id = "decision-plan-import-1"
@@ -494,3 +625,75 @@ def test_advisory_artifact_migration_exists() -> None:
     assert "event_ledger" not in text
     assert "snapshot" in text
     assert "source_references" in text
+
+
+def _tradeforge_thesis_transfer_payload() -> dict[str, object]:
+    return {
+        "schema_version": "tradeforge.thesis_draft_transfer.v1",
+        "transfer_kind": "tradeforge_thesis_draft_transfer",
+        "artifact_role": "thesis_draft",
+        "projection_schema_version": "thesis_draft.v1",
+        "transfer_id": "sub_m5_mu_review_ready_001:sha256:testdigest",
+        "exported_at": "2026-07-26T14:00:00Z",
+        "source_system": "TradeForge-ResearchCockpit",
+        "submission_id": "sub_m5_mu_review_ready_001",
+        "submission_schema_version": "m5.advisory_submission.v1",
+        "submission_digest": "sha256:testdigest",
+        "symbol": "MU",
+        "title": "MU synthetic thesis draft",
+        "mapped_fields": {
+            "title": "MU synthetic thesis draft",
+            "narrative": (
+                "Synthetic MU evidence is current and traceable enough for "
+                "operator review."
+            ),
+            "catalysts": [
+                "Synthetic current company-material evidence remains available."
+            ],
+            "assumptions": [
+                "The synthetic fixture remains representative of a current "
+                "evidence packet."
+            ],
+            "invalidation_conditions": [
+                "Fixture evidence becomes stale or contradicted."
+            ],
+            "evidence_links": ["ev_mu_company_current"],
+            "notes": "Structured projection only; no lifecycle acceptance is implied.",
+        },
+        "provenance_summary": (
+            "Review-ready synthetic MU submission assembled from existing "
+            "Cockpit fixture outputs."
+        ),
+        "source_references": [
+            {
+                "source_kind": "imported-research",
+                "source_id": "src_mu_company_current",
+                "summary": "Synthetic company-material fixture.",
+                "source_uri": None,
+            }
+        ],
+        "caveats": [
+            "Research Cockpit transfer is advisory and requires operator review.",
+            "Transfer file has no lifecycle, approval, or execution authority.",
+        ],
+        "m5_context": {
+            "created_at": "2026-07-26T14:00:00Z",
+            "operator_question": (
+                "Is the synthetic MU evidence package ready for thesis review?"
+            ),
+            "source_packet_ids": ["pkt_m2_mu_mixed_sources_001"],
+            "quality": {"readiness_status": "review_ready"},
+            "risk_markers": {},
+        },
+        "advisory_boundary": {
+            "advisory_only": True,
+            "non_canonical": True,
+            "no_lifecycle_authority": True,
+            "no_execution_authority": True,
+            "prohibited_actions": [
+                "Do not approve a trade.",
+                "Do not create or promote a TradeForge lifecycle object.",
+                "Do not write to a TradeForge event ledger.",
+            ],
+        },
+    }
