@@ -2920,6 +2920,9 @@ Runtime authority:
 * RAMP-01 is complete: ordinary new ideas can be quick-captured from symbol
   plus two draft thesis sentences while preserving the structured Thesis and
   Plan gates before Approval.
+* RAMP-02 is complete: the guided walkthrough now uses structured authoring
+  APIs for thesis, plan, and review, adds beginner glossary terms, and completes
+  a theoretical first decision without broker execution.
 
 ---
 
