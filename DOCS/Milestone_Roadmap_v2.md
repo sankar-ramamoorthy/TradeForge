@@ -2904,6 +2904,9 @@ Runtime authority:
 * Governance overhead is calibrated to change risk, not applied uniformly.
 * GOV-01 is complete: runtime agent bootstrap files now distinguish Tier A
   full-ceremony work from Tier B bounded low-risk batch work.
+* GOV-02 is complete: bounded KB hygiene removed the oversized raw LiteLLM
+  log from tracked raw knowledge, consolidated root raw notes into
+  `knowledge/raw/`, and marked M15 `TF-D001` through `TF-D008` deferred.
 
 ---
 
@@ -3060,8 +3063,8 @@ Completed foundation:
 Next runtime sequence:
 1. GOV-01 (runtime governance clarification) - complete
 2. GOV-02 coordination (bounded KB hygiene only where it prevents current
-   project truth from being understood)
-3. EZ-01
+   project truth from being understood) - complete
+3. EZ-01 - next
 4. EZ-02
 5. EZ-03
 6. RAMP-01

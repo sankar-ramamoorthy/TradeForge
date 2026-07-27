@@ -293,7 +293,7 @@ planning while preserving the earlier MVP record for reference.
 | RAMP-02 | Planned | M-EZ | Guided first-decision mode | `feature/ramp-02-guided-first-decision` |
 | RAMP-03 | Planned | M-EZ | Operator identity profiles | `feature/ramp-03-operator-identity` |
 | GOV-01 | Done | M-EZ | Two-tier issue discipline documentation | `docs/gov-01-two-tier-discipline` |
-| GOV-02 | Planned | M-EZ | Knowledge base hygiene pass | `docs/gov-02-kb-hygiene` |
+| GOV-02 | Done | M-EZ | Knowledge base hygiene pass | `docs/gov-02-kb-hygiene` |
 | TF-RF001 | Done | M-RF | OpenAPI contract snapshot test | `refactor/tf-rf001-openapi-snapshot` |
 | TF-RF002 | Done | M-RF | Extract deps.py service accessors | `refactor/tf-rf002-deps-extraction` |
 | TF-RF003 | Done | M-RF | Create routes package; move runtime and behavioral | `refactor/tf-rf002-deps-extraction` |
@@ -2419,7 +2419,7 @@ equity versus ETF when requesting context.
 
 ## TF-F033: Surface Advisory Provider Attempt Status And Fallback Outcomes
 
-**Status:** Planned
+**Status:** Done
 
 **Classification:** enhancement
 
@@ -9867,6 +9867,13 @@ explicitly deferred (or register them).
 
 **Acceptance Criteria:** Single raw location; no oversized binaries/logs in
 raw; M15 issue status unambiguous.
+
+**Implementation Note (2026-07-27):** Completed in
+`TradeForge-KnowledgeBase` on branch `docs/gov-02-kb-hygiene`, merged via
+PR #64. The KB repo now has a single tracked raw location under
+`knowledge/raw/`; the oversized LiteLLM log was removed from tracked raw
+knowledge and archived under an ignored local archive path; `TF-D001` through
+`TF-D008` are explicitly marked Deferred in the KB roadmap index.
 
 ---
 
