@@ -1,88 +1,86 @@
-# TradeForge — Project State
+# TradeForge - Project State
 
 ## Purpose
 
-This file defines the current focus of development.
+This file defines the current runtime focus of development.
 
-It is the "working memory" of the system.
+The knowledge base remains the semantic authority for doctrine, invariants,
+ontology, and workflow meaning. This runtime repository is the implementation
+authority for executable behavior.
 
 ---
 
 # Current Phase
 
-Phase: System Foundation & Vertical Slice Design
+Phase: Post-M14C operational sync and near-term product/refactor preparation
 
-We are currently building:
+The runtime currently supports:
 
-- core architecture definition
-- event-driven foundation
-- decision lifecycle engine
-- workspace model
-- scenario engine scaffolding
+- event-sourced decision lifecycle operation
+- persona-scoped operational workspaces
+- deterministic replay and review
+- provider-backed market context and provenance
+- optional AI advisory through governed provider boundaries
+- local advisory import mediation for Thesis and Plan authoring
+- Evidence Density surfaces for watchlist, ranking, per-symbol evidence, and
+  chart context
 
 ---
 
 # Current Priority
 
-1. Finalize architecture + invariants (DONE IN PROGRESS)
-2. Define ADR structure
-3. Design first vertical slice:
-   - Trade Idea → Thesis → Plan → Execution → Event → Replay
+1. Keep runtime docs and the knowledge base synchronized after implementation
+   milestones.
+2. Preserve M14C advisory import boundaries: imported research is advisory
+   draft material until the operator submits normal lifecycle workflows.
+3. Prepare planned near-term work:
+   - M-RF-FE frontend API client decomposition
+   - M-RF2 FastAPI dependency injection conversion
+   - M-PT paper execution and outcome truth
+   - remaining M-EZ ease-of-use, ramp, and governance work
+4. Reassess M15 cognitive replay after product and evidence workflows have more
+   runtime usage behind them.
 
 ---
 
-# Immediate Next Steps
+# Current Runtime Truth
 
-## 1. ADR System Bootstrapping
-- Event Sourcing core decision
-- Lifecycle engine decision
-- Workspace projection model
+Completed since the older foundation phase:
 
-## 2. First Vertical Slice Design
-Define full flow:
+- M0 through M14 are complete.
+- M14C Thesis and Plan advisory import mediation is implemented.
+- EV-00 through EV-05 are implemented as the Evidence Density slice.
+- M-RF backend API route decomposition is complete.
+- TF-F078 and TF-F079 closed immediate Evidence API/provider feedback.
 
-```
-Idea creation
-→ scenario generation
-→ ranking
-→ lifecycle progression
-→ event emission
-→ workspace update
-→ replay capability
-```
+Planned:
+
+- M-RF-FE
+- M-RF2
+- M-PT
+- remaining M-EZ ramp/governance items
+- M15 and later cognitive roadmap milestones
 
 ---
 
-# Not in Scope (for now)
+# Not In Scope
 
-- broker integration
-- live trading execution
-- ML model training
-- advanced UI polish
-- performance optimization
+- live-money trading
+- autonomous trade execution
+- AI approval or lifecycle mutation
+- broker state as canonical truth
+- dashboard-centric reorganization
+- broad architecture rewrites outside tracked issues
 
 ---
 
 # Active Focus Principle
 
-We are not building features.
+We are not building an autonomous trading system.
 
 We are building:
 
 > a structured decision-making system under uncertainty
 
----
-
-# Success Criteria (Current Phase)
-
-- lifecycle correctness enforced
-- event sourcing fully consistent
-- workspace derivation works
-- replay is possible end-to-end
-- no architectural drift between layers
-
----
-
-# Final Note
-
-Every feature must serve decision clarity, not complexity.
+Every feature must preserve human decision sovereignty, event-ledger truth,
+replayability, and workflow integrity.
