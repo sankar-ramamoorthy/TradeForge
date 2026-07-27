@@ -5,6 +5,7 @@ Moved verbatim from the routes monolith in TF-RF006 (M-RF).
 
 from __future__ import annotations
 
+import re
 import uuid
 from datetime import UTC, datetime
 from typing import Any, Literal
@@ -86,6 +87,7 @@ class NewTradeIdeaPayload(BaseModel):
 
     symbol: str = Field(min_length=1, max_length=10)
     initial_thesis: str | None = Field(default=None, max_length=2000)
+    capture_mode: Literal["standard", "quick_capture"] = "standard"
     persona_id: str = Field(min_length=1)
     workspace_id: str = Field(min_length=1)
     source_advisory_candidate_id: str | None = Field(default=None, min_length=1)
@@ -99,6 +101,10 @@ class NewTradeIdeaResponse(BaseModel):
     symbol: str
     event_type: str
     timestamp: datetime
+
+
+def _sentence_count(value: str) -> int:
+    return len([part for part in re.split(r"[.!?]+", value) if part.strip()])
 
 
 class DecisionSummaryResponse(BaseModel):
@@ -529,6 +535,16 @@ def init_new_trade_idea(
     service = _lifecycle_service_from(request)
     decision_id = str(uuid.uuid4())
     symbol = payload.symbol.strip().upper()
+    initial_thesis = (payload.initial_thesis or "").strip()
+    if payload.capture_mode == "quick_capture" and _sentence_count(initial_thesis) < 2:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={
+                "message": (
+                    "quick capture requires at least two draft thesis sentences"
+                )
+            },
+        )
     now = datetime.now(tz=UTC)
     source_candidate = None
     if payload.source_advisory_candidate_id is not None:
@@ -560,12 +576,20 @@ def init_new_trade_idea(
     ]
     lifecycle_payload: dict[str, object] = {
         "symbol": symbol,
-        "initial_thesis": payload.initial_thesis or "",
+        "initial_thesis": initial_thesis,
     }
     provenance: dict[str, object] = {
         "actor": "human",
         "source": "new-trade-idea-workflow",
     }
+    if payload.capture_mode == "quick_capture":
+        lifecycle_payload["initial_thesis_status"] = "draft_stub"
+        lifecycle_payload["quick_capture"] = True
+        lifecycle_payload["quick_capture_sentence_count"] = _sentence_count(
+            initial_thesis
+        )
+        provenance["source"] = "quick-capture-idea-tier"
+        provenance["initial_thesis_authority"] = "draft_stub_not_structured_thesis"
     if source_candidate is not None:
         entity_references.append(
             EntityReference(

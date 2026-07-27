@@ -21,6 +21,10 @@ type NewTradeIdeaModalProps = {
   onCancel: () => void;
 };
 
+function sentenceCount(value: string): number {
+  return value.split(/[.!?]+/).filter((part) => part.trim().length > 0).length;
+}
+
 export function NewTradeIdeaModal({
   personaId,
   personaVersion,
@@ -46,6 +50,12 @@ export function NewTradeIdeaModal({
       symbolRef.current?.focus();
       return;
     }
+    const trimmedInitialThesis = initialThesis.trim();
+    const isQuickCapture = advisoryPrefill === undefined;
+    if (isQuickCapture && sentenceCount(trimmedInitialThesis) < 2) {
+      setError("Capture two quick thesis sentences before starting the workflow.");
+      return;
+    }
 
     setSubmitting(true);
     setError(null);
@@ -53,7 +63,8 @@ export function NewTradeIdeaModal({
     try {
       const result = await initNewTradeIdea({
         symbol: trimmedSymbol,
-        initial_thesis: initialThesis.trim() || undefined,
+        initial_thesis: trimmedInitialThesis || undefined,
+        capture_mode: isQuickCapture ? "quick_capture" : "standard",
         persona_id: personaId,
         workspace_id: workspaceId,
         source_advisory_candidate_id: advisoryPrefill?.candidateId,
@@ -86,7 +97,9 @@ export function NewTradeIdeaModal({
       <div className="modal-dialog">
         <div className="modal-header">
           <PlusCircle aria-hidden="true" />
-          <h2 id="new-idea-title">New Trade Idea</h2>
+          <h2 id="new-idea-title">
+            {advisoryPrefill ? "New Trade Idea" : "Jot an Idea"}
+          </h2>
           <button
             aria-label="Cancel"
             className="modal-close-btn"
@@ -132,7 +145,12 @@ export function NewTradeIdeaModal({
 
             <div className="form-field">
               <label className="form-label" htmlFor="idea-thesis">
-                Initial thesis notes <span className="form-optional">(optional)</span>
+                Draft thesis notes{" "}
+                {advisoryPrefill ? (
+                  <span className="form-optional">(optional)</span>
+                ) : (
+                  <span aria-hidden="true">*</span>
+                )}
               </label>
               <textarea
                 className="form-textarea"
@@ -142,6 +160,7 @@ export function NewTradeIdeaModal({
                 onChange={(e) => setInitialThesis(e.target.value)}
                 placeholder="Brief rationale or setup observation…"
                 rows={4}
+                required={!advisoryPrefill}
                 value={initialThesis}
               />
             </div>
@@ -164,7 +183,11 @@ export function NewTradeIdeaModal({
             </button>
             <button
               className="btn-primary"
-              disabled={submitting || !symbol.trim()}
+              disabled={
+                submitting ||
+                !symbol.trim() ||
+                (!advisoryPrefill && sentenceCount(initialThesis.trim()) < 2)
+              }
               type="submit"
             >
               {submitting ? "Initializing…" : "Start Workflow"}
