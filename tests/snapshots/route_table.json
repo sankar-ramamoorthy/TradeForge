@@ -11,6 +11,11 @@
   ],
   [
     "GET",
+    "/admin/setup/status",
+    "setup_status"
+  ],
+  [
+    "GET",
     "/advisory/artifacts",
     "list_advisory_artifacts"
   ],
@@ -368,6 +373,11 @@
     "POST",
     "/admin/credentials/{provider_id}/validate",
     "validate_credential"
+  ],
+  [
+    "POST",
+    "/admin/setup/master-key",
+    "setup_master_key"
   ],
   [
     "POST",

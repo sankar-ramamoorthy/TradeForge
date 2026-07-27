@@ -8876,6 +8876,56 @@
         "title": "SessionWorkspaceContextResponse",
         "type": "object"
       },
+      "SetupMasterKeyResponse": {
+        "properties": {
+          "master_key": {
+            "title": "Master Key",
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/SetupStatusResponse"
+          }
+        },
+        "required": [
+          "master_key",
+          "status"
+        ],
+        "title": "SetupMasterKeyResponse",
+        "type": "object"
+      },
+      "SetupStatusResponse": {
+        "properties": {
+          "can_persist_runtime_env_file": {
+            "title": "Can Persist Runtime Env File",
+            "type": "boolean"
+          },
+          "credential_store_exists": {
+            "title": "Credential Store Exists",
+            "type": "boolean"
+          },
+          "master_key_configured": {
+            "title": "Master Key Configured",
+            "type": "boolean"
+          },
+          "requires_setup": {
+            "title": "Requires Setup",
+            "type": "boolean"
+          },
+          "runtime_env_file_path": {
+            "title": "Runtime Env File Path",
+            "type": "string"
+          }
+        },
+        "required": [
+          "requires_setup",
+          "master_key_configured",
+          "credential_store_exists",
+          "runtime_env_file_path",
+          "can_persist_runtime_env_file"
+        ],
+        "title": "SetupStatusResponse",
+        "type": "object"
+      },
       "SourceLinkedArtifactResponse": {
         "properties": {
           "event_type": {
@@ -10301,6 +10351,50 @@
           }
         },
         "summary": "Validate Credential",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/admin/setup/master-key": {
+      "post": {
+        "description": "Generate a first-run master key and persist it to the local runtime env file.\n\nThis route is available only before a master key or credential store exists.\nThe generated key is returned once so the operator can record it.",
+        "operationId": "setup_master_key_admin_setup_master_key_post",
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SetupMasterKeyResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Setup Master Key",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/admin/setup/status": {
+      "get": {
+        "description": "Report whether first-run master key setup is currently allowed.",
+        "operationId": "setup_status_admin_setup_status_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SetupStatusResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Setup Status",
         "tags": [
           "admin"
         ]

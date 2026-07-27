@@ -281,7 +281,7 @@ planning while preserving the earlier MVP record for reference.
 | TF-P011 | Planned | M-PT | Execution-quality facts in review projections | `feature/tf-p011-execution-quality-review` |
 | TF-P012 | Planned | M-PT | Docs, demo flow, and KB synthesis | `docs/tf-p012-mpt-closeout` |
 | EZ-01 | Done | M-EZ | Postgres-by-default single compose stack | `feature/ez-01-single-compose-stack` |
-| EZ-02 | Planned | M-EZ | In-app first-run wizard for master key setup | `feature/ez-02-first-run-wizard` |
+| EZ-02 | Done | M-EZ | In-app first-run wizard for master key setup | `feature/ez-02-first-run-wizard` |
 | EZ-03 | Planned | M-EZ | Documentation truth pass | `docs/ez-03-doc-truth-pass` |
 | EV-00 | Done | M-EZ | Define evidence density and attention ranking semantics | `docs/ev-00-evidence-attention-semantics` |
 | EV-01 | Done | M-EZ | Scheduled market snapshot job | `feature/ev-01-scheduled-snapshots` |
@@ -9555,7 +9555,7 @@ targeted touched-file gates passed.
 
 ## EZ-02: In-App First-Run Wizard
 
-**Status:** Planned
+**Status:** Done
 
 **Milestone:** M-EZ
 
@@ -9571,6 +9571,16 @@ trust tradeoff); credentials remain optional (yfinance default).
 
 **Acceptance Criteria:** No terminal needed after `docker compose up`;
 existing CLI path still works; secrets never logged.
+
+**Implementation Note (2026-07-27):** Added first-run setup status and
+one-time master-key generation endpoints under `/admin/setup/*`; the runtime
+loads `TRADEFORGE_MASTER_KEY` from the ignored Compose-mounted
+`.tradeforge/runtime.env` file when the OS environment is empty. Provider
+Governance now offers setup only when no master key and no `.keys.enc` exist,
+shows the generated key once, and then enables existing credential management
+without a restart. ADR-0037 and credential setup docs record the local plaintext
+runtime env-file trust tradeoff. The API contract snapshots were updated for
+the two new admin setup routes.
 
 ---
 

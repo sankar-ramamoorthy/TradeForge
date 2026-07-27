@@ -119,6 +119,12 @@ Compose runs database migrations before starting the API and serves the built
 frontend from the same URL. Provider credentials and AI advisory setup remain
 optional.
 
+On first run, open Provider Governance if you want credentialed providers.
+When no master key and no `.keys.enc` exist, TradeForge can generate the
+master key in the browser, show it once, and persist it to the ignored local
+`.tradeforge/runtime.env` file mounted into the Compose container. Save the
+shown key outside the repo; yfinance works without this step.
+
 ---
 
 ## Developer Setup
@@ -148,6 +154,12 @@ npm run build
 ```
 
 ### Credentials
+
+Compose users can generate the master key from Provider Governance on first
+run. The UI setup path is available only when no `TRADEFORGE_MASTER_KEY` and no
+`.keys.enc` exist. It writes `.tradeforge/runtime.env`, which is ignored by Git
+and mounted into the runtime container. The CLI path below remains available
+for local development and key recovery workflows.
 
 **Master key** — generate once and set in the OS environment:
 

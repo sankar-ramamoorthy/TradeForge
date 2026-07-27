@@ -221,3 +221,39 @@ replicated as runtime failures.
   unaware of encryption or credential storage.
 - `create_app()` is still the sole startup bootstrap path.
 - The `CredentialStore` path (`.keys.enc`) remains fixed at the project root.
+
+---
+
+## Amendment - Compose First-Run Master Key Setup (EZ-02)
+
+**Date:** 2026-07-27
+**Milestone:** M-EZ
+
+### Additional Decision
+
+TradeForge may generate `TRADEFORGE_MASTER_KEY` through the restricted admin UI
+only during first-run setup, defined as the state where no process master key
+and no `.keys.enc` credential store exist.
+
+The generated key is:
+
+- returned to the browser once
+- written to the ignored local `.tradeforge/runtime.env` file mounted by Docker
+  Compose
+- loaded by the runtime process on startup when the OS environment does not
+  already provide `TRADEFORGE_MASTER_KEY`
+- applied to the current process immediately so provider credentials can be
+  entered without a container restart
+
+This is a local single-operator trust tradeoff for the Compose ease-of-use
+path. The runtime env file is plaintext local configuration, not canonical
+state, not committed, and not logged.
+
+### What Does NOT Change
+
+- Existing `.keys.enc` files cannot be re-keyed or unlocked by first-run setup.
+- Provider credentials remain encrypted in `.keys.enc`.
+- GET credential responses continue to return masked values only.
+- Provider adapters still receive plain constructor parameters only from the
+  composition root and do not know about credential storage.
+- yfinance remains the default provider and requires no credentials.

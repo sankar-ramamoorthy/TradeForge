@@ -107,6 +107,7 @@ APP_TITLE = "TradeForge Runtime"
 APP_VERSION = "0.1.0"
 FRONTEND_SERVE_ENV_VAR = "TRADEFORGE_SERVE_FRONTEND"
 FRONTEND_DIST_ENV_VAR = "TRADEFORGE_FRONTEND_DIST_DIR"
+RUNTIME_ENV_FILE_ENV_VAR = "TRADEFORGE_RUNTIME_ENV_FILE"
 _API_ROUTE_PREFIXES = frozenset(
     {
         "admin",
@@ -205,6 +206,28 @@ def _default_event_store() -> EventStore:
     ):
         return PostgresEventStore()
     return InMemoryEventStore()
+
+
+def _runtime_env_file_path() -> Path:
+    return Path(os.environ.get(RUNTIME_ENV_FILE_ENV_VAR, ".tradeforge/runtime.env"))
+
+
+def _load_master_key_from_runtime_env_file() -> None:
+    if os.environ.get(KeyManager.ENV_VAR_NAME):
+        return
+
+    runtime_env_file = _runtime_env_file_path()
+    if not runtime_env_file.exists():
+        return
+
+    for line in runtime_env_file.read_text(encoding="utf-8").splitlines():
+        normalized = line.strip()
+        if not normalized or normalized.startswith("#") or "=" not in normalized:
+            continue
+        key, value = normalized.split("=", 1)
+        if key.strip() == KeyManager.ENV_VAR_NAME and value:
+            os.environ[KeyManager.ENV_VAR_NAME] = value.strip()
+            return
 
 
 def _default_credential_store() -> CredentialStore | None:
@@ -476,6 +499,7 @@ def create_app(
     evidence_panel_service: EvidencePanelService | None = None,
     frontend_dist_dir: Path | str | None = None,
 ) -> FastAPI:
+    _load_master_key_from_runtime_env_file()
     shared_event_store = event_store or _default_event_store()
     app = FastAPI(
         title=APP_TITLE,
