@@ -17,6 +17,8 @@ It is:
 
 ### Decision lifecycle
 
+- Quick-capture a draft idea with symbol plus two thesis seed sentences
+
 Full 7-stage lifecycle: **Idea → Thesis → Plan → Approval → Execution → Position → Review**
 
 - Start a new trade idea from the UI — no API calls, no curl

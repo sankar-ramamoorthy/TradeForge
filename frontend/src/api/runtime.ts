@@ -1137,6 +1137,7 @@ export async function fetchReplayTimeline(
 export type NewTradeIdeaRequest = {
   symbol: string;
   initial_thesis?: string;
+  capture_mode?: "standard" | "quick_capture";
   persona_id: string;
   workspace_id: string;
   source_advisory_candidate_id?: string;

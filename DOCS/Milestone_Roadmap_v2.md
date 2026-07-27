@@ -2917,6 +2917,9 @@ Runtime authority:
 * EZ-03 is complete: empty DOCS placeholders were removed, `PROJECT.md` now
   reflects the M-EZ product-readiness sequence, and this file remains the
   single active runtime roadmap authority.
+* RAMP-01 is complete: ordinary new ideas can be quick-captured from symbol
+  plus two draft thesis sentences while preserving the structured Thesis and
+  Plan gates before Approval.
 
 ---
 

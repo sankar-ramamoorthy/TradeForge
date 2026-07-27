@@ -129,6 +129,66 @@ def test_init_with_initial_thesis_accepted() -> None:
     assert data["decision_id"]
 
 
+def test_quick_capture_requires_two_draft_sentences() -> None:
+    client = TestClient(create_app(event_store=InMemoryEventStore()))
+    response = client.post(
+        "/lifecycle/decisions/init",
+        json={
+            **INIT_PAYLOAD,
+            "capture_mode": "quick_capture",
+            "initial_thesis": "Watching a base breakout",
+        },
+    )
+    assert response.status_code == 422
+    assert response.json()["detail"]["message"] == (
+        "quick capture requires at least two draft thesis sentences"
+    )
+
+
+def test_quick_capture_marks_initial_thesis_as_draft_stub() -> None:
+    event_store = InMemoryEventStore()
+    client = TestClient(create_app(event_store=event_store))
+    _init_idea(
+        client,
+        capture_mode="quick_capture",
+        initial_thesis=(
+            "AAPL is tightening below resistance. I want to watch whether volume "
+            "confirms a breakout."
+        ),
+    )
+
+    event = event_store.read_events()[0]
+    assert event.event_type == "decision.trade_idea_created"
+    assert event.payload["initial_thesis_status"] == "draft_stub"
+    assert event.payload["quick_capture"] is True
+    assert event.provenance["source"] == "quick-capture-idea-tier"
+
+
+def test_quick_capture_draft_stub_does_not_satisfy_structured_thesis_gate() -> None:
+    client = TestClient(create_app(event_store=InMemoryEventStore()))
+    data = _init_idea(
+        client,
+        capture_mode="quick_capture",
+        initial_thesis=(
+            "AAPL is tightening below resistance. I want to watch whether volume "
+            "confirms a breakout."
+        ),
+    )
+
+    readiness = client.get(
+        f"/lifecycle/decisions/{data['decision_id']}/plan-readiness"
+    ).json()
+    thesis_check = next(
+        check
+        for check in readiness["checks"]
+        if check["check_id"] == "has_structured_thesis"
+    )
+    assert readiness["current_stage"] == "Idea"
+    assert readiness["has_structured_thesis"] is False
+    assert readiness["can_proceed_to_approval"] is False
+    assert thesis_check["passed"] is False
+
+
 def test_init_symbol_captured_as_entity_reference() -> None:
     event_store = InMemoryEventStore()
     client = TestClient(create_app(event_store=event_store))

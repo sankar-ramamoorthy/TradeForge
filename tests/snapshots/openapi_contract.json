@@ -6192,6 +6192,15 @@
             ],
             "title": "Advisory Candidate Promotion Intent"
           },
+          "capture_mode": {
+            "default": "standard",
+            "enum": [
+              "standard",
+              "quick_capture"
+            ],
+            "title": "Capture Mode",
+            "type": "string"
+          },
           "initial_thesis": {
             "anyOf": [
               {

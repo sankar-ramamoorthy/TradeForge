@@ -289,7 +289,7 @@ planning while preserving the earlier MVP record for reference.
 | EV-03 | Done | M-EZ | Per-symbol evidence panel | `feature/ev-03-evidence-panel` |
 | EV-04 | Done | M-EZ | Basic price chart component | `feature/ev-04-price-chart` |
 | EV-05 | Done | M-EZ | Transparent attention ranking | `feature/ev-05-transparent-attention-ranking` |
-| RAMP-01 | Planned | M-EZ | Quick-capture idea tier | `feature/ramp-01-quick-capture` |
+| RAMP-01 | Done | M-EZ | Quick-capture idea tier | `feature/ramp-01-quick-capture` |
 | RAMP-02 | Planned | M-EZ | Guided first-decision mode | `feature/ramp-02-guided-first-decision` |
 | RAMP-03 | Planned | M-EZ | Operator identity profiles | `feature/ramp-03-operator-identity` |
 | GOV-01 | Done | M-EZ | Two-tier issue discipline documentation | `docs/gov-01-two-tier-discipline` |
@@ -9812,7 +9812,7 @@ snapshot archive.
 
 ## RAMP-01: Quick-Capture Idea Tier
 
-**Status:** Planned
+**Status:** Done
 
 **Milestone:** M-EZ
 
@@ -9828,6 +9828,13 @@ Approval gate.
 
 **Acceptance Criteria:** Lifecycle unchanged; Approval blocked until thesis
 complete; capture takes under 30 seconds.
+
+**Implementation Note (2026-07-27):** The existing new idea flow now supports
+`capture_mode: quick_capture` for a two-sentence draft thesis seed. Quick
+captures still append only `decision.trade_idea_created`; the event payload
+marks `initial_thesis_status: draft_stub` and does not create
+`decision.thesis_created`. Plan readiness remains blocked at Idea stage until
+the operator completes the structured thesis and plan authoring workflows.
 
 ---
 
