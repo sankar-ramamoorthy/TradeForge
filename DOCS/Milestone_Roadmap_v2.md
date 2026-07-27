@@ -2914,6 +2914,9 @@ Runtime authority:
   local master key when no key and no `.keys.enc` exist, show it once, persist
   it to the ignored Compose-mounted `.tradeforge/runtime.env` file, and enable
   credential entry without a terminal or restart.
+* EZ-03 is complete: empty DOCS placeholders were removed, `PROJECT.md` now
+  reflects the M-EZ product-readiness sequence, and this file remains the
+  single active runtime roadmap authority.
 
 ---
 

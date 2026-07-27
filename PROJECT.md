@@ -12,7 +12,7 @@ authority for executable behavior.
 
 # Current Phase
 
-Phase: Post-M14C operational sync and near-term product/refactor preparation
+Phase: M-EZ product-readiness sequence
 
 The runtime currently supports:
 
@@ -29,12 +29,12 @@ The runtime currently supports:
 
 # Current Priority
 
-1. Keep runtime docs and the knowledge base synchronized after implementation
-   milestones.
+1. Keep `DOCS/Milestone_Roadmap_v2.md` as the single active runtime roadmap.
+   `DOCS/MILESTONE_ROADMAP_DEPRECATED.md` and `DOCS/Milestone_Roadmap_v3.md`
+   are historical source artifacts only.
 2. Preserve M14C advisory import boundaries: imported research is advisory
    draft material until the operator submits normal lifecycle workflows.
 3. Prepare planned near-term work:
-   - EZ-03 documentation truth pass
    - RAMP-01 and RAMP-02 entry-ramp work
    - operator walkthrough before selecting M-RF-FE, M-RF2, M-PT, Research
      Cockpit intake, or additional usability work
@@ -57,10 +57,10 @@ Completed since the older foundation phase:
 - GOV-02 bounded Knowledge Base hygiene is complete.
 - EZ-01 single Compose startup is complete.
 - EZ-02 first-run master key setup is complete.
+- EZ-03 documentation truth pass is complete.
 
 Planned:
 
-- EZ-03
 - RAMP-01 and RAMP-02
 - operator walkthrough and evidence-based next-stream selection
 - M-RF-FE, M-RF2, M-PT, RAMP-03, and M15+ remain deferred until operator

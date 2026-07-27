@@ -84,6 +84,7 @@ does not create a Thesis, TradeIdea, approval, execution, or Event Ledger fact.
 - Dedicated **Provider Governance** surface at `/workspaces/provider-governance` — separate operational control plane, not a workspace rail
 - Configure provider API keys from the browser — no terminal required after initial master key setup
 - Masked field display (last 4 characters of secrets shown)
+- First-run setup can generate the local master key when no key store exists
 - Credential validation workflow — test a credential without saving, or validate an existing one on demand
 - Provider registry reloads automatically after credential changes — no restart required
 - Revoke credentials with audit trail preserved
@@ -297,7 +298,7 @@ DOCS/
 | M13A | Done | Provider governance, AI gateway configuration, credential validation, route visibility |
 | M13B | Done | Managed advisory runtime, route selection, governed provider secrets, and stateless LiteLLM request-time composition |
 | M14 | Done | Behavioral intelligence and cognitive auditability |
-| M15+ | Planned | Cognitive replay, attention allocation, simulation, adaptive research |
+| M15+ | Deferred | Cognitive replay, attention allocation, simulation, adaptive research |
 
 ---
 
