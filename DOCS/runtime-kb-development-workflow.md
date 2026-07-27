@@ -10,7 +10,7 @@ tags:
   - semantic-governance
   - knowledge-base
 created: 2026-05-08
-updated: 2026-05-08
+updated: 2026-07-27
 related:
   - runtime-kb-development-loop
   - ADR
@@ -18,7 +18,7 @@ related:
   - semantic-stabilization
   - ontology-governance
 kb_canonical_playbook: >
-  knowledge-base/TradeForge/playbooks/development/runtime-kb-development-loop.md
+  ../TradeForge-KnowledgeBase/playbooks/development/runtime-kb-development-loop.md
 kb_related:
   - "[[ARCHITECTURE]]"
   - "[[EVENT_TAXONOMY]]"
@@ -32,11 +32,14 @@ kb_related:
 
 ## Purpose
 
-This document explains the architectural reasoning behind the TradeForge dual-repository development workflow.
+This document explains the architectural reasoning behind the three-repository
+TradeForge development workflow.
 
 It describes:
 - why the workflow exists
 - why the Knowledge Base (KB) is separate from the runtime repository
+- why the Research Cockpit is a bounded upstream producer rather than runtime
+  authority
 - how semantic stabilization occurs
 - how replayability applies to development itself
 - how architecture governance is enforced
@@ -46,7 +49,7 @@ This is NOT the canonical operational playbook.
 The canonical workflow definition lives in:
 
 ```
-knowledge-base/TradeForge/playbooks/development/runtime-kb-development-loop.md
+../TradeForge-KnowledgeBase/playbooks/development/runtime-kb-development-loop.md
 ```
 
 This document exists to explain the architectural intent of that workflow.
@@ -82,7 +85,7 @@ Correctness and reconstructability are considered more important than implementa
 
 ---
 
-# Why Two Repositories Exist
+# Why Three Repositories Exist
 
 TradeForge intentionally separates:
 
@@ -121,6 +124,29 @@ The KB answers:
 
 ---
 
+## 3. Research Cockpit Repository
+
+Purpose:
+- upstream evidence and research production
+- source provenance
+- research history
+- quality evaluation
+- advisory submission production
+- optional TradeForge-compatible projections
+
+The Research Cockpit answers:
+
+> "What source-backed advisory research can be produced upstream?"
+
+Research Cockpit context is bounded. Activate it only for
+research-production, advisory-handoff, import-boundary, or cross-repository
+governance work.
+
+The Research Cockpit does not own TradeForge lifecycle state, canonical Event
+Ledger truth, approval, execution, or runtime implementation planning.
+
+---
+
 # Architectural Separation Principle
 
 The runtime repository is optimized for:
@@ -136,11 +162,19 @@ The KB is optimized for:
 - ontology stabilization
 - workflow governance
 
+The Research Cockpit is optimized for:
+- evidence assembly
+- provenance preservation
+- local research history
+- quality evaluation
+- advisory producer contracts
+
 This separation intentionally prevents:
 - implementation drift
 - ontology drift
 - architecture erosion
 - undocumented semantic evolution
+- advisory producer context from becoming runtime authority
 
 ---
 
@@ -423,7 +457,7 @@ This document explains:
 The canonical operational procedure lives in:
 
 ```
-knowledge-base/TradeForge/playbooks/development/runtime-kb-development-loop.md
+../TradeForge-KnowledgeBase/playbooks/development/runtime-kb-development-loop.md
 ```
 
 Operational execution rules should be modified there.
@@ -445,7 +479,7 @@ TradeForge development is designed to preserve:
 - architectural memory
 - workflow integrity
 
-The dual-repository workflow exists to ensure the system remains:
+The three-repository workflow exists to ensure the system remains:
 - explainable
 - reconstructable
 - governable

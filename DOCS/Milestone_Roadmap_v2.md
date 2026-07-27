@@ -2552,7 +2552,7 @@ M14 introduces recurring behavioral pattern detection, process violation trackin
 
 ## M14C - Thesis Import Workflow And Advisory Dropoff
 
-**Status:** In Progress
+**Status:** Done
 
 ## Semantic Intent
 
@@ -2604,6 +2604,10 @@ population, sizing, approval, broker integration, or execution.
   broker orders, or authorize execution.
 * Replay can show imported advisory source context without confusing it with
   canonical lifecycle truth.
+* Cross-repository validation against the Research Cockpit M5 review-ready
+  advisory submission completed under RC-039 and TF-F081. One receiver-side
+  correction was made in TradeForge; no Cockpit producer correction was
+  required.
 
 ---
 
@@ -3046,16 +3050,30 @@ TF-RF2-001 through TF-RF2-006 (see issue register).
 # Recommended Near-Term Sequence
 
 ```text
-1. M-RF   (API decomposition — before commissioning major new work)
-2. EV-00 (Evidence Density and transparent attention-ranking authority)
-3. EV-01, EV-02, EV-05, EV-03, EV-04 (first Evidence Density vertical slice)
-   - implemented 2026-07-12
-4. M-RF-FE (frontend client decomposition - independent, can interleave where
-   it reduces EV frontend risk)
-5. M-PT phases 0-2, then phases 3-5 after evidence surfaces help select and
-   understand setups
-6. EZ-01/EZ-02, RAMP-01/02, then M-RF2, RAMP-03, GOV-01/02, EZ-03
-7. Then reassess M15 through M19 with real usage history accumulated
+Completed foundation:
+1. M-RF (API decomposition)
+2. EV-00 through EV-05 (Evidence Density vertical slice)
+3. M14C TF-R001/TF-R002 plus TF-F081 receiver correction
+
+Next runtime sequence:
+1. GOV-01 (runtime governance clarification)
+2. GOV-02 coordination (bounded KB hygiene only where it prevents current
+   project truth from being understood)
+3. EZ-01
+4. EZ-02
+5. EZ-03
+6. RAMP-01
+7. RAMP-02
+8. Operator walkthrough
+9. Evidence-based next-milestone decision
+
+Deferred until operator validation or a concrete blocker changes priority:
+- RAMP-03
+- M-PT
+- M-RF2
+- M-RF-FE
+- M15 through M19
+- Research Cockpit intake expansion
 ```
 
 ---

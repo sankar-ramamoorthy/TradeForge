@@ -20,7 +20,9 @@ Each issue records:
 
 GitHub issues may mirror these records, but this file remains the local planning source of truth.
 
-Roadmap v2 is the active milestone direction. This register now tracks runtime implementation through completed M14 and active M14C while preserving the earlier MVP record for reference.
+Roadmap v2 is the active milestone direction. This register now tracks runtime
+implementation through completed M14C and active post-M5 product-readiness
+planning while preserving the earlier MVP record for reference.
 
 
 ---
@@ -253,6 +255,7 @@ Roadmap v2 is the active milestone direction. This register now tracks runtime i
 | TF-F079 | Done | M-EZ | Return Partial Alpha Vantage Fundamentals From Overview | `fix/tf-f079-alpha-vantage-partial-fundamentals` |
 | TF-F080 | Done | M-EZ | Prefer Alpha Vantage Over FMP For Fundamentals Routing | `fix/tf-f080-alpha-vantage-fundamentals-primary` |
 | TF-F081 | Done | M14C | Accept Negated Advisory Boundary Warnings In Imported Artifacts | `validation/m5-tf-r001-import` |
+| TF-F082 | Done | M-EZ | Operationalize Post-M5 Product-Readiness Sequence | `docs/tf-f082-post-m5-product-readiness` |
 | TF-C001 | Done | M14 | Detect recurring sizing violations | `feature/tf-c001-recurring-sizing-violations` |
 | TF-C002 | Done | M14 | Detect impulsive execution patterns | `feature/tf-c002-impulsive-execution-patterns` |
 | TF-C003 | Done | M14 | Implement process deviation overlays | `feature/tf-c003-process-deviation-overlays` |
@@ -8812,6 +8815,80 @@ with negated advisory-boundary warnings are accepted while nested
   `..\TradeForge-ResearchCockpit\fixtures\m5\submissions\case_review_ready_thesis_draft.json`
   against `POST /advisory/artifacts`, `GET /advisory/thesis-imports`, and
   `POST /lifecycle/decisions/develop-thesis`.
+
+---
+
+## TF-F082: Operationalize Post-M5 Product-Readiness Sequence
+
+**Status:** Done
+
+**Classification:** planning / governance / runtime sequencing
+
+**Milestone:** M-EZ
+
+**Branch:** `docs/tf-f082-post-m5-product-readiness`
+
+**Affected Layer:** docs
+
+**Linked Issues:** GOV-01, GOV-02, EZ-01, EZ-02, EZ-03, RAMP-01, RAMP-02,
+RAMP-03, TF-P001 through TF-P012, TF-RF2-001 through TF-RF2-006,
+TF-RFE001 through TF-RFE008, KB-GOV-004, RC-040
+
+**Impacted Invariants:** Human Decision Sovereignty, Lifecycle Authority, AI
+Advisory Boundary, Derived State Must Remain Distinguishable, Replayability Is
+Foundational
+
+**Problem:**
+After M14C, EV-00 through EV-05, M-RF, Research Cockpit M5, RC-039, and
+KB-GOV-003 completed, the runtime roadmap still contained stale active-M14C
+and older near-term sequence language. Runtime planning needed one bounded
+issue to make the accepted post-M5 product-readiness sequence operationally
+authoritative without allowing the Knowledge Base or Research Cockpit to own
+runtime scheduling.
+
+**Scope:**
+
+- Mark M14C complete in runtime planning surfaces.
+- Remove stale "active M14C" language.
+- Establish the next runtime sequence:
+  `GOV-01 -> GOV-02 coordination -> EZ-01 -> EZ-02 -> EZ-03 -> RAMP-01 ->
+  RAMP-02 -> operator walkthrough -> evidence-based next-milestone decision`.
+- Update the stale runtime development workflow document so it recognizes the
+  three-repository model and current Knowledge Base location.
+- Record that RAMP-03, M-PT, M-RF2, M-RF-FE, M15+, and Research Cockpit intake
+  expansion remain deferred until operator validation or a concrete blocker
+  changes priority.
+
+**Out Of Scope:**
+
+- Implementing GOV-01, GOV-02, EZ, RAMP, M-PT, M-RF2, or M-RF-FE work.
+- Runtime source, frontend, schema, fixture, migration, or test changes.
+- Research Cockpit collectors, intake, schemas, fixtures, provider work, or M6
+  implementation.
+- Making KB synthesis the runtime issue scheduler.
+
+**Acceptance Criteria:**
+
+- Runtime issue register contains this issue and preserves runtime sequencing
+  authority inside TradeForge.
+- Runtime roadmap marks M14C complete and records the post-M5 sequence.
+- Runtime development workflow document no longer describes a two-repository
+  system or old Knowledge Base path.
+- Deferred milestones and the operator-validation gate are explicit.
+- No feature implementation files change.
+
+**Resolution Summary:**
+Runtime planning now records M14C as complete, establishes the post-M5
+product-readiness sequence, identifies GOV-01 and GOV-02 as a short alignment
+tranche, defers larger streams until operator validation, and aligns the
+runtime development workflow document to the three-repository governance model.
+
+**Verification Completed:**
+
+- Documentation review.
+- `rg` stale-language checks for active M14C, two-repository workflow wording,
+  and old Knowledge Base paths.
+- `git diff --check`.
 
 ---
 
