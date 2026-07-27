@@ -24,12 +24,19 @@ It does NOT define:
 Those are defined in:
 
 ```
-C:\Users\bosto\dockerstuff\knowledge-base\TradeForge
+C:\Users\bosto\dockerstuff\TradeForge-Project\TradeForge-KnowledgeBase
 ```
 
 The knowledge base is a sibling repository to this runtime checkout, not a
 directory under `TradeForge/`. Codex MUST use the absolute path above when
 checking semantic authority.
+
+The Research Cockpit sibling repository at
+`C:\Users\bosto\dockerstuff\TradeForge-Project\TradeForge-ResearchCockpit`
+is an upstream evidence and research producer. Activate its context only for
+research-production, advisory-handoff, import-boundary, or cross-repository
+governance work. It has no TradeForge lifecycle, canonical-state, approval,
+execution, or runtime implementation-planning authority.
 
 ---
 # Runtime Semantic Activation Rule
@@ -41,9 +48,9 @@ Do NOT load the entire knowledge base by default.
 Before semantic loading:
 
 1. Read:
-   - C:\Users\bosto\dockerstuff\knowledge-base\TradeForge\SEMANTIC_BOOTSTRAP.md
-   - C:\Users\bosto\dockerstuff\knowledge-base\TradeForge\INVARIANTS.md
-   - C:\Users\bosto\dockerstuff\knowledge-base\TradeForge\knowledge\index\runtime-context-map.md
+   - C:\Users\bosto\dockerstuff\TradeForge-Project\TradeForge-KnowledgeBase\SEMANTIC_BOOTSTRAP.md
+   - C:\Users\bosto\dockerstuff\TradeForge-Project\TradeForge-KnowledgeBase\INVARIANTS.md
+   - C:\Users\bosto\dockerstuff\TradeForge-Project\TradeForge-KnowledgeBase\knowledge\index\runtime-context-map.md
 
 2. Determine the dominant task category.
 
@@ -65,9 +72,9 @@ Canonical knowledge is NOT globally active.
 
 When in doubt, resolve authority in this order:
 
-1. C:\Users\bosto\dockerstuff\knowledge-base\TradeForge (semantic truth)
-2. C:\Users\bosto\dockerstuff\TradeForge\DOCS (implementation truth)
-3. C:\Users\bosto\dockerstuff\TradeForge\src (execution truth)
+1. C:\Users\bosto\dockerstuff\TradeForge-Project\TradeForge-KnowledgeBase (semantic truth)
+2. C:\Users\bosto\dockerstuff\TradeForge-Project\TradeForge\DOCS (implementation truth)
+3. C:\Users\bosto\dockerstuff\TradeForge-Project\TradeForge\src (execution truth)
 
 Code must NEVER override knowledge-base semantics.
 

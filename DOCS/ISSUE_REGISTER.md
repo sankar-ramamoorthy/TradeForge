@@ -252,6 +252,7 @@ Roadmap v2 is the active milestone direction. This register now tracks runtime i
 | TF-F078 | Done | M-EZ | Proxy Evidence API Routes In Vite Dev Server | `fix/tf-f078-evidence-vite-proxy` |
 | TF-F079 | Done | M-EZ | Return Partial Alpha Vantage Fundamentals From Overview | `fix/tf-f079-alpha-vantage-partial-fundamentals` |
 | TF-F080 | Done | M-EZ | Prefer Alpha Vantage Over FMP For Fundamentals Routing | `fix/tf-f080-alpha-vantage-fundamentals-primary` |
+| TF-F081 | Done | M14C | Accept Negated Advisory Boundary Warnings In Imported Artifacts | `validation/m5-tf-r001-import` |
 | TF-C001 | Done | M14 | Detect recurring sizing violations | `feature/tf-c001-recurring-sizing-violations` |
 | TF-C002 | Done | M14 | Detect impulsive execution patterns | `feature/tf-c002-impulsive-execution-patterns` |
 | TF-C003 | Done | M14 | Implement process deviation overlays | `feature/tf-c003-process-deviation-overlays` |
@@ -8737,6 +8738,80 @@ test covering the default order when both credentials exist.
 - `uv run pytest tests\test_fundamentals_adapters.py tests\test_fundamentals_overlay.py tests\test_provider_governance_api.py`
 - `uv run ruff check src\infrastructure\market\alpha_vantage_adapter.py src\app\api\application.py tests\test_fundamentals_adapters.py tests\test_provider_governance_api.py`
 - `uv run mypy src\infrastructure\market\alpha_vantage_adapter.py src\app\api\application.py tests\test_fundamentals_adapters.py tests\test_provider_governance_api.py`
+
+---
+
+## TF-F081: Accept Negated Advisory Boundary Warnings In Imported Artifacts
+
+**Status:** Done
+
+**Classification:** bug / contract boundary / operational feedback
+
+**Milestone:** M14C
+
+**Branch:** `validation/m5-tf-r001-import`
+
+**Affected Layer:** services/advisory validation, tests
+
+**Linked ADRs:** ADR-0001, ADR-0002, ADR-0006, ADR-0034, ADR-0041
+
+**Impacted Invariants:** Human Decision Sovereignty, Event Ledger Canonical
+Truth, Lifecycle Authority, AI Advisory Boundary, Derived State Must Remain
+Distinguishable, Replayability Is Foundational
+
+**Problem:**
+Cross-repository validation of the Research Cockpit M5 review-ready advisory
+submission against TF-R001 found that `POST /advisory/artifacts` rejected a
+valid JSON advisory artifact when the body preserved explicit negated boundary
+warnings such as no lifecycle or execution authority. The receiver was scanning
+raw body text for forbidden authority field names and treated
+`no_execution_authority` or prohibited-action warning prose as if it were an
+authority claim.
+
+**Scope:**
+
+- Keep rejecting forbidden authority keys in advisory artifact metadata.
+- Keep rejecting forbidden authority keys inside JSON artifact body objects.
+- Stop rejecting negated advisory-boundary warning text or keys such as
+  `no_lifecycle_authority` and `no_execution_authority`.
+- Preserve the existing advisory artifact, thesis import, and lifecycle
+  boundaries.
+
+**Out Of Scope:**
+
+- New advisory artifact schema.
+- New TradeForge import endpoint.
+- Lifecycle event changes.
+- Cockpit producer changes.
+- Frontend changes.
+- Duplicate-policy changes.
+
+**Design Plan:**
+
+1. Treat explicit metadata and JSON object keys as the receiver authority
+   boundary, because those fields can encode machine-actionable intent.
+2. Do not scan every JSON body value as raw text, because valid advisory
+   artifacts must be able to carry boundary warnings and negated authority
+   language.
+3. Preserve exact rejection of active forbidden keys such as
+   `lifecycle_transition_intent`.
+4. Add focused tests for accepted negated boundary warnings and rejected nested
+   forbidden JSON keys.
+
+**Resolution Summary:**
+Updated `AdvisoryArtifactIngestionService` validation to inspect forbidden
+authority keys in metadata and parsed JSON body keys, instead of substring
+matching the full body text. Added regression coverage proving JSON artifacts
+with negated advisory-boundary warnings are accepted while nested
+`lifecycle_transition_intent` remains rejected.
+
+**Verification Completed:**
+
+- `uv run pytest tests\test_advisory_artifact.py tests\test_develop_thesis_workflow.py`
+- Ad hoc M5 fixture handoff harness using
+  `..\TradeForge-ResearchCockpit\fixtures\m5\submissions\case_review_ready_thesis_draft.json`
+  against `POST /advisory/artifacts`, `GET /advisory/thesis-imports`, and
+  `POST /lifecycle/decisions/develop-thesis`.
 
 ---
 
