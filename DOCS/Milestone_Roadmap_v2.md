@@ -2902,6 +2902,8 @@ Runtime authority:
 * Attention ranking is transparent, deterministic, provenance-backed, and
   explicitly not a buy/sell recommendation or lifecycle authority.
 * Governance overhead is calibrated to change risk, not applied uniformly.
+* GOV-01 is complete: runtime agent bootstrap files now distinguish Tier A
+  full-ceremony work from Tier B bounded low-risk batch work.
 
 ---
 
@@ -3056,7 +3058,7 @@ Completed foundation:
 3. M14C TF-R001/TF-R002 plus TF-F081 receiver correction
 
 Next runtime sequence:
-1. GOV-01 (runtime governance clarification)
+1. GOV-01 (runtime governance clarification) - complete
 2. GOV-02 coordination (bounded KB hygiene only where it prevents current
    project truth from being understood)
 3. EZ-01
