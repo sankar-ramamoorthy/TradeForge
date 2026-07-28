@@ -4528,6 +4528,116 @@
         "title": "EvidenceConflictMarker",
         "type": "string"
       },
+      "EvidenceCoverageRecordResponse": {
+        "properties": {
+          "attempts": {
+            "items": {
+              "$ref": "#/components/schemas/EvidenceProviderAttemptResponse"
+            },
+            "title": "Attempts",
+            "type": "array"
+          },
+          "missing_fields": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Missing Fields",
+            "type": "array"
+          },
+          "next_action": {
+            "title": "Next Action",
+            "type": "string"
+          },
+          "provider_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Provider Ids",
+            "type": "array"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "symbol": {
+            "title": "Symbol",
+            "type": "string"
+          }
+        },
+        "required": [
+          "symbol",
+          "status",
+          "provider_ids",
+          "attempts",
+          "missing_fields",
+          "reason",
+          "next_action"
+        ],
+        "title": "EvidenceCoverageRecordResponse",
+        "type": "object"
+      },
+      "EvidenceCoverageSummaryResponse": {
+        "properties": {
+          "attempted_count": {
+            "title": "Attempted Count",
+            "type": "integer"
+          },
+          "failed_count": {
+            "title": "Failed Count",
+            "type": "integer"
+          },
+          "fresh_count": {
+            "title": "Fresh Count",
+            "type": "integer"
+          },
+          "is_partial": {
+            "title": "Is Partial",
+            "type": "boolean"
+          },
+          "missing_count": {
+            "title": "Missing Count",
+            "type": "integer"
+          },
+          "next_action": {
+            "title": "Next Action",
+            "type": "string"
+          },
+          "provider_degraded_count": {
+            "title": "Provider Degraded Count",
+            "type": "integer"
+          },
+          "refreshed_count": {
+            "title": "Refreshed Count",
+            "type": "integer"
+          },
+          "stale_count": {
+            "title": "Stale Count",
+            "type": "integer"
+          },
+          "summary": {
+            "title": "Summary",
+            "type": "string"
+          }
+        },
+        "required": [
+          "attempted_count",
+          "refreshed_count",
+          "failed_count",
+          "fresh_count",
+          "stale_count",
+          "missing_count",
+          "provider_degraded_count",
+          "is_partial",
+          "summary",
+          "next_action"
+        ],
+        "title": "EvidenceCoverageSummaryResponse",
+        "type": "object"
+      },
       "EvidenceEligibilityItemResponse": {
         "properties": {
           "decision_ids": {
@@ -4646,6 +4756,9 @@
             "title": "Chart Points",
             "type": "array"
           },
+          "coverage": {
+            "$ref": "#/components/schemas/EvidenceCoverageRecordResponse"
+          },
           "facts": {
             "items": {
               "$ref": "#/components/schemas/EvidenceFactResponse"
@@ -4699,10 +4812,47 @@
           "facts",
           "chart_points",
           "ranking_item",
+          "coverage",
           "latest_snapshot",
           "is_advisory"
         ],
         "title": "EvidencePanelResponse",
+        "type": "object"
+      },
+      "EvidenceProviderAttemptResponse": {
+        "properties": {
+          "attempted_at": {
+            "format": "date-time",
+            "title": "Attempted At",
+            "type": "string"
+          },
+          "failure_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Failure Reason"
+          },
+          "outcome": {
+            "title": "Outcome",
+            "type": "string"
+          },
+          "provider_id": {
+            "title": "Provider Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "provider_id",
+          "attempted_at",
+          "outcome",
+          "failure_reason"
+        ],
+        "title": "EvidenceProviderAttemptResponse",
         "type": "object"
       },
       "EvidenceRankedItemResponse": {
@@ -4711,6 +4861,16 @@
             "const": "advisory",
             "title": "Authority",
             "type": "string"
+          },
+          "coverage": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EvidenceCoverageRecordResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "decision_ids": {
             "items": {
@@ -4782,6 +4942,7 @@
           "decision_ids",
           "watchlist_entry_ids",
           "snapshot",
+          "coverage",
           "is_advisory"
         ],
         "title": "EvidenceRankedItemResponse",
@@ -4822,6 +4983,9 @@
             "title": "Authority",
             "type": "string"
           },
+          "coverage_summary": {
+            "$ref": "#/components/schemas/EvidenceCoverageSummaryResponse"
+          },
           "generated_at": {
             "format": "date-time",
             "title": "Generated At",
@@ -4843,6 +5007,7 @@
           "authority",
           "generated_at",
           "items",
+          "coverage_summary",
           "is_advisory"
         ],
         "title": "EvidenceRankingResponse",
@@ -4854,6 +5019,16 @@
             "const": "advisory",
             "title": "Authority",
             "type": "string"
+          },
+          "coverage": {
+            "items": {
+              "$ref": "#/components/schemas/EvidenceCoverageRecordResponse"
+            },
+            "title": "Coverage",
+            "type": "array"
+          },
+          "coverage_summary": {
+            "$ref": "#/components/schemas/EvidenceCoverageSummaryResponse"
           },
           "eligible_symbols": {
             "items": {
@@ -4891,6 +5066,8 @@
           "eligible_symbols",
           "refreshed_symbols",
           "unavailable_symbols",
+          "coverage",
+          "coverage_summary",
           "fetched_at",
           "is_advisory"
         ],

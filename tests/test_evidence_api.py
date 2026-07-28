@@ -53,13 +53,48 @@ def test_evidence_api_watchlist_refresh_ranking_and_panel_flow() -> None:
 
     refresh = client.post("/evidence/refresh/run")
     assert refresh.status_code == 200
-    assert refresh.json()["refreshed_symbols"] == ["TSLA"]
+    refresh_body = refresh.json()
+    assert refresh_body["refreshed_symbols"] == ["TSLA"]
+    assert refresh_body["coverage"][0]["symbol"] == "TSLA"
+    assert refresh_body["coverage"][0]["attempts"][0]["provider_id"] == "seeded-demo"
+    assert refresh_body["coverage_summary"]["attempted_count"] == 1
 
     ranking = client.get("/evidence/ranking").json()
     assert ranking["authority"] == "advisory"
+    assert ranking["coverage_summary"]["attempted_count"] == 1
     assert ranking["items"][0]["reasons"][0]["code"] == "operator-pinned-priority"
+    assert ranking["items"][0]["coverage"]["provider_ids"] == ["seeded-demo"]
 
     panel = client.get("/evidence/symbols/tsla").json()
     assert panel["symbol"] == "TSLA"
+    assert panel["coverage"]["provider_ids"] == ["seeded-demo"]
     assert panel["latest_snapshot"]["provider_id"] == "seeded-demo"
     assert panel["chart_points"]
+
+
+def test_evidence_api_reports_partial_refresh_coverage() -> None:
+    client = _client()
+    client.post(
+        "/evidence/watchlist",
+        json={
+            "symbol": "BADTICKER",
+            "rationale": "Monitor provider failure clarity",
+            "persona_id": "operator",
+            "workspace_id": "operating",
+        },
+    )
+
+    refresh = client.post("/evidence/refresh/run").json()
+
+    assert refresh["refreshed_symbols"] == []
+    assert refresh["unavailable_symbols"] == ["BADTICKER"]
+    assert refresh["coverage_summary"]["is_partial"] is True
+    assert refresh["coverage"][0]["status"] == "provider-degraded"
+    assert refresh["coverage"][0]["missing_fields"] == [
+        "latest-price",
+        "open-to-close-change",
+        "volume",
+        "market-regime",
+        "chart-points",
+    ]
+    assert refresh["coverage"][0]["attempts"][0]["failure_reason"]

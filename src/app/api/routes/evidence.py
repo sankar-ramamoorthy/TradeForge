@@ -13,7 +13,10 @@ from src.app.api.deps import (
     _watchlist_service_from,
 )
 from src.domain.evidence import (
+    EvidenceCoverageRecord,
+    EvidenceCoverageSummary,
     EvidencePanelResult,
+    EvidenceProviderAttempt,
     EvidenceRankedItem,
     EvidenceRankingResult,
     EvidenceRefreshResult,
@@ -71,11 +74,43 @@ class EvidenceEligibilityResponse(BaseModel):
     items: list[EvidenceEligibilityItemResponse]
 
 
+class EvidenceProviderAttemptResponse(BaseModel):
+    provider_id: str
+    attempted_at: datetime
+    outcome: str
+    failure_reason: str | None
+
+
+class EvidenceCoverageRecordResponse(BaseModel):
+    symbol: str
+    status: str
+    provider_ids: list[str]
+    attempts: list[EvidenceProviderAttemptResponse]
+    missing_fields: list[str]
+    reason: str
+    next_action: str
+
+
+class EvidenceCoverageSummaryResponse(BaseModel):
+    attempted_count: int
+    refreshed_count: int
+    failed_count: int
+    fresh_count: int
+    stale_count: int
+    missing_count: int
+    provider_degraded_count: int
+    is_partial: bool
+    summary: str
+    next_action: str
+
+
 class EvidenceRefreshResponse(BaseModel):
     authority: Literal["advisory"]
     eligible_symbols: list[str]
     refreshed_symbols: list[str]
     unavailable_symbols: list[str]
+    coverage: list[EvidenceCoverageRecordResponse]
+    coverage_summary: EvidenceCoverageSummaryResponse
     fetched_at: datetime
     is_advisory: bool
 
@@ -113,6 +148,7 @@ class EvidenceRankedItemResponse(BaseModel):
     decision_ids: list[str]
     watchlist_entry_ids: list[str]
     snapshot: EvidenceSnapshotResponse | None
+    coverage: EvidenceCoverageRecordResponse | None
     is_advisory: bool
 
 
@@ -120,6 +156,7 @@ class EvidenceRankingResponse(BaseModel):
     authority: Literal["advisory"]
     generated_at: datetime
     items: list[EvidenceRankedItemResponse]
+    coverage_summary: EvidenceCoverageSummaryResponse
     is_advisory: bool
 
 
@@ -149,6 +186,7 @@ class EvidencePanelResponse(BaseModel):
     facts: list[EvidenceFactResponse]
     chart_points: list[EvidenceChartPointResponse]
     ranking_item: EvidenceRankedItemResponse | None
+    coverage: EvidenceCoverageRecordResponse
     latest_snapshot: EvidenceSnapshotResponse | None
     is_advisory: bool
 
@@ -295,6 +333,8 @@ def _refresh_response(result: EvidenceRefreshResult) -> EvidenceRefreshResponse:
         eligible_symbols=list(result.eligible_symbols),
         refreshed_symbols=list(result.refreshed_symbols),
         unavailable_symbols=list(result.unavailable_symbols),
+        coverage=[_coverage_response(item) for item in result.coverage],
+        coverage_summary=_coverage_summary_response(result.coverage_summary),
         fetched_at=result.fetched_at,
         is_advisory=result.is_advisory,
     )
@@ -305,6 +345,7 @@ def _ranking_response(result: EvidenceRankingResult) -> EvidenceRankingResponse:
         authority="advisory",
         generated_at=result.generated_at,
         items=[_ranked_item_response(item) for item in result.items],
+        coverage_summary=_coverage_summary_response(result.coverage_summary),
         is_advisory=result.is_advisory,
     )
 
@@ -331,6 +372,11 @@ def _ranked_item_response(item: EvidenceRankedItem) -> EvidenceRankedItemRespons
         snapshot=(
             _snapshot_response(item.snapshot)
             if item.snapshot is not None
+            else None
+        ),
+        coverage=(
+            _coverage_response(item.coverage)
+            if item.coverage is not None
             else None
         ),
         is_advisory=item.is_advisory,
@@ -370,12 +416,55 @@ def _panel_response(result: EvidencePanelResult) -> EvidencePanelResponse:
             if result.ranking_item is not None
             else None
         ),
+        coverage=_coverage_response(result.coverage),
         latest_snapshot=(
             _snapshot_response(result.latest_snapshot)
             if result.latest_snapshot is not None
             else None
         ),
         is_advisory=result.is_advisory,
+    )
+
+
+def _coverage_summary_response(
+    summary: EvidenceCoverageSummary,
+) -> EvidenceCoverageSummaryResponse:
+    return EvidenceCoverageSummaryResponse(
+        attempted_count=summary.attempted_count,
+        refreshed_count=summary.refreshed_count,
+        failed_count=summary.failed_count,
+        fresh_count=summary.fresh_count,
+        stale_count=summary.stale_count,
+        missing_count=summary.missing_count,
+        provider_degraded_count=summary.provider_degraded_count,
+        is_partial=summary.is_partial,
+        summary=summary.summary,
+        next_action=summary.next_action,
+    )
+
+
+def _coverage_response(
+    coverage: EvidenceCoverageRecord,
+) -> EvidenceCoverageRecordResponse:
+    return EvidenceCoverageRecordResponse(
+        symbol=coverage.symbol,
+        status=coverage.status.value,
+        provider_ids=list(coverage.provider_ids),
+        attempts=[_provider_attempt_response(attempt) for attempt in coverage.attempts],
+        missing_fields=list(coverage.missing_fields),
+        reason=coverage.reason,
+        next_action=coverage.next_action,
+    )
+
+
+def _provider_attempt_response(
+    attempt: EvidenceProviderAttempt,
+) -> EvidenceProviderAttemptResponse:
+    return EvidenceProviderAttemptResponse(
+        provider_id=attempt.provider_id,
+        attempted_at=attempt.attempted_at,
+        outcome=attempt.outcome,
+        failure_reason=attempt.failure_reason,
     )
 
 

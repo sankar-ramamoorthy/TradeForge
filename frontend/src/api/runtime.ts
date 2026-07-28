@@ -725,6 +725,36 @@ export type EvidenceRankingReason = {
   weight: number;
 };
 
+export type EvidenceProviderAttempt = {
+  provider_id: string;
+  attempted_at: string;
+  outcome: string;
+  failure_reason: string | null;
+};
+
+export type EvidenceCoverageRecord = {
+  symbol: string;
+  status: string;
+  provider_ids: string[];
+  attempts: EvidenceProviderAttempt[];
+  missing_fields: string[];
+  reason: string;
+  next_action: string;
+};
+
+export type EvidenceCoverageSummary = {
+  attempted_count: number;
+  refreshed_count: number;
+  failed_count: number;
+  fresh_count: number;
+  stale_count: number;
+  missing_count: number;
+  provider_degraded_count: number;
+  is_partial: boolean;
+  summary: string;
+  next_action: string;
+};
+
 export type EvidenceSnapshot = {
   symbol: string;
   provider_id: string;
@@ -751,6 +781,7 @@ export type EvidenceRankedItem = {
   decision_ids: string[];
   watchlist_entry_ids: string[];
   snapshot: EvidenceSnapshot | null;
+  coverage: EvidenceCoverageRecord | null;
   is_advisory: boolean;
 };
 
@@ -758,6 +789,7 @@ export type EvidenceRanking = {
   authority: "advisory";
   generated_at: string;
   items: EvidenceRankedItem[];
+  coverage_summary: EvidenceCoverageSummary;
   is_advisory: boolean;
 };
 
@@ -766,6 +798,8 @@ export type EvidenceRefreshResult = {
   eligible_symbols: string[];
   refreshed_symbols: string[];
   unavailable_symbols: string[];
+  coverage: EvidenceCoverageRecord[];
+  coverage_summary: EvidenceCoverageSummary;
   fetched_at: string;
   is_advisory: boolean;
 };
@@ -796,6 +830,7 @@ export type EvidencePanel = {
   facts: EvidenceFact[];
   chart_points: EvidenceChartPoint[];
   ranking_item: EvidenceRankedItem | null;
+  coverage: EvidenceCoverageRecord;
   latest_snapshot: EvidenceSnapshot | null;
   is_advisory: boolean;
 };

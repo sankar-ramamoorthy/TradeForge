@@ -5,8 +5,16 @@ from dataclasses import replace
 from datetime import UTC, datetime
 
 from src.domain.events import EventEnvelope, EventStore
-from src.domain.evidence import EvidenceEligibilityItem, EvidenceRefreshResult
+from src.domain.evidence import (
+    EvidenceCoverageRecord,
+    EvidenceEligibilityItem,
+    EvidenceRefreshResult,
+)
 from src.domain.lifecycle.state import LIFECYCLE_EVENT_STAGE_MAP, LifecycleStage
+from src.services.evidence.coverage import (
+    coverage_for_symbol_result,
+    coverage_summary,
+)
 from src.services.evidence.watchlist import WatchlistService
 from src.services.market.context import MarketContextRequest
 from src.services.market.snapshot_service import MarketSnapshotService
@@ -147,15 +155,34 @@ class EvidenceRefreshService:
         )
         now = datetime.now(UTC)
         if not eligible:
-            return EvidenceRefreshResult((), (), (), now)
+            coverage: tuple[EvidenceCoverageRecord, ...] = ()
+            return EvidenceRefreshResult(
+                (),
+                (),
+                (),
+                coverage,
+                coverage_summary(coverage),
+                now,
+            )
 
         context = self._market_snapshot_service.fetch_context(
             MarketContextRequest(symbols=eligible, persona_id=persona_id)
+        )
+        results_by_symbol = {result.symbol: result for result in context.symbol_results}
+        coverage = tuple(
+            coverage_for_symbol_result(
+                symbol,
+                results_by_symbol.get(symbol),
+                fetched_at=context.fetched_at,
+            )
+            for symbol in eligible
         )
         return EvidenceRefreshResult(
             eligible_symbols=eligible,
             refreshed_symbols=tuple(snapshot.symbol for snapshot in context.available),
             unavailable_symbols=context.unavailable_symbols,
+            coverage=coverage,
+            coverage_summary=coverage_summary(coverage),
             fetched_at=context.fetched_at,
         )
 

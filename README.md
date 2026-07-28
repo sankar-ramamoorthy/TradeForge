@@ -45,6 +45,7 @@ Full 7-stage lifecycle: **Idea → Thesis → Plan → Approval → Execution �
 - Context Workbench workspace for explicit advisory context acquisition
 - Market regime interpretation (bull / bear / ranging / high-volatility)
 - Provider provenance and fallback transparency surfaced in workspaces
+- Evidence refresh, attention ranking, and per-symbol evidence panels show partial coverage, provider-degraded symbols, missing fields, and next action guidance when data is incomplete
 
 ### AI advisory (optional — requires LiteLLM or compatible endpoint)
 
