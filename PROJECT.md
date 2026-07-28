@@ -24,6 +24,8 @@ The runtime currently supports:
 - local advisory import mediation for Thesis and Plan authoring
 - Evidence Density surfaces for watchlist, ranking, per-symbol evidence, and
   chart context
+- partial evidence refresh coverage across refresh, ranking, and per-symbol
+  evidence feedback
 
 ---
 
@@ -34,9 +36,9 @@ The runtime currently supports:
    are historical source artifacts only.
 2. Preserve M14C advisory import boundaries: imported research is advisory
    draft material until the operator submits normal lifecycle workflows.
-3. Address field-observed evidence clarity from the completed operator
+3. Preserve field-observed evidence clarity from the completed operator
    walkthrough:
-   - TF-F083: surface partial evidence refresh coverage across refresh,
+   - TF-F083: partial evidence refresh coverage is surfaced across refresh,
      ranking, and per-symbol evidence feedback
    - TF-F084: provide a human-usable Research Cockpit advisory handoff; M5 is
      contract-validated, but the operator workflow needs a transferable
@@ -71,8 +73,9 @@ Completed since the older foundation phase:
 
 Planned:
 
-- TF-F083 evidence-refresh coverage clarity is the next major stream selected
-  from walkthrough evidence.
+- TF-F083 evidence-refresh coverage clarity is complete. Refresh, ranking, and
+  per-symbol evidence surfaces now show partial coverage, provider outcomes,
+  missing fields, stale evidence, and next action guidance.
 - TF-F084 Research Cockpit handoff usability first slice is complete. A
   Cockpit-exported `.tf-thesis-draft.json` transfer can be scanned from
   `imports/incoming`, receives per-file status, and appears in Thesis Import

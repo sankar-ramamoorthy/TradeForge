@@ -256,7 +256,7 @@ planning while preserving the earlier MVP record for reference.
 | TF-F080 | Done | M-EZ | Prefer Alpha Vantage Over FMP For Fundamentals Routing | `fix/tf-f080-alpha-vantage-fundamentals-primary` |
 | TF-F081 | Done | M14C | Accept Negated Advisory Boundary Warnings In Imported Artifacts | `validation/m5-tf-r001-import` |
 | TF-F082 | Done | M-EZ | Operationalize Post-M5 Product-Readiness Sequence | `docs/tf-f082-post-m5-product-readiness` |
-| TF-F083 | Planned | M-EZ | Surface Partial Evidence Refresh Coverage | `fix/tf-f083-evidence-refresh-coverage` |
+| TF-F083 | Done | M-EZ | Surface Partial Evidence Refresh Coverage | `fix/tf-f083-evidence-refresh-coverage` |
 | TF-F084 | Done | M-EZ | Provide a Human-Usable Research Cockpit Advisory Handoff | `planning/tf-f084-cockpit-handoff` |
 | TF-C001 | Done | M14 | Detect recurring sizing violations | `feature/tf-c001-recurring-sizing-violations` |
 | TF-C002 | Done | M14 | Detect impulsive execution patterns | `feature/tf-c002-impulsive-execution-patterns` |
@@ -8954,6 +8954,26 @@ per-symbol evidence review.
 **Scheduling Basis:**
 Selected as the next major stream from the 2026-07-27 operator walkthrough
 evidence: additional usability and evidence robustness.
+
+**Implementation Note (2026-07-28):** Implemented explicit advisory evidence
+coverage records across refresh, attention ranking, and per-symbol evidence
+surfaces. Refresh responses now report attempted, refreshed, unavailable,
+provider-degraded, stale, and missing coverage with provider attempts, missing
+fields, and next action guidance. Ranking responses now carry a coverage
+summary so partial rankings are labeled as partial derived state. Per-symbol
+evidence panels show missing fields and provider/source context before facts.
+No lifecycle events, TradeIdeas, provider integrations, or persistence schema
+changes were introduced.
+
+**Validation Completed:**
+
+- `uv run pytest tests\test_evidence_density.py tests\test_evidence_api.py`
+- `uv run ruff check src\domain\evidence\models.py src\domain\evidence\__init__.py src\services\evidence\coverage.py src\services\evidence\refresh.py src\services\evidence\ranking.py src\services\evidence\panel.py src\app\api\routes\evidence.py tests\test_evidence_density.py tests\test_evidence_api.py`
+- `uv run mypy src\domain\evidence\models.py src\domain\evidence\__init__.py src\services\evidence\coverage.py src\services\evidence\refresh.py src\services\evidence\ranking.py src\services\evidence\panel.py src\app\api\routes\evidence.py tests\test_evidence_density.py tests\test_evidence_api.py`
+- `npm.cmd run typecheck`
+- `npm.cmd run lint`
+- `npm.cmd run build`
+- `uv run pytest tests\test_api_contract_snapshot.py`
 
 ---
 

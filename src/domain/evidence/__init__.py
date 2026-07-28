@@ -1,9 +1,12 @@
 from src.domain.evidence.models import (
     EvidenceChartPoint,
+    EvidenceCoverageRecord,
+    EvidenceCoverageSummary,
     EvidenceEligibilityItem,
     EvidenceFact,
     EvidenceFreshnessState,
     EvidencePanelResult,
+    EvidenceProviderAttempt,
     EvidenceRankedItem,
     EvidenceRankingReason,
     EvidenceRankingResult,
@@ -14,10 +17,13 @@ from src.domain.evidence.models import (
 
 __all__ = [
     "EvidenceChartPoint",
+    "EvidenceCoverageRecord",
+    "EvidenceCoverageSummary",
     "EvidenceEligibilityItem",
     "EvidenceFact",
     "EvidenceFreshnessState",
     "EvidencePanelResult",
+    "EvidenceProviderAttempt",
     "EvidenceRankedItem",
     "EvidenceRankingReason",
     "EvidenceRankingResult",

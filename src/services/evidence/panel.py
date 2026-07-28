@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 from decimal import ROUND_HALF_UP, Decimal
 
 from src.domain.evidence import (
@@ -10,10 +10,9 @@ from src.domain.evidence import (
     EvidencePanelResult,
 )
 from src.domain.market.snapshot_persistence import PersistedMarketSnapshot
+from src.services.evidence.coverage import coverage_for_snapshot
 from src.services.evidence.ranking import EvidenceRankingService
 from src.services.market.snapshot_query import MarketSnapshotQueryService
-
-_FRESH_WINDOW = timedelta(hours=24)
 
 
 class EvidencePanelService:
@@ -37,7 +36,8 @@ class EvidencePanelService:
         upper = symbol.upper().strip()
         snapshots = self._snapshot_query_service.query(symbol=upper).snapshots
         latest = max(snapshots, key=lambda item: item.persisted_at, default=None)
-        freshness = _freshness_for(latest, generated_at)
+        coverage = coverage_for_snapshot(upper, latest, now=generated_at)
+        freshness = coverage.status
         return EvidencePanelResult(
             symbol=upper,
             generated_at=generated_at,
@@ -48,19 +48,9 @@ class EvidencePanelService:
                 upper,
                 now=generated_at,
             ),
+            coverage=coverage,
             latest_snapshot=latest.snapshot if latest is not None else None,
         )
-
-
-def _freshness_for(
-    persisted: PersistedMarketSnapshot | None,
-    now: datetime,
-) -> EvidenceFreshnessState:
-    if persisted is None:
-        return EvidenceFreshnessState.MISSING
-    if now - persisted.snapshot.provenance.data_as_of > _FRESH_WINDOW:
-        return EvidenceFreshnessState.STALE
-    return EvidenceFreshnessState.FRESH
 
 
 def _facts_for(

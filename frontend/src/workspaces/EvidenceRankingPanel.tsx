@@ -1,11 +1,13 @@
-import { Pin, PlusCircle, RefreshCw } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Pin, PlusCircle, RefreshCw } from "lucide-react";
 import { type FormEvent, useEffect, useState } from "react";
 
 import {
   fetchEvidenceRanking,
   postWatchlistEntry,
   runEvidenceRefresh,
+  type EvidenceCoverageRecord,
   type EvidenceRanking,
+  type EvidenceRefreshResult,
 } from "../api/runtime";
 import { type WorkspaceContext } from "../workspaceRouting";
 
@@ -18,6 +20,7 @@ export function EvidenceRankingPanel({ context }: EvidenceRankingPanelProps) {
   const [symbol, setSymbol] = useState("");
   const [rationale, setRationale] = useState("");
   const [pinned, setPinned] = useState(false);
+  const [lastRefresh, setLastRefresh] = useState<EvidenceRefreshResult | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -38,7 +41,8 @@ export function EvidenceRankingPanel({ context }: EvidenceRankingPanelProps) {
   async function reloadAfterRefresh() {
     setBusy(true);
     try {
-      await runEvidenceRefresh();
+      const refresh = await runEvidenceRefresh();
+      setLastRefresh(refresh);
       setRanking(await fetchEvidenceRanking());
       setError(null);
     } catch (err: unknown) {
@@ -63,7 +67,8 @@ export function EvidenceRankingPanel({ context }: EvidenceRankingPanelProps) {
       setSymbol("");
       setRationale("");
       setPinned(false);
-      await runEvidenceRefresh();
+      const refresh = await runEvidenceRefresh();
+      setLastRefresh(refresh);
       setRanking(await fetchEvidenceRanking());
       setError(null);
     } catch (err: unknown) {
@@ -121,6 +126,21 @@ export function EvidenceRankingPanel({ context }: EvidenceRankingPanelProps) {
 
       {error ? <p className="runtime-error">{error}</p> : null}
 
+      {lastRefresh ? (
+        <CoverageSummaryBlock
+          coverage={lastRefresh.coverage}
+          summary={lastRefresh.coverage_summary}
+        />
+      ) : ranking?.coverage_summary.is_partial ? (
+        <div className="evidence-coverage-summary partial" role="status">
+          <AlertTriangle aria-hidden="true" />
+          <div>
+            <strong>{ranking.coverage_summary.summary}</strong>
+            <span>{ranking.coverage_summary.next_action}</span>
+          </div>
+        </div>
+      ) : null}
+
       {ranking && ranking.items.length > 0 ? (
         <div className="evidence-ranking-list" role="list">
           {ranking.items.map((item) => (
@@ -132,6 +152,7 @@ export function EvidenceRankingPanel({ context }: EvidenceRankingPanelProps) {
                   <span>{item.freshness}</span>
                 </div>
                 <p>{item.reasons.map((reason) => reason.label).join(", ")}</p>
+                {item.coverage ? <CoverageLine coverage={item.coverage} /> : null}
               </div>
               <span className="evidence-score">{item.priority_score}</span>
             </article>
@@ -142,4 +163,61 @@ export function EvidenceRankingPanel({ context }: EvidenceRankingPanelProps) {
       )}
     </section>
   );
+}
+
+type CoverageSummaryBlockProps = {
+  coverage: EvidenceCoverageRecord[];
+  summary: EvidenceRefreshResult["coverage_summary"];
+};
+
+function CoverageSummaryBlock({ coverage, summary }: CoverageSummaryBlockProps) {
+  return (
+    <div
+      className={`evidence-coverage-summary ${summary.is_partial ? "partial" : "complete"}`}
+      role="status"
+    >
+      {summary.is_partial ? (
+        <AlertTriangle aria-hidden="true" />
+      ) : (
+        <CheckCircle2 aria-hidden="true" />
+      )}
+      <div>
+        <strong>{summary.summary}</strong>
+        <span>{summary.next_action}</span>
+        <div className="evidence-coverage-symbols">
+          {coverage.map((item) => (
+            <span className={`coverage-pill status-${item.status}`} key={item.symbol}>
+              {item.symbol}: {coverageLabel(item)}
+            </span>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function CoverageLine({ coverage }: { coverage: EvidenceCoverageRecord }) {
+  const providers =
+    coverage.provider_ids.length > 0
+      ? coverage.provider_ids.join(", ")
+      : coverage.attempts.map((attempt) => attempt.provider_id).join(", ");
+  const providerText = providers ? `Provider: ${providers}. ` : "";
+  const missingText =
+    coverage.missing_fields.length > 0
+      ? `Missing: ${coverage.missing_fields.join(", ")}. `
+      : "";
+  return (
+    <small className={`evidence-coverage-line status-${coverage.status}`}>
+      {providerText}
+      {missingText}
+      {coverage.next_action}
+    </small>
+  );
+}
+
+function coverageLabel(coverage: EvidenceCoverageRecord): string {
+  if (coverage.status === "provider-degraded") return "provider failed";
+  if (coverage.status === "missing") return "missing";
+  if (coverage.status === "stale") return "stale";
+  return "refreshed";
 }

@@ -75,10 +75,69 @@ class EvidenceEligibilityItem:
 
 
 @dataclass(frozen=True, slots=True)
+class EvidenceProviderAttempt:
+    provider_id: str
+    attempted_at: datetime
+    outcome: str
+    failure_reason: str | None = None
+
+    def __post_init__(self) -> None:
+        if not self.provider_id.strip():
+            raise ValueError("provider_id must not be empty")
+        if not self.outcome.strip():
+            raise ValueError("outcome must not be empty")
+
+
+@dataclass(frozen=True, slots=True)
+class EvidenceCoverageRecord:
+    symbol: str
+    status: EvidenceFreshnessState
+    provider_ids: tuple[str, ...]
+    attempts: tuple[EvidenceProviderAttempt, ...]
+    missing_fields: tuple[str, ...]
+    reason: str
+    next_action: str
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "symbol", self.symbol.upper().strip())
+        object.__setattr__(self, "provider_ids", tuple(self.provider_ids))
+        object.__setattr__(self, "attempts", tuple(self.attempts))
+        object.__setattr__(self, "missing_fields", tuple(self.missing_fields))
+        if not self.symbol:
+            raise ValueError("symbol must not be empty")
+        if not self.reason.strip():
+            raise ValueError("reason must not be empty")
+        if not self.next_action.strip():
+            raise ValueError("next_action must not be empty")
+
+
+@dataclass(frozen=True, slots=True)
+class EvidenceCoverageSummary:
+    attempted_count: int
+    refreshed_count: int
+    failed_count: int
+    fresh_count: int
+    stale_count: int
+    missing_count: int
+    provider_degraded_count: int
+    is_partial: bool
+    summary: str
+    next_action: str
+
+    def __post_init__(self) -> None:
+        if not self.summary.strip():
+            raise ValueError("summary must not be empty")
+        if not self.next_action.strip():
+            raise ValueError("next_action must not be empty")
+
+
+@dataclass(frozen=True, slots=True)
 class EvidenceRefreshResult:
     eligible_symbols: tuple[str, ...]
     refreshed_symbols: tuple[str, ...]
     unavailable_symbols: tuple[str, ...]
+    coverage: tuple[EvidenceCoverageRecord, ...]
+    coverage_summary: EvidenceCoverageSummary
     fetched_at: datetime
     authority: str = "advisory"
 
@@ -90,6 +149,7 @@ class EvidenceRefreshResult:
             "unavailable_symbols",
             tuple(self.unavailable_symbols),
         )
+        object.__setattr__(self, "coverage", tuple(self.coverage))
 
     @property
     def is_advisory(self) -> bool:
@@ -115,6 +175,7 @@ class EvidenceRankedItem:
     decision_ids: tuple[str, ...] = ()
     watchlist_entry_ids: tuple[str, ...] = ()
     snapshot: MarketSnapshot | None = None
+    coverage: EvidenceCoverageRecord | None = None
     authority: str = "advisory"
 
     def __post_init__(self) -> None:
@@ -136,6 +197,7 @@ class EvidenceRankedItem:
 class EvidenceRankingResult:
     generated_at: datetime
     items: tuple[EvidenceRankedItem, ...]
+    coverage_summary: EvidenceCoverageSummary
     authority: str = "advisory"
 
     def __post_init__(self) -> None:
@@ -174,6 +236,7 @@ class EvidencePanelResult:
     facts: tuple[EvidenceFact, ...]
     chart_points: tuple[EvidenceChartPoint, ...]
     ranking_item: EvidenceRankedItem | None
+    coverage: EvidenceCoverageRecord
     latest_snapshot: MarketSnapshot | None = None
     authority: str = "advisory"
 

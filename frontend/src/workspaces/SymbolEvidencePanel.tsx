@@ -1,9 +1,10 @@
-import { Database, RefreshCw } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Database, RefreshCw } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import {
   fetchSymbolEvidence,
   runEvidenceRefresh,
+  type EvidenceCoverageRecord,
   type EvidencePanel,
 } from "../api/runtime";
 import { EvidencePriceChart } from "./EvidencePriceChart";
@@ -74,6 +75,8 @@ export function SymbolEvidencePanel({ symbol }: SymbolEvidencePanelProps) {
 
       {panel ? (
         <>
+          <SymbolCoverageBlock coverage={panel.coverage} />
+
           <div className="evidence-fact-grid">
             {panel.facts.map((fact) => (
               <div className="evidence-fact" key={fact.key}>
@@ -97,5 +100,38 @@ export function SymbolEvidencePanel({ symbol }: SymbolEvidencePanelProps) {
         </>
       ) : null}
     </section>
+  );
+}
+
+function SymbolCoverageBlock({ coverage }: { coverage: EvidenceCoverageRecord }) {
+  const providers =
+    coverage.provider_ids.length > 0
+      ? coverage.provider_ids.join(", ")
+      : coverage.attempts.map((attempt) => attempt.provider_id).join(", ");
+  const isPartial =
+    coverage.status === "missing" ||
+    coverage.status === "stale" ||
+    coverage.status === "provider-degraded";
+  return (
+    <div
+      className={`evidence-coverage-summary ${isPartial ? "partial" : "complete"}`}
+      role="status"
+    >
+      {isPartial ? (
+        <AlertTriangle aria-hidden="true" />
+      ) : (
+        <CheckCircle2 aria-hidden="true" />
+      )}
+      <div>
+        <strong>{coverage.symbol}: {coverage.reason}</strong>
+        <span>
+          {providers ? `Provider: ${providers}. ` : ""}
+          {coverage.missing_fields.length > 0
+            ? `Missing: ${coverage.missing_fields.join(", ")}. `
+            : ""}
+          {coverage.next_action}
+        </span>
+      </div>
+    </div>
   );
 }

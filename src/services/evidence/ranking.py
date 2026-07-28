@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 from decimal import Decimal
 
 from src.domain.evidence import (
@@ -10,10 +10,13 @@ from src.domain.evidence import (
     EvidenceRankingResult,
 )
 from src.domain.market.snapshot_persistence import PersistedMarketSnapshot
+from src.services.evidence.coverage import (
+    coverage_for_snapshot,
+    coverage_summary,
+)
 from src.services.evidence.refresh import EvidenceEligibilityService
 from src.services.market.snapshot_query import MarketSnapshotQueryService
 
-_FRESH_WINDOW = timedelta(hours=24)
 _MEANINGFUL_PRICE_MOVE = Decimal("0.03")
 _UNUSUAL_VOLUME = 50_000_000
 
@@ -38,13 +41,20 @@ class EvidenceRankingService:
     ) -> EvidenceRankingResult:
         generated_at = now or datetime.now(UTC)
         ranked: list[EvidenceRankedItem] = []
+        coverage_records = []
 
         for item in self._eligibility_service.list_eligible(
             persona_id=persona_id,
             workspace_id=workspace_id,
         ):
             persisted = self._latest_snapshot(item.symbol)
-            freshness = _freshness_for(persisted, generated_at)
+            item_coverage = coverage_for_snapshot(
+                item.symbol,
+                persisted,
+                now=generated_at,
+            )
+            coverage_records.append(item_coverage)
+            freshness = item_coverage.status
             reasons = list(_source_reasons(item.sources))
 
             if freshness is EvidenceFreshnessState.MISSING:
@@ -80,6 +90,7 @@ class EvidenceRankingService:
                     decision_ids=item.decision_ids,
                     watchlist_entry_ids=item.watchlist_entry_ids,
                     snapshot=persisted.snapshot if persisted is not None else None,
+                    coverage=item_coverage,
                 )
             )
 
@@ -101,10 +112,16 @@ class EvidenceRankingService:
                 decision_ids=item.decision_ids,
                 watchlist_entry_ids=item.watchlist_entry_ids,
                 snapshot=item.snapshot,
+                coverage=item.coverage,
             )
             for index, item in enumerate(ranked)
         ]
-        return EvidenceRankingResult(generated_at=generated_at, items=tuple(ranked))
+        coverage_records_tuple = tuple(coverage_records)
+        return EvidenceRankingResult(
+            generated_at=generated_at,
+            items=tuple(ranked),
+            coverage_summary=coverage_summary(coverage_records_tuple),
+        )
 
     def ranked_item_for(
         self,
@@ -123,17 +140,6 @@ class EvidenceRankingService:
         if not result.snapshots:
             return None
         return max(result.snapshots, key=lambda snapshot: snapshot.persisted_at)
-
-
-def _freshness_for(
-    persisted: PersistedMarketSnapshot | None,
-    now: datetime,
-) -> EvidenceFreshnessState:
-    if persisted is None:
-        return EvidenceFreshnessState.MISSING
-    if now - persisted.snapshot.provenance.data_as_of > _FRESH_WINDOW:
-        return EvidenceFreshnessState.STALE
-    return EvidenceFreshnessState.FRESH
 
 
 def _source_reasons(sources: tuple[str, ...]) -> tuple[EvidenceRankingReason, ...]:

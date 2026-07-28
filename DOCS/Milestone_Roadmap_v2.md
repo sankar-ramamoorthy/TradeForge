@@ -2886,7 +2886,7 @@ Corrective feedback closed against the EV slice:
 Product-readiness follow-ups selected from the 2026-07-27 walkthrough and
 handoff test:
 
-- TF-F083: Surface Partial Evidence Refresh Coverage (**Planned**)
+- TF-F083: Surface Partial Evidence Refresh Coverage (**Done**)
 - TF-F084: Provide a Human-Usable Research Cockpit Advisory Handoff
   (**Done**)
 
@@ -2936,6 +2936,11 @@ Runtime authority:
   theoretical plan were created, and one Research Cockpit advisory submission
   was imported through existing mediation. Field evidence selected additional
   usability and evidence robustness as the next stream, registered as TF-F083.
+* TF-F083 is complete: evidence refresh, attention ranking, and per-symbol
+  evidence surfaces now label partial coverage, provider-degraded symbols,
+  stale evidence, missing fields, provider attempts, and next action guidance.
+  Rankings and summaries remain advisory derived state, not recommendation or
+  lifecycle authority.
 * The 2026-07-27 Research Cockpit handoff test confirmed that M5 and TF-R001
   are contract-valid but not operator-ready as a human workflow. TF-F084
   records that the first implementation slice should not be "mount only";
