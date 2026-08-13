@@ -15,6 +15,7 @@ from src.domain.advisory.contracts import (
 )
 from src.infrastructure.advisory.litellm_request_composer import (
     LLMProviderCredentialResolver,
+    ResolvedLLMProviderCredential,
 )
 from src.infrastructure.advisory.openai_compatible_provider import (
     OpenAICompatibleAdvisoryProvider,
@@ -183,7 +184,7 @@ def test_generate_uses_fallback_model_when_primary_unavailable() -> None:
 
 def test_generate_uses_explicit_provider_identity_for_request_secret() -> None:
     class Resolver:
-        def resolve(self, provider_id: str):
+        def resolve(self, provider_id: str) -> ResolvedLLMProviderCredential:
             assert provider_id == "llm_groq"
             return LLMProviderCredentialResolver(
                 None,
@@ -210,6 +211,75 @@ def test_generate_uses_explicit_provider_identity_for_request_secret() -> None:
         provider.generate(_request())
 
     assert create.call_args.kwargs["model"] == "llama-3.1-8b-instant"
+
+
+def test_generate_reports_resolved_ollama_remote_provider_identity() -> None:
+    class Resolver:
+        def resolve(self, provider_id: str) -> ResolvedLLMProviderCredential:
+            assert provider_id == "ollama-remote"
+            return ResolvedLLMProviderCredential(
+                provider_id="ollama-remote",
+                api_base="http://remote-ollama:11434",
+                requires_api_key=False,
+            )
+
+    provider = OpenAICompatibleAdvisoryProvider(
+        LiteLLMCredentialPayload(
+            base_url="http://localhost:4000",
+            api_key="litellm-key",
+        ),
+        model_selection=AdvisoryModelSelectionConfig(
+            primary_provider_id="ollama-remote",
+            primary_model="ollama/llama3.1:8b",
+        ),
+        provider_credential_resolver=Resolver(),  # type: ignore[arg-type]
+    )
+
+    with patch.object(
+        provider._client.chat.completions,
+        "create",
+        return_value=_mock_completion("content", model="ollama/llama3.1:8b"),
+    ) as create:
+        response = provider.generate(_request())
+
+    assert create.call_args.kwargs["extra_body"] == {
+        "api_base": "http://remote-ollama:11434"
+    }
+    assert response.provenance.provider_id == "ollama-remote"
+    assert response.provenance.model_id == "ollama/llama3.1:8b"
+
+
+def test_generate_reports_ollama_auto_resolved_backend_identity() -> None:
+    class Resolver:
+        def resolve(self, provider_id: str) -> ResolvedLLMProviderCredential:
+            assert provider_id == "ollama-auto"
+            return ResolvedLLMProviderCredential(
+                provider_id="ollama-local",
+                api_base="http://local-ollama:11434",
+                requires_api_key=False,
+            )
+
+    provider = OpenAICompatibleAdvisoryProvider(
+        LiteLLMCredentialPayload(
+            base_url="http://localhost:4000",
+            api_key="litellm-key",
+        ),
+        model_selection=AdvisoryModelSelectionConfig(
+            primary_provider_id="ollama-auto",
+            primary_model="ollama/llama3.1:8b",
+        ),
+        provider_credential_resolver=Resolver(),  # type: ignore[arg-type]
+    )
+
+    with patch.object(
+        provider._client.chat.completions,
+        "create",
+        return_value=_mock_completion("content", model="ollama/llama3.1:8b"),
+    ):
+        response = provider.generate(_request())
+
+    assert response.provenance.provider_id == "ollama-local"
+    assert response.provenance.model_id == "ollama/llama3.1:8b"
 
 
 def test_list_models_returns_gateway_model_ids() -> None:

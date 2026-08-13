@@ -21,6 +21,9 @@ const llmProviderOptions = [
   { provider_id: "llm_anthropic", display_name: "Anthropic" },
   { provider_id: "llm_google", display_name: "Google" },
   { provider_id: "ollama", display_name: "Ollama" },
+  { provider_id: "ollama-local", display_name: "Ollama Local" },
+  { provider_id: "ollama-remote", display_name: "Ollama Remote" },
+  { provider_id: "ollama-auto", display_name: "Ollama Auto" },
 ];
 
 export function ProviderGovernanceWorkspace() {

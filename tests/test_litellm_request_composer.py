@@ -53,6 +53,70 @@ def test_resolver_treats_ollama_as_keyless_internal_provider() -> None:
     assert resolved.requires_api_key is False
 
 
+def test_resolver_treats_ollama_remote_as_keyless_configured_provider() -> None:
+    resolved = LLMProviderCredentialResolver(
+        None,
+        key_manager=None,
+        ollama_remote_url="http://remote-ollama:11434",
+    ).resolve("ollama-remote")
+
+    assert resolved.provider_id == "ollama-remote"
+    assert resolved.api_key is None
+    assert resolved.api_base == "http://remote-ollama:11434"
+    assert resolved.requires_api_key is False
+
+
+def test_resolver_reports_missing_ollama_remote_url_unavailable(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.delenv("OLLAMA_REMOTE_URL", raising=False)
+    resolver = LLMProviderCredentialResolver(None, key_manager=None)
+
+    with pytest.raises(AdvisoryProviderUnavailableError):
+        resolver.resolve("ollama-remote")
+
+
+def test_resolver_treats_ollama_local_as_explicit_local_provider() -> None:
+    resolved = LLMProviderCredentialResolver(
+        None,
+        key_manager=None,
+        ollama_remote_url="http://remote-ollama:11434",
+        ollama_local_url="http://local-ollama:11434",
+    ).resolve("ollama-local")
+
+    assert resolved.provider_id == "ollama-local"
+    assert resolved.api_base == "http://local-ollama:11434"
+    assert resolved.requires_api_key is False
+
+
+def test_resolver_ollama_auto_uses_remote_when_bounded_probe_succeeds() -> None:
+    resolved = LLMProviderCredentialResolver(
+        None,
+        key_manager=None,
+        ollama_remote_url="http://remote-ollama:11434",
+        ollama_local_url="http://local-ollama:11434",
+        ollama_remote_reachable=True,
+    ).resolve("ollama-auto")
+
+    assert resolved.provider_id == "ollama-remote"
+    assert resolved.api_base == "http://remote-ollama:11434"
+    assert resolved.requires_api_key is False
+
+
+def test_resolver_ollama_auto_falls_back_to_local_when_remote_unreachable() -> None:
+    resolved = LLMProviderCredentialResolver(
+        None,
+        key_manager=None,
+        ollama_remote_url="http://remote-ollama:11434",
+        ollama_local_url="http://local-ollama:11434",
+        ollama_remote_reachable=False,
+    ).resolve("ollama-auto")
+
+    assert resolved.provider_id == "ollama-local"
+    assert resolved.api_base == "http://local-ollama:11434"
+    assert resolved.requires_api_key is False
+
+
 def test_resolver_reports_missing_required_key_unavailable(tmp_path: Path) -> None:
     resolver = LLMProviderCredentialResolver(
         CredentialStore(tmp_path / ".keys.enc"),

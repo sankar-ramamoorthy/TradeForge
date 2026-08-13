@@ -175,6 +175,45 @@ def test_provider_governance_reports_llm_provider_secret_without_value(
     assert provider["capabilities"] == ["llm_provider_secret"]
 
 
+def test_provider_governance_reports_ollama_route_providers(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.delenv("OLLAMA_REMOTE_URL", raising=False)
+    client = TestClient(create_app())
+
+    response = client.get("/provider-governance")
+
+    assert response.status_code == 200
+    providers = {
+        item["provider_id"]: item for item in response.json()["providers"]
+    }
+    for provider_id in ("ollama", "ollama-local", "ollama-auto", "ollama-remote"):
+        assert providers[provider_id]["capabilities"] == ["llm_provider_route"]
+        assert providers[provider_id]["credential_required"] is False
+        assert providers[provider_id]["is_canonical"] is False
+    assert providers["ollama"]["health_status"] == "available"
+    assert providers["ollama-local"]["health_status"] == "available"
+    assert providers["ollama-auto"]["health_status"] == "available"
+    assert providers["ollama-remote"]["health_status"] == "not_configured"
+
+
+def test_provider_governance_reports_ollama_remote_configured_from_environment(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("OLLAMA_REMOTE_URL", "http://remote-ollama:11434")
+    client = TestClient(create_app())
+
+    response = client.get("/provider-governance")
+
+    assert response.status_code == 200
+    providers = {
+        item["provider_id"]: item for item in response.json()["providers"]
+    }
+    assert providers["ollama-remote"]["credential_required"] is False
+    assert providers["ollama-remote"]["registry_configured"] is True
+    assert providers["ollama-remote"]["health_status"] == "available"
+
+
 def test_ai_gateway_provider_secret_injection_reports_status_without_secret(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -429,6 +468,78 @@ def test_ai_gateway_model_selection_updates_litellm_credential_without_event_wri
     assert stored.fallback_model == "fallback-model"
 
 
+def test_ai_gateway_model_selection_accepts_ollama_remote_provider(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    master_key = KeyManager.generate_master_key()
+    monkeypatch.setenv("TRADEFORGE_MASTER_KEY", master_key)
+    store = CredentialStore(tmp_path / ".keys.enc")
+    store.save(
+        create_litellm_credential(
+            LiteLLMCredentialPayload(
+                base_url="http://localhost:4000",
+                api_key="litellm-secret",
+                default_model="primary-model",
+            ),
+            key_manager=KeyManager(master_key.encode("ascii")),
+        )
+    )
+    client = TestClient(
+        create_app(credential_store=store, ai_advisory_provider=_FakeAdvisoryProvider())
+    )
+
+    response = client.put(
+        "/provider-governance/ai-gateway/model-selection",
+        json={
+            "primary_provider_id": "ollama-remote",
+            "primary_model": "ollama/llama3.1:8b",
+            "fallback_provider_id": "ollama-local",
+            "fallback_model": "ollama/granite4:350m",
+        },
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["selected_primary_provider_id"] == "ollama-remote"
+    assert body["selected_primary_model"] == "ollama/llama3.1:8b"
+    assert body["selected_fallback_provider_id"] == "ollama-local"
+    assert body["selected_fallback_model"] == "ollama/granite4:350m"
+
+
+def test_ai_gateway_model_selection_includes_ollama_model_hints(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    master_key = KeyManager.generate_master_key()
+    monkeypatch.setenv("TRADEFORGE_MASTER_KEY", master_key)
+    monkeypatch.setenv("OLLAMA_REMOTE_MODEL", "ollama/remote-model")
+    monkeypatch.setenv("OLLAMA_LOCAL_MODEL", "ollama/local-model")
+    store = CredentialStore(tmp_path / ".keys.enc")
+    store.save(
+        create_litellm_credential(
+            LiteLLMCredentialPayload(
+                base_url="http://localhost:4000",
+                api_key="litellm-secret",
+                default_model="primary-model",
+            ),
+            key_manager=KeyManager(master_key.encode("ascii")),
+        )
+    )
+    client = TestClient(
+        create_app(credential_store=store, ai_advisory_provider=_FakeAdvisoryProvider())
+    )
+
+    response = client.get("/provider-governance/ai-gateway/model-selection")
+
+    assert response.status_code == 200
+    assert response.json()["available_models"] == [
+        "ollama/local-model",
+        "ollama/remote-model",
+        "primary-model",
+    ]
+
+
 def test_ai_gateway_model_selection_requires_explicit_provider_identity(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -513,6 +624,27 @@ def test_ai_gateway_smoke_test_uses_advisory_provider_without_event_write() -> N
     assert event_store.append_calls == 0
 
 
+def test_ai_gateway_smoke_test_reports_ollama_remote_provider_identity() -> None:
+    event_store = _CountingEventStore()
+    provider = _FakeAdvisoryProvider(
+        provider_id="ollama-remote",
+        model_id="ollama/llama3.1:8b",
+    )
+    client = TestClient(
+        create_app(event_store=event_store, ai_advisory_provider=provider)
+    )
+
+    response = client.post("/provider-governance/ai-gateway/smoke-test", json={})
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["status"] == "available"
+    assert body["provider_id"] == "ollama-remote"
+    assert body["model_id"] == "ollama/llama3.1:8b"
+    assert body["event_ledger_writes"] is False
+    assert event_store.append_calls == 0
+
+
 def test_ai_gateway_smoke_test_reports_not_configured_without_event_write(
     tmp_path: Path,
 ) -> None:
@@ -546,10 +678,16 @@ class _CountingEventStore(EventStore):
 
 
 class _FakeAdvisoryProvider:
-    provider_id = "litellm"
     provider_version = "fake-test-provider"
 
-    def __init__(self) -> None:
+    def __init__(
+        self,
+        *,
+        provider_id: str = "litellm",
+        model_id: str = "tradeforge-ollama",
+    ) -> None:
+        self.provider_id = provider_id
+        self.model_id = model_id
         self.request_count = 0
 
     def list_models(self) -> tuple[str, ...]:
@@ -567,7 +705,7 @@ class _FakeAdvisoryProvider:
             provenance=AdvisoryProvenance(
                 provider_id=self.provider_id,
                 provider_version=self.provider_version,
-                model_id="tradeforge-ollama",
+                model_id=self.model_id,
                 generated_at=datetime.now(UTC),
                 prompt_version="test",
             ),
