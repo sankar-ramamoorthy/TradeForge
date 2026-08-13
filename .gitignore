@@ -189,3 +189,10 @@ TRADEFORGE_MASTER_KEY
 #  refer to https://docs.cursor.com/context/ignore-files
 .cursorignore
 .cursorindexingignore
+
+# Agent-local private state. Spec Kit skills under .agents/skills/ are tracked.
+.agents/**/.env
+.agents/**/*.key
+.agents/**/*.pem
+.agents/**/credentials*
+.agents/**/tokens*
