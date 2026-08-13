@@ -300,7 +300,7 @@ planning while preserving the earlier MVP record for reference.
 | RAMP-03 | Planned | M-EZ | Operator identity profiles | `feature/ramp-03-operator-identity` |
 | GOV-01 | Done | M-EZ | Two-tier issue discipline documentation | `docs/gov-01-two-tier-discipline` |
 | GOV-02 | Done | M-EZ | Knowledge base hygiene pass | `docs/gov-02-kb-hygiene` |
-| GOV-03 | Planned | M-EZ | Introduce GitHub Spec Kit For Prospective Spec-Driven Development | `TBD` |
+| GOV-03 | Done | M-EZ | Introduce GitHub Spec Kit For Prospective Spec-Driven Development | `gov-03-adopt-spec-kit` |
 | TF-RF001 | Done | M-RF | OpenAPI contract snapshot test | `refactor/tf-rf001-openapi-snapshot` |
 | TF-RF002 | Done | M-RF | Extract deps.py service accessors | `refactor/tf-rf002-deps-extraction` |
 | TF-RF003 | Done | M-RF | Create routes package; move runtime and behavioral | `refactor/tf-rf002-deps-extraction` |
@@ -10533,13 +10533,13 @@ knowledge and archived under an ignored local archive path; `TF-D001` through
 
 ## GOV-03: Introduce GitHub Spec Kit For Prospective Spec-Driven Development
 
-**Status:** Planned
+**Status:** Done
 
 **Classification:** development-process governance
 
 **Milestone:** M-EZ
 
-**Branch:** `TBD`
+**Branch:** `gov-03-adopt-spec-kit`
 
 **Affected Layer:** repository development workflow, docs/process governance,
 future feature planning artifacts
@@ -10717,6 +10717,23 @@ warranted.
 - Existing issue-first and milestone-evidence processes remain intact.
 - The operator reviews the experience after the first feature before adopting
   Spec Kit more broadly.
+
+**Resolution Summary:**
+Initialized GitHub Spec Kit in the TradeForge runtime repository with the Codex
+skills integration and PowerShell scripts. Added a TradeForge-specific Spec Kit
+constitution under `.specify/memory/constitution.md`, documented the operating
+workflow in `DOCS/spec-kit-workflow.md`, and added narrow `.agents/` secret
+ignore rules while keeping generated Spec Kit skills trackable. The adoption is
+prospective only; no historical milestones were retrofitted, and execution /
+position integrity remains the first trial feature rather than being
+implemented here.
+
+**Verification Completed:**
+
+- `specify version`
+- `specify check`
+- `git diff --check`
+- Manual documentation review
 
 **Design Note:**
 Do not combine Spec Kit adoption and execution/position integrity in one issue.
