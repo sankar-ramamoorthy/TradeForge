@@ -261,7 +261,7 @@ planning while preserving the earlier MVP record for reference.
 | TF-F085 | Done | M14C | Plan Import Mapper Should Support Execution Assumptions And Playbook Alignment | `park/after-tf-f083-merge` |
 | TF-F086 | Planned | M-PT | Position Open Transition Must Capture Actual Execution Details | `TBD` |
 | TF-F087 | Planned | M-PT | Completed Review Must Not Imply Position Closed Without Close Event | `TBD` |
-| TF-F088 | Planned | M13B | Add Ollama Remote Advisory Provider Route | `TBD` |
+| TF-F088 | Done | M13B | Add Ollama Remote Advisory Provider Route | `feature/tf-f088-ollama-remote` |
 | TF-C001 | Done | M14 | Detect recurring sizing violations | `feature/tf-c001-recurring-sizing-violations` |
 | TF-C002 | Done | M14 | Detect impulsive execution patterns | `feature/tf-c002-impulsive-execution-patterns` |
 | TF-C003 | Done | M14 | Implement process deviation overlays | `feature/tf-c003-process-deviation-overlays` |
@@ -9223,14 +9223,14 @@ advisory-only, non-canonical, and without execution authority.
 
 ## TF-F086: Position Open Transition Must Capture Actual Execution Details
 
-**Status:** Planned
+**Status:** Done
 
 **Classification:** field-observed lifecycle integrity / execution evidence
 gap
 
 **Milestone:** M-PT
 
-**Branch:** `TBD`
+**Branch:** `feature/tf-f088-ollama-remote`
 
 **Affected Layer:** domain lifecycle/event taxonomy, services/lifecycle or
 future execution orchestration, app API, frontend Active Position workspace,
@@ -9484,6 +9484,29 @@ TradeForge should borrow the naming and fallback semantics from
 `py-coding-agent` only where they fit the existing LiteLLM gateway model. Unlike
 `py-coding-agent`, TradeForge should not introduce a direct Ollama provider
 adapter unless a later issue explicitly rejects the managed LiteLLM boundary.
+
+**Resolution (2026-08-13):**
+Implemented governed keyless Ollama advisory route identities for `ollama`,
+`ollama-local`, `ollama-remote`, and `ollama-auto`. Explicit remote/local
+routes resolve only to their configured backend, while `ollama-auto` performs a
+bounded remote reachability check and resolves to remote or local accordingly.
+Provider Governance now exposes these routes, model selection accepts them as
+primary or fallback provider identities, configured Ollama model hints are
+included in model discovery, and the Provider Governance UI includes the new
+options. Advisory response provenance now reports the resolved provider
+identity for governed downstream providers while preserving legacy `litellm`
+provenance for legacy gateway-only calls.
+
+**Validation (2026-08-13):**
+
+- `uv run pytest tests/test_litellm_request_composer.py tests/test_openai_compatible_provider.py tests/test_provider_governance_api.py`
+- `uv run ruff check src/infrastructure/advisory/litellm_request_composer.py src/infrastructure/advisory/openai_compatible_provider.py src/app/api/routes/governance.py tests/test_litellm_request_composer.py tests/test_openai_compatible_provider.py tests/test_provider_governance_api.py`
+- `uv run mypy src/infrastructure/advisory/litellm_request_composer.py src/infrastructure/advisory/openai_compatible_provider.py src/app/api/routes/governance.py tests/test_litellm_request_composer.py tests/test_openai_compatible_provider.py tests/test_provider_governance_api.py`
+- `npm run typecheck`
+- `npm run build`
+
+Full-repository `uv run ruff check .` and `uv run mypy src tests` still surface
+pre-existing unrelated failures outside the TF-F088 touched files.
 
 ---
 

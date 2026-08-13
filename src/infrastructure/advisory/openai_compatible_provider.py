@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Any
 
@@ -123,6 +124,13 @@ _MAX_TOKENS = 1500
 _TEMPERATURE = 0.3
 
 
+@dataclass(frozen=True, slots=True)
+class _CompletionResult:
+    completion: Any
+    provider_id: str
+    requested_model: str
+
+
 class OpenAICompatibleAdvisoryProvider:
     """Calls any OpenAI-compatible endpoint (LiteLLM, Groq, NVIDIA NIM, Ollama).
 
@@ -183,7 +191,7 @@ class OpenAICompatibleAdvisoryProvider:
         generated_at = datetime.now(UTC)
 
         try:
-            completion = self._create_completion(
+            result = self._create_completion(
                 provider_id=self._model_selection.primary_provider_id,
                 model=self._model_selection.primary_model,
                 messages=[
@@ -207,7 +215,7 @@ class OpenAICompatibleAdvisoryProvider:
                     f"advisory provider unreachable: {exc}"
                 ) from exc
             try:
-                completion = self._create_completion(
+                result = self._create_completion(
                     provider_id=self._model_selection.fallback_provider_id,
                     model=self._model_selection.fallback_model,
                     messages=[
@@ -225,18 +233,19 @@ class OpenAICompatibleAdvisoryProvider:
                     f"advisory provider unreachable: {fallback_exc}"
                 ) from fallback_exc
 
+        completion = result.completion
         raw_content = (completion.choices[0].message.content or "").strip()
         if not raw_content:
             raise ValueError("advisory provider returned empty content")
 
-        model_used = completion.model or self._model_selection.primary_model
+        model_used = completion.model or result.requested_model
 
         return AdvisoryResponse(
             request_id=request.request_id,
             artifact_kind=request.artifact_kind,
             content=raw_content,
             provenance=AdvisoryProvenance(
-                provider_id=self.provider_id,
+                provider_id=self._provenance_provider_id(result.provider_id),
                 provider_version=self.provider_version,
                 model_id=model_used,
                 generated_at=generated_at,
@@ -256,7 +265,7 @@ class OpenAICompatibleAdvisoryProvider:
         provider_id: str,
         model: str,
         messages: Any,
-    ) -> Any:
+    ) -> _CompletionResult:
         provider_credential = (
             self._provider_credential_resolver.resolve(provider_id)
             if self._provider_credential_resolver is not None
@@ -272,4 +281,13 @@ class OpenAICompatibleAdvisoryProvider:
             temperature=_TEMPERATURE,
             max_tokens=_MAX_TOKENS,
         )
-        return self._client.chat.completions.create(**kwargs)
+        return _CompletionResult(
+            completion=self._client.chat.completions.create(**kwargs),
+            provider_id=provider_credential.provider_id,
+            requested_model=model,
+        )
+
+    def _provenance_provider_id(self, resolved_provider_id: str) -> str:
+        if resolved_provider_id == "legacy":
+            return self.provider_id
+        return resolved_provider_id

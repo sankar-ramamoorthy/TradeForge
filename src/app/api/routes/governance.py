@@ -31,6 +31,15 @@ from src.domain.advisory import (
     AdvisorySourceReference,
 )
 from src.domain.market.capability import ProviderCapability
+from src.infrastructure.advisory.litellm_request_composer import (
+    OLLAMA_AUTO_PROVIDER_ID,
+    OLLAMA_LOCAL_PROVIDER_ID,
+    OLLAMA_PROVIDER_ID,
+    OLLAMA_PROVIDER_IDS,
+    OLLAMA_REMOTE_PROVIDER_ID,
+    configured_ollama_model_hints,
+    is_ollama_provider_configured,
+)
 from src.security.advisory_model_selection import (
     AdvisoryModelSelectionConfig,
     get_advisory_model_selection_config,
@@ -61,6 +70,10 @@ _KNOWN_PROVIDER_CAPABILITIES: dict[str, tuple[str, ...]] = {
     "fmp": ("fundamentals",),
     "alpha_vantage": ("fundamentals",),
     "litellm": ("ai_advisory",),
+    OLLAMA_PROVIDER_ID: ("llm_provider_route",),
+    OLLAMA_LOCAL_PROVIDER_ID: ("llm_provider_route",),
+    OLLAMA_REMOTE_PROVIDER_ID: ("llm_provider_route",),
+    OLLAMA_AUTO_PROVIDER_ID: ("llm_provider_route",),
     **{
         schema.provider_id: ("llm_provider_secret",)
         for schema in LLM_PROVIDER_SECRET_SCHEMAS
@@ -396,6 +409,23 @@ def _infer_underlying_provider_id(model_id: str | None) -> str | None:
     return infer_legacy_provider_id(model_id)
 
 
+def _provider_registry_configured(
+    *,
+    provider_id: str,
+    registry_provider_ids: set[str],
+    ai_provider: object | None,
+) -> bool:
+    return (
+        provider_id in registry_provider_ids
+        or (provider_id == "litellm" and ai_provider is not None)
+        or provider_id in _LLM_PROVIDER_SECRET_IDS
+        or (
+            provider_id in OLLAMA_PROVIDER_IDS
+            and is_ollama_provider_configured(provider_id)
+        )
+    )
+
+
 def _litellm_gateway_metadata(
     request: Request,
 ) -> tuple[str | None, AdvisoryModelSelectionConfig | None]:
@@ -506,6 +536,7 @@ def _discover_litellm_models(
     selected_models = [model_selection.primary_model]
     if model_selection.fallback_model is not None:
         selected_models.append(model_selection.fallback_model)
+    selected_models.extend(configured_ollama_model_hints())
     return sorted(set(selected_models)), "available"
 
 
@@ -685,18 +716,18 @@ def get_provider_governance(request: Request) -> ProviderGovernanceResponse:
                     ),
                 )
             ),
-            registry_configured=(
-                provider_id in registry_provider_ids
-                or (provider_id == "litellm" and ai_provider is not None)
-                or provider_id in _LLM_PROVIDER_SECRET_IDS
+            registry_configured=_provider_registry_configured(
+                provider_id=provider_id,
+                registry_provider_ids=registry_provider_ids,
+                ai_provider=ai_provider,
             ),
             credential_required=credential_statuses[provider_id].credential_required,
             credential_status=credential_statuses[provider_id].status,
             health_status=_provider_health_status(
-                registry_configured=(
-                    provider_id in registry_provider_ids
-                    or (provider_id == "litellm" and ai_provider is not None)
-                    or provider_id in _LLM_PROVIDER_SECRET_IDS
+                registry_configured=_provider_registry_configured(
+                    provider_id=provider_id,
+                    registry_provider_ids=registry_provider_ids,
+                    ai_provider=ai_provider,
                 ),
                 credential=credential_statuses[provider_id],
             ),
