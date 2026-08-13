@@ -365,6 +365,8 @@ class PlanImportMappedFieldsResponse(BaseModel):
     stop_rationale: str | None = None
     target_rationale: str | None = None
     risk_notes: list[str] = Field(default_factory=list)
+    execution_assumptions: list[str] = Field(default_factory=list)
+    playbook_alignment: str | None = None
 
 
 class PlanImportPreviewResponse(BaseModel):
@@ -765,6 +767,8 @@ def _plan_import_preview_response(
             mapped.stop_rationale,
             mapped.target_rationale,
             mapped.risk_notes,
+            mapped.execution_assumptions,
+            mapped.playbook_alignment,
         )
     ):
         return None
@@ -820,6 +824,10 @@ def _mapped_plan_import_fields(
         stop_rationale=optional_string(mapped_fields.get("stop_rationale")),
         target_rationale=optional_string(mapped_fields.get("target_rationale")),
         risk_notes=string_list(mapped_fields.get("risk_notes")),
+        execution_assumptions=string_list(
+            mapped_fields.get("execution_assumptions")
+        ),
+        playbook_alignment=optional_string(mapped_fields.get("playbook_alignment")),
     )
 
 

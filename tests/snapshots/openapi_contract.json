@@ -6805,6 +6805,24 @@
             ],
             "title": "Entry Rationale"
           },
+          "execution_assumptions": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Execution Assumptions",
+            "type": "array"
+          },
+          "playbook_alignment": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Playbook Alignment"
+          },
           "risk_notes": {
             "items": {
               "type": "string"

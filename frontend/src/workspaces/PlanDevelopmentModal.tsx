@@ -13,8 +13,18 @@ type ImportFieldName =
   | "entry_rationale"
   | "stop_rationale"
   | "target_rationale"
-  | "risk_notes";
+  | "risk_notes"
+  | "execution_assumptions"
+  | "playbook_alignment";
 type ImportFieldState = "accepted" | "edited";
+const IMPORT_FIELD_NAMES: ImportFieldName[] = [
+  "entry_rationale",
+  "stop_rationale",
+  "target_rationale",
+  "risk_notes",
+  "execution_assumptions",
+  "playbook_alignment",
+];
 
 type Props = {
   context: Required<WorkspaceContext>;
@@ -213,6 +223,8 @@ function PlanImportPreviewPanel({
     { name: "stop_rationale", label: "Stop Rationale" },
     { name: "target_rationale", label: "Target Rationale" },
     { name: "risk_notes", label: "Risk Notes" },
+    { name: "execution_assumptions", label: "Execution Assumptions" },
+    { name: "playbook_alignment", label: "Playbook Alignment" },
   ];
 
   return (
@@ -357,12 +369,29 @@ export function PlanDevelopmentModal({ context, symbol, onSuccess, onCancel }: P
     ) {
       edited.push("risk_notes");
     }
+    if (
+      acceptedFields.has("execution_assumptions") &&
+      importedListEdited(
+        executionAssumptions,
+        importedBaselines.execution_assumptions as string[] | undefined,
+      )
+    ) {
+      edited.push("execution_assumptions");
+    }
+    if (
+      acceptedFields.has("playbook_alignment") &&
+      typeof importedBaselines.playbook_alignment === "string" &&
+      playbookAlignment.trim() !== importedBaselines.playbook_alignment
+    ) {
+      edited.push("playbook_alignment");
+    }
     return edited;
   }, [
     acceptedFields,
     entryRationale,
     executionAssumptions,
     importedBaselines,
+    playbookAlignment,
     stopRationale,
     targetRationale,
   ]);
@@ -376,6 +405,7 @@ export function PlanDevelopmentModal({ context, symbol, onSuccess, onCancel }: P
     if (field === "entry_rationale") return entryRationale.trim().length > 0;
     if (field === "stop_rationale") return stopRationale.trim().length > 0;
     if (field === "target_rationale") return targetRationale.trim().length > 0;
+    if (field === "playbook_alignment") return playbookAlignment.trim().length > 0;
     return executionAssumptions.some((item) => item.trim());
   }
 
@@ -424,6 +454,19 @@ export function PlanDevelopmentModal({ context, symbol, onSuccess, onCancel }: P
       const next = mode === "append" ? [...current, ...incoming] : incoming;
       setExecutionAssumptions(next);
       setImportedBaselines((prev) => ({ ...prev, risk_notes: next }));
+    }
+    if (field === "execution_assumptions" && Array.isArray(incoming)) {
+      const current = executionAssumptions.filter((item) => item.trim());
+      const next = mode === "append" ? [...current, ...incoming] : incoming;
+      setExecutionAssumptions(next);
+      setImportedBaselines((prev) => ({ ...prev, execution_assumptions: next }));
+    }
+    if (field === "playbook_alignment" && typeof incoming === "string") {
+      const next = mode === "append" && playbookAlignment.trim()
+        ? `${playbookAlignment.trim()}; ${incoming}`
+        : incoming;
+      setPlaybookAlignment(next);
+      setImportedBaselines((prev) => ({ ...prev, playbook_alignment: next.trim() }));
     }
 
     setSourceArtifactId(artifact.artifact_id);
@@ -475,7 +518,7 @@ export function PlanDevelopmentModal({ context, symbol, onSuccess, onCancel }: P
     const rejectedImportFieldNames = Array.from(rejectedFields)
       .map((field) => field.split(":")[1])
       .filter((field): field is ImportFieldName =>
-        ["entry_rationale", "stop_rationale", "target_rationale", "risk_notes"].includes(field),
+        IMPORT_FIELD_NAMES.includes(field as ImportFieldName),
       );
 
     postCreatePlan({
@@ -579,7 +622,10 @@ export function PlanDevelopmentModal({ context, symbol, onSuccess, onCancel }: P
               />
 
               <ListInput
-                importState={importFieldState("risk_notes")}
+                importState={
+                  importFieldState("execution_assumptions")
+                  ?? importFieldState("risk_notes")
+                }
                 items={executionAssumptions}
                 label="Execution Assumptions *"
                 onChange={setExecutionAssumptions}
@@ -590,6 +636,11 @@ export function PlanDevelopmentModal({ context, symbol, onSuccess, onCancel }: P
                 <label className="thesis-field-label" htmlFor="plan-playbook">
                   Playbook Alignment
                   <span className="thesis-field-optional"> (optional)</span>
+                  {importFieldState("playbook_alignment") ? (
+                    <ImportFieldBadge
+                      state={importFieldState("playbook_alignment") ?? "accepted"}
+                    />
+                  ) : null}
                 </label>
                 <p className="thesis-field-hint">
                   Which operational playbook this plan follows.
