@@ -258,6 +258,10 @@ planning while preserving the earlier MVP record for reference.
 | TF-F082 | Done | M-EZ | Operationalize Post-M5 Product-Readiness Sequence | `docs/tf-f082-post-m5-product-readiness` |
 | TF-F083 | Done | M-EZ | Surface Partial Evidence Refresh Coverage | `fix/tf-f083-evidence-refresh-coverage` |
 | TF-F084 | Done | M-EZ | Provide a Human-Usable Research Cockpit Advisory Handoff | `planning/tf-f084-cockpit-handoff` |
+| TF-F085 | Done | M14C | Plan Import Mapper Should Support Execution Assumptions And Playbook Alignment | `park/after-tf-f083-merge` |
+| TF-F086 | Planned | M-PT | Position Open Transition Must Capture Actual Execution Details | `TBD` |
+| TF-F087 | Planned | M-PT | Completed Review Must Not Imply Position Closed Without Close Event | `TBD` |
+| TF-F088 | Planned | M13B | Add Ollama Remote Advisory Provider Route | `TBD` |
 | TF-C001 | Done | M14 | Detect recurring sizing violations | `feature/tf-c001-recurring-sizing-violations` |
 | TF-C002 | Done | M14 | Detect impulsive execution patterns | `feature/tf-c002-impulsive-execution-patterns` |
 | TF-C003 | Done | M14 | Implement process deviation overlays | `feature/tf-c003-process-deviation-overlays` |
@@ -296,6 +300,7 @@ planning while preserving the earlier MVP record for reference.
 | RAMP-03 | Planned | M-EZ | Operator identity profiles | `feature/ramp-03-operator-identity` |
 | GOV-01 | Done | M-EZ | Two-tier issue discipline documentation | `docs/gov-01-two-tier-discipline` |
 | GOV-02 | Done | M-EZ | Knowledge base hygiene pass | `docs/gov-02-kb-hygiene` |
+| GOV-03 | Planned | M-EZ | Introduce GitHub Spec Kit For Prospective Spec-Driven Development | `TBD` |
 | TF-RF001 | Done | M-RF | OpenAPI contract snapshot test | `refactor/tf-rf001-openapi-snapshot` |
 | TF-RF002 | Done | M-RF | Extract deps.py service accessors | `refactor/tf-rf002-deps-extraction` |
 | TF-RF003 | Done | M-RF | Create routes package; move runtime and behavioral | `refactor/tf-rf002-deps-extraction` |
@@ -9125,6 +9130,363 @@ TradeIdea, Thesis, approval, execution, or Event Ledger fact.
 
 ---
 
+## TF-F085: Plan Import Mapper Should Support Execution Assumptions And Playbook Alignment
+
+**Status:** Done
+
+**Classification:** field-observed import mapper gap / advisory import
+mediation
+
+**Milestone:** M14C
+
+**Branch:** `park/after-tf-f083-merge`
+
+**Affected Layer:** services/advisory import parsing, app advisory preview
+schema, lifecycle import provenance validation, frontend Plan Development UI,
+tests
+
+**Source:** Operator walkthrough observation on 2026-08-13: local plan Markdown
+scan populated the core plan import fields but did not populate
+`## Execution Assumptions` or `## Playbook Alignment`, requiring manual entry.
+
+**Linked Issues:** TF-R002, TF-F084
+
+**Linked ADRs:** ADR-0001, ADR-0002, ADR-0034, ADR-0035, ADR-0041
+
+**Impacted Invariants:** Human Decision Sovereignty, Event Ledger Canonical
+Truth, Lifecycle Authority, AI Advisory Boundary, Derived State Must Remain
+Distinguishable, Replayability Is Foundational
+
+**Problem:**
+The plan import mapper recognizes a narrower heading set than the Plan
+Development UI exposes. Structured `plan_draft.v1` Markdown can include
+operator-reviewable cognitive fields for execution assumptions and playbook
+alignment, but the local scan and preview path currently drops them.
+
+**Scope:**
+
+- Extend deterministic `plan_draft.v1` mapped fields to include
+  `execution_assumptions` and `playbook_alignment`.
+- Map `## Execution Assumptions` as a list of advisory assumptions.
+- Map `## Playbook Alignment` as advisory text.
+- Show and accept/reject the two fields in the Plan Development import preview.
+- Preserve accepted, edited, and rejected import provenance for these fields
+  through the existing manual Create Plan action.
+
+**Out Of Scope:**
+
+- Markdown format redesign.
+- Price, sizing, quantity, broker order, approval, arming, execution, or
+  lifecycle-transition import.
+- Background watchers, arbitrary AI parsing, or new canonical import events.
+
+**Acceptance Criteria:**
+
+- Local plan Markdown with `## Execution Assumptions` populates
+  `mapped_fields.execution_assumptions`.
+- Local plan Markdown with `## Playbook Alignment` populates
+  `mapped_fields.playbook_alignment`.
+- Plan import preview remains advisory, non-canonical, and without execution
+  authority.
+- Scan and preview do not append Event Ledger events.
+- Existing prohibited plan import fields remain rejected or ineligible.
+- Frontend Create Plan provenance validation accepts the two additional import
+  field names when the operator manually submits the plan.
+
+**Design Reasoning:**
+This is a deterministic allowlist expansion, not a new import authority model.
+Both fields already exist on the structured Trade Plan artifact and Plan
+Development UI. Mapping them reduces form/import drift while preserving the
+TF-R002 boundary: import preview remains advisory source material until the
+operator explicitly creates the plan.
+
+**Resolution Summary:**
+Extended `plan_draft.v1` local Markdown parsing, advisory preview response
+mapping, frontend import preview controls, and Create Plan import provenance
+field validation to include `execution_assumptions` and
+`playbook_alignment`. `## Execution Assumptions` maps as a list;
+`## Playbook Alignment` maps as text. The scanner and preview remain
+advisory-only, non-canonical, and without execution authority.
+
+**Verification Completed:**
+
+- `uv run pytest tests\test_advisory_artifact.py`
+- `TRADEFORGE_UPDATE_API_SNAPSHOT=1 uv run pytest tests\test_api_contract_snapshot.py`
+- `uv run ruff check src\services\advisory\local_import_parsing.py src\app\api\routes\advisory.py tests\test_advisory_artifact.py`
+- `uv run mypy src\services\advisory\local_import_parsing.py src\app\api\routes\advisory.py tests\test_advisory_artifact.py`
+- `npm.cmd run typecheck`
+- `npm.cmd run lint`
+- `npm.cmd run build`
+- `git diff --check`
+
+---
+
+## TF-F086: Position Open Transition Must Capture Actual Execution Details
+
+**Status:** Planned
+
+**Classification:** field-observed lifecycle integrity / execution evidence
+gap
+
+**Milestone:** M-PT
+
+**Branch:** `TBD`
+
+**Affected Layer:** domain lifecycle/event taxonomy, services/lifecycle or
+future execution orchestration, app API, frontend Active Position workspace,
+replay/projections, tests
+
+**Source:** 2026-08-13 operator walkthrough after manually recording a real
+DRAM starter position. The UI allowed `Record Position Opened` without
+capturing actual fill facts.
+
+**Linked Issues:** TF-P001, TF-P003, TF-P006, TF-P009, TF-P010, TF-P011,
+TF-F087
+
+**Linked ADRs:** ADR-0001, ADR-0002, ADR-0003, ADR-0008, ADR-0036; future
+TF-P001 paper execution ADR
+
+**Impacted Invariants:** Event Ledger Canonical Truth, Events Are Immutable,
+Lifecycle Authority, Replayability Is Foundational, Human Decision Sovereignty,
+Derived State Must Remain Distinguishable
+
+**Problem:**
+The current `Execution -> Position` transition appends
+`execution.position_opened` through the generic lifecycle endpoint with an
+empty payload. The Active Position UI describes the action as a manual MVP
+record, but does not capture the execution facts required to prove that a
+position actually exists. Planned quantity or plan language can therefore be
+mistaken for actual execution outcome.
+
+Minimum missing facts:
+
+- actual quantity filled
+- actual fill price
+- execution/fill timestamp
+- side
+- account or broker/source
+- fees/commissions where available
+- external broker/order/fill reference where available
+
+**Scope:**
+
+- Define the minimum execution evidence required before a position can be
+  opened or derived.
+- Prevent planned quantity, planned price, sizing rationale, or thesis/plan
+  text from being silently treated as actual execution.
+- Replace or gate the generic empty-payload `Record Position Opened` path with
+  an explicit execution/fill capture path.
+- Ensure replay and workspace projections derive open-position state from
+  immutable execution/fill facts.
+- Preserve support for manual real-world fill entry until broker/paper
+  adapters provide the facts automatically.
+
+**Out Of Scope:**
+
+- Live-money broker execution.
+- Automated trade submission.
+- Inferred fills from plan text.
+- Backfilling real broker facts without explicit operator confirmation.
+
+**Acceptance Criteria:**
+
+- TradeForge cannot create or derive an open position unless actual execution
+  evidence includes at minimum `quantity`, `fill_price`, and `executed_at`.
+- The event payload distinguishes actual execution facts from planned intent.
+- Multiple fills are representable without fabricating a single fill.
+- Replay can show the execution evidence that caused the position to become
+  open.
+- Workspace/UI text no longer implies a position was opened from approval or
+  planned intent alone.
+- Existing advisory and plan import paths have no dependency path into
+  execution/fill capture.
+
+**Design Note:**
+This issue aligns with the planned M-PT direction: positions should be derived
+from immutable execution facts rather than manually declared as open. For real
+broker trades, operator-entered fills may be the first implementation slice,
+but they must still be explicit execution facts.
+
+---
+
+## TF-F087: Completed Review Must Not Imply Position Closed Without Close Event
+
+**Status:** Planned
+
+**Classification:** field-observed lifecycle integrity / review semantics gap
+
+**Milestone:** M-PT
+
+**Branch:** `TBD`
+
+**Affected Layer:** domain lifecycle state, transition validation, services,
+frontend lifecycle guidance, Review workspace, Active Position workspace,
+replay/projections, tests
+
+**Source:** 2026-08-13 operator screenshot showed the lifecycle guidance text
+`The position is closed and review is complete` while the visible event trail
+contained `execution.order_submitted -> execution.position_opened ->
+review.review_completed` and no visible `execution.position_closed`.
+
+**Linked Issues:** TF-F086, TF-P001, TF-P003, TF-P006, TF-P007, TF-P011
+
+**Linked ADRs:** ADR-0001, ADR-0002, ADR-0003, ADR-0008, ADR-0036; future
+TF-P001 paper execution ADR
+
+**Impacted Invariants:** Event Ledger Canonical Truth, Lifecycle Authority,
+Replayability Is Foundational, Events Are Immutable, Historical Integrity,
+Derived State Must Remain Distinguishable
+
+**Problem:**
+The current lifecycle allows `Position -> Review` and records
+`review.review_completed` as the terminal stage. The frontend lifecycle
+guidance then states that the position is closed. No
+`execution.position_closed` event exists in the lifecycle state map or
+transition model, so the system can describe a position as closed without a
+canonical close fact. This is especially dangerous for real positions that are
+still open.
+
+**Scope:**
+
+- Define the distinction between interim position review and completed
+  post-trade review.
+- Add or plan a canonical close/exit execution fact before terminal completed
+  review can imply closed position state.
+- Prevent `review.review_completed` from being interpreted as
+  `position_closed`.
+- Update lifecycle guidance and workspace copy to avoid claiming closure
+  unless a close event exists.
+- Define how open-position reviews are represented without completing the
+  full trade lifecycle.
+
+**Out Of Scope:**
+
+- Live broker execution.
+- Auto-closing positions.
+- Mutating or deleting historical events.
+- Treating review reflection as an execution fact.
+
+**Acceptance Criteria:**
+
+- A completed post-trade review cannot imply the position is closed unless a
+  canonical close event exists for the decision.
+- The UI never displays "position is closed" from
+  `review.review_completed` alone.
+- Interim reviews while a position remains open are allowed but clearly
+  labeled as position reviews, not terminal lifecycle completion.
+- Replay shows open, close, and review facts as distinct events.
+- Tests cover the contradiction case:
+  `execution.position_opened + review.review_completed` without
+  `execution.position_closed` must not project closed-position state.
+
+**Design Note:**
+The existing canonical lifecycle has a single `Position` stage followed by
+`Review`, but real execution requires at least two concepts: monitoring an
+open position and reviewing a closed trade. This issue should be resolved in
+coordination with M-PT rather than patched as copy only, because the event
+model lacks the close fact.
+
+---
+
+## TF-F088: Add Ollama Remote Advisory Provider Route
+
+**Status:** Planned
+
+**Classification:** provider governance / AI advisory routing enhancement
+
+**Milestone:** M13B
+
+**Branch:** `TBD`
+
+**Affected Layer:** security provider selection, infrastructure/advisory
+request composition, app governance routes, frontend Provider Governance,
+configuration/docs, tests
+
+**Source:** Operator request on 2026-08-13 to add `ollama-remote` for a
+separate Ollama instance running on a Linux GTX 1080 Ti machine. Related
+prior-art implementation exists in sibling project `py-coding-agent`, which
+uses `ollama`, `ollama-remote`, `ollama-local`, and `ollama-auto` provider
+names with separate URL/model environment variables and a probe only for
+`ollama-auto`.
+
+**Linked Issues:** TF-F045, TF-F057, TF-F062, TF-F066, TF-F073, TF-F075,
+TF-F076
+
+**Linked ADRs:** ADR-0001, ADR-0006, ADR-0020, ADR-0043
+
+**Impacted Invariants:** AI Advisory Boundary, Human Decision Sovereignty,
+Event Ledger Canonical Truth, Replayability Is Foundational, Derived State
+Must Remain Distinguishable
+
+**Problem:**
+TradeForge currently supports a keyless `ollama` provider identity through
+LiteLLM request-time composition, using a single configured Ollama API base.
+The operator also has a separate remote Ollama host on a GTX 1080 Ti box that
+should be selectable as an advisory backend without hard-coding it as the only
+Ollama path or making canonical workflows depend on it.
+
+**Scope:**
+
+- Add a distinct governed provider identity: `ollama-remote`.
+- Consider adding `ollama-local` and `ollama-auto` alongside `ollama-remote`
+  if doing so keeps the model clear:
+  - `ollama`: legacy/current single-Ollama identity.
+  - `ollama-remote`: explicit remote GPU backend.
+  - `ollama-local`: explicit local Ollama backend.
+  - `ollama-auto`: remote-preferred fallback that probes remote briefly and
+    falls back to local when unavailable.
+- Configure separate Ollama API bases and default models through Provider
+  Governance or documented environment/configuration paths:
+  `OLLAMA_REMOTE_URL`, `OLLAMA_REMOTE_MODEL`, `OLLAMA_LOCAL_URL`,
+  `OLLAMA_LOCAL_MODEL`.
+- Keep explicit backends selectable independently as advisory model providers.
+- Ensure explicit `ollama-remote` and `ollama-local` do not silently fall back;
+  only `ollama-auto` may probe and choose another backend.
+- Preserve provider/model provenance so generated advisory artifacts can show
+  which backend produced the output.
+- Ensure remote Ollama failure degrades as advisory-provider unavailable and
+  does not block lifecycle, replay, imports, execution, or canonical state.
+- Update frontend provider selection so any added Ollama backend identities
+  appear beside the existing `ollama` option.
+
+**Out Of Scope:**
+
+- Direct TradeForge-to-Ollama adapter bypassing LiteLLM.
+- Mandatory dependency on the remote GPU host.
+- Execution, approval, lifecycle transition, broker, or event-ledger authority.
+- Automatic model installation or remote host provisioning.
+
+**Acceptance Criteria:**
+
+- Provider Governance can select `ollama-remote` as primary or fallback
+  advisory provider.
+- Request composition sends remote Ollama calls through LiteLLM with the remote
+  API base, distinct from local `ollama` or `ollama-local`.
+- If implemented, `ollama-auto` uses a bounded reachability probe for the
+  remote URL and falls back to local without making canonical workflows depend
+  on either backend.
+- Explicit `ollama-remote` and `ollama-local` selections surface real
+  provider-unavailable errors instead of silently falling back.
+- If the remote host is offline or unreachable, advisory calls fail gracefully
+  and canonical workflows remain usable.
+- Advisory route smoke testing reports `ollama-remote` provider identity and
+  failure/success status without exposing secrets.
+- Replay/provenance records identify the selected Ollama backend identity and
+  model for any generated advisory artifact.
+
+**Design Note:**
+This should remain a provider-routing enhancement inside the accepted M13B
+managed LiteLLM boundary. The 1080 Ti machine is useful as a cheap/private
+advisory backend for thesis critique, summarization, evidence extraction, and
+first-pass review, but it must remain optional and advisory-only.
+
+TradeForge should borrow the naming and fallback semantics from
+`py-coding-agent` only where they fit the existing LiteLLM gateway model. Unlike
+`py-coding-agent`, TradeForge should not introduce a direct Ollama provider
+adapter unless a later issue explicitly rejects the managed LiteLLM boundary.
+
+---
+
 ## TF-R001: Thesis Workspace Advisory Import Preview
 
 **Status:** Done
@@ -10166,6 +10528,201 @@ PR #64. The KB repo now has a single tracked raw location under
 `knowledge/raw/`; the oversized LiteLLM log was removed from tracked raw
 knowledge and archived under an ignored local archive path; `TF-D001` through
 `TF-D008` are explicitly marked Deferred in the KB roadmap index.
+
+---
+
+## GOV-03: Introduce GitHub Spec Kit For Prospective Spec-Driven Development
+
+**Status:** Planned
+
+**Classification:** development-process governance
+
+**Milestone:** M-EZ
+
+**Branch:** `TBD`
+
+**Affected Layer:** repository development workflow, docs/process governance,
+future feature planning artifacts
+
+**Source:** 2026-08-13 operator request to adopt GitHub Spec Kit as a
+prospective specification workflow, separate from the execution/position
+integrity defect family.
+
+**Linked Issues:** TF-F086, TF-F087
+
+**Linked ADRs:** ADR-0001, ADR-0002, ADR-0003, ADR-0008, ADR-0020, ADR-0043
+
+**Impacted Invariants:** Event Ledger Canonical Truth, Lifecycle Authority,
+Replayability Is Foundational, AI Advisory Boundary, Human Decision
+Sovereignty, Derived State Must Remain Distinguishable, Architectural
+Simplicity, Terminology Stability
+
+**Problem:**
+TradeForge has strong architectural governance through doctrine, ADRs,
+issue-first development, milestone planning, and validation evidence, but
+larger feature and defect families still rely heavily on chat context and
+one-off implementation plans. A prospective Spec Kit layer could preserve
+requirements, clarifications, plans, and tasks as durable artifacts before
+implementation, reducing repeated reconstruction across Codex/AI sessions.
+
+**Scope:**
+
+- Introduce GitHub Spec Kit into the TradeForge repository as a prospective
+  workflow for future major features and meaningful defect families.
+- Create a project constitution derived from existing TradeForge doctrine,
+  invariants, ADRs, and issue discipline.
+- Define where Spec Kit artifacts live and how they relate to existing issue,
+  ADR, milestone, and KB governance.
+- Establish that Spec Kit applies prospectively only.
+- Use execution/position lifecycle integrity as the first trial feature after
+  Spec Kit is initialized.
+- Evaluate the workflow after the first trial before adopting it more broadly.
+
+**Out Of Scope:**
+
+- Retrofitting all historical features.
+- Replacing ADRs, GitHub issues, the runtime issue register, milestone
+  governance, or KB doctrine.
+- Allowing generated specs to override established architecture.
+- Implementing execution/position integrity in this issue.
+- Introducing Spec Kit into TradeForge Research Cockpit before the TradeForge
+  trial has been evaluated.
+
+**Governance Hierarchy:**
+
+```text
+TradeForge doctrine / architecture
+        ↓
+ADRs and established invariants
+        ↓
+Spec Kit constitution
+        ↓
+GitHub/runtime feature or defect issue
+        ↓
+feature specification
+        ↓
+clarification
+        ↓
+technical plan
+        ↓
+implementation tasks
+        ↓
+Codex / implementation
+        ↓
+tests + milestone evidence
+```
+
+If a proposed specification conflicts with an existing ADR or architectural
+invariant, the specification must change or an explicit ADR process must
+address the conflict.
+
+**Initial Constitution Principles:**
+
+1. Event sourcing is authoritative.
+2. Replayability must be preserved.
+3. Advisory systems remain non-canonical.
+4. Human sovereignty is preserved.
+5. Intent and execution remain distinct.
+6. Derived state must be explainable from canonical evidence.
+7. Architectural boundaries remain enforced.
+8. Architectural changes require ADR governance.
+9. Advisory/provider failures should degrade gracefully.
+10. Completion requires tests and milestone evidence.
+
+**First Trial Feature:**
+
+Use the observed execution/position lifecycle integrity problem as the first
+Spec Kit feature after this governance issue is complete.
+
+Suggested feature name:
+
+```text
+001-execution-position-integrity
+```
+
+Initial behavioral requirements for that feature should include:
+
+- operator can record actual execution quantity;
+- operator can record actual fill price;
+- operator can record actual execution timestamp;
+- planned quantity remains distinct from executed quantity;
+- planned price remains distinct from actual fill price;
+- an open position requires actual execution evidence;
+- an open position cannot be represented as closed without corresponding close
+  evidence;
+- reviewing an open position does not automatically imply lifecycle
+  completion;
+- multiple fills can contribute to a derived position;
+- historical replay produces the same resulting position state.
+
+Implementation details such as event schema changes, database/projection
+changes, API changes, React forms, migrations, and compatibility handling must
+be determined during Spec Kit planning rather than embedded prematurely into
+the specification.
+
+**Proposed Workflow:**
+
+```text
+GitHub/runtime issue
+    ↓
+/speckit.specify
+    ↓
+spec.md
+    ↓
+/speckit.clarify
+    ↓
+/speckit.plan
+    ↓
+plan.md
+    ↓
+/speckit.tasks
+    ↓
+tasks.md
+    ↓
+Codex implementation
+    ↓
+tests
+    ↓
+milestone evidence
+```
+
+Small fixes should not automatically require full Spec Kit ceremony. The
+project should define a practical threshold for when a specification is
+warranted.
+
+**Evaluation Criteria:**
+
+- Did the specification make intended behavior clearer?
+- Did it expose ambiguities before coding?
+- Did it reduce repeated explanation to Codex?
+- Did the plan remain aligned with existing ADRs?
+- Did generated tasks improve implementation sequencing?
+- Did the workflow add excessive ceremony?
+- Were specification artifacts useful during review?
+- Can future sessions understand the feature without relying on prior chat
+  history?
+- Should the workflow become the default for major TradeForge changes?
+- Should the same pattern later be introduced into TradeForge Research Cockpit?
+
+**Acceptance Criteria:**
+
+- GitHub Spec Kit is initialized in the TradeForge repository.
+- Existing TradeForge architecture and ADRs remain authoritative.
+- A project constitution is created from existing non-negotiable invariants.
+- No completed historical milestones are bulk-retrofitted.
+- The execution/position integrity work is used as the first prospective Spec
+  Kit feature.
+- The feature proceeds through specification, clarification, planning, and task
+  generation before implementation.
+- Existing issue-first and milestone-evidence processes remain intact.
+- The operator reviews the experience after the first feature before adopting
+  Spec Kit more broadly.
+
+**Design Note:**
+Do not combine Spec Kit adoption and execution/position integrity in one issue.
+`GOV-03` establishes how Spec Kit enters TradeForge. The first feature under
+that workflow should be `001-execution-position-integrity`, tied back to
+TF-F086 and TF-F087.
 
 ---
 

@@ -484,6 +484,10 @@ def test_plan_import_preview_returns_only_eligible_mapped_artifacts() -> None:
             "stop_rationale": "Base failure invalidates the planned setup.",
             "target_rationale": "Prior supply zone defines the first target.",
             "risk_notes": ["Do not chase a gap open.", "Earnings risk remains."],
+            "execution_assumptions": [
+                "Liquidity remains available at the entry level."
+            ],
+            "playbook_alignment": "swing-breakout-v1",
         },
     }
     eligible = client.post("/advisory/artifacts", json=eligible_payload)
@@ -541,6 +545,10 @@ def test_plan_import_preview_returns_only_eligible_mapped_artifacts() -> None:
         "Do not chase a gap open.",
         "Earnings risk remains.",
     ]
+    assert preview["mapped_fields"]["execution_assumptions"] == [
+        "Liquidity remains available at the entry level."
+    ]
+    assert preview["mapped_fields"]["playbook_alignment"] == "swing-breakout-v1"
     assert client.get("/replay/timeline").json()["source_event_count"] == 0
 
 
@@ -575,6 +583,15 @@ First target is the prior supply zone.
 
 - earnings date must be checked
 - do not size from this import
+
+# Execution Assumptions
+
+- market remains liquid near the planned entry
+- no earnings release before entry
+
+# Playbook Alignment
+
+swing-breakout-v1
 """,
         encoding="utf-8",
     )
@@ -612,6 +629,11 @@ First target is the prior supply zone.
         "earnings date must be checked",
         "do not size from this import",
     ]
+    assert preview["mapped_fields"]["execution_assumptions"] == [
+        "market remains liquid near the planned entry",
+        "no earnings release before entry",
+    ]
+    assert preview["mapped_fields"]["playbook_alignment"] == "swing-breakout-v1"
     assert preview["is_canonical"] is False
     assert preview["execution_authority"] is False
 

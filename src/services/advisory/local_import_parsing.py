@@ -55,6 +55,8 @@ PLAN_IMPORT_FIELD_NAMES = frozenset(
         "stop_rationale",
         "target_rationale",
         "risk_notes",
+        "execution_assumptions",
+        "playbook_alignment",
     }
 )
 PLAN_IMPORT_PROHIBITED_FIELD_NAMES = frozenset(
@@ -87,6 +89,8 @@ PLAN_IMPORT_SECTION_ALIASES = {
     "target": "target_rationale",
     "risk notes": "risk_notes",
     "risk": "risk_notes",
+    "execution assumptions": "execution_assumptions",
+    "playbook alignment": "playbook_alignment",
 }
 THESIS_TRANSFER_SCHEMA_VERSION = "tradeforge.thesis_draft_transfer.v1"
 THESIS_TRANSFER_KIND = "tradeforge_thesis_draft_transfer"
@@ -374,9 +378,13 @@ def mapped_plan_fields_from_markdown_sections(body: str) -> dict[str, object]:
         text = section_text(sections.get(field_name, []))
         if text:
             mapped[field_name] = text
-    risk_notes = section_list(sections.get("risk_notes", []))
-    if risk_notes:
-        mapped["risk_notes"] = risk_notes
+    for field_name in ("risk_notes", "execution_assumptions"):
+        values = section_list(sections.get(field_name, []))
+        if values:
+            mapped[field_name] = values
+    playbook_alignment = section_text(sections.get("playbook_alignment", []))
+    if playbook_alignment:
+        mapped["playbook_alignment"] = playbook_alignment
     return mapped
 
 

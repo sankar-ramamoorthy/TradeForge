@@ -1366,6 +1366,8 @@ export type PlanImportMappedFields = {
   stop_rationale: string | null;
   target_rationale: string | null;
   risk_notes: string[];
+  execution_assumptions: string[];
+  playbook_alignment: string | null;
 };
 
 export type PlanImportPreview = {
